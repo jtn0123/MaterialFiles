@@ -107,5 +107,10 @@
             android:key="@string/pref_key_read_remote_files_for_thumbnail"
             android:title="@string/settings_read_remote_files_for_thumbnail_title"
             android:defaultValue="@bool/pref_default_value_read_remote_files_for_thumbnail" />
+
+        <SwitchPreferenceCompat
+            android:key="@string/pref_key_video_remember_playback_position"
+            android:title="@string/settings_video_remember_playback_position_title"
+            android:defaultValue="@bool/pref_default_value_video_remember_playback_position" />
     </PreferenceCategory>
 </PreferenceScreen>

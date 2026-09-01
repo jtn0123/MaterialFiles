@@ -181,4 +181,10 @@ object Settings {
             R.string.pref_key_read_remote_files_for_thumbnail,
             R.bool.pref_default_value_read_remote_files_for_thumbnail
         )
+
+    val VIDEO_REMEMBER_PLAYBACK_POSITION: SettingLiveData<Boolean> =
+        BooleanSettingLiveData(
+            R.string.pref_key_video_remember_playback_position,
+            R.bool.pref_default_value_video_remember_playback_position
+        )
 }

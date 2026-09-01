@@ -70,6 +70,7 @@ import me.zhanghai.android.files.file.extension
 import me.zhanghai.android.files.file.fileProviderUri
 import me.zhanghai.android.files.file.isApk
 import me.zhanghai.android.files.file.isImage
+import me.zhanghai.android.files.file.isVideo
 import me.zhanghai.android.files.filejob.FileJobService
 import me.zhanghai.android.files.filelist.FileSortOptions.By
 import me.zhanghai.android.files.filelist.FileSortOptions.Order
@@ -130,6 +131,7 @@ import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.viewModels
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ImageViewerActivity
+import me.zhanghai.android.files.viewer.video.VideoViewerActivity
 import kotlin.math.roundToInt
 
 class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.Listener,
@@ -1268,6 +1270,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 .apply {
                     extraPath = path
                     maybeAddImageViewerActivityExtras(this, path, mimeType)
+                    maybeAddVideoViewerActivityExtras(this, path, mimeType)
                 }
                 .let {
                     if (withChooser) {
@@ -1289,27 +1292,47 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         if (!mimeType.isImage) {
             return
         }
+        val (paths, position) = collectSiblingPaths(path) { it.isImage } ?: return
+        ImageViewerActivity.putExtras(intent, paths, position)
+    }
+
+    private fun maybeAddVideoViewerActivityExtras(intent: Intent, path: Path, mimeType: MimeType) {
+        if (!mimeType.isVideo) {
+            return
+        }
+        val (paths, position) = collectSiblingPaths(path) { it.isVideo } ?: return
+        VideoViewerActivity.putExtras(intent, paths, position)
+    }
+
+    /**
+     * Collects the paths of the files in this directory that [predicate] accepts, so that a viewer
+     * can walk through them, along with the position of [path] among them.
+     */
+    private fun collectSiblingPaths(
+        path: Path,
+        predicate: (MimeType) -> Boolean
+    ): Pair<List<Path>, Int>? {
         var paths = mutableListOf<Path>()
         // We need the ordered list from our adapter instead of the list from FileListLiveData.
         for (index in 0..<adapter.itemCount) {
             val file = adapter.getItem(index)
             val filePath = file.path
-            if (file.mimeType.isImage || filePath == path) {
+            if (predicate(file.mimeType) || filePath == path) {
                 paths.add(filePath)
             }
         }
         var position = paths.indexOf(path)
         if (position == -1) {
-            return
+            return null
         }
         // HACK: Don't send too many paths to avoid TransactionTooLargeException.
-        if (paths.size > IMAGE_VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX) {
-            val start = (position - IMAGE_VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX / 2)
-                .coerceIn(0, paths.size - IMAGE_VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX)
-            paths = paths.subList(start, start + IMAGE_VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX)
+        if (paths.size > VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX) {
+            val start = (position - VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX / 2)
+                .coerceIn(0, paths.size - VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX)
+            paths = paths.subList(start, start + VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX)
             position -= start
         }
-        ImageViewerActivity.putExtras(intent, paths, position)
+        return paths to position
     }
 
     override fun cutFile(file: FileItem) {
@@ -1626,7 +1649,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         private const val ACTION_VIEW_DOWNLOADS =
             "me.zhanghai.android.files.intent.action.VIEW_DOWNLOADS"
 
-        private const val IMAGE_VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX = 1000
+        private const val VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX = 1000
     }
 
     private class RequestAllFilesAccessContract : ActivityResultContract<Unit, Boolean>() {

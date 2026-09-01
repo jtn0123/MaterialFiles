@@ -697,6 +697,21 @@
     <string name="image_viewer_title">Image viewer</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
     <string name="image_viewer_delete_message_format" translatable="false">@string/file_delete_message_file_format</string>
+
+    <string name="video_viewer_title">Video player</string>
+    <string name="video_viewer_subtitle_format" translatable="false">@string/image_viewer_subtitle_format</string>
+    <string name="video_viewer_delete_message_format" translatable="false">@string/file_delete_message_file_format</string>
+    <string name="video_viewer_picture_in_picture">Picture-in-picture</string>
+    <string name="video_viewer_play_from_beginning">Play from beginning</string>
+    <string name="video_viewer_screen_orientation">Screen orientation</string>
+    <string name="video_viewer_screen_orientation_auto">Auto-rotate</string>
+    <string name="video_viewer_screen_orientation_landscape">Landscape</string>
+    <string name="video_viewer_screen_orientation_portrait">Portrait</string>
+    <string name="video_viewer_error_format">Cannot play %1$s</string>
+    <string name="video_viewer_play">Play</string>
+    <string name="video_viewer_pause">Pause</string>
+    <string name="video_viewer_previous">Previous</string>
+    <string name="video_viewer_next">Next</string>
     <string name="save_as_title">Save as</string>
     <string name="save_as_error">Error while saving file</string>
     <string name="save_as_success_format">“%1$s” has been saved to “%2$s”</string>
@@ -787,6 +802,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Show thumbnail for PDF documents</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Might make the app unstable on older versions of Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Read remote files for thumbnail</string>
+    <string name="settings_video_remember_playback_position_title">Remember video playback position</string>
 
     <string name="about_title">About</string>
     <string name="about_version_title">Version</string>
