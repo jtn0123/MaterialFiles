@@ -5,59 +5,64 @@
 
 package me.zhanghai.android.files.viewer.video
 
-import androidx.core.content.edit
+import android.content.SharedPreferences
 import java8.nio.file.Path
 import me.zhanghai.android.files.app.application
 
 /**
  * Remembers where playback stopped for each video, so that opening it again resumes there.
  *
- * Positions are kept in their own [android.content.SharedPreferences] file instead of the default
- * one, so that they never show up in (or get wiped by) the settings, and so that we can prune them
- * without worrying about the rest of the preferences.
+ * Positions are kept in their own [SharedPreferences] file instead of the default one, so that
+ * they never show up in (or get wiped by) the settings, and so that we can prune them without
+ * worrying about the rest of the preferences.
  */
 object VideoPlaybackPositions {
     private const val PREFERENCE_NAME = "video_playback_positions"
 
-    /** Don't remember a position that is this close to the beginning, it isn't worth resuming. */
-    private const val MINIMUM_POSITION_MILLIS = 10_000L
-
-    /** Treat a video as finished when this close to the end, and forget its position. */
-    private const val END_THRESHOLD_MILLIS = 15_000L
-
-    private const val ENTRY_COUNT_MAX = 512
-
-    private val sharedPreferences by lazy {
-        application.getSharedPreferences(PREFERENCE_NAME, 0)
+    private val store by lazy {
+        VideoPlaybackPositionStore(application.getSharedPreferences(PREFERENCE_NAME, 0))
     }
 
-    private fun getKey(path: Path): String = path.toUri().toString()
-
-    /**
-     * Returns the remembered position for [path], or
-     * [androidx.media3.common.C.TIME_UNSET]-like `null` when there's nothing to resume.
-     */
-    fun get(path: Path): Long? {
-        val value = sharedPreferences.getString(getKey(path), null) ?: return null
-        return value.substringBefore(SEPARATOR).toLongOrNull()
-    }
+    fun get(path: Path): Long? = store.get(path.toUri().toString())
 
     fun set(path: Path, positionMillis: Long, durationMillis: Long) {
-        val key = getKey(path)
-        val isNearBeginning = positionMillis < MINIMUM_POSITION_MILLIS
-        val isNearEnd = durationMillis > 0 && positionMillis > durationMillis - END_THRESHOLD_MILLIS
-        if (isNearBeginning || isNearEnd) {
-            remove(path)
-            return
-        }
-        pruneIfNeeded(key)
-        sharedPreferences.edit {
-            putString(key, "$positionMillis$SEPARATOR${System.currentTimeMillis()}")
-        }
+        store.set(path.toUri().toString(), positionMillis, durationMillis)
     }
 
     fun remove(path: Path) {
-        sharedPreferences.edit { remove(getKey(path)) }
+        store.remove(path.toUri().toString())
+    }
+}
+
+/**
+ * The rules behind [VideoPlaybackPositions], keyed by plain strings so that they can be tested
+ * without a file system.
+ */
+class VideoPlaybackPositionStore(
+    private val sharedPreferences: SharedPreferences,
+    private val currentTimeMillis: () -> Long = System::currentTimeMillis
+) {
+    /** Returns the remembered position for [key], or null when there's nothing to resume. */
+    fun get(key: String): Long? {
+        val value = sharedPreferences.getString(key, null) ?: return null
+        return value.substringBefore(SEPARATOR).toLongOrNull()
+    }
+
+    fun set(key: String, positionMillis: Long, durationMillis: Long) {
+        val isNearBeginning = positionMillis < MINIMUM_POSITION_MILLIS
+        val isNearEnd = durationMillis > 0 && positionMillis > durationMillis - END_THRESHOLD_MILLIS
+        if (isNearBeginning || isNearEnd) {
+            remove(key)
+            return
+        }
+        pruneIfNeeded(key)
+        sharedPreferences.edit()
+            .putString(key, "$positionMillis$SEPARATOR${currentTimeMillis()}")
+            .apply()
+    }
+
+    fun remove(key: String) {
+        sharedPreferences.edit().remove(key).apply()
     }
 
     /**
@@ -73,8 +78,18 @@ object VideoPlaybackPositions {
             .sortedBy { (it.value as? String)?.substringAfter(SEPARATOR)?.toLongOrNull() ?: 0 }
             .map { it.key }
         val keysToRemove = keysByTime.take(all.size - ENTRY_COUNT_MAX + 1)
-        sharedPreferences.edit { keysToRemove.forEach { remove(it) } }
+        sharedPreferences.edit().apply { keysToRemove.forEach { remove(it) } }.apply()
     }
 
-    private const val SEPARATOR = ","
+    companion object {
+        /** Don't remember a position that is this close to the beginning, it isn't worth resuming. */
+        const val MINIMUM_POSITION_MILLIS = 10_000L
+
+        /** Treat a video as finished when this close to the end, and forget its position. */
+        const val END_THRESHOLD_MILLIS = 15_000L
+
+        const val ENTRY_COUNT_MAX = 512
+
+        private const val SEPARATOR = ","
+    }
 }
