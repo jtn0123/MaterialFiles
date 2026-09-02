@@ -7,6 +7,10 @@ package me.zhanghai.android.files.file
 
 import android.os.Parcelable
 import androidx.annotation.WorkerThread
+import java.io.IOException
+import java.text.CollationKey
+import java.text.Collator
+import java.util.Locale
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
@@ -19,9 +23,6 @@ import me.zhanghai.android.files.provider.common.isHidden
 import me.zhanghai.android.files.provider.common.readAttributes
 import me.zhanghai.android.files.provider.common.readSymbolicLinkByteString
 import me.zhanghai.android.files.util.ParcelableParceler
-import java.io.IOException
-import java.text.CollationKey
-import java.text.Collator
 
 @Parcelize
 data class FileItem(
@@ -46,7 +47,7 @@ data class FileItem(
 @WorkerThread
 @Throws(IOException::class)
 fun Path.loadFileItem(): FileItem {
-    val nameCollationKey = Collator.getInstance().getCollationKeyForFileName(name)
+    val nameCollationKey = fileNameCollator.getCollationKeyForFileName(name)
     val attributes = readAttributes(BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
     val isHidden = isHidden
     if (!attributes.isSymbolicLink) {
@@ -61,10 +62,34 @@ fun Path.loadFileItem(): FileItem {
         null
     }
     val mimeType = AndroidFileTypeDetector.getMimeType(
-        this, symbolicLinkTargetAttributes ?: attributes
+        this,
+        symbolicLinkTargetAttributes ?: attributes
     ).asMimeType()
     return FileItem(
-        this, nameCollationKey, attributes, symbolicLinkTarget, symbolicLinkTargetAttributes,
-        isHidden, mimeType
+        this,
+        nameCollationKey,
+        attributes,
+        symbolicLinkTarget,
+        symbolicLinkTargetAttributes,
+        isHidden,
+        mimeType
     )
 }
+
+/**
+ * [Collator.getInstance] clones a rule-based collator on every call, which showed up once per
+ * directory entry and per search hit. Collators are not thread-safe, so keep one per thread, and
+ * replace it when the default locale changes.
+ */
+private val fileNameCollators = ThreadLocal<Pair<Locale, Collator>>()
+
+private val fileNameCollator: Collator
+    get() {
+        val locale = Locale.getDefault()
+        fileNameCollators.get()?.let { (collatorLocale, collator) ->
+            if (collatorLocale == locale) {
+                return collator
+            }
+        }
+        return Collator.getInstance(locale).also { fileNameCollators.set(locale to it) }
+    }
