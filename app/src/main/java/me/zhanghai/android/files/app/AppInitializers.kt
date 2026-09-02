@@ -7,6 +7,7 @@ package me.zhanghai.android.files.app
 
 import android.os.AsyncTask
 import android.os.Build
+import android.os.StrictMode
 import android.webkit.WebView
 import jcifs.context.SingletonContext
 import me.zhanghai.android.files.BuildConfig
@@ -33,6 +34,7 @@ val appInitializers = listOf(
     ::initializeCrashlytics,
     ::disableHiddenApiChecks,
     ::initializeWebViewDebugging,
+    ::initializeStrictMode,
     ::initializeCoil,
     ::initializeFileSystemProviders,
     ::upgradeApp,
@@ -56,6 +58,27 @@ private fun initializeWebViewDebugging() {
     if (BuildConfig.DEBUG) {
         WebView.setWebContentsDebuggingEnabled(true)
     }
+}
+
+private fun initializeStrictMode() {
+    if (!BuildConfig.DEBUG) {
+        return
+    }
+    // Log, don't crash: some main-thread disk and network access is known and being worked
+    // through, and the log lines are what point at it.
+    StrictMode.setThreadPolicy(
+        StrictMode.ThreadPolicy.Builder()
+            .detectAll()
+            .penaltyLog()
+            .build()
+    )
+    StrictMode.setVmPolicy(
+        StrictMode.VmPolicy.Builder()
+            .detectLeakedClosableObjects()
+            .detectLeakedSqlLiteObjects()
+            .penaltyLog()
+            .build()
+    )
 }
 
 private fun initializeFileSystemProviders() {
