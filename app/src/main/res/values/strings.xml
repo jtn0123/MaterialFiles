@@ -334,6 +334,7 @@
     <string name="file_list_action_create_directory">Folder</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">More options</string>
     <string name="file_item_action_open_with">Open with</string>
     <string name="file_item_action_extract">Extract</string>
     <string name="file_item_action_archive">Compress</string>
@@ -541,6 +542,7 @@
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Storage</string>
     <string name="storage_list_empty">No storage</string>
+    <string name="list_item_drag_handle">Drag to reorder</string>
     <string name="storage_add_storage_title">Add storage</string>
     <string name="storage_add_storage_android_data" translatable="false">Android/data</string>
     <string name="storage_add_storage_android_obb" translatable="false">Android/obb</string>

@@ -17,6 +17,7 @@
 
     <ImageView
         android:id="@+id/iconImage"
+        android:importantForAccessibility="no"
         android:layout_width="@dimen/icon_size"
         android:layout_height="@dimen/icon_size"
         android:layout_marginStart="@dimen/screen_edge_margin"
@@ -52,6 +53,7 @@
 
     <ImageView
         android:id="@+id/dragHandleView"
+        android:contentDescription="@string/list_item_drag_handle"
         android:layout_width="@dimen/touch_target_size"
         android:layout_height="@dimen/touch_target_size"
         android:layout_marginStart="@dimen/content_start_from_screen_edge_margin_minus_36dp_considering_at_least_8dp"

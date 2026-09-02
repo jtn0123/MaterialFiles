@@ -18,6 +18,7 @@
     android:orientation="horizontal">
 
     <ImageView
+        android:importantForAccessibility="no"
         android:layout_width="@dimen/icon_size"
         android:layout_height="@dimen/icon_size"
         android:scaleType="centerCrop"
