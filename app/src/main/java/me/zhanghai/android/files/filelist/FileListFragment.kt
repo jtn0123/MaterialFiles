@@ -1271,6 +1271,13 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                     extraPath = path
                     maybeAddImageViewerActivityExtras(this, path, mimeType)
                     maybeAddVideoViewerActivityExtras(this, path, mimeType)
+                    if (!withChooser) {
+                        // Open images and videos in our own viewers directly. Sending them
+                        // through the resolver lists both our viewer and SaveAsActivity, and
+                        // some resolvers (One UI) collapse the two into a single app entry
+                        // whose "Always" choice then lands on "Save as" for every tap.
+                        maybeSetBuiltInViewer(this, mimeType)
+                    }
                 }
                 .let {
                     if (withChooser) {
@@ -1286,6 +1293,15 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 }
             startActivitySafe(intent)
         }
+    }
+
+    private fun maybeSetBuiltInViewer(intent: Intent, mimeType: MimeType) {
+        val viewerClass = when {
+            mimeType.isImage -> ImageViewerActivity::class.java
+            mimeType.isVideo -> VideoViewerActivity::class.java
+            else -> return
+        }
+        intent.setClass(requireContext(), viewerClass)
     }
 
     private fun maybeAddImageViewerActivityExtras(intent: Intent, path: Path, mimeType: MimeType) {
