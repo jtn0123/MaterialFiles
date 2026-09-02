@@ -19,6 +19,7 @@ import me.zhanghai.android.files.ui.StaticAdapter
 import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.launchSafe
@@ -26,12 +27,13 @@ import me.zhanghai.android.files.util.viewModels
 
 class AddLanSmbServerFragment : Fragment() {
     private val addSmbServerLauncher = registerForActivityResult(
-        EditSmbServerActivity.Contract(), this::onAddSmbServerResult
+        EditSmbServerActivity.Contract(),
+        this::onAddSmbServerResult
     )
 
     private val viewModel by viewModels { { AddLanSmbServerViewModel() } }
 
-    private lateinit var binding: AddLanSmbServerFragmentBinding
+    private var binding by autoCleared<AddLanSmbServerFragmentBinding>()
 
     private lateinit var loadingAdapter: StaticAdapter
     private lateinit var serverListAdapter: LanSmbServerListAdapter
@@ -40,13 +42,12 @@ class AddLanSmbServerFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        AddLanSmbServerFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = AddLanSmbServerFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         val activity = requireActivity() as AppCompatActivity
         activity.setSupportActionBar(binding.toolbar)
@@ -60,7 +61,10 @@ class AddLanSmbServerFragment : Fragment() {
         binding.recyclerView.adapter = ConcatAdapter(
             ConcatAdapter.Config.Builder()
                 .setStableIdMode(ConcatAdapter.Config.StableIdMode.ISOLATED_STABLE_IDS)
-                .build(), loadingAdapter, serverListAdapter, addAdapter
+                .build(),
+            loadingAdapter,
+            serverListAdapter,
+            addAdapter
         )
 
         viewModel.lanSmbServerListLiveData.observe(viewLifecycleOwner) {

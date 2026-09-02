@@ -15,23 +15,23 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import me.zhanghai.android.files.databinding.AboutFragmentBinding
 import me.zhanghai.android.files.ui.LicensesDialogFragment
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createViewIntent
 import me.zhanghai.android.files.util.startActivitySafe
 
 class AboutFragment : Fragment() {
-    private lateinit var binding: AboutFragmentBinding
+    private var binding by autoCleared<AboutFragmentBinding>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        AboutFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = AboutFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         val activity = requireActivity() as AppCompatActivity
         activity.setSupportActionBar(binding.toolbar)

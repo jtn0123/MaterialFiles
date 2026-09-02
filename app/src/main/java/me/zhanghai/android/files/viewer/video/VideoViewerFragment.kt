@@ -31,6 +31,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
@@ -47,6 +48,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import dev.chrisbanes.insetter.applySystemWindowInsetsToPadding
+import java.io.IOException
 import java8.nio.file.Path
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,14 +59,15 @@ import kotlinx.parcelize.WriteWith
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.databinding.VideoViewerFragmentBinding
 import me.zhanghai.android.files.file.MimeType
-import me.zhanghai.android.files.file.guessFromPath
 import me.zhanghai.android.files.file.fileProviderUri
+import me.zhanghai.android.files.file.guessFromPath
 import me.zhanghai.android.files.provider.common.delete
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableListParceler
 import me.zhanghai.android.files.util.ParcelableState
 import me.zhanghai.android.files.util.args
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createSendStreamIntent
 import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.extraPathList
@@ -78,16 +81,18 @@ import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ConfirmDeleteDialogFragment
 import me.zhanghai.android.systemuihelper.SystemUiHelper
-import java.io.IOException
 
 @UnstableApi
-class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
+class VideoViewerFragment :
+    Fragment(),
+    MenuProvider,
+    ConfirmDeleteDialogFragment.Listener {
     private val args by args<Args>()
     private val argsPaths by lazy { args.intent.extraPathList }
 
     private lateinit var paths: MutableList<Path>
 
-    private lateinit var binding: VideoViewerFragmentBinding
+    private var binding by autoCleared<VideoViewerFragmentBinding>()
 
     private lateinit var systemUiHelper: SystemUiHelper
 
@@ -106,14 +111,14 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     private var resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
 
     private val isPictureInPictureSupported: Boolean by lazy {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-            && requireContext().packageManager
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            requireContext().packageManager
                 .hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
     private val isInPictureInPictureMode: Boolean
-        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
-            && requireActivity().isInPictureInPictureMode
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
+            requireActivity().isInPictureInPictureMode
 
     private val pictureInPictureReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -124,8 +129,11 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             when (intent.getIntExtra(EXTRA_PICTURE_IN_PICTURE_CONTROL, 0)) {
                 // Like the play button, this restarts a video that has played to the end.
                 CONTROL_PLAY -> Util.handlePlayButtonAction(player)
+
                 CONTROL_PAUSE -> player.pause()
+
                 CONTROL_PREVIOUS -> player.seekToPreviousMediaItem()
+
                 CONTROL_NEXT -> player.seekToNextMediaItem()
             }
         }
@@ -147,8 +155,9 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             newPosition: Player.PositionInfo,
             reason: Int
         ) {
-            if (oldPosition.mediaItemIndex == newPosition.mediaItemIndex
-                || reason == Player.DISCONTINUITY_REASON_REMOVE) {
+            if (oldPosition.mediaItemIndex == newPosition.mediaItemIndex ||
+                reason == Player.DISCONTINUITY_REASON_REMOVE
+            ) {
                 // Removals are handled by delete(), and paths is already updated by the time we
                 // get here.
                 return
@@ -204,27 +213,25 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         positionMillis = state?.positionMillis ?: C.TIME_UNSET
         screenOrientationIndex = state?.screenOrientationIndex ?: 0
         resizeMode = state?.resizeMode ?: AspectRatioFrameLayout.RESIZE_MODE_FIT
-
-        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        VideoViewerFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = VideoViewerFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         if (paths.isEmpty()) {
             finish()
             return
         }
 
+        requireActivity().addMenuProvider(this, viewLifecycleOwner)
         val activity = activity as AppCompatActivity
         activity.setSupportActionBar(binding.toolbar)
         activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
@@ -232,7 +239,9 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         activity.window.statusBarColor = Color.TRANSPARENT
         binding.appBarLayout.applySystemWindowInsetsToPadding(left = true, top = true, right = true)
         systemUiHelper = SystemUiHelper(
-            activity, SystemUiHelper.LEVEL_IMMERSIVE, SystemUiHelper.FLAG_IMMERSIVE_STICKY
+            activity,
+            SystemUiHelper.LEVEL_IMMERSIVE,
+            SystemUiHelper.FLAG_IMMERSIVE_STICKY
         ) { visible: Boolean ->
             binding.appBarLayout.animate()
                 .alpha(if (visible) 1f else 0f)
@@ -267,8 +276,10 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         super.onStart()
 
         ContextCompat.registerReceiver(
-            requireContext(), pictureInPictureReceiver,
-            IntentFilter(ACTION_PICTURE_IN_PICTURE_CONTROL), ContextCompat.RECEIVER_NOT_EXPORTED
+            requireContext(),
+            pictureInPictureReceiver,
+            IntentFilter(ACTION_PICTURE_IN_PICTURE_CONTROL),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             initializePlayer()
@@ -309,37 +320,39 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         )
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-
-        inflater.inflate(R.menu.video_viewer, menu)
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.video_viewer, menu)
         menu.findItem(R.id.action_picture_in_picture).isVisible = isPictureInPictureSupported
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean =
-        when (item.itemId) {
-            R.id.action_picture_in_picture -> {
-                enterPictureInPictureMode()
-                true
-            }
-            R.id.action_screen_orientation -> {
-                cycleScreenOrientation()
-                true
-            }
-            R.id.action_play_from_beginning -> {
-                playFromBeginning()
-                true
-            }
-            R.id.action_delete -> {
-                confirmDelete()
-                true
-            }
-            R.id.action_share -> {
-                share()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean = when (menuItem.itemId) {
+        R.id.action_picture_in_picture -> {
+            enterPictureInPictureMode()
+            true
         }
+
+        R.id.action_screen_orientation -> {
+            cycleScreenOrientation()
+            true
+        }
+
+        R.id.action_play_from_beginning -> {
+            playFromBeginning()
+            true
+        }
+
+        R.id.action_delete -> {
+            confirmDelete()
+            true
+        }
+
+        R.id.action_share -> {
+            share()
+            true
+        }
+
+        else -> false
+    }
 
     private suspend fun loadSubtitles() {
         // A remote directory can be slow to list, and subtitles aren't worth waiting long for.
@@ -478,8 +491,9 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     }
 
     private fun enterPictureInPictureMode() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !isPictureInPictureSupported
-            || isInPictureInPictureMode) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !isPictureInPictureSupported ||
+            isInPictureInPictureMode
+        ) {
             return
         }
         requireActivity().enterPictureInPictureMode(createPictureInPictureParams())
@@ -531,24 +545,28 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         val actions = mutableListOf<RemoteAction>()
         if (player.hasPreviousMediaItem()) {
             actions += createPictureInPictureAction(
-                CONTROL_PREVIOUS, androidx.media3.ui.R.drawable.exo_icon_previous,
+                CONTROL_PREVIOUS,
+                androidx.media3.ui.R.drawable.exo_icon_previous,
                 androidx.media3.ui.R.string.exo_controls_previous_description
             )
         }
         actions += if (player.isPlaying) {
             createPictureInPictureAction(
-                CONTROL_PAUSE, androidx.media3.ui.R.drawable.exo_icon_pause,
+                CONTROL_PAUSE,
+                androidx.media3.ui.R.drawable.exo_icon_pause,
                 androidx.media3.ui.R.string.exo_controls_pause_description
             )
         } else {
             createPictureInPictureAction(
-                CONTROL_PLAY, androidx.media3.ui.R.drawable.exo_icon_play,
+                CONTROL_PLAY,
+                androidx.media3.ui.R.drawable.exo_icon_play,
                 androidx.media3.ui.R.string.exo_controls_play_description
             )
         }
         if (player.hasNextMediaItem()) {
             actions += createPictureInPictureAction(
-                CONTROL_NEXT, androidx.media3.ui.R.drawable.exo_icon_next,
+                CONTROL_NEXT,
+                androidx.media3.ui.R.drawable.exo_icon_next,
                 androidx.media3.ui.R.string.exo_controls_next_description
             )
         }
@@ -566,7 +584,9 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             .setPackage(context.packageName)
             .putExtra(EXTRA_PICTURE_IN_PICTURE_CONTROL, control)
         val pendingIntent = PendingIntent.getBroadcast(
-            context, control, intent,
+            context,
+            control,
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val title = getString(titleRes)
@@ -633,7 +653,9 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         val size = paths.size
         binding.toolbar.subtitle = if (size > 1) {
             getString(
-                R.string.video_viewer_subtitle_format, currentIndex + 1, size
+                R.string.video_viewer_subtitle_format,
+                currentIndex + 1,
+                size
             )
         } else {
             null

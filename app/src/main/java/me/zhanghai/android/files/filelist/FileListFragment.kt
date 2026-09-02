@@ -39,6 +39,7 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.view.GravityCompat
+import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.core.view.updatePaddingRelative
 import androidx.drawerlayout.widget.DrawerLayout
@@ -107,6 +108,7 @@ import me.zhanghai.android.files.util.addOnBackPressedCallback
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.asFileName
 import me.zhanghai.android.files.util.asFileNameOrNull
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.checkSelfPermission
 import me.zhanghai.android.files.util.copyText
 import me.zhanghai.android.files.util.create
@@ -137,6 +139,7 @@ import me.zhanghai.android.files.viewer.video.VideoViewerActivity
 
 class FileListFragment :
     Fragment(),
+    MenuProvider,
     BreadcrumbLayout.Listener,
     FileListAdapter.Listener,
     ConfirmReplaceFileDialogFragment.Listener,
@@ -183,7 +186,7 @@ class FileListFragment :
 
     private val viewModel by viewModels { { FileListViewModel() } }
 
-    private lateinit var binding: Binding
+    private var binding by autoCleared<Binding>()
 
     private lateinit var navigationFragment: NavigationFragment
 
@@ -210,8 +213,6 @@ class FileListFragment :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -222,9 +223,10 @@ class FileListFragment :
         .also { binding = it }
         .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
+        requireActivity().addMenuProvider(this, viewLifecycleOwner)
         if (savedInstanceState == null) {
             navigationFragment = NavigationFragment()
             childFragmentManager.commit { add(R.id.navigationFragment, navigationFragment) }
@@ -407,10 +409,8 @@ class FileListFragment :
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-
-        menuBinding = MenuBinding.inflate(menu, inflater)
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuBinding = MenuBinding.inflate(menu, menuInflater)
         menuBinding.viewSortItem.subMenu!!.setGroupDividerEnabledCompat(true)
         setUpSearchView()
     }
@@ -461,15 +461,13 @@ class FileListFragment :
         }
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu) {
-        super.onPrepareOptionsMenu(menu)
-
+    override fun onPrepareMenu(menu: Menu) {
         updateViewSortMenuItems()
         updateSelectAllMenuItem()
         updateShowHiddenFilesMenuItem()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean = when (menuItem.itemId) {
         android.R.id.home -> {
             binding.drawerLayout?.openDrawer(GravityCompat.START)
             if (binding.persistentDrawerLayout != null) {
@@ -586,7 +584,7 @@ class FileListFragment :
             true
         }
 
-        else -> super.onOptionsItemSelected(item)
+        else -> false
     }
 
     fun onKeyShortcut(keyCode: Int, event: KeyEvent): Boolean {

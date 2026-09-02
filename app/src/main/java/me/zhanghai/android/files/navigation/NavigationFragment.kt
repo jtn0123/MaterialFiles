@@ -15,10 +15,13 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import java8.nio.file.Path
 import me.zhanghai.android.files.databinding.NavigationFragmentBinding
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.startActivitySafe
 
-class NavigationFragment : Fragment(), NavigationItem.Listener {
-    private lateinit var binding: NavigationFragmentBinding
+class NavigationFragment :
+    Fragment(),
+    NavigationItem.Listener {
+    private var binding by autoCleared<NavigationFragmentBinding>()
 
     private lateinit var adapter: NavigationListAdapter
 
@@ -28,13 +31,12 @@ class NavigationFragment : Fragment(), NavigationItem.Listener {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        NavigationFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = NavigationFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         binding.recyclerView.setHasFixedSize(true)
         // TODO: Needed?

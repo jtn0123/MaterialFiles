@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputEditText
 import com.hierynomus.sshj.common.KeyDecryptionFailedException
+import java.net.URI
 import java8.nio.file.Path
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -31,6 +32,7 @@ import me.zhanghai.android.files.ui.UnfilteredArrayAdapter
 import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.args
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getTextArray
@@ -40,18 +42,18 @@ import me.zhanghai.android.files.util.launchSafe
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
-import java.net.URI
 
 class EditSftpServerFragment : Fragment() {
     private val openPrivateKeyFileLauncher = registerForActivityResult(
-        FileListActivity.OpenFileContract(), this::onOpenPrivateKeyFileResult
+        FileListActivity.OpenFileContract(),
+        this::onOpenPrivateKeyFileResult
     )
 
     private val args by args<Args>()
 
     private val viewModel by viewModels { { EditSftpServerViewModel() } }
 
-    private lateinit var binding: EditSftpServerFragmentBinding
+    private var binding by autoCleared<EditSftpServerFragmentBinding>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,10 +70,9 @@ class EditSftpServerFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        EditSftpServerFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = EditSftpServerFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -96,7 +97,8 @@ class EditSftpServerFragment : Fragment() {
         binding.pathEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.authenticationTypeEdit.setAdapter(
             UnfilteredArrayAdapter(
-                binding.authenticationTypeEdit.context, R.layout.dropdown_item,
+                binding.authenticationTypeEdit.context,
+                R.layout.dropdown_item,
                 objects = getTextArray(R.array.storage_edit_sftp_server_authentication_type_entries)
             )
         )
@@ -108,10 +110,12 @@ class EditSftpServerFragment : Fragment() {
         binding.usernameEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.privateKeyLayout.setEndIconOnClickListener { onOpenPrivateKeyFile() }
         binding.privateKeyEdit.hideTextInputLayoutErrorOnTextChange(
-            binding.privateKeyLayout, binding.privateKeyPasswordLayout
+            binding.privateKeyLayout,
+            binding.privateKeyPasswordLayout
         )
         binding.privateKeyPasswordEdit.hideTextInputLayoutErrorOnTextChange(
-            binding.privateKeyLayout, binding.privateKeyPasswordLayout
+            binding.privateKeyLayout,
+            binding.privateKeyPasswordLayout
         )
         binding.saveOrConnectAndAddButton.setText(
             if (args.server != null) {
@@ -153,6 +157,7 @@ class EditSftpServerFragment : Fragment() {
                         authenticationType = AuthenticationType.PASSWORD
                         binding.passwordEdit.setText(authentication.password)
                     }
+
                     is PublicKeyAuthentication -> {
                         authenticationType = AuthenticationType.PUBLIC_KEY
                         binding.privateKeyEdit.setText(authentication.privateKey)
@@ -222,10 +227,12 @@ class EditSftpServerFragment : Fragment() {
                     binding.privateKeyEdit.text = null
                 }
             }
+
             is ActionState.Success -> {
                 binding.privateKeyEdit.setText(state.result)
                 viewModel.finishReadingPrivateKeyFile()
             }
+
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.printStackTrace()
@@ -258,10 +265,12 @@ class EditSftpServerFragment : Fragment() {
                 binding.saveOrConnectAndAddButton.isEnabled = !isConnecting
                 binding.removeOrAddButton.isEnabled = !isConnecting
             }
+
             is ActionState.Success -> {
                 Storages.addOrReplace(state.argument)
                 finish()
             }
+
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.printStackTrace()
@@ -296,7 +305,8 @@ class EditSftpServerFragment : Fragment() {
         val port = binding.portEdit.text.toString().takeIfNotEmpty()
             .let { if (it != null) it.toIntOrNull() else Authority.DEFAULT_PORT }
         if (port == null) {
-            binding.portLayout.error = getString(R.string.storage_edit_sftp_server_port_error_invalid)
+            binding.portLayout.error =
+                getString(R.string.storage_edit_sftp_server_port_error_invalid)
             if (errorEdit == null) {
                 errorEdit = binding.portEdit
             }
@@ -316,6 +326,7 @@ class EditSftpServerFragment : Fragment() {
                 val password = binding.passwordEdit.text.toString()
                 PasswordAuthentication(password)
             }
+
             AuthenticationType.PUBLIC_KEY -> {
                 val privateKey = binding.privateKeyEdit.text.toString().takeIfNotEmpty()
                 val privateKeyPassword =

@@ -12,21 +12,21 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import me.zhanghai.android.files.databinding.FtpServerFragmentBinding
+import me.zhanghai.android.files.util.autoCleared
 
 class FtpServerFragment : Fragment() {
-    private lateinit var binding: FtpServerFragmentBinding
+    private var binding by autoCleared<FtpServerFragmentBinding>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        FtpServerFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = FtpServerFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         val activity = requireActivity() as AppCompatActivity
         activity.setSupportActionBar(binding.toolbar)

@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputEditText
 import com.hierynomus.smbj.auth.AuthenticationContext
+import java.net.URI
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.R
@@ -27,6 +28,7 @@ import me.zhanghai.android.files.ui.UnfilteredArrayAdapter
 import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.args
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getTextArray
@@ -36,14 +38,13 @@ import me.zhanghai.android.files.util.setResult
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
-import java.net.URI
 
 class EditSmbServerFragment : Fragment() {
     private val args by args<Args>()
 
     private val viewModel by viewModels { { EditSmbServerViewModel() } }
 
-    private lateinit var binding: EditSmbServerFragmentBinding
+    private var binding by autoCleared<EditSmbServerFragmentBinding>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,10 +58,9 @@ class EditSmbServerFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        EditSmbServerFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = EditSmbServerFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -85,7 +85,8 @@ class EditSmbServerFragment : Fragment() {
         binding.pathEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.authenticationTypeEdit.setAdapter(
             UnfilteredArrayAdapter(
-                binding.authenticationTypeEdit.context, R.layout.dropdown_item,
+                binding.authenticationTypeEdit.context,
+                R.layout.dropdown_item,
                 objects = getTextArray(R.array.storage_edit_smb_server_authentication_type_entries)
             )
         )
@@ -133,13 +134,15 @@ class EditSmbServerFragment : Fragment() {
                 }
                 when {
                     AuthenticationContext.guest().let {
-                        authority.username == it.username && authority.domain == it.domain
-                                && server.password == it.password.concatToString()
+                        authority.username == it.username && authority.domain == it.domain &&
+                            server.password == it.password.concatToString()
                     } -> authenticationType = AuthenticationType.GUEST
+
                     AuthenticationContext.anonymous().let {
-                        authority.username == it.username && authority.domain == it.domain
-                                && server.password == it.password.concatToString()
+                        authority.username == it.username && authority.domain == it.domain &&
+                            server.password == it.password.concatToString()
                     } -> authenticationType = AuthenticationType.ANONYMOUS
+
                     else -> {
                         authenticationType = AuthenticationType.PASSWORD
                         binding.usernameEdit.setText(authority.username)
@@ -170,12 +173,14 @@ class EditSmbServerFragment : Fragment() {
                 username = binding.usernameEdit.text.toString()
                 domain = binding.domainEdit.text.toString().takeIfNotEmpty()
             }
+
             AuthenticationType.GUEST -> {
                 AuthenticationContext.guest().let {
                     username = it.username
                     domain = it.domain
                 }
             }
+
             AuthenticationType.ANONYMOUS -> {
                 AuthenticationContext.anonymous().let {
                     username = it.username
@@ -235,11 +240,13 @@ class EditSmbServerFragment : Fragment() {
                 binding.saveOrConnectAndAddButton.isEnabled = !isConnecting
                 binding.removeOrAddButton.isEnabled = !isConnecting
             }
+
             is ActionState.Success -> {
                 Storages.addOrReplace(state.argument)
                 setResult(Activity.RESULT_OK)
                 finish()
             }
+
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.printStackTrace()
@@ -298,6 +305,7 @@ class EditSmbServerFragment : Fragment() {
                 domain = binding.domainEdit.text.toString().takeIfNotEmpty()
                 password = binding.passwordEdit.text.toString()
             }
+
             AuthenticationType.GUEST -> {
                 AuthenticationContext.guest().let {
                     username = it.username
@@ -305,6 +313,7 @@ class EditSmbServerFragment : Fragment() {
                     password = it.password.concatToString()
                 }
             }
+
             AuthenticationType.ANONYMOUS -> {
                 AuthenticationContext.anonymous().let {
                     username = it.username
@@ -322,10 +331,7 @@ class EditSmbServerFragment : Fragment() {
     }
 
     @Parcelize
-    class Args(
-        val server: SmbServer? = null,
-        val host: String? = null
-    ) : ParcelableArgs
+    class Args(val server: SmbServer? = null, val host: String? = null) : ParcelableArgs
 
     private enum class AuthenticationType {
         PASSWORD,

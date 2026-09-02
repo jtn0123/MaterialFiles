@@ -25,6 +25,7 @@ import me.zhanghai.android.files.navigation.BookmarkDirectory
 import me.zhanghai.android.files.navigation.EditBookmarkDirectoryDialogActivity
 import me.zhanghai.android.files.navigation.EditBookmarkDirectoryDialogFragment
 import me.zhanghai.android.files.ui.ScrollingViewOnApplyWindowInsetsListener
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createIntent
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.getDrawable
@@ -32,11 +33,13 @@ import me.zhanghai.android.files.util.launchSafe
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.startActivitySafe
 
-class BookmarkDirectoryListFragment : Fragment(), BookmarkDirectoryListAdapter.Listener {
+class BookmarkDirectoryListFragment :
+    Fragment(),
+    BookmarkDirectoryListAdapter.Listener {
     private val openPathLauncher =
         registerForActivityResult(FileListActivity.OpenDirectoryContract(), ::onOpenPathResult)
 
-    private lateinit var binding: BookmarkDirectoryListFragmentBinding
+    private var binding by autoCleared<BookmarkDirectoryListFragmentBinding>()
 
     private lateinit var adapter: BookmarkDirectoryListAdapter
     private lateinit var dragDropManager: RecyclerViewDragDropManager
@@ -46,19 +49,20 @@ class BookmarkDirectoryListFragment : Fragment(), BookmarkDirectoryListAdapter.L
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        BookmarkDirectoryListFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = BookmarkDirectoryListFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         val activity = requireActivity() as AppCompatActivity
         activity.setSupportActionBar(binding.toolbar)
         activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         binding.recyclerView.layoutManager = LinearLayoutManager(
-            activity, RecyclerView.VERTICAL, false
+            activity,
+            RecyclerView.VERTICAL,
+            false
         )
         adapter = BookmarkDirectoryListAdapter(this)
         dragDropManager = RecyclerViewDragDropManager().apply {
