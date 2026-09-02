@@ -6,6 +6,10 @@
 package me.zhanghai.android.files.provider.archive.archiver
 
 import androidx.preference.PreferenceManager
+import java.io.Closeable
+import java.io.IOException
+import java.io.InputStream
+import java.nio.charset.Charset
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.charset.StandardCharsets
 import java8.nio.file.Path
@@ -22,10 +26,6 @@ import me.zhanghai.android.files.provider.root.isRunningAsRoot
 import me.zhanghai.android.files.provider.root.rootContext
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.valueCompat
-import java.io.Closeable
-import java.io.IOException
-import java.io.InputStream
-import java.nio.charset.Charset
 
 object ArchiveReader {
     @Throws(IOException::class)
@@ -37,24 +37,7 @@ object ArchiveReader {
         val entries = mutableMapOf<Path, ReadArchive.Entry>()
         val rawEntries = readEntries(file, passwords)
         for (entry in rawEntries) {
-            var path = rootPath.resolve(entry.name)
-            // Normalize an absolute path to prevent path traversal attack.
-            if (!path.isAbsolute) {
-                // TODO: Will this actually happen?
-                throw AssertionError("Path must be absolute: $path")
-            }
-            if (path.nameCount > 0) {
-                path = path.normalize()
-                if (path.nameCount == 0) {
-                    // Don't allow a path to become the root path only after normalization.
-                    continue
-                }
-            } else {
-                if (!entry.isDirectory) {
-                    // Ignore a root path that's not a directory
-                    continue
-                }
-            }
+            val path = normalizeEntryPath(rootPath, entry.name, entry.isDirectory) ?: continue
             entries.getOrPut(path) { entry }
         }
         entries.getOrPut(rootPath) { createDirectoryEntry("") }
@@ -80,6 +63,36 @@ object ArchiveReader {
         return entries to tree
     }
 
+    /**
+     * Resolves an archive entry name under [rootPath] so that it can never escape the archive,
+     * or returns null when the entry should be ignored.
+     */
+    internal fun normalizeEntryPath(
+        rootPath: Path,
+        entryName: String,
+        isDirectory: Boolean
+    ): Path? {
+        var path = rootPath.resolve(entryName)
+        // Normalize an absolute path to prevent path traversal attack.
+        if (!path.isAbsolute) {
+            // TODO: Will this actually happen?
+            throw AssertionError("Path must be absolute: $path")
+        }
+        if (path.nameCount > 0) {
+            path = path.normalize()
+            if (path.nameCount == 0) {
+                // Don't allow a path to become the root path only after normalization.
+                return null
+            }
+        } else {
+            if (!isDirectory) {
+                // Ignore a root path that's not a directory
+                return null
+            }
+        }
+        return path
+    }
+
     private fun createDirectoryEntry(name: String): ReadArchive.Entry {
         require(!name.endsWith("/")) { "name $name should not end with a slash" }
         return ReadArchive.Entry(
@@ -102,7 +115,11 @@ object ArchiveReader {
     }
 
     @Throws(IOException::class)
-    fun newInputStream(file: Path, passwords: List<String>, entry: ReadArchive.Entry): InputStream? {
+    fun newInputStream(
+        file: Path,
+        passwords: List<String>,
+        entry: ReadArchive.Entry
+    ): InputStream? {
         val charset = archiveFileNameCharset
         val (archive, closeable) = openArchive(file, passwords)
         var successful = false
@@ -171,17 +188,15 @@ object ArchiveReader {
             CacheSizeNonForceableSeekableByteChannel(channel)
         }
 
-    private class CacheSizeNonForceableSeekableByteChannel(
-        channel: SeekableByteChannel
-    ) : DelegateNonForceableSeekableByteChannel(channel) {
+    private class CacheSizeNonForceableSeekableByteChannel(channel: SeekableByteChannel) :
+        DelegateNonForceableSeekableByteChannel(channel) {
         private val size: Long by lazy { super.size() }
 
         override fun size(): Long = size
     }
 
-    private class CacheSizeForceableSeekableByteChannel(
-        channel: SeekableByteChannel
-    ) : DelegateForceableSeekableByteChannel(channel) {
+    private class CacheSizeForceableSeekableByteChannel(channel: SeekableByteChannel) :
+        DelegateForceableSeekableByteChannel(channel) {
         private val size: Long by lazy { super.size() }
 
         override fun size(): Long = size
@@ -220,10 +235,8 @@ object ArchiveReader {
         }
     }
 
-    private class CloseableInputStream(
-        inputStream: InputStream,
-        private val closeable: Closeable
-    ) : DelegateInputStream(inputStream) {
+    private class CloseableInputStream(inputStream: InputStream, private val closeable: Closeable) :
+        DelegateInputStream(inputStream) {
         @Throws(IOException::class)
         override fun close() {
             super.close()
