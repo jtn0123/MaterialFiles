@@ -19,7 +19,7 @@ jobs:
         java-version: '21'
         cache: 'gradle'
     - name: Build with Gradle
-      run: ./gradlew assembleDebug lintVitalRelease
+      run: ./gradlew assembleDebug testDebugUnitTest lintVitalRelease
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
