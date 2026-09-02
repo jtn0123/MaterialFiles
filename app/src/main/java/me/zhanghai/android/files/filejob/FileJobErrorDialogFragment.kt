@@ -43,6 +43,8 @@ import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.viewModels
 
+private typealias FileJobErrorListener = (FileJobErrorAction, Boolean) -> Unit
+
 class FileJobErrorDialogFragment : AppCompatDialogFragment() {
     private val args by args<Args>()
 
@@ -169,7 +171,7 @@ class FileJobErrorDialogFragment : AppCompatDialogFragment() {
         val positiveButtonText: CharSequence?,
         val negativeButtonText: CharSequence?,
         val neutralButtonText: CharSequence?,
-        val listener: @WriteWith<ListenerParceler>() (FileJobErrorAction, Boolean) -> Unit
+        val listener: @WriteWith<ListenerParceler> FileJobErrorListener
     ) : ParcelableArgs {
         object ListenerParceler : Parceler<(FileJobErrorAction, Boolean) -> Unit> {
             override fun create(parcel: Parcel): (FileJobErrorAction, Boolean) -> Unit =
