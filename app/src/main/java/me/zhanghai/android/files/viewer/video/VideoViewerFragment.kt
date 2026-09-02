@@ -15,6 +15,7 @@ import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.Rect
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
@@ -41,6 +42,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -120,7 +122,8 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             }
             val player = player ?: return
             when (intent.getIntExtra(EXTRA_PICTURE_IN_PICTURE_CONTROL, 0)) {
-                CONTROL_PLAY -> player.play()
+                // Like the play button, this restarts a video that has played to the end.
+                CONTROL_PLAY -> Util.handlePlayButtonAction(player)
                 CONTROL_PAUSE -> player.pause()
                 CONTROL_PREVIOUS -> player.seekToPreviousMediaItem()
                 CONTROL_NEXT -> player.seekToNextMediaItem()
@@ -499,6 +502,9 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         PictureInPictureParams.Builder()
             .apply {
                 aspectRatio()?.let { setAspectRatio(it) }
+                // Lets the system animate from where the video is instead of the whole window.
+                Rect().takeIf { binding.playerView.getGlobalVisibleRect(it) }
+                    ?.let { setSourceRectHint(it) }
                 setActions(createPictureInPictureActions())
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     // Unlike onUserLeaveHint(), this animates smoothly and works with gesture
