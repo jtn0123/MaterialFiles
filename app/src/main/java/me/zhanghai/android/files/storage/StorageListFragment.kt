@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -66,7 +67,8 @@ class StorageListFragment :
         binding.recyclerView.adapter = wrappedAdapter
         binding.recyclerView.itemAnimator = DraggableItemAnimator()
         dragDropManager.attachRecyclerView(binding.recyclerView)
-        binding.recyclerView.setOnApplyWindowInsetsListener(
+        ViewCompat.setOnApplyWindowInsetsListener(
+            binding.recyclerView,
             ScrollingViewOnApplyWindowInsetsListener(binding.recyclerView)
         )
         binding.fab.setOnClickListener { onAddStorage() }

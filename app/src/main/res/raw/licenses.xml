@@ -113,13 +113,6 @@
     </notice>
 
     <notice>
-        <name>Insetter</name>
-        <url>https://github.com/chrisbanes/insetter</url>
-        <copyright>Copyright 2019 Google LLC</copyright>
-        <license>Apache Software License 2.0</license>
-    </notice>
-
-    <notice>
         <name>RikkaX</name>
         <url>https://github.com/RikkaApps/RikkaX</url>
         <copyright>Copyright 2017 Rikka</copyright>

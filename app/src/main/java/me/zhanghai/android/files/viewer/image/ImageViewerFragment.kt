@@ -20,7 +20,6 @@ import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.viewpager2.widget.ViewPager2
-import dev.chrisbanes.insetter.applySystemWindowInsetsToPadding
 import java.io.IOException
 import java8.nio.file.Path
 import kotlinx.parcelize.Parcelize
@@ -33,6 +32,7 @@ import me.zhanghai.android.files.ui.DepthPageTransformer
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableListParceler
 import me.zhanghai.android.files.util.ParcelableState
+import me.zhanghai.android.files.util.applySystemWindowInsetsToPadding
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createSendImageIntent

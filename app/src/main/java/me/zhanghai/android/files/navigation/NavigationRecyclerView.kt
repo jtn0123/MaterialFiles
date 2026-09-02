@@ -12,6 +12,7 @@ import android.util.AttributeSet
 import android.view.WindowInsets
 import androidx.annotation.AttrRes
 import androidx.core.graphics.withSave
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.RecyclerView
 import me.zhanghai.android.files.R
@@ -21,6 +22,8 @@ import me.zhanghai.android.files.util.getDimensionPixelSize
 import me.zhanghai.android.files.util.getDimensionPixelSizeByAttr
 import me.zhanghai.android.files.util.getDrawableByAttr
 import me.zhanghai.android.files.util.isLayoutDirectionRtl
+import me.zhanghai.android.files.util.replaceSystemBarsInsets
+import me.zhanghai.android.files.util.systemBarsInsets
 
 class NavigationRecyclerView : RecyclerView {
     private val verticalPadding = context.getDimensionPixelSize(
@@ -58,32 +61,40 @@ class NavigationRecyclerView : RecyclerView {
                 width = width.coerceAtMost(MeasureSpec.getSize(widthSpec))
                 widthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY)
             }
+
             MeasureSpec.UNSPECIFIED ->
                 widthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY)
+
             MeasureSpec.EXACTLY -> {}
         }
         super.onMeasure(widthSpec, heightSpec)
     }
 
-    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
+    override fun onApplyWindowInsets(windowInsets: WindowInsets): WindowInsets {
+        val insets = WindowInsetsCompat.toWindowInsetsCompat(windowInsets, this)
+        val systemBarsInsets = insets.systemBarsInsets
         val isLayoutDirectionRtl = isLayoutDirectionRtl
         insetStart = if (isLayoutDirectionRtl) {
-            insets.systemWindowInsetRight
+            systemBarsInsets.right
         } else {
-            insets.systemWindowInsetLeft
+            systemBarsInsets.left
         }
         val paddingLeft = if (isLayoutDirectionRtl) 0 else insetStart
         val paddingRight = if (isLayoutDirectionRtl) insetStart else 0
-        insetTop = insets.systemWindowInsetTop
+        insetTop = systemBarsInsets.top
         setPadding(
-            paddingLeft, verticalPadding + insetTop, paddingRight,
-            verticalPadding + insets.systemWindowInsetBottom
+            paddingLeft,
+            verticalPadding + insetTop,
+            paddingRight,
+            verticalPadding + systemBarsInsets.bottom
         )
         requestLayout()
-        return insets.replaceSystemWindowInsets(
-            insets.systemWindowInsetLeft - paddingLeft, 0,
-            insets.systemWindowInsetRight - paddingRight, 0
-        )
+        return insets.replaceSystemBarsInsets(
+            systemBarsInsets.left - paddingLeft,
+            0,
+            systemBarsInsets.right - paddingRight,
+            0
+        ).toWindowInsets()!!
     }
 
     override fun draw(canvas: Canvas) {

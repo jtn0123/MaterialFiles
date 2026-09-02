@@ -11,6 +11,7 @@ import androidx.annotation.AttrRes
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.google.android.material.appbar.OnWindowInsetChangedAppBarLayout
+import me.zhanghai.android.files.util.systemBarsInsets
 
 open class FitsSystemWindowsAppBarLayout : OnWindowInsetChangedAppBarLayout {
     constructor(context: Context) : super(context)
@@ -28,10 +29,8 @@ open class FitsSystemWindowsAppBarLayout : OnWindowInsetChangedAppBarLayout {
     }
 
     override fun onWindowInsetChanged(insets: WindowInsetsCompat): WindowInsetsCompat {
-        val windowInsets = insets.toWindowInsets()!!
-        updatePadding(
-            left = windowInsets.systemWindowInsetLeft, right = windowInsets.systemWindowInsetRight
-        )
+        val systemBarsInsets = insets.systemBarsInsets
+        updatePadding(left = systemBarsInsets.left, right = systemBarsInsets.right)
         return super.onWindowInsetChanged(insets)
     }
 }

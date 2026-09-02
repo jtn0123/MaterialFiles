@@ -14,10 +14,14 @@ import android.view.WindowInsets
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
 import androidx.core.content.res.use
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.children
 import androidx.core.view.isInvisible
 import androidx.customview.widget.ViewDragHelper
 import me.zhanghai.android.files.util.layoutInStatusBar
+import me.zhanghai.android.files.util.replaceSystemBarsInsets
+import me.zhanghai.android.files.util.systemBarsInsets
 
 /**
  * @see PersistentDrawerLayout
@@ -31,7 +35,7 @@ class PersistentBarLayout @JvmOverloads constructor(
     private val topDragger = ViewDragHelper.create(this, ViewDragCallback(Gravity.TOP))
     private val bottomDragger = ViewDragHelper.create(this, ViewDragCallback(Gravity.BOTTOM))
 
-    private var lastInsets: WindowInsets? = null
+    private var lastInsets: WindowInsetsCompat? = null
 
     init {
         if (fitsSystemWindows) {
@@ -39,34 +43,41 @@ class PersistentBarLayout @JvmOverloads constructor(
         }
     }
 
-    override fun dispatchApplyWindowInsets(insets: WindowInsets): WindowInsets {
+    override fun dispatchApplyWindowInsets(windowInsets: WindowInsets): WindowInsets {
         if (!fitsSystemWindows) {
-            return insets
+            return windowInsets
         }
+        val insets = WindowInsetsCompat.toWindowInsetsCompat(windowInsets, this)
         for (child in children) {
             if (isBarView(child)) {
                 if (isTopBarView(child)) {
-                    child.dispatchApplyWindowInsets(
-                        insets.replaceSystemWindowInsets(
-                            insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
-                            insets.systemWindowInsetRight, 0
+                    ViewCompat.dispatchApplyWindowInsets(
+                        child,
+                        insets.replaceSystemBarsInsets(
+                            insets.systemBarsInsets.left,
+                            insets.systemBarsInsets.top,
+                            insets.systemBarsInsets.right,
+                            0
                         )
                     )
                 } else {
-                    child.dispatchApplyWindowInsets(
-                        insets.replaceSystemWindowInsets(
-                            insets.systemWindowInsetLeft, 0, insets.systemWindowInsetRight,
-                            insets.systemWindowInsetBottom
+                    ViewCompat.dispatchApplyWindowInsets(
+                        child,
+                        insets.replaceSystemBarsInsets(
+                            insets.systemBarsInsets.left,
+                            0,
+                            insets.systemBarsInsets.right,
+                            insets.systemBarsInsets.bottom
                         )
                     )
                 }
             } else if (isFillView(child)) {
-                child.dispatchApplyWindowInsets(insets)
+                ViewCompat.dispatchApplyWindowInsets(child, insets)
             }
         }
         lastInsets = insets
         updateContentViewsWindowInsets()
-        return insets.consumeSystemWindowInsets()
+        return WindowInsetsCompat.CONSUMED.toWindowInsets()!!
     }
 
     private fun updateContentViewsWindowInsets() {
@@ -74,22 +85,24 @@ class PersistentBarLayout @JvmOverloads constructor(
         for (child in children) {
             if (isBarView(child)) {
                 val childLayoutParams = child.layoutParams as LayoutParams
-                val childRange = (childLayoutParams.topMargin + child.measuredHeight
-                    + childLayoutParams.bottomMargin)
+                val childRange = (
+                    childLayoutParams.topMargin + child.measuredHeight +
+                        childLayoutParams.bottomMargin
+                    )
                 val childConsumedInset = (childRange * childLayoutParams.offset).toInt()
                 contentInsets = if (isTopBarView(child)) {
-                    contentInsets.replaceSystemWindowInsets(
-                        contentInsets.systemWindowInsetLeft,
-                        (contentInsets.systemWindowInsetTop - childConsumedInset).coerceAtLeast(0),
-                        contentInsets.systemWindowInsetRight,
-                        contentInsets.systemWindowInsetBottom
+                    contentInsets.replaceSystemBarsInsets(
+                        contentInsets.systemBarsInsets.left,
+                        (contentInsets.systemBarsInsets.top - childConsumedInset).coerceAtLeast(0),
+                        contentInsets.systemBarsInsets.right,
+                        contentInsets.systemBarsInsets.bottom
                     )
                 } else {
-                    contentInsets.replaceSystemWindowInsets(
-                        contentInsets.systemWindowInsetLeft,
-                        contentInsets.systemWindowInsetTop,
-                        contentInsets.systemWindowInsetRight,
-                        (contentInsets.systemWindowInsetBottom - childConsumedInset)
+                    contentInsets.replaceSystemBarsInsets(
+                        contentInsets.systemBarsInsets.left,
+                        contentInsets.systemBarsInsets.top,
+                        contentInsets.systemBarsInsets.right,
+                        (contentInsets.systemBarsInsets.bottom - childConsumedInset)
                             .coerceAtLeast(0)
                     )
                 }
@@ -97,7 +110,7 @@ class PersistentBarLayout @JvmOverloads constructor(
         }
         for (child in children) {
             if (isContentView(child)) {
-                child.dispatchApplyWindowInsets(contentInsets)
+                ViewCompat.dispatchApplyWindowInsets(child, contentInsets)
             }
         }
     }
@@ -151,17 +164,23 @@ class PersistentBarLayout @JvmOverloads constructor(
                 }
                 val childLayoutParams = child.layoutParams as LayoutParams
                 val childWidthSpec = getChildMeasureSpec(
-                    widthMeasureSpec, childLayoutParams.leftMargin + childLayoutParams.rightMargin,
+                    widthMeasureSpec,
+                    childLayoutParams.leftMargin + childLayoutParams.rightMargin,
                     childLayoutParams.width
                 )
                 val childHeightSpec = getChildMeasureSpec(
-                    heightMeasureSpec, childLayoutParams.topMargin + childLayoutParams.bottomMargin,
+                    heightMeasureSpec,
+                    childLayoutParams.topMargin + childLayoutParams.bottomMargin,
                     childLayoutParams.height
                 )
                 child.measure(childWidthSpec, childHeightSpec)
-            } else check(isContentView(child)) {
-                ("Child $child does not have a valid layout_gravity - must be Gravity.LEFT,"
-                    + " Gravity.RIGHT, Gravity.NO_GRAVITY or Gravity.FILL")
+            } else {
+                check(isContentView(child)) {
+                    (
+                        "Child $child does not have a valid layout_gravity - must be" +
+                            " Gravity.LEFT, Gravity.RIGHT, Gravity.NO_GRAVITY or Gravity.FILL"
+                        )
+                }
             }
         }
         updateContentViewsWindowInsets()
@@ -177,8 +196,10 @@ class PersistentBarLayout @JvmOverloads constructor(
             }
             if (isBarView(child)) {
                 val childLayoutParams = child.layoutParams as LayoutParams
-                val childRange = (childLayoutParams.topMargin + child.measuredHeight
-                    + childLayoutParams.bottomMargin)
+                val childRange = (
+                    childLayoutParams.topMargin + child.measuredHeight +
+                        childLayoutParams.bottomMargin
+                    )
                 contentHeight -= (childRange * childLayoutParams.offset).toInt()
             }
         }
@@ -212,37 +233,54 @@ class PersistentBarLayout @JvmOverloads constructor(
                 val childLayoutParams = child.layoutParams as LayoutParams
                 val childTop = computeBarViewTop(child)
                 val childHorizontalGravity = Gravity.getAbsoluteGravity(
-                    childLayoutParams.gravity, layoutDirection
+                    childLayoutParams.gravity,
+                    layoutDirection
                 ) and Gravity.HORIZONTAL_GRAVITY_MASK
                 val width = right - left
                 when (childHorizontalGravity) {
                     Gravity.LEFT -> child.layout(
-                        childLayoutParams.leftMargin, childTop,
-                        childLayoutParams.leftMargin + childWidth, childTop + childHeight
+                        childLayoutParams.leftMargin,
+                        childTop,
+                        childLayoutParams.leftMargin + childWidth,
+                        childTop + childHeight
                     )
+
                     Gravity.RIGHT -> {
                         val childRight = width - childLayoutParams.rightMargin
                         child.layout(
-                            childRight - childWidth, childTop, childRight, childTop + childHeight
+                            childRight - childWidth,
+                            childTop,
+                            childRight,
+                            childTop + childHeight
                         )
                     }
+
                     Gravity.CENTER_HORIZONTAL -> {
-                        val childLeft = ((width - childWidth) / 2 + childLayoutParams.leftMargin
-                            - childLayoutParams.rightMargin)
+                        val childLeft = (
+                            (width - childWidth) / 2 + childLayoutParams.leftMargin -
+                                childLayoutParams.rightMargin
+                            )
                         child.layout(
-                            childLeft, childTop, childLeft + childWidth, childTop + childHeight
+                            childLeft,
+                            childTop,
+                            childLeft + childWidth,
+                            childTop + childHeight
                         )
                     }
+
                     else -> child.layout(
-                        childLayoutParams.leftMargin, childTop,
-                        childLayoutParams.leftMargin + childWidth, childTop + childHeight
+                        childLayoutParams.leftMargin,
+                        childTop,
+                        childLayoutParams.leftMargin + childWidth,
+                        childTop + childHeight
                     )
                 }
                 child.isInvisible = childLayoutParams.offset <= 0
             } else if (isFillView(child)) {
                 val childLayoutParams = child.layoutParams as LayoutParams
                 child.layout(
-                    childLayoutParams.leftMargin, childLayoutParams.topMargin,
+                    childLayoutParams.leftMargin,
+                    childLayoutParams.topMargin,
                     childLayoutParams.leftMargin + child.measuredWidth,
                     childLayoutParams.topMargin + child.measuredHeight
                 )
@@ -253,14 +291,20 @@ class PersistentBarLayout @JvmOverloads constructor(
 
     private fun computeBarViewTop(barView: View): Int {
         val childLayoutParams = barView.layoutParams as LayoutParams
-        val childRange = (childLayoutParams.topMargin + barView.measuredHeight
-            + childLayoutParams.bottomMargin)
+        val childRange = (
+            childLayoutParams.topMargin + barView.measuredHeight +
+                childLayoutParams.bottomMargin
+            )
         return if (isTopBarView(barView)) {
-            (-childRange + (childRange * childLayoutParams.offset).toInt()
-                + childLayoutParams.topMargin)
+            (
+                -childRange + (childRange * childLayoutParams.offset).toInt() +
+                    childLayoutParams.topMargin
+                )
         } else {
-            (measuredHeight - (childRange * childLayoutParams.offset).toInt()
-                + childLayoutParams.bottomMargin)
+            (
+                measuredHeight - (childRange * childLayoutParams.offset).toInt() +
+                    childLayoutParams.bottomMargin
+                )
         }
     }
 
@@ -285,7 +329,8 @@ class PersistentBarLayout @JvmOverloads constructor(
                 val childLayoutParams = child.layoutParams as LayoutParams
                 val childTop = contentTop + childLayoutParams.topMargin
                 child.layout(
-                    childLayoutParams.leftMargin, childTop,
+                    childLayoutParams.leftMargin,
+                    childTop,
                     childLayoutParams.leftMargin + child.measuredWidth,
                     childTop + child.measuredHeight
                 )
@@ -298,12 +343,11 @@ class PersistentBarLayout @JvmOverloads constructor(
 
     override fun generateLayoutParams(
         layoutParams: ViewGroup.LayoutParams
-    ): ViewGroup.LayoutParams =
-        when (layoutParams) {
-            is LayoutParams -> LayoutParams(layoutParams)
-            is MarginLayoutParams -> LayoutParams(layoutParams)
-            else -> LayoutParams(layoutParams)
-        }
+    ): ViewGroup.LayoutParams = when (layoutParams) {
+        is LayoutParams -> LayoutParams(layoutParams)
+        is MarginLayoutParams -> LayoutParams(layoutParams)
+        else -> LayoutParams(layoutParams)
+    }
 
     override fun generateDefaultLayoutParams(): ViewGroup.LayoutParams =
         LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -337,7 +381,9 @@ class PersistentBarLayout @JvmOverloads constructor(
                 topDragger.smoothSlideViewTo(barView, barView.left, 0)
             } else {
                 bottomDragger.smoothSlideViewTo(
-                    barView, barView.left, height - barView.height - childLayoutParams.bottomMargin
+                    barView,
+                    barView.left,
+                    height - barView.height - childLayoutParams.bottomMargin
                 )
             }
         } else {
@@ -367,7 +413,9 @@ class PersistentBarLayout @JvmOverloads constructor(
         } else if (animate) {
             if (isTopBarView(barView)) {
                 topDragger.smoothSlideViewTo(
-                    barView, barView.left, -barView.height - childLayoutParams.bottomMargin
+                    barView,
+                    barView.left,
+                    -barView.height - childLayoutParams.bottomMargin
                 )
             } else {
                 bottomDragger.smoothSlideViewTo(barView, barView.left, height)
@@ -435,27 +483,24 @@ class PersistentBarLayout @JvmOverloads constructor(
         return verticalGravity == Gravity.TOP
     }
 
-    private fun isContentView(child: View): Boolean {
-        return getChildGravity(child) == Gravity.NO_GRAVITY
-    }
+    private fun isContentView(child: View): Boolean = getChildGravity(child) == Gravity.NO_GRAVITY
 
-    private fun isFillView(child: View): Boolean {
-        return getChildGravity(child) == Gravity.FILL
-    }
+    private fun isFillView(child: View): Boolean = getChildGravity(child) == Gravity.FILL
 
-    private fun getChildGravity(child: View): Int {
-        return (child.layoutParams as LayoutParams).gravity
-    }
+    private fun getChildGravity(child: View): Int = (child.layoutParams as LayoutParams).gravity
 
-    private fun getChildVerticalGravity(child: View): Int {
-        return getChildGravity(child) and Gravity.VERTICAL_GRAVITY_MASK
-    }
+    private fun getChildVerticalGravity(child: View): Int =
+        getChildGravity(child) and Gravity.VERTICAL_GRAVITY_MASK
 
     private inner class ViewDragCallback(private val gravity: Int) : ViewDragHelper.Callback() {
         override fun tryCaptureView(child: View, pointerId: Int): Boolean = false
 
         override fun onViewPositionChanged(
-            changedView: View, left: Int, top: Int, dx: Int, dy: Int
+            changedView: View,
+            left: Int,
+            top: Int,
+            dx: Int,
+            dy: Int
         ) {
             val childRange = getViewVerticalDragRange(changedView)
             val childLayoutParams = changedView.layoutParams as LayoutParams
@@ -464,8 +509,10 @@ class PersistentBarLayout @JvmOverloads constructor(
                     .toFloat() / childRange
             } else {
                 val height = height
-                childLayoutParams.offset = ((childLayoutParams.topMargin + height - top).toFloat()
-                    / childRange)
+                childLayoutParams.offset = (
+                    (childLayoutParams.topMargin + height - top).toFloat() /
+                        childRange
+                    )
             }
             changedView.isInvisible = childLayoutParams.offset <= 0
             updateContentViewsWindowInsets()

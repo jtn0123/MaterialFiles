@@ -47,7 +47,6 @@ import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import dev.chrisbanes.insetter.applySystemWindowInsetsToPadding
 import java.io.IOException
 import java8.nio.file.Path
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +65,7 @@ import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableListParceler
 import me.zhanghai.android.files.util.ParcelableState
+import me.zhanghai.android.files.util.applySystemWindowInsetsToPadding
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createSendStreamIntent

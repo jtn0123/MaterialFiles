@@ -17,23 +17,29 @@ import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout.AttachedBehavior
-import androidx.core.graphics.Insets
 import androidx.core.view.ScrollingView
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import com.google.android.material.appbar.AppBarLayout.ScrollingViewBehavior
 import me.zhanghai.android.files.util.layoutInNavigation
+import me.zhanghai.android.files.util.systemBarsInsets
+import me.zhanghai.android.files.util.systemBarsInsetsOf
 
-class CoordinatorScrollingLinearLayout : LinearLayout, AttachedBehavior {
-    private var bottomInsets: WindowInsets? = null
+class CoordinatorScrollingLinearLayout :
+    LinearLayout,
+    AttachedBehavior {
+    private var bottomInsets: WindowInsetsCompat? = null
 
     constructor(context: Context) : super(context)
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(
@@ -52,11 +58,12 @@ class CoordinatorScrollingLinearLayout : LinearLayout, AttachedBehavior {
     }
 
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        updatePadding(left = insets.systemWindowInsetLeft, right = insets.systemWindowInsetRight)
-        bottomInsets = WindowInsetsCompat.Builder()
-            .setSystemWindowInsets(Insets.of(0, 0, 0, insets.systemWindowInsetBottom))
-            .build()
-            .toWindowInsets()
+        val systemBarsInsets = WindowInsetsCompat.toWindowInsetsCompat(
+            insets,
+            this
+        ).systemBarsInsets
+        updatePadding(left = systemBarsInsets.left, right = systemBarsInsets.right)
+        bottomInsets = systemBarsInsetsOf(0, 0, 0, systemBarsInsets.bottom)
         requestLayout()
         return insets
     }
@@ -70,13 +77,13 @@ class CoordinatorScrollingLinearLayout : LinearLayout, AttachedBehavior {
                 val scrollingChildView = scrollingView?.let { findChildView(it) }
                 if (childView == scrollingChildView) {
                     if (scrollingView.fitsSystemWindows) {
-                        scrollingView.onApplyWindowInsets(bottomInsets)
+                        ViewCompat.onApplyWindowInsets(scrollingView, bottomInsets)
                     } else {
-                        scrollingView.updatePadding(bottom = bottomInsets.systemWindowInsetBottom)
+                        scrollingView.updatePadding(bottom = bottomInsets.systemBarsInsets.bottom)
                     }
                 } else {
                     childView.updateLayoutParams<MarginLayoutParams> {
-                        bottomMargin = bottomInsets.systemWindowInsetBottom
+                        bottomMargin = bottomInsets.systemBarsInsets.bottom
                     }
                 }
             }
@@ -123,18 +130,26 @@ class CoordinatorScrollingLinearLayout : LinearLayout, AttachedBehavior {
             heightUsed: Int
         ): Boolean {
             var parentHeightMeasureSpec = parentHeightMeasureSpec
+
             @SuppressLint("RestrictedApi")
             val parentInsets = parent.lastWindowInsets
             if (parentInsets != null) {
-                val parentHeightSize = (MeasureSpec.getSize(parentHeightMeasureSpec)
-                    - parentInsets.systemWindowInsetTop - parentInsets.systemWindowInsetBottom)
+                val parentHeightSize = (
+                    MeasureSpec.getSize(parentHeightMeasureSpec) -
+                        parentInsets.systemBarsInsets.top - parentInsets.systemBarsInsets.bottom
+                    )
                 val parentHeightMode = MeasureSpec.getMode(parentHeightMeasureSpec)
                 parentHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
-                    parentHeightSize, parentHeightMode
+                    parentHeightSize,
+                    parentHeightMode
                 )
             }
             return super.onMeasureChild(
-                parent, child, parentWidthMeasureSpec, widthUsed, parentHeightMeasureSpec,
+                parent,
+                child,
+                parentWidthMeasureSpec,
+                widthUsed,
+                parentHeightMeasureSpec,
                 heightUsed
             )
         }

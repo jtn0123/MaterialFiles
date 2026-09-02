@@ -40,6 +40,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.MenuProvider
+import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePaddingRelative
 import androidx.drawerlayout.widget.DrawerLayout
@@ -269,7 +270,8 @@ class FileListFragment :
         adapter = FileListAdapter(this)
         binding.recyclerView.adapter = adapter
         val fastScroller = ThemedFastScroller.create(binding.recyclerView)
-        binding.recyclerView.setOnApplyWindowInsetsListener(
+        ViewCompat.setOnApplyWindowInsetsListener(
+            binding.recyclerView,
             ScrollingViewOnApplyWindowInsetsListener(binding.recyclerView, fastScroller)
         )
         binding.speedDialView.inflate(R.menu.file_list_speed_dial)
