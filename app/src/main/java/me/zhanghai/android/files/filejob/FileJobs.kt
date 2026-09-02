@@ -14,6 +14,10 @@ import android.widget.Toast
 import androidx.annotation.AnyRes
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
+import java.io.ByteArrayInputStream
+import java.io.File
+import java.io.IOException
+import java.io.InterruptedIOException
 import java8.nio.file.CopyOption
 import java8.nio.file.DirectoryIteratorException
 import java8.nio.file.FileAlreadyExistsException
@@ -27,6 +31,8 @@ import java8.nio.file.SimpleFileVisitor
 import java8.nio.file.StandardCopyOption
 import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.BasicFileAttributes
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.runBlocking
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.BackgroundActivityStarter
@@ -89,33 +95,22 @@ import me.zhanghai.android.files.util.getQuantityString
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.toEnumSet
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.withChooser
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.IOException
-import java.io.InterruptedIOException
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
-fun FileJob.getString(@StringRes stringRes: Int): String {
-    return service.getString(stringRes)
-}
+fun FileJob.getString(@StringRes stringRes: Int): String = service.getString(stringRes)
 
-fun FileJob.getString(@StringRes stringRes: Int, vararg formatArguments: Any?): String {
-    return service.getString(stringRes, *formatArguments)
-}
+fun FileJob.getString(@StringRes stringRes: Int, vararg formatArguments: Any?): String =
+    service.getString(stringRes, *formatArguments)
 
-fun FileJob.getQuantityString(@PluralsRes pluralRes: Int, quantity: Int): String {
-    return service.getQuantityString(pluralRes, quantity)
-}
+fun FileJob.getQuantityString(@PluralsRes pluralRes: Int, quantity: Int): String =
+    service.getQuantityString(pluralRes, quantity)
 
 fun FileJob.getQuantityString(
     @PluralsRes pluralRes: Int,
     quantity: Int,
     vararg formatArguments: Any?
-): String {
-    return service.getQuantityString(pluralRes, quantity, *formatArguments)
-}
+): String = service.getQuantityString(pluralRes, quantity, *formatArguments)
 
 private fun FileJob.postNotification(
     title: CharSequence,
@@ -142,10 +137,15 @@ private fun FileJob.postNotification(
                 pendingIntentFlags = pendingIntentFlags or PendingIntent.FLAG_IMMUTABLE
             }
             val pendingIntent = PendingIntent.getBroadcast(
-                service, id + 1, intent, pendingIntentFlags
+                service,
+                id + 1,
+                intent,
+                pendingIntentFlags
             )
             addAction(
-                R.drawable.close_icon_white_24dp, getString(android.R.string.cancel), pendingIntent
+                R.drawable.close_icon_white_24dp,
+                getString(android.R.string.cancel),
+                pendingIntent
             )
         }
     }.build()
@@ -168,12 +168,11 @@ private fun FileJob.showToast(text: CharSequence, duration: Int = Toast.LENGTH_S
     }
 }
 
-private fun FileJob.getFileName(path: Path): String =
-    if (path.isAbsolute && path.nameCount == 0) {
-        path.fileSystem.separator
-    } else {
-        path.fileName.toString()
-    }
+private fun FileJob.getFileName(path: Path): String = if (path.isAbsolute && path.nameCount == 0) {
+    path.fileSystem.separator
+} else {
+    path.fileName.toString()
+}
 
 private fun FileJob.getTargetFileName(source: Path): Path {
     if (source.isArchivePath) {
@@ -240,39 +239,44 @@ private fun FileJob.throwIfInterrupted() {
 private fun FileJob.scan(sources: List<Path?>, @PluralsRes notificationTitleRes: Int): ScanInfo {
     val scanInfo = ScanInfo()
     for (source in sources) {
-        Files.walkFileTree(source, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult {
-                scanPath(attributes, scanInfo, notificationTitleRes)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+        Files.walkFileTree(
+            source,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    scanPath(attributes, scanInfo, notificationTitleRes)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                scanPath(attributes, scanInfo, notificationTitleRes)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    scanPath(attributes, scanInfo, notificationTitleRes)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
             }
-        })
+        )
     }
     postScanNotification(scanInfo, notificationTitleRes)
     return scanInfo
 }
 
 @Throws(IOException::class)
-private fun FileJob.scan(source: Path, @PluralsRes notificationTitleRes: Int): ScanInfo {
-    return scan(listOf(source), notificationTitleRes)
-}
+private fun FileJob.scan(source: Path, @PluralsRes notificationTitleRes: Int): ScanInfo =
+    scan(listOf(source), notificationTitleRes)
 
 @Throws(IOException::class)
 private fun FileJob.scan(
@@ -285,7 +289,8 @@ private fun FileJob.scan(
     }
     val scanInfo = ScanInfo()
     val attributes = source.readAttributes(
-        BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS
+        BasicFileAttributes::class.java,
+        LinkOption.NOFOLLOW_LINKS
     )
     scanPath(attributes, scanInfo, notificationTitleRes)
     throwIfInterrupted()
@@ -330,8 +335,9 @@ private class ScanInfo {
 
     fun shouldPostNotification(): Boolean {
         val currentTimeMillis = System.currentTimeMillis()
-        return if (fileCount % 100 == 0
-            || lastNotificationTimeMillis + NOTIFICATION_INTERVAL_MILLIS < currentTimeMillis) {
+        return if (fileCount % 100 == 0 ||
+            lastNotificationTimeMillis + NOTIFICATION_INTERVAL_MILLIS < currentTimeMillis
+        ) {
             lastNotificationTimeMillis = currentTimeMillis
             true
         } else {
@@ -360,7 +366,8 @@ private fun FileJob.postTransferSizeNotification(
         val sizeString = size.asFileSize().formatHumanReadable(service)
         val transferredSizeString = transferredSize.asFileSize().formatHumanReadable(service)
         text = getString(
-            R.string.file_job_transfer_size_notification_text_one_format, transferredSizeString,
+            R.string.file_job_transfer_size_notification_text_one_format,
+            transferredSizeString,
             sizeString
         )
     } else {
@@ -368,7 +375,8 @@ private fun FileJob.postTransferSizeNotification(
         val currentFileIndex = (transferInfo.transferredFileCount + 1)
             .coerceAtMost(fileCount)
         text = getString(
-            R.string.file_job_transfer_size_notification_text_multiple_format, currentFileIndex,
+            R.string.file_job_transfer_size_notification_text_multiple_format,
+            currentFileIndex,
             fileCount
         )
     }
@@ -416,7 +424,8 @@ private fun FileJob.postTransferCountNotification(
         val transferredFileCount = transferInfo.transferredFileCount
         val currentFileIndex = (transferredFileCount + 1).coerceAtMost(fileCount)
         text = getString(
-            R.string.file_job_transfer_count_notification_text_multiple_format, currentFileIndex,
+            R.string.file_job_transfer_count_notification_text_multiple_format,
+            currentFileIndex,
             fileCount
         )
         max = fileCount
@@ -446,7 +455,8 @@ private class TransferInfo(scanInfo: ScanInfo, val target: Path?) {
         ++transferredFileCount
         try {
             transferredSize += path.readAttributes(
-                BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS
+                BasicFileAttributes::class.java,
+                LinkOption.NOFOLLOW_LINKS
             ).size()
         } catch (e: IOException) {
             e.printStackTrace()
@@ -457,7 +467,8 @@ private class TransferInfo(scanInfo: ScanInfo, val target: Path?) {
         --fileCount
         try {
             size -= path.readAttributes(
-                BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS
+                BasicFileAttributes::class.java,
+                LinkOption.NOFOLLOW_LINKS
             ).size()
         } catch (e: IOException) {
             e.printStackTrace()
@@ -485,19 +496,21 @@ private class TransferInfo(scanInfo: ScanInfo, val target: Path?) {
 
 // TODO: Make invalid file name, remount etc user actions as well.
 @Throws(InterruptedIOException::class)
-private fun FileJob.showUserAction(exception: UserActionRequiredException): Boolean =
-    try {
-        runBlocking {
-            suspendCoroutine { continuation ->
-                val userAction = exception.getUserAction(continuation, service)
-                BackgroundActivityStarter.startActivity(
-                    userAction.intent, userAction.title, userAction.message, service
-                )
-            }
+private fun FileJob.showUserAction(exception: UserActionRequiredException): Boolean = try {
+    runBlocking {
+        suspendCoroutine { continuation ->
+            val userAction = exception.getUserAction(continuation, service)
+            BackgroundActivityStarter.startActivity(
+                userAction.intent,
+                userAction.title,
+                userAction.message,
+                service
+            )
         }
-    } catch (e: InterruptedException) {
-        throw InterruptedIOException().apply { initCause(e) }
     }
+} catch (e: InterruptedException) {
+    throw InterruptedIOException().apply { initCause(e) }
+}
 
 @Throws(InterruptedIOException::class)
 private fun FileJob.showErrorDialog(
@@ -508,25 +521,32 @@ private fun FileJob.showErrorDialog(
     positiveButtonText: CharSequence?,
     negativeButtonText: CharSequence?,
     neutralButtonText: CharSequence?
-): ErrorResult =
-    try {
-        runBlocking {
-            suspendCoroutine { continuation ->
-                BackgroundActivityStarter.startActivity(
-                    FileJobErrorDialogActivity::class.createIntent().putArgs(
-                        FileJobErrorDialogFragment.Args(
-                            title, message, readOnlyFileStore, showAll, positiveButtonText,
-                            negativeButtonText, neutralButtonText
-                        ) { action, isAll ->
-                            continuation.resume(ErrorResult(action, isAll))
-                        }
-                    ), title, message, service
-                )
-            }
+): ErrorResult = try {
+    runBlocking {
+        suspendCoroutine { continuation ->
+            BackgroundActivityStarter.startActivity(
+                FileJobErrorDialogActivity::class.createIntent().putArgs(
+                    FileJobErrorDialogFragment.Args(
+                        title,
+                        message,
+                        readOnlyFileStore,
+                        showAll,
+                        positiveButtonText,
+                        negativeButtonText,
+                        neutralButtonText
+                    ) { action, isAll ->
+                        continuation.resume(ErrorResult(action, isAll))
+                    }
+                ),
+                title,
+                message,
+                service
+            )
         }
-    } catch (e: InterruptedException) {
-        throw InterruptedIOException().apply { initCause(e) }
     }
+} catch (e: InterruptedException) {
+    throw InterruptedIOException().apply { initCause(e) }
+}
 
 private fun FileJob.getReadOnlyFileStore(path: Path, exception: IOException): PosixFileStore? {
     if (exception !is ReadOnlyFileSystemException || !path.isLinuxPath) {
@@ -541,36 +561,35 @@ private fun FileJob.getReadOnlyFileStore(path: Path, exception: IOException): Po
     return if (fileStore.isReadOnly) fileStore else null
 }
 
-private class ErrorResult(
-    val action: FileJobErrorAction,
-    val isAll: Boolean
-)
+private class ErrorResult(val action: FileJobErrorAction, val isAll: Boolean)
 
 @Throws(IOException::class)
 private fun FileJob.showConflictDialog(
     sourceFile: FileItem,
     targetFile: FileItem,
     type: CopyMoveType
-): ConflictResult =
-    try {
-        runBlocking {
-            suspendCoroutine { continuation ->
-                BackgroundActivityStarter.startActivity(
-                    FileJobConflictDialogActivity::class.createIntent().putArgs(
-                        FileJobConflictDialogFragment.Args(
-                            sourceFile, targetFile, type
-                        ) { action, name, all ->
-                            continuation.resume(ConflictResult(action, name, all))
-                        }
-                    ), FileJobConflictDialogFragment.getTitle(sourceFile, targetFile, service),
-                    FileJobConflictDialogFragment.getMessage(sourceFile, targetFile, type, service),
-                    service
-                )
-            }
+): ConflictResult = try {
+    runBlocking {
+        suspendCoroutine { continuation ->
+            BackgroundActivityStarter.startActivity(
+                FileJobConflictDialogActivity::class.createIntent().putArgs(
+                    FileJobConflictDialogFragment.Args(
+                        sourceFile,
+                        targetFile,
+                        type
+                    ) { action, name, all ->
+                        continuation.resume(ConflictResult(action, name, all))
+                    }
+                ),
+                FileJobConflictDialogFragment.getTitle(sourceFile, targetFile, service),
+                FileJobConflictDialogFragment.getMessage(sourceFile, targetFile, type, service),
+                service
+            )
         }
-    } catch (e: InterruptedException) {
-        throw InterruptedIOException().apply { initCause(e) }
     }
+} catch (e: InterruptedException) {
+    throw InterruptedIOException().apply { initCause(e) }
+}
 
 enum class CopyMoveType {
     COPY,
@@ -582,12 +601,11 @@ fun CopyMoveType.getResourceId(
     @AnyRes copyRes: Int,
     @AnyRes extractRes: Int,
     @AnyRes moveRes: Int
-): Int =
-    when (this) {
-        CopyMoveType.COPY -> copyRes
-        CopyMoveType.EXTRACT -> extractRes
-        CopyMoveType.MOVE -> moveRes
-    }
+): Int = when (this) {
+    CopyMoveType.COPY -> copyRes
+    CopyMoveType.EXTRACT -> extractRes
+    CopyMoveType.MOVE -> moveRes
+}
 
 private class ConflictResult(
     val action: FileJobConflictAction,
@@ -622,7 +640,8 @@ class ArchiveFileJob(
     override fun run() {
         val scanInfo = scan(sources, R.plurals.file_job_archive_scan_notification_title_format)
         val channel = archiveFile.newByteChannel(
-            StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE
+            StandardOpenOption.CREATE_NEW,
+            StandardOpenOption.WRITE
         )
         var successful = false
         try {
@@ -657,32 +676,38 @@ class ArchiveFileJob(
         target: Path,
         transferInfo: TransferInfo
     ) {
-        Files.walkFileTree(source, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult {
-                val directoryInTarget = target.resolveForeign(source.relativize(directory))
-                archive(directory, writer, directoryInTarget, archiveFile, transferInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+        Files.walkFileTree(
+            source,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    val directoryInTarget = target.resolveForeign(source.relativize(directory))
+                    archive(directory, writer, directoryInTarget, archiveFile, transferInfo)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                val fileInTarget = target.resolveForeign(source.relativize(file))
-                archive(file, writer, fileInTarget, archiveFile, transferInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    val fileInTarget = target.resolveForeign(source.relativize(file))
+                    archive(file, writer, fileInTarget, archiveFile, transferInfo)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
             }
-        })
+        )
     }
 }
 
@@ -709,8 +734,9 @@ private fun FileJob.archive(
         val result = showErrorDialog(
             getString(R.string.file_job_archive_error_title_format, getFileName(file)),
             getString(
-                R.string.file_job_archive_error_message_format, getFileName(archiveFile),
-                e.toString()
+                R.string.file_job_archive_error_message_format,
+                getFileName(archiveFile),
+                e.toUserMessage(service)
             ),
             getReadOnlyFileStore(archiveFile, e),
             false,
@@ -721,6 +747,7 @@ private fun FileJob.archive(
         when (result.action) {
             FileJobErrorAction.NEGATIVE, FileJobErrorAction.CANCELED ->
                 throw InterruptedIOException()
+
             else -> throw AssertionError(result.action)
         }
     }
@@ -728,7 +755,9 @@ private fun FileJob.archive(
 
 private fun FileJob.postArchiveNotification(transferInfo: TransferInfo, currentFile: Path) {
     postTransferSizeNotification(
-        transferInfo, currentFile, R.string.file_job_archive_notification_title_one_format,
+        transferInfo,
+        currentFile,
+        R.string.file_job_archive_notification_title_one_format,
         R.plurals.file_job_archive_notification_title_multiple_format
     )
 }
@@ -738,7 +767,8 @@ class CopyFileJob(private val sources: List<Path>, private val targetDirectory: 
     override fun run() {
         val isExtract = sources.all { it.isArchivePath }
         val scanInfo = scan(
-            sources, if (isExtract) {
+            sources,
+            if (isExtract) {
                 R.plurals.file_job_extract_scan_notification_title_format
             } else {
                 R.plurals.file_job_copy_scan_notification_title_format
@@ -765,34 +795,44 @@ class CopyFileJob(private val sources: List<Path>, private val targetDirectory: 
         transferInfo: TransferInfo,
         actionAllInfo: ActionAllInfo
     ) {
-        Files.walkFileTree(source, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult {
-                val directoryInTarget = target.resolveForeign(source.relativize(directory))
-                val copied = copy(
-                    directory, directoryInTarget, isExtract, transferInfo, actionAllInfo
-                )
-                throwIfInterrupted()
-                return if (copied) FileVisitResult.CONTINUE else FileVisitResult.SKIP_SUBTREE
-            }
+        Files.walkFileTree(
+            source,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    val directoryInTarget = target.resolveForeign(source.relativize(directory))
+                    val copied = copy(
+                        directory,
+                        directoryInTarget,
+                        isExtract,
+                        transferInfo,
+                        actionAllInfo
+                    )
+                    throwIfInterrupted()
+                    return if (copied) FileVisitResult.CONTINUE else FileVisitResult.SKIP_SUBTREE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                val fileInTarget = target.resolveForeign(source.relativize(file))
-                copy(file, fileInTarget, isExtract, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    val fileInTarget = target.resolveForeign(source.relativize(file))
+                    copy(file, fileInTarget, isExtract, transferInfo, actionAllInfo)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
             }
-        })
+        )
     }
 
     private fun getTargetPathForDuplicate(source: Path): Path {
@@ -867,12 +907,10 @@ class CopyFileJob(private val sources: List<Path>, private val targetDirectory: 
         fileName: ByteString,
         countInfo: DuplicateCountInfo,
         count: Int
-    ): ByteString {
-        return ByteStringBuilder(fileName.substring(0, countInfo.countStart))
-            .append(" ($count)".toByteString())
-            .append(fileName.substring(countInfo.countEnd))
-            .toByteString()
-    }
+    ): ByteString = ByteStringBuilder(fileName.substring(0, countInfo.countStart))
+        .append(" ($count)".toByteString())
+        .append(fileName.substring(countInfo.countEnd))
+        .toByteString()
 
     private class DuplicateCountInfo(val countStart: Int, val countEnd: Int, val count: Int)
 }
@@ -884,11 +922,15 @@ private fun FileJob.copy(
     isExtract: Boolean,
     transferInfo: TransferInfo,
     actionAllInfo: ActionAllInfo
-): Boolean =
-    copyOrMove(
-        source, target, if (isExtract) CopyMoveType.EXTRACT else CopyMoveType.COPY, true, false,
-        transferInfo, actionAllInfo
-    )
+): Boolean = copyOrMove(
+    source,
+    target,
+    if (isExtract) CopyMoveType.EXTRACT else CopyMoveType.COPY,
+    true,
+    false,
+    transferInfo,
+    actionAllInfo
+)
 
 class CreateFileJob(private val path: Path, private val createDirectory: Boolean) : FileJob() {
     @Throws(IOException::class)
@@ -922,7 +964,9 @@ private fun FileJob.create(path: Path, createDirectory: Boolean) {
             val result = showErrorDialog(
                 getString(R.string.file_job_create_error_title),
                 getString(
-                    R.string.file_job_create_error_message_format, getFileName(path), e.toString()
+                    R.string.file_job_create_error_message_format,
+                    getFileName(path),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(path, e),
                 false,
@@ -935,8 +979,10 @@ private fun FileJob.create(path: Path, createDirectory: Boolean) {
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE, FileJobErrorAction.CANCELED ->
                     throw InterruptedIOException()
+
                 else -> throw AssertionError(result.action)
             }
         }
@@ -961,34 +1007,40 @@ class DeleteFileJob(private val paths: List<Path>) : FileJob() {
         transferInfo: TransferInfo,
         actionAllInfo: ActionAllInfo
     ) {
-        Files.walkFileTree(path, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                delete(file, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
-
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
-            }
-
-            @Throws(IOException::class)
-            override fun postVisitDirectory(
-                directory: Path,
-                exception: IOException?
-            ): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                if (exception != null) {
-                    throw exception
+        Files.walkFileTree(
+            path,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    delete(file, transferInfo, actionAllInfo)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
                 }
-                delete(directory, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
+
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
+
+                @Throws(IOException::class)
+                override fun postVisitDirectory(
+                    directory: Path,
+                    exception: IOException?
+                ): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    if (exception != null) {
+                        throw exception
+                    }
+                    delete(directory, transferInfo, actionAllInfo)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
             }
-        })
+        )
     }
 }
 
@@ -1024,7 +1076,9 @@ private fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllInf
             val result = showErrorDialog(
                 getString(R.string.file_job_delete_error_title),
                 getString(
-                    R.string.file_job_delete_error_message_format, getFileName(path), e.toString()
+                    R.string.file_job_delete_error_message_format,
+                    getFileName(path),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(path, e),
                 true,
@@ -1037,6 +1091,7 @@ private fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllInf
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE -> {
                     if (result.isAll) {
                         actionAllInfo.skipDeleteError = true
@@ -1047,6 +1102,7 @@ private fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllInf
                     }
                     return
                 }
+
                 FileJobErrorAction.CANCELED -> {
                     if (transferInfo != null) {
                         transferInfo.skipFileIgnoringSize()
@@ -1054,7 +1110,9 @@ private fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllInf
                     }
                     return
                 }
+
                 FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
+
                 else -> throw AssertionError(result.action)
             }
         }
@@ -1063,7 +1121,9 @@ private fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllInf
 
 private fun FileJob.postDeleteNotification(transferInfo: TransferInfo, currentPath: Path) {
     postTransferCountNotification(
-        transferInfo, currentPath, R.string.file_job_delete_notification_title_one_format,
+        transferInfo,
+        currentPath,
+        R.string.file_job_delete_notification_title_one_format,
         R.plurals.file_job_delete_notification_title_multiple_format
     )
 }
@@ -1100,63 +1160,70 @@ class MoveFileJob(private val sources: List<Path>, private val targetDirectory: 
         transferInfo: TransferInfo,
         actionAllInfo: ActionAllInfo
     ) {
-        Files.walkFileTree(source, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult {
-                val directoryInTarget = target.resolveForeign(source.relativize(directory))
-                try {
-                    moveAtomically(directory, directoryInTarget)
+        Files.walkFileTree(
+            source,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    val directoryInTarget = target.resolveForeign(source.relativize(directory))
+                    try {
+                        moveAtomically(directory, directoryInTarget)
+                        throwIfInterrupted()
+                        return FileVisitResult.SKIP_SUBTREE
+                    } catch (e: InterruptedIOException) {
+                        throw e
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                    val copied =
+                        copyForMove(directory, directoryInTarget, transferInfo, actionAllInfo)
                     throwIfInterrupted()
-                    return FileVisitResult.SKIP_SUBTREE
-                } catch (e: InterruptedIOException) {
-                    throw e
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                    return if (copied) FileVisitResult.CONTINUE else FileVisitResult.SKIP_SUBTREE
                 }
-                val copied = copyForMove(directory, directoryInTarget, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return if (copied) FileVisitResult.CONTINUE else FileVisitResult.SKIP_SUBTREE
-            }
 
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                val fileInTarget = target.resolveForeign(source.relativize(file))
-                try {
-                    moveAtomically(file, fileInTarget)
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    val fileInTarget = target.resolveForeign(source.relativize(file))
+                    try {
+                        moveAtomically(file, fileInTarget)
+                        throwIfInterrupted()
+                        return FileVisitResult.CONTINUE
+                    } catch (e: InterruptedIOException) {
+                        throw e
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                    moveByCopy(file, fileInTarget, transferInfo, actionAllInfo)
                     throwIfInterrupted()
                     return FileVisitResult.CONTINUE
-                } catch (e: InterruptedIOException) {
-                    throw e
-                } catch (e: IOException) {
-                    e.printStackTrace()
                 }
-                moveByCopy(file, fileInTarget, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
-            }
-
-            @Throws(IOException::class)
-            override fun postVisitDirectory(
-                directory: Path,
-                exception: IOException?
-            ): FileVisitResult? {
-                if (exception != null) {
-                    throw exception
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
                 }
-                delete(directory, null, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
+
+                @Throws(IOException::class)
+                override fun postVisitDirectory(
+                    directory: Path,
+                    exception: IOException?
+                ): FileVisitResult? {
+                    if (exception != null) {
+                        throw exception
+                    }
+                    delete(directory, null, actionAllInfo)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
             }
-        })
+        )
     }
 }
 
@@ -1179,8 +1246,7 @@ private fun FileJob.moveByCopy(
     target: Path,
     transferInfo: TransferInfo,
     actionAllInfo: ActionAllInfo
-): Boolean =
-    copyOrMove(source, target, CopyMoveType.MOVE, false, true, transferInfo, actionAllInfo)
+): Boolean = copyOrMove(source, target, CopyMoveType.MOVE, false, true, transferInfo, actionAllInfo)
 
 // @see https://github.com/GNOME/nautilus/blob/master/src/nautilus-file-operations.c copy_move_file
 @Throws(IOException::class)
@@ -1225,12 +1291,15 @@ private fun FileJob.copyOrMove(
                 postCopyMoveNotification(transferInfo, source, type)
                 false
             }
+
             FileJobErrorAction.CANCELED -> {
                 transferInfo.skipFile(source)
                 postCopyMoveNotification(transferInfo, source, type)
                 false
             }
+
             FileJobErrorAction.NEGATIVE -> throw InterruptedIOException()
+
             else -> throw AssertionError(result.action)
         }
     }
@@ -1265,12 +1334,15 @@ private fun FileJob.copyOrMove(
                 postCopyMoveNotification(transferInfo, source, type)
                 false
             }
+
             FileJobErrorAction.CANCELED -> {
                 transferInfo.skipFile(source)
                 postCopyMoveNotification(transferInfo, source, type)
                 false
             }
+
             FileJobErrorAction.NEGATIVE -> throw InterruptedIOException()
+
             else -> throw AssertionError(result.action)
         }
     }
@@ -1319,8 +1391,9 @@ private fun FileJob.copyOrMove(
                 replaceExisting = true
                 retry = true
                 continue
-            } else if ((isMerge && actionAllInfo.skipMerge)
-                || (!isMerge && actionAllInfo.skipReplace)) {
+            } else if ((isMerge && actionAllInfo.skipMerge) ||
+                (!isMerge && actionAllInfo.skipReplace)
+            ) {
                 transferInfo.skipFile(source)
                 postCopyMoveNotification(transferInfo, source, type)
                 return false
@@ -1345,11 +1418,13 @@ private fun FileJob.copyOrMove(
                         continue
                     }
                 }
+
                 FileJobConflictAction.RENAME -> {
                     target = target.resolveSibling(result.name)
                     retry = true
                     continue
                 }
+
                 FileJobConflictAction.SKIP -> {
                     if (result.isAll) {
                         if (isMerge) {
@@ -1362,11 +1437,13 @@ private fun FileJob.copyOrMove(
                     postCopyMoveNotification(transferInfo, source, type)
                     false
                 }
+
                 FileJobConflictAction.CANCELED -> {
                     transferInfo.skipFile(source)
                     postCopyMoveNotification(transferInfo, source, type)
                     false
                 }
+
                 FileJobConflictAction.CANCEL -> throw InterruptedIOException()
             }
         } catch (e: InvalidFileNameException) {
@@ -1398,14 +1475,17 @@ private fun FileJob.copyOrMove(
                         R.string.file_job_copy_error_title_format,
                         R.string.file_job_extract_error_title_format,
                         R.string.file_job_move_error_title_format
-                    ), getFileName(source)
+                    ),
+                    getFileName(source)
                 ),
                 getString(
                     type.getResourceId(
                         R.string.file_job_copy_error_message_format,
                         R.string.file_job_extract_error_message_format,
                         R.string.file_job_move_error_message_format
-                    ), getFileName(targetParent), e.toString()
+                    ),
+                    getFileName(targetParent),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(target, e),
                 true,
@@ -1418,6 +1498,7 @@ private fun FileJob.copyOrMove(
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE -> {
                     if (result.isAll) {
                         actionAllInfo.skipCopyMoveError = true
@@ -1426,11 +1507,13 @@ private fun FileJob.copyOrMove(
                     postCopyMoveNotification(transferInfo, source, type)
                     false
                 }
+
                 FileJobErrorAction.CANCELED -> {
                     transferInfo.skipFile(source)
                     postCopyMoveNotification(transferInfo, source, type)
                     false
                 }
+
                 FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
             }
         }
@@ -1444,11 +1527,14 @@ private fun FileJob.postCopyMoveNotification(
     type: CopyMoveType
 ) {
     postTransferSizeNotification(
-        transferInfo, currentSource, type.getResourceId(
+        transferInfo,
+        currentSource,
+        type.getResourceId(
             R.string.file_job_copy_notification_title_one_format,
             R.string.file_job_extract_notification_title_one_format,
             R.string.file_job_move_notification_title_one_format
-        ), type.getResourceId(
+        ),
+        type.getResourceId(
             R.plurals.file_job_copy_notification_title_multiple_format,
             R.plurals.file_job_extract_notification_title_multiple_format,
             R.plurals.file_job_move_notification_title_multiple_format
@@ -1459,7 +1545,8 @@ private fun FileJob.postCopyMoveNotification(
 class InstallApkJob(private val file: Path) : FileJob() {
     override fun run() {
         open(
-            file, R.string.file_install_apk_from_background_title_format,
+            file,
+            R.string.file_install_apk_from_background_title_format,
             R.string.file_install_apk_from_background_text
         ) { file ->
             val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -1480,7 +1567,8 @@ class OpenFileJob(
 ) : FileJob() {
     override fun run() {
         open(
-            file, R.string.file_open_from_background_title_format,
+            file,
+            R.string.file_open_from_background_title_format,
             R.string.file_open_from_background_text
         ) { file ->
             file.fileProviderUri.createViewIntent(mimeType)
@@ -1515,7 +1603,8 @@ private fun FileJob.open(
 ) {
     val isExtract = file.isArchivePath
     val scanInfo = scan(
-        file, if (isExtract) {
+        file,
+        if (isExtract) {
             R.plurals.file_job_extract_scan_notification_title_format
         } else {
             R.plurals.file_job_copy_scan_notification_title_format
@@ -1532,8 +1621,10 @@ private fun FileJob.open(
         return
     }
     BackgroundActivityStarter.startActivity(
-        intentCreator(targetFile), getString(notificationTitleFormatRes, targetFileName),
-        getString(notificationTextRes), service
+        intentCreator(targetFile),
+        getString(notificationTitleFormatRes, targetFileName),
+        getString(notificationTextRes),
+        service
     )
 }
 
@@ -1566,8 +1657,9 @@ private fun FileJob.rename(path: Path, newPath: Path) {
             val result = showErrorDialog(
                 getString(R.string.file_job_rename_error_title_format, getFileName(path)),
                 getString(
-                    R.string.file_job_rename_error_message_format, getFileName(newPath),
-                    e.toString()
+                    R.string.file_job_rename_error_message_format,
+                    getFileName(newPath),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(path, e),
                 false,
@@ -1580,55 +1672,68 @@ private fun FileJob.rename(path: Path, newPath: Path) {
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE, FileJobErrorAction.CANCELED ->
                     throw InterruptedIOException()
+
                 else -> throw AssertionError(result.action)
             }
         }
     } while (retry)
 }
 
-class RestoreFileSeLinuxContextJob(
-    private val path: Path,
-    private val recursive: Boolean
-) : FileJob() {
+class RestoreFileSeLinuxContextJob(private val path: Path, private val recursive: Boolean) :
+    FileJob() {
     @Throws(IOException::class)
     override fun run() {
         val scanInfo = scan(
-            path, recursive,
+            path,
+            recursive,
             R.plurals.file_job_restore_selinux_context_scan_notification_title_format
         )
         val transferInfo = TransferInfo(scanInfo, null)
         val actionAllInfo = ActionAllInfo()
-        walkFileTreeForSettingAttributes(path, recursive, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult = visitFile(directory, attributes)
+        walkFileTreeForSettingAttributes(
+            path,
+            recursive,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult = visitFile(directory, attributes)
 
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                restoreSeLinuxContext(file, !attributes.isSymbolicLink, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    restoreSeLinuxContext(
+                        file,
+                        !attributes.isSymbolicLink,
+                        transferInfo,
+                        actionAllInfo
+                    )
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
-            }
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
 
-            @Throws(IOException::class)
-            override fun postVisitDirectory(
-                directory: Path,
-                exception: IOException?
-            ): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.postVisitDirectory(directory, exception)
+                @Throws(IOException::class)
+                override fun postVisitDirectory(
+                    directory: Path,
+                    exception: IOException?
+                ): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.postVisitDirectory(directory, exception)
+                }
             }
-        })
+        )
     }
 }
 
@@ -1667,7 +1772,8 @@ private fun FileJob.restoreSeLinuxContext(
                 getString(R.string.file_job_restore_selinux_context_error_title),
                 getString(
                     R.string.file_job_restore_selinux_context_error_message_format,
-                    getFileName(path), e.toString()
+                    getFileName(path),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(path, e),
                 true,
@@ -1680,6 +1786,7 @@ private fun FileJob.restoreSeLinuxContext(
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE -> {
                     if (result.isAll) {
                         actionAllInfo.skipRestoreSeLinuxContextError = true
@@ -1688,12 +1795,15 @@ private fun FileJob.restoreSeLinuxContext(
                     postRestoreSeLinuxContextNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.CANCELED -> {
                     transferInfo.skipFileIgnoringSize()
                     postRestoreSeLinuxContextNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
+
                 else -> throw AssertionError(result.action)
             }
         }
@@ -1705,7 +1815,8 @@ private fun FileJob.postRestoreSeLinuxContextNotification(
     currentPath: Path
 ) {
     postTransferCountNotification(
-        transferInfo, currentPath,
+        transferInfo,
+        currentPath,
         R.string.file_job_restore_selinux_context_notification_title_one_format,
         R.plurals.file_job_restore_selinux_context_notification_title_multiple_format
     )
@@ -1740,39 +1851,48 @@ class SetFileGroupJob(
     @Throws(IOException::class)
     override fun run() {
         val scanInfo = scan(
-            path, recursive, R.plurals.file_job_set_group_scan_notification_title_format
+            path,
+            recursive,
+            R.plurals.file_job_set_group_scan_notification_title_format
         )
         val transferInfo = TransferInfo(scanInfo, null)
         val actionAllInfo = ActionAllInfo()
-        walkFileTreeForSettingAttributes(path, recursive, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult = visitFile(directory, attributes)
+        walkFileTreeForSettingAttributes(
+            path,
+            recursive,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult = visitFile(directory, attributes)
 
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                setGroup(file, group, !attributes.isSymbolicLink, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    setGroup(file, group, !attributes.isSymbolicLink, transferInfo, actionAllInfo)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
-            }
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
 
-            @Throws(IOException::class)
-            override fun postVisitDirectory(
-                directory: Path,
-                exception: IOException?
-            ): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.postVisitDirectory(directory, exception)
+                @Throws(IOException::class)
+                override fun postVisitDirectory(
+                    directory: Path,
+                    exception: IOException?
+                ): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.postVisitDirectory(directory, exception)
+                }
             }
-        })
+        )
     }
 }
 
@@ -1811,8 +1931,9 @@ private fun FileJob.setGroup(
             val result = showErrorDialog(
                 getString(R.string.file_job_set_group_error_title_format, getFileName(path)),
                 getString(
-                    R.string.file_job_set_group_error_message_format, getPrincipalName(group),
-                    e.toString()
+                    R.string.file_job_set_group_error_message_format,
+                    getPrincipalName(group),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(path, e),
                 true,
@@ -1825,6 +1946,7 @@ private fun FileJob.setGroup(
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE -> {
                     if (result.isAll) {
                         actionAllInfo.skipSetGroupError = true
@@ -1833,12 +1955,15 @@ private fun FileJob.setGroup(
                     postSetGroupNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.CANCELED -> {
                     transferInfo.skipFileIgnoringSize()
                     postSetGroupNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
+
                 else -> throw AssertionError(result.action)
             }
         }
@@ -1847,7 +1972,9 @@ private fun FileJob.setGroup(
 
 private fun FileJob.postSetGroupNotification(transferInfo: TransferInfo, currentPath: Path) {
     postTransferCountNotification(
-        transferInfo, currentPath, R.string.file_job_set_group_notification_title_one_format,
+        transferInfo,
+        currentPath,
+        R.string.file_job_set_group_notification_title_one_format,
         R.plurals.file_job_set_group_notification_title_multiple_format
     )
 }
@@ -1861,46 +1988,55 @@ class SetFileModeJob(
     @Throws(IOException::class)
     override fun run() {
         val scanInfo = scan(
-            path, recursive, R.plurals.file_job_set_mode_scan_notification_title_format
+            path,
+            recursive,
+            R.plurals.file_job_set_mode_scan_notification_title_format
         )
         val transferInfo = TransferInfo(scanInfo, null)
         val actionAllInfo = ActionAllInfo()
-        walkFileTreeForSettingAttributes(path, recursive, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult = visitFile(directory, attributes)
+        walkFileTreeForSettingAttributes(
+            path,
+            recursive,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult = visitFile(directory, attributes)
 
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                if (attributes.isSymbolicLink) {
-                    // We cannot set mode on symbolic links.
-                    transferInfo.skipFileIgnoringSize()
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    if (attributes.isSymbolicLink) {
+                        // We cannot set mode on symbolic links.
+                        transferInfo.skipFileIgnoringSize()
+                        return FileVisitResult.CONTINUE
+                    }
+                    // The file may actually be a directory if we are not entering it.
+                    val mode = if (!attributes.isDirectory) getFileMode(file) else mode
+                    setMode(file, mode, transferInfo, actionAllInfo)
+                    throwIfInterrupted()
                     return FileVisitResult.CONTINUE
                 }
-                // The file may actually be a directory if we are not entering it.
-                val mode = if (!attributes.isDirectory) getFileMode(file) else mode
-                setMode(file, mode, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
-            }
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
 
-            @Throws(IOException::class)
-            override fun postVisitDirectory(
-                directory: Path,
-                exception: IOException?
-            ): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.postVisitDirectory(directory, exception)
+                @Throws(IOException::class)
+                override fun postVisitDirectory(
+                    directory: Path,
+                    exception: IOException?
+                ): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.postVisitDirectory(directory, exception)
+                }
             }
-        })
+        )
     }
 
     @Throws(IOException::class)
@@ -1957,8 +2093,9 @@ private fun FileJob.setMode(
             val result = showErrorDialog(
                 getString(R.string.file_job_set_mode_error_title_format, getFileName(path)),
                 getString(
-                    R.string.file_job_set_mode_error_message_format, mode.toModeString(),
-                    e.toString()
+                    R.string.file_job_set_mode_error_message_format,
+                    mode.toModeString(),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(path, e),
                 true,
@@ -1971,6 +2108,7 @@ private fun FileJob.setMode(
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE -> {
                     if (result.isAll) {
                         actionAllInfo.skipSetModeError = true
@@ -1979,12 +2117,15 @@ private fun FileJob.setMode(
                     postSetModeNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.CANCELED -> {
                     transferInfo.skipFileIgnoringSize()
                     postSetModeNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
+
                 else -> throw AssertionError(result.action)
             }
         }
@@ -1993,7 +2134,9 @@ private fun FileJob.setMode(
 
 private fun FileJob.postSetModeNotification(transferInfo: TransferInfo, currentPath: Path) {
     postTransferCountNotification(
-        transferInfo, currentPath, R.string.file_job_set_mode_notification_title_one_format,
+        transferInfo,
+        currentPath,
+        R.string.file_job_set_mode_notification_title_one_format,
         R.plurals.file_job_set_mode_notification_title_multiple_format
     )
 }
@@ -2006,39 +2149,48 @@ class SetFileOwnerJob(
     @Throws(IOException::class)
     override fun run() {
         val scanInfo = scan(
-            path, recursive, R.plurals.file_job_set_owner_scan_notification_title_format
+            path,
+            recursive,
+            R.plurals.file_job_set_owner_scan_notification_title_format
         )
         val transferInfo = TransferInfo(scanInfo, null)
         val actionAllInfo = ActionAllInfo()
-        walkFileTreeForSettingAttributes(path, recursive, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult = visitFile(directory, attributes)
+        walkFileTreeForSettingAttributes(
+            path,
+            recursive,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult = visitFile(directory, attributes)
 
-            @Throws(IOException::class)
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                setOwner(file, owner, !attributes.isSymbolicLink, transferInfo, actionAllInfo)
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    setOwner(file, owner, !attributes.isSymbolicLink, transferInfo, actionAllInfo)
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
-            }
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
 
-            @Throws(IOException::class)
-            override fun postVisitDirectory(
-                directory: Path,
-                exception: IOException?
-            ): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.postVisitDirectory(directory, exception)
+                @Throws(IOException::class)
+                override fun postVisitDirectory(
+                    directory: Path,
+                    exception: IOException?
+                ): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.postVisitDirectory(directory, exception)
+                }
             }
-        })
+        )
     }
 }
 
@@ -2077,8 +2229,9 @@ private fun FileJob.setOwner(
             val result = showErrorDialog(
                 getString(R.string.file_job_set_owner_error_title_format, getFileName(path)),
                 getString(
-                    R.string.file_job_set_owner_error_message_format, getPrincipalName(owner),
-                    e.toString()
+                    R.string.file_job_set_owner_error_message_format,
+                    getPrincipalName(owner),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(path, e),
                 true,
@@ -2091,6 +2244,7 @@ private fun FileJob.setOwner(
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE -> {
                     if (result.isAll) {
                         actionAllInfo.skipSetOwnerError = true
@@ -2099,12 +2253,15 @@ private fun FileJob.setOwner(
                     postSetOwnerNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.CANCELED -> {
                     transferInfo.skipFileIgnoringSize()
                     postSetOwnerNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
+
                 else -> throw AssertionError(result.action)
             }
         }
@@ -2113,7 +2270,9 @@ private fun FileJob.setOwner(
 
 private fun FileJob.postSetOwnerNotification(transferInfo: TransferInfo, currentPath: Path) {
     postTransferCountNotification(
-        transferInfo, currentPath, R.string.file_job_set_owner_notification_title_one_format,
+        transferInfo,
+        currentPath,
+        R.string.file_job_set_owner_notification_title_one_format,
         R.plurals.file_job_set_owner_notification_title_multiple_format
     )
 }
@@ -2129,44 +2288,54 @@ class SetFileSeLinuxContextJob(
     @Throws(IOException::class)
     override fun run() {
         val scanInfo = scan(
-            path, recursive, R.plurals.file_job_set_selinux_context_scan_notification_title_format
+            path,
+            recursive,
+            R.plurals.file_job_set_selinux_context_scan_notification_title_format
         )
         val transferInfo = TransferInfo(scanInfo, null)
         val actionAllInfo = ActionAllInfo()
-        walkFileTreeForSettingAttributes(path, recursive, object : SimpleFileVisitor<Path>() {
-            @Throws(IOException::class)
-            override fun preVisitDirectory(
-                directory: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult = visitFile(directory, attributes)
+        walkFileTreeForSettingAttributes(
+            path,
+            recursive,
+            object : SimpleFileVisitor<Path>() {
+                @Throws(IOException::class)
+                override fun preVisitDirectory(
+                    directory: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult = visitFile(directory, attributes)
 
-            @Throws(IOException::class)
-            override fun visitFile(
-                file: Path,
-                attributes: BasicFileAttributes
-            ): FileVisitResult {
-                setSeLinuxContext(
-                    file, seLinuxContext, !attributes.isSymbolicLink, transferInfo, actionAllInfo
-                )
-                throwIfInterrupted()
-                return FileVisitResult.CONTINUE
-            }
+                @Throws(IOException::class)
+                override fun visitFile(
+                    file: Path,
+                    attributes: BasicFileAttributes
+                ): FileVisitResult {
+                    setSeLinuxContext(
+                        file,
+                        seLinuxContext,
+                        !attributes.isSymbolicLink,
+                        transferInfo,
+                        actionAllInfo
+                    )
+                    throwIfInterrupted()
+                    return FileVisitResult.CONTINUE
+                }
 
-            @Throws(IOException::class)
-            override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.visitFileFailed(file, exception)
-            }
+                @Throws(IOException::class)
+                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.visitFileFailed(file, exception)
+                }
 
-            @Throws(IOException::class)
-            override fun postVisitDirectory(
-                directory: Path,
-                exception: IOException?
-            ): FileVisitResult {
-                // TODO: Prompt retry, skip, skip-all or abort.
-                return super.postVisitDirectory(directory, exception)
+                @Throws(IOException::class)
+                override fun postVisitDirectory(
+                    directory: Path,
+                    exception: IOException?
+                ): FileVisitResult {
+                    // TODO: Prompt retry, skip, skip-all or abort.
+                    return super.postVisitDirectory(directory, exception)
+                }
             }
-        })
+        )
     }
 }
 
@@ -2204,11 +2373,13 @@ private fun FileJob.setSeLinuxContext(
             }
             val result = showErrorDialog(
                 getString(
-                    R.string.file_job_set_selinux_context_error_title_format, getFileName(path)
+                    R.string.file_job_set_selinux_context_error_title_format,
+                    getFileName(path)
                 ),
                 getString(
-                    R.string.file_job_set_selinux_context_error_message_format, seLinuxContext,
-                    e.toString()
+                    R.string.file_job_set_selinux_context_error_message_format,
+                    seLinuxContext,
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(path, e),
                 true,
@@ -2221,6 +2392,7 @@ private fun FileJob.setSeLinuxContext(
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE -> {
                     if (result.isAll) {
                         actionAllInfo.skipSetSeLinuxContextError = true
@@ -2229,12 +2401,15 @@ private fun FileJob.setSeLinuxContext(
                     postSetSeLinuxContextNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.CANCELED -> {
                     transferInfo.skipFileIgnoringSize()
                     postSetSeLinuxContextNotification(transferInfo, path)
                     return
                 }
+
                 FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
+
                 else -> throw AssertionError(result.action)
             }
         }
@@ -2246,7 +2421,8 @@ private fun FileJob.postSetSeLinuxContextNotification(
     currentPath: Path
 ) {
     postTransferCountNotification(
-        transferInfo, currentPath,
+        transferInfo,
+        currentPath,
         R.string.file_job_set_selinux_context_notification_title_one_format,
         R.plurals.file_job_set_selinux_context_notification_title_multiple_format
     )
@@ -2296,7 +2472,9 @@ private fun FileJob.write(file: Path, content: ByteArray): Boolean {
             val result = showErrorDialog(
                 getString(R.string.file_job_write_error_title, getFileName(file)),
                 getString(
-                    R.string.file_job_write_error_message_format, getFileName(file), e.toString()
+                    R.string.file_job_write_error_message_format,
+                    getFileName(file),
+                    e.toUserMessage(service)
                 ),
                 getReadOnlyFileStore(file, e),
                 false,
@@ -2309,7 +2487,9 @@ private fun FileJob.write(file: Path, content: ByteArray): Boolean {
                     retry = true
                     continue
                 }
+
                 FileJobErrorAction.NEGATIVE, FileJobErrorAction.CANCELED -> false
+
                 FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
             }
         }
@@ -2328,7 +2508,8 @@ private fun FileJob.postWriteNotification(transferInfo: TransferInfo) {
     val transferredSize = transferInfo.transferredSize
     val transferredSizeString = transferredSize.asFileSize().formatHumanReadable(service)
     val text = getString(
-        R.string.file_job_transfer_size_notification_text_one_format, transferredSizeString,
+        R.string.file_job_transfer_size_notification_text_one_format,
+        transferredSizeString,
         sizeString
     )
     val max = size.toInt()

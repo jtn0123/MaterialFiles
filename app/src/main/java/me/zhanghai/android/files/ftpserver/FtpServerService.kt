@@ -13,12 +13,13 @@ import androidx.annotation.WorkerThread
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import java.util.concurrent.Executors
 import me.zhanghai.android.files.compat.mainExecutorCompat
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.WakeWifiLock
 import me.zhanghai.android.files.util.showToast
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.valueCompat
-import java.util.concurrent.Executors
 
 class FtpServerService : Service() {
     private var state = State.STOPPED
@@ -66,7 +67,7 @@ class FtpServerService : Service() {
 
     private fun onStartError(exception: Exception) {
         state = State.STOPPED
-        showToast(exception.toString())
+        showToast(exception.toUserMessage(this))
         notification.stopForeground()
         wakeWifiLock.isAcquired = false
         stopSelf()
@@ -134,7 +135,8 @@ class FtpServerService : Service() {
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(
-                context, Intent(context, FtpServerService::class.java)
+                context,
+                Intent(context, FtpServerService::class.java)
             )
         }
 

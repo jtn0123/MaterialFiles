@@ -51,6 +51,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.leinardi.android.speeddial.SpeedDialView
 import java8.nio.file.Path
 import java8.nio.file.Paths
+import kotlin.math.roundToInt
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.application
@@ -127,37 +128,50 @@ import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.supportsExternalStorageManager
 import me.zhanghai.android.files.util.takeIfNotEmpty
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.viewModels
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ImageViewerActivity
 import me.zhanghai.android.files.viewer.video.VideoViewerActivity
-import kotlin.math.roundToInt
 
-class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.Listener,
-    ConfirmReplaceFileDialogFragment.Listener, OpenApkDialogFragment.Listener,
-    ConfirmDeleteFilesDialogFragment.Listener, CreateArchiveDialogFragment.Listener,
-    RenameFileDialogFragment.Listener, CreateFileDialogFragment.Listener,
-    CreateDirectoryDialogFragment.Listener, NavigateToPathDialogFragment.Listener,
-    NavigationFragment.Listener, ShowRequestAllFilesAccessRationaleDialogFragment.Listener,
+class FileListFragment :
+    Fragment(),
+    BreadcrumbLayout.Listener,
+    FileListAdapter.Listener,
+    ConfirmReplaceFileDialogFragment.Listener,
+    OpenApkDialogFragment.Listener,
+    ConfirmDeleteFilesDialogFragment.Listener,
+    CreateArchiveDialogFragment.Listener,
+    RenameFileDialogFragment.Listener,
+    CreateFileDialogFragment.Listener,
+    CreateDirectoryDialogFragment.Listener,
+    NavigateToPathDialogFragment.Listener,
+    NavigationFragment.Listener,
+    ShowRequestAllFilesAccessRationaleDialogFragment.Listener,
     ShowRequestNotificationPermissionRationaleDialogFragment.Listener,
     ShowRequestNotificationPermissionInSettingsRationaleDialogFragment.Listener,
     ShowRequestStoragePermissionRationaleDialogFragment.Listener,
     ShowRequestStoragePermissionInSettingsRationaleDialogFragment.Listener {
     private val requestAllFilesAccessLauncher = registerForActivityResult(
-        RequestAllFilesAccessContract(), this::onRequestAllFilesAccessResult
+        RequestAllFilesAccessContract(),
+        this::onRequestAllFilesAccessResult
     )
     private val requestStoragePermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(), this::onRequestStoragePermissionResult
+        ActivityResultContracts.RequestPermission(),
+        this::onRequestStoragePermissionResult
     )
     private val requestStoragePermissionInSettingsLauncher = registerForActivityResult(
         RequestPermissionInSettingsContract(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
         this::onRequestStoragePermissionInSettingsResult
     )
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private val requestNotificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(), this::onRequestNotificationPermissionResult
+        ActivityResultContracts.RequestPermission(),
+        this::onRequestNotificationPermissionResult
     )
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private val requestNotificationPermissionInSettingsLauncher = registerForActivityResult(
         RequestPermissionInSettingsContract(android.Manifest.permission.POST_NOTIFICATIONS),
@@ -204,10 +218,9 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        Binding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = Binding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
@@ -225,7 +238,9 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         activity.setSupportActionBar(binding.toolbar)
         overlayActionMode = OverlayToolbarActionMode(binding.overlayToolbar)
         bottomActionMode = PersistentBarLayoutToolbarActionMode(
-            binding.persistentBarLayout, binding.bottomBarLayout, binding.bottomToolbar
+            binding.persistentBarLayout,
+            binding.bottomBarLayout,
+            binding.bottomToolbar
         )
         val contentLayoutInitialPaddingBottom = binding.contentLayout.paddingBottom
         binding.appBarLayout.addOnOffsetChangedListener { _, verticalOffset ->
@@ -238,7 +253,8 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         binding.breadcrumbLayout.setListener(this)
         if (!(activity.hasSw600Dp && activity.isOrientationLandscape)) {
             binding.swipeRefreshLayout.setProgressViewEndTarget(
-                true, binding.swipeRefreshLayout.progressViewEndOffset
+                true,
+                binding.swipeRefreshLayout.progressViewEndOffset
             )
         }
         binding.swipeRefreshLayout.setOnRefreshListener { this.refresh() }
@@ -314,18 +330,26 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                     pickOptions =
                         PickOptions(mode, fileName, readOnly, mimeTypes, localOnly, allowMultiple)
                 }
+
                 Intent.ACTION_OPEN_DOCUMENT_TREE -> {
                     val localOnly = intent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false)
                     pickOptions = PickOptions(
-                        PickOptions.Mode.OPEN_DIRECTORY, null, false, emptyList(), localOnly, false
+                        PickOptions.Mode.OPEN_DIRECTORY,
+                        null,
+                        false,
+                        emptyList(),
+                        localOnly,
+                        false
                     )
                 }
+
                 ACTION_VIEW_DOWNLOADS ->
                     path = Paths.get(
                         Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_DOWNLOADS
                         ).path
                     )
+
                 else ->
                     if (path != null) {
                         val mimeType = intent.type?.asMimeTypeOrNull()
@@ -445,105 +469,124 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         updateShowHiddenFilesMenuItem()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            android.R.id.home -> {
-                binding.drawerLayout?.openDrawer(GravityCompat.START)
-                if (binding.persistentDrawerLayout != null) {
-                    Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.putValue(
-                        !Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.valueCompat
-                    )
-                }
-                true
-            }
-            R.id.action_view_list -> {
-                viewModel.viewType = FileViewType.LIST
-                true
-            }
-            R.id.action_view_grid -> {
-                viewModel.viewType = FileViewType.GRID
-                true
-            }
-            R.id.action_sort_by_name -> {
-                viewModel.setSortBy(By.NAME)
-                true
-            }
-            R.id.action_sort_by_type -> {
-                viewModel.setSortBy(By.TYPE)
-                true
-            }
-            R.id.action_sort_by_size -> {
-                viewModel.setSortBy(By.SIZE)
-                true
-            }
-            R.id.action_sort_by_last_modified -> {
-                viewModel.setSortBy(By.LAST_MODIFIED)
-                true
-            }
-            R.id.action_sort_order_ascending -> {
-                viewModel.setSortOrder(
-                    if (!menuBinding.sortOrderAscendingItem.isChecked) {
-                        Order.ASCENDING
-                    } else {
-                        Order.DESCENDING
-                    }
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        android.R.id.home -> {
+            binding.drawerLayout?.openDrawer(GravityCompat.START)
+            if (binding.persistentDrawerLayout != null) {
+                Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.putValue(
+                    !Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.valueCompat
                 )
-                true
             }
-            R.id.action_sort_directories_first -> {
-                viewModel.setSortDirectoriesFirst(!menuBinding.sortDirectoriesFirstItem.isChecked)
-                true
-            }
-            R.id.action_view_sort_path_specific -> {
-                viewModel.isViewSortPathSpecific = !menuBinding.viewSortPathSpecificItem.isChecked
-                true
-            }
-            R.id.action_new_task -> {
-                newTask()
-                true
-            }
-            R.id.action_navigate_up -> {
-                navigateUp()
-                true
-            }
-            R.id.action_navigate_to -> {
-                showNavigateToPathDialog()
-                true
-            }
-            R.id.action_refresh -> {
-                refresh()
-                true
-            }
-            R.id.action_select_all -> {
-                selectAllFiles()
-                true
-            }
-            R.id.action_show_hidden_files -> {
-                setShowHiddenFiles(!menuBinding.showHiddenFilesItem.isChecked)
-                true
-            }
-            R.id.action_share -> {
-                share()
-                true
-            }
-            R.id.action_copy_path -> {
-                copyPath()
-                true
-            }
-            R.id.action_open_in_terminal -> {
-                openInTerminal()
-                true
-            }
-            R.id.action_add_bookmark -> {
-                addBookmark()
-                true
-            }
-            R.id.action_create_shortcut -> {
-                createShortcut()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+            true
         }
+
+        R.id.action_view_list -> {
+            viewModel.viewType = FileViewType.LIST
+            true
+        }
+
+        R.id.action_view_grid -> {
+            viewModel.viewType = FileViewType.GRID
+            true
+        }
+
+        R.id.action_sort_by_name -> {
+            viewModel.setSortBy(By.NAME)
+            true
+        }
+
+        R.id.action_sort_by_type -> {
+            viewModel.setSortBy(By.TYPE)
+            true
+        }
+
+        R.id.action_sort_by_size -> {
+            viewModel.setSortBy(By.SIZE)
+            true
+        }
+
+        R.id.action_sort_by_last_modified -> {
+            viewModel.setSortBy(By.LAST_MODIFIED)
+            true
+        }
+
+        R.id.action_sort_order_ascending -> {
+            viewModel.setSortOrder(
+                if (!menuBinding.sortOrderAscendingItem.isChecked) {
+                    Order.ASCENDING
+                } else {
+                    Order.DESCENDING
+                }
+            )
+            true
+        }
+
+        R.id.action_sort_directories_first -> {
+            viewModel.setSortDirectoriesFirst(!menuBinding.sortDirectoriesFirstItem.isChecked)
+            true
+        }
+
+        R.id.action_view_sort_path_specific -> {
+            viewModel.isViewSortPathSpecific = !menuBinding.viewSortPathSpecificItem.isChecked
+            true
+        }
+
+        R.id.action_new_task -> {
+            newTask()
+            true
+        }
+
+        R.id.action_navigate_up -> {
+            navigateUp()
+            true
+        }
+
+        R.id.action_navigate_to -> {
+            showNavigateToPathDialog()
+            true
+        }
+
+        R.id.action_refresh -> {
+            refresh()
+            true
+        }
+
+        R.id.action_select_all -> {
+            selectAllFiles()
+            true
+        }
+
+        R.id.action_show_hidden_files -> {
+            setShowHiddenFiles(!menuBinding.showHiddenFilesItem.isChecked)
+            true
+        }
+
+        R.id.action_share -> {
+            share()
+            true
+        }
+
+        R.id.action_copy_path -> {
+            copyPath()
+            true
+        }
+
+        R.id.action_open_in_terminal -> {
+            openInTerminal()
+            true
+        }
+
+        R.id.action_add_bookmark -> {
+            addBookmark()
+            true
+        }
+
+        R.id.action_create_shortcut -> {
+            createShortcut()
+            true
+        }
+
+        else -> super.onOptionsItemSelected(item)
     }
 
     fun onKeyShortcut(keyCode: Int, event: KeyEvent): Boolean {
@@ -603,7 +646,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         val throwable = (stateful as? Failure)?.throwable
         if (throwable != null) {
             throwable.printStackTrace()
-            val error = throwable.toString()
+            val error = throwable.toUserMessage(requireContext())
             if (hasFiles) {
                 showToast(error)
             } else {
@@ -627,24 +670,33 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         val fileCount = files.size - directoryCount
         val directoryCountText = if (directoryCount > 0) {
             getQuantityString(
-                R.plurals.file_list_subtitle_directory_count_format, directoryCount, directoryCount
+                R.plurals.file_list_subtitle_directory_count_format,
+                directoryCount,
+                directoryCount
             )
         } else {
             null
         }
         val fileCountText = if (fileCount > 0) {
             getQuantityString(
-                R.plurals.file_list_subtitle_file_count_format, fileCount, fileCount
+                R.plurals.file_list_subtitle_file_count_format,
+                fileCount,
+                fileCount
             )
         } else {
             null
         }
         return when {
             !directoryCountText.isNullOrEmpty() && !fileCountText.isNullOrEmpty() ->
-                (directoryCountText + getString(R.string.file_list_subtitle_separator)
-                    + fileCountText)
+                (
+                    directoryCountText + getString(R.string.file_list_subtitle_separator) +
+                        fileCountText
+                    )
+
             !directoryCountText.isNullOrEmpty() -> directoryCountText
+
             !fileCountText.isNullOrEmpty() -> fileCountText
+
             else -> getString(R.string.empty)
         }
     }
@@ -658,11 +710,13 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     private fun updateSpanCount() {
         layoutManager.spanCount = when (viewModel.viewType) {
             FileViewType.LIST -> 1
+
             FileViewType.GRID -> {
                 var widthDp = resources.configuration.screenWidthDp
                 val persistentDrawerLayout = binding.persistentDrawerLayout
                 if (persistentDrawerLayout != null &&
-                    persistentDrawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    persistentDrawerLayout.isDrawerOpen(GravityCompat.START)
+                ) {
                     widthDp -= getDimensionDp(R.dimen.navigation_max_width).roundToInt()
                 }
                 (widthDp / 180).coerceAtLeast(2)
@@ -790,7 +844,9 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             when (pickOptions.mode) {
                 PickOptions.Mode.OPEN_FILE ->
                     getQuantityString(R.plurals.file_list_title_open_file, count)
+
                 PickOptions.Mode.CREATE_FILE -> getString(R.string.file_list_title_create_file)
+
                 PickOptions.Mode.OPEN_DIRECTORY ->
                     getQuantityString(R.plurals.file_list_title_open_directory, count)
             }
@@ -915,46 +971,54 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         }
     }
 
-    private fun onOverlayActionModeMenuItemClicked(item: MenuItem): Boolean =
-        when (item.itemId) {
-            R.id.action_open -> {
-                pickFiles(viewModel.selectedFiles)
-                true
-            }
-            R.id.action_create -> {
-                confirmReplaceFile(viewModel.selectedFiles.single())
-                true
-            }
-            R.id.action_cut -> {
-                cutFiles(viewModel.selectedFiles)
-                true
-            }
-            R.id.action_copy -> {
-                copyFiles(viewModel.selectedFiles)
-                true
-            }
-            R.id.action_delete -> {
-                confirmDeleteFiles(viewModel.selectedFiles)
-                true
-            }
-            R.id.action_extract -> {
-                extractFiles(viewModel.selectedFiles)
-                true
-            }
-            R.id.action_archive -> {
-                showCreateArchiveDialog(viewModel.selectedFiles)
-                true
-            }
-            R.id.action_share -> {
-                shareFiles(viewModel.selectedFiles)
-                true
-            }
-            R.id.action_select_all -> {
-                selectAllFiles()
-                true
-            }
-            else -> false
+    private fun onOverlayActionModeMenuItemClicked(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.action_open -> {
+            pickFiles(viewModel.selectedFiles)
+            true
         }
+
+        R.id.action_create -> {
+            confirmReplaceFile(viewModel.selectedFiles.single())
+            true
+        }
+
+        R.id.action_cut -> {
+            cutFiles(viewModel.selectedFiles)
+            true
+        }
+
+        R.id.action_copy -> {
+            copyFiles(viewModel.selectedFiles)
+            true
+        }
+
+        R.id.action_delete -> {
+            confirmDeleteFiles(viewModel.selectedFiles)
+            true
+        }
+
+        R.id.action_extract -> {
+            extractFiles(viewModel.selectedFiles)
+            true
+        }
+
+        R.id.action_archive -> {
+            showCreateArchiveDialog(viewModel.selectedFiles)
+            true
+        }
+
+        R.id.action_share -> {
+            shareFiles(viewModel.selectedFiles)
+            true
+        }
+
+        R.id.action_select_all -> {
+            selectAllFiles()
+            true
+        }
+
+        else -> false
+    }
 
     private fun onOverlayActionModeFinished() {
         viewModel.clearSelectedFiles()
@@ -965,7 +1029,8 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             val fileName = file.name
             binding.bottomCreateFileNameEdit.setText(fileName)
             binding.bottomCreateFileNameEdit.setSelection(
-                0, fileName.asFileName().baseName.length
+                0,
+                fileName.asFileName().baseName.length
             )
         }
         ConfirmReplaceFileDialogFragment.show(file, this)
@@ -1012,7 +1077,12 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     ) {
         val archiveFile = viewModel.currentPath.resolve(name)
         FileJobService.archive(
-            makePathListForJob(files), archiveFile, format, filter, password, requireContext()
+            makePathListForJob(files),
+            archiveFile,
+            format,
+            filter,
+            password,
+            requireContext()
         )
         viewModel.selectFiles(files, false)
     }
@@ -1047,7 +1117,8 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                         val fileName = pickOptions.fileName!!
                         binding.bottomCreateFileNameEdit.setText(fileName)
                         binding.bottomCreateFileNameEdit.setSelection(
-                            0, fileName.asFileName().baseName.length
+                            0,
+                            fileName.asFileName().baseName.length
                         )
                         binding.bottomCreateFileNameEdit.requestFocus()
                         viewModel.isCreateFileNameEditInitialized = true
@@ -1055,6 +1126,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                     menu.findItem(R.id.action_open).isVisible = false
                     createMenuItem.isVisible = true
                 }
+
                 PickOptions.Mode.OPEN_DIRECTORY -> {
                     val path = viewModel.currentPath
                     val navigationRoot = NavigationRootMapLiveData.valueCompat[path]
@@ -1065,6 +1137,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                     menu.findItem(R.id.action_open).isVisible = true
                     menu.findItem(R.id.action_create).isVisible = false
                 }
+
                 else -> {
                     if (bottomActionMode.isActive) {
                         bottomActionMode.finish()
@@ -1091,14 +1164,19 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                     }
                 } else {
                     R.string.file_list_paste_move_title_format
-                }, files.size
+                },
+                files.size
             )
             binding.bottomCreateFileNameEdit.isVisible = false
             bottomActionMode.setMenuResource(R.menu.file_list_paste)
             val isCurrentPathReadOnly = viewModel.currentPath.fileSystem.isReadOnly
             bottomActionMode.menu.findItem(R.id.action_paste)
                 .setTitle(
-                    if (areAllFilesArchivePaths) R.string.file_list_paste_action_extract_here else R.string.paste
+                    if (areAllFilesArchivePaths) {
+                        R.string.file_list_paste_action_extract_here
+                    } else {
+                        R.string.paste
+                    }
                 )
                 .isEnabled = !isCurrentPathReadOnly
         }
@@ -1129,35 +1207,37 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         }
     }
 
-    private fun onBottomActionModeMenuItemClicked(item: MenuItem): Boolean =
-        when (item.itemId) {
-            R.id.action_open -> {
-                pickPaths(linkedSetOf(viewModel.currentPath))
-                true
-            }
-            R.id.action_create -> {
-                val fileName = binding.bottomCreateFileNameEdit.text.toString()
-                if (fileName.isEmpty()) {
-                    showToast(R.string.file_list_create_file_name_error_empty)
-                } else if (fileName.asFileNameOrNull() == null) {
-                    showToast(R.string.file_list_create_file_name_error_invalid)
-                } else {
-                    val file = getFileWithName(fileName)
-                    if (file != null) {
-                        confirmReplaceFile(file, false)
-                    } else {
-                        val path = viewModel.currentPath.resolve(fileName)
-                        pickPaths(linkedSetOf(path))
-                    }
-                }
-                true
-            }
-            R.id.action_paste -> {
-                pasteFiles(currentPath)
-                true
-            }
-            else -> false
+    private fun onBottomActionModeMenuItemClicked(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.action_open -> {
+            pickPaths(linkedSetOf(viewModel.currentPath))
+            true
         }
+
+        R.id.action_create -> {
+            val fileName = binding.bottomCreateFileNameEdit.text.toString()
+            if (fileName.isEmpty()) {
+                showToast(R.string.file_list_create_file_name_error_empty)
+            } else if (fileName.asFileNameOrNull() == null) {
+                showToast(R.string.file_list_create_file_name_error_invalid)
+            } else {
+                val file = getFileWithName(fileName)
+                if (file != null) {
+                    confirmReplaceFile(file, false)
+                } else {
+                    val path = viewModel.currentPath.resolve(fileName)
+                    pickPaths(linkedSetOf(path))
+                }
+            }
+            true
+        }
+
+        R.id.action_paste -> {
+            pasteFiles(currentPath)
+            true
+        }
+
+        else -> false
+    }
 
     private fun onBottomActionModeFinished() {
         val pickOptions = viewModel.pickOptions
@@ -1170,11 +1250,15 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         val pasteState = viewModel.pasteState
         if (viewModel.pasteState.copy) {
             FileJobService.copy(
-                makePathListForJob(pasteState.files), targetDirectory, requireContext()
+                makePathListForJob(pasteState.files),
+                targetDirectory,
+                requireContext()
             )
         } else {
             FileJobService.move(
-                makePathListForJob(pasteState.files), targetDirectory, requireContext()
+                makePathListForJob(pasteState.files),
+                targetDirectory,
+                requireContext()
             )
         }
         viewModel.clearPasteState()
@@ -1445,7 +1529,8 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             )
             .setIcon(
                 IconCompat.createWithResource(
-                    context, if (isDirectory) {
+                    context,
+                    if (isDirectory) {
                         R.mipmap.directory_shortcut_icon
                     } else {
                         R.mipmap.file_shortcut_icon
@@ -1516,7 +1601,8 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             ) {
                 if (shouldShowRequestPermissionRationale(
                         android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    )) {
+                    )
+                ) {
                     ShowRequestStoragePermissionRationaleDialogFragment.show(this)
                 } else {
                     requestStoragePermission()
@@ -1565,8 +1651,9 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             viewModel.isStorageAccessRequested = false
             refresh()
         } else if (shouldShowRequestPermissionRationale(
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-        )) {
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
+        ) {
             ShowRequestStoragePermissionRationaleDialogFragment.show(this)
         } else {
             ShowRequestStoragePermissionInSettingsRationaleDialogFragment.show(this)
@@ -1598,10 +1685,12 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
-                PackageManager.PERMISSION_GRANTED) {
+                PackageManager.PERMISSION_GRANTED
+            ) {
                 if (shouldShowRequestPermissionRationale(
                         android.Manifest.permission.POST_NOTIFICATIONS
-                    )) {
+                    )
+                ) {
                     ShowRequestNotificationPermissionRationaleDialogFragment.show(this)
                 } else {
                     requestNotificationPermission()
@@ -1630,8 +1719,9 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         if (isGranted) {
             viewModel.isNotificationPermissionRequested = false
         } else if (shouldShowRequestPermissionRationale(
-            android.Manifest.permission.POST_NOTIFICATIONS
-        )) {
+                android.Manifest.permission.POST_NOTIFICATIONS
+            )
+        ) {
             ShowRequestNotificationPermissionRationaleDialogFragment.show(this)
         } else {
             ShowRequestNotificationPermissionInSettingsRationaleDialogFragment.show(this)
@@ -1678,13 +1768,12 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             Environment.isExternalStorageManager()
     }
 
-    private class RequestPermissionInSettingsContract(private val permissionName: String)
-        : ActivityResultContract<Unit, Boolean>() {
-        override fun createIntent(context: Context, input: Unit): Intent =
-            Intent(
-                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.fromParts("package", context.packageName, null)
-            )
+    private class RequestPermissionInSettingsContract(private val permissionName: String) :
+        ActivityResultContract<Unit, Boolean>() {
+        override fun createIntent(context: Context, input: Unit): Intent = Intent(
+            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", context.packageName, null)
+        )
 
         override fun parseResult(resultCode: Int, intent: Intent?): Boolean =
             application.checkSelfPermissionCompat(permissionName) ==
