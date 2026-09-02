@@ -46,6 +46,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -53,6 +54,9 @@ import com.leinardi.android.speeddial.SpeedDialView
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.application
@@ -653,13 +657,11 @@ class FileListFragment :
         }
         binding.emptyView.fadeToVisibilityUnsafe(stateful is Success && !hasFiles)
         if (files != null) {
-            updateAdapterFileList()
+            updateAdapterFileList(restorePendingState = stateful is Success)
         } else {
             // This resets animation as well.
             adapter.clear()
-        }
-        if (stateful is Success) {
-            viewModel.pendingState?.let { layoutManager.onRestoreInstanceState(it) }
+            ++adapterFileListUpdateGeneration
         }
     }
 
@@ -724,6 +726,7 @@ class FileListFragment :
 
     private fun onSortOptionsChanged(sortOptions: FileSortOptions) {
         adapter.sortOptions = sortOptions
+        updateAdapterFileList()
         updateViewSortMenuItems()
     }
 
@@ -785,12 +788,34 @@ class FileListFragment :
         updateShowHiddenFilesMenuItem()
     }
 
-    private fun updateAdapterFileList() {
-        var files = viewModel.fileListStateful.value ?: return
-        if (!Settings.FILE_LIST_SHOW_HIDDEN_FILES.valueCompat) {
-            files = files.filterNot { it.isHidden }
+    private var adapterFileListUpdateGeneration = 0
+
+    private fun updateAdapterFileList(restorePendingState: Boolean = false) {
+        // The sort options arrive before the first file list does.
+        val files = viewModel.fileListLiveData.value?.value ?: return
+        val isSearching = viewModel.searchState.isSearching
+        val showHiddenFiles = Settings.FILE_LIST_SHOW_HIDDEN_FILES.valueCompat
+        val sortOptions = viewModel.sortOptions
+        val generation = ++adapterFileListUpdateGeneration
+        // Filtering and sorting a large directory takes long enough to drop frames, so do it off
+        // the main thread and only apply the newest result.
+        viewLifecycleOwner.lifecycleScope.launch {
+            val visibleFiles = withContext(Dispatchers.Default) {
+                val visibleFiles = if (showHiddenFiles) files else files.filterNot { it.isHidden }
+                if (isSearching) {
+                    visibleFiles
+                } else {
+                    visibleFiles.sortedWith(sortOptions.createComparator())
+                }
+            }
+            if (generation != adapterFileListUpdateGeneration) {
+                return@launch
+            }
+            adapter.replaceListAndIsSearching(visibleFiles, isSearching)
+            if (restorePendingState) {
+                viewModel.pendingState?.let { layoutManager.onRestoreInstanceState(it) }
+            }
         }
-        adapter.replaceListAndIsSearching(files, viewModel.searchState.isSearching)
     }
 
     private fun updateShowHiddenFilesMenuItem() {
