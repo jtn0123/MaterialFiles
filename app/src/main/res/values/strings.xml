@@ -700,7 +700,6 @@
 
     <string name="video_viewer_title">Video player</string>
     <string name="video_viewer_subtitle_format" translatable="false">@string/image_viewer_subtitle_format</string>
-    <string name="video_viewer_delete_message_format" translatable="false">@string/file_delete_message_file_format</string>
     <string name="video_viewer_picture_in_picture">Picture-in-picture</string>
     <string name="video_viewer_play_from_beginning">Play from beginning</string>
     <string name="video_viewer_screen_orientation">Screen orientation</string>
@@ -708,10 +707,6 @@
     <string name="video_viewer_screen_orientation_landscape">Landscape</string>
     <string name="video_viewer_screen_orientation_portrait">Portrait</string>
     <string name="video_viewer_error_format">Cannot play %1$s</string>
-    <string name="video_viewer_play">Play</string>
-    <string name="video_viewer_pause">Pause</string>
-    <string name="video_viewer_previous">Previous</string>
-    <string name="video_viewer_next">Next</string>
     <string name="save_as_title">Save as</string>
     <string name="save_as_error">Error while saving file</string>
     <string name="save_as_success_format">“%1$s” has been saved to “%2$s”</string>

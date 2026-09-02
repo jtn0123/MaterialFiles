@@ -38,8 +38,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.common.Tracks
-import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.Timeline
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -132,7 +131,11 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             updateTitle()
-            maybeResumePlaybackPosition()
+            // A (re)set playlist already starts where it should, and seeking now would jump away
+            // from wherever the user has scrubbed to since.
+            if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
+                maybeResumePlaybackPosition()
+            }
             updatePictureInPictureParams()
         }
 
@@ -141,13 +144,28 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             newPosition: Player.PositionInfo,
             reason: Int
         ) {
-            // We are leaving a video, so this is our last chance to remember where we were.
-            if (oldPosition.mediaItemIndex != newPosition.mediaItemIndex) {
-                savePlaybackPosition(
-                    oldPosition.mediaItemIndex, oldPosition.positionMs,
-                    player?.duration ?: C.TIME_UNSET
-                )
+            if (oldPosition.mediaItemIndex == newPosition.mediaItemIndex
+                || reason == Player.DISCONTINUITY_REASON_REMOVE) {
+                // Removals are handled by delete(), and paths is already updated by the time we
+                // get here.
+                return
             }
+            // We are leaving a video, so this is our last chance to remember where we were.
+            val path = paths.getOrNull(oldPosition.mediaItemIndex) ?: return
+            if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
+                // It played to the end, so it should start over the next time.
+                VideoPlaybackPositions.remove(path)
+                return
+            }
+            // The player's duration is already the new video's, so ask the timeline for the old.
+            val timeline = player?.currentTimeline
+            val durationMillis =
+                if (timeline != null && oldPosition.mediaItemIndex < timeline.windowCount) {
+                    timeline.getWindow(oldPosition.mediaItemIndex, Timeline.Window()).durationMs
+                } else {
+                    C.TIME_UNSET
+                }
+            savePlaybackPosition(oldPosition.mediaItemIndex, oldPosition.positionMs, durationMillis)
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -160,10 +178,6 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             binding.playerView.keepScreenOn = isPlaying
             updatePictureInPictureParams()
-        }
-
-        override fun onTracksChanged(tracks: Tracks) {
-            selectSideloadedSubtitle(tracks)
         }
 
         override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -391,6 +405,7 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         binding.playerView.player = null
         player.release()
         this.player = null
+        updatePictureInPictureParams()
     }
 
     private fun savePlayerPosition() {
@@ -433,35 +448,6 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         }
     }
 
-    /**
-     * Turns on a subtitle that was found next to the video, since that's why it is there.
-     */
-    private fun selectSideloadedSubtitle(tracks: Tracks) {
-        val player = player ?: return
-        val path = currentPath ?: return
-        val labels = subtitlesByPath[path]?.mapNotNull { it.label }?.toSet() ?: return
-        if (labels.isEmpty()) {
-            return
-        }
-        val textGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_TEXT }
-        if (textGroups.any { it.isSelected }) {
-            return
-        }
-        for (group in textGroups) {
-            for (index in 0..<group.length) {
-                if (!group.isTrackSupported(index)
-                    || group.getTrackFormat(index).label !in labels) {
-                    continue
-                }
-                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
-                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                    .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, index))
-                    .build()
-                return
-            }
-        }
-    }
-
     private fun toggleResizeMode() {
         resizeMode = if (resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT) {
             AspectRatioFrameLayout.RESIZE_MODE_ZOOM
@@ -482,7 +468,8 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     }
 
     fun onUserLeaveHint() {
-        if (player?.isPlaying == true) {
+        // Android 12+ enters picture-in-picture for us, see createPictureInPictureParams().
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && player?.isPlaying == true) {
             enterPictureInPictureMode()
         }
     }
@@ -495,12 +482,16 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         requireActivity().enterPictureInPictureMode(createPictureInPictureParams())
     }
 
+    /**
+     * Keeps the window's aspect ratio and actions current, and on Android 12+ also whether leaving
+     * the app should enter picture-in-picture, so this has to run even before we are in it.
+     */
     private fun updatePictureInPictureParams() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !isPictureInPictureSupported
-            || !isInPictureInPictureMode) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !isPictureInPictureSupported) {
             return
         }
-        requireActivity().setPictureInPictureParams(createPictureInPictureParams())
+        val activity = activity ?: return
+        activity.setPictureInPictureParams(createPictureInPictureParams())
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -509,6 +500,11 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             .apply {
                 aspectRatio()?.let { setAspectRatio(it) }
                 setActions(createPictureInPictureActions())
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    // Unlike onUserLeaveHint(), this animates smoothly and works with gesture
+                    // navigation.
+                    setAutoEnterEnabled(player?.isPlaying == true)
+                }
             }
             .build()
 
@@ -530,24 +526,24 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         if (player.hasPreviousMediaItem()) {
             actions += createPictureInPictureAction(
                 CONTROL_PREVIOUS, androidx.media3.ui.R.drawable.exo_icon_previous,
-                R.string.video_viewer_previous
+                androidx.media3.ui.R.string.exo_controls_previous_description
             )
         }
         actions += if (player.isPlaying) {
             createPictureInPictureAction(
                 CONTROL_PAUSE, androidx.media3.ui.R.drawable.exo_icon_pause,
-                R.string.video_viewer_pause
+                androidx.media3.ui.R.string.exo_controls_pause_description
             )
         } else {
             createPictureInPictureAction(
                 CONTROL_PLAY, androidx.media3.ui.R.drawable.exo_icon_play,
-                R.string.video_viewer_play
+                androidx.media3.ui.R.string.exo_controls_play_description
             )
         }
         if (player.hasNextMediaItem()) {
             actions += createPictureInPictureAction(
                 CONTROL_NEXT, androidx.media3.ui.R.drawable.exo_icon_next,
-                R.string.video_viewer_next
+                androidx.media3.ui.R.string.exo_controls_next_description
             )
         }
         return actions
@@ -605,7 +601,13 @@ class VideoViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             return
         }
         if (index != -1) {
+            val player = player
+            val wasCurrent = player?.currentMediaItemIndex == index
             player?.removeMediaItem(index)
+            if (wasCurrent) {
+                // We moved on to another video, and playlist changes don't seek by themselves.
+                maybeResumePlaybackPosition()
+            }
         }
         updateTitle()
     }

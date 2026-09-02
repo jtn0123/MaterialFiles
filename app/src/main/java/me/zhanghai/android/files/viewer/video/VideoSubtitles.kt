@@ -5,11 +5,14 @@
 
 package me.zhanghai.android.files.viewer.video
 
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import java8.nio.file.Path
 import me.zhanghai.android.files.file.fileProviderUri
+import me.zhanghai.android.files.filelist.name
 import me.zhanghai.android.files.provider.common.newDirectoryStream
+import me.zhanghai.android.files.util.asFileNameOrNull
 import java.io.IOException
 import java.util.Locale
 
@@ -79,26 +82,17 @@ object VideoSubtitles {
                 MediaItem.SubtitleConfiguration.Builder(subtitlePath.fileProviderUri)
                     .setMimeType(MIME_TYPES_BY_EXTENSION[subtitlePath.extension])
                     .setLanguage(language)
-                    .setLabel(subtitlePath.fileName.toString())
+                    .setLabel(subtitlePath.name)
+                    // Have the track selector turn it on, since that's why it is next to the
+                    // video, while still letting the user turn it off from the subtitle button.
+                    .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
                     .build()
             }
     }
 
     private val Path.extension: String
-        get() {
-            val fileName = fileName?.toString() ?: return ""
-            val index = fileName.lastIndexOf('.')
-            return if (index != -1) {
-                fileName.substring(index + 1).lowercase(Locale.ROOT)
-            } else {
-                ""
-            }
-        }
+        get() = name.asFileNameOrNull()?.singleExtension?.lowercase(Locale.ROOT) ?: ""
 
     private val Path.baseName: String
-        get() {
-            val fileName = fileName?.toString() ?: return ""
-            val index = fileName.lastIndexOf('.')
-            return if (index != -1) fileName.substring(0, index) else fileName
-        }
+        get() = name.asFileNameOrNull()?.baseName ?: ""
 }
