@@ -1,0 +1,26 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 4
+max_line_length = 100
+ktlint_code_style = android_studio
+# The code base predates ktlint; these rules would rewrite thousands of existing lines.
+ktlint_standard_function-naming = disabled
+ktlint_standard_property-naming = disabled
+# The //#ifdef NONFREE markers are matched verbatim by F-Droid's build recipe.
+ktlint_standard_comment-spacing = disabled
+
+[*.{java,xml,gradle}]
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,json,md}]
+indent_style = space
+indent_size = 2

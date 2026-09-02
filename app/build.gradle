@@ -5,6 +5,7 @@
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-parcelize'
+apply plugin: 'org.jlleitschuh.gradle.ktlint'
 
 apply from: '../signing.gradle'
 
@@ -99,6 +100,13 @@ android {
             enableSplit = false
         }
     }
+}
+
+ktlint {
+    version = '1.8.0'
+    android = true
+    // Existing violations are recorded in the baseline; new code is checked in full.
+    baseline = file('ktlint-baseline.xml')
 }
 
 repositories {
