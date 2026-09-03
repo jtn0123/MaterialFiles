@@ -30,16 +30,23 @@ object VideoSubtitles {
         "xml" to MimeTypes.APPLICATION_TTML
     )
 
+    /** Whether [path] has a subtitle extension and so could be a sidecar for some video. */
+    fun isSidecarCandidate(path: Path): Boolean = path.extension in MIME_TYPES_BY_EXTENSION
+
     /**
-     * Lists the parent directory of [videoPaths] once and returns the sidecar subtitles for each of
-     * them. Blocking, and so must not be called on the main thread.
+     * Returns the sidecar subtitles for each of [videoPaths], matching against
+     * [knownSubtitlePaths] when the caller has them and listing each parent directory once
+     * otherwise. Blocking in the latter case, and so must not be called on the main thread.
      */
-    fun findForAll(videoPaths: List<Path>): Map<Path, List<MediaItem.SubtitleConfiguration>> {
+    fun findForAll(
+        videoPaths: List<Path>,
+        knownSubtitlePaths: List<Path>? = null
+    ): Map<Path, List<MediaItem.SubtitleConfiguration>> {
         val subtitlePathsByDirectory = mutableMapOf<Path, List<Path>?>()
         return videoPaths.associateWith { videoPath ->
             val directory = videoPath.parent ?: return@associateWith emptyList()
             val subtitlePaths = subtitlePathsByDirectory.getOrPut(directory) {
-                listSubtitles(directory)
+                knownSubtitlePaths?.filter { it.parent == directory } ?: listSubtitles(directory)
             } ?: return@associateWith emptyList()
             find(videoPath, subtitlePaths)
         }

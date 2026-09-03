@@ -8,13 +8,13 @@ package me.zhanghai.android.files.util
 import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
+import java.io.Serializable
+import java.net.URI
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import me.zhanghai.android.files.BuildConfig
 import me.zhanghai.android.files.compat.DocumentsContractCompat
 import me.zhanghai.android.files.storage.createOrLog
-import java.io.Serializable
-import java.net.URI
 
 private const val EXTRA_PATH_URI = "${BuildConfig.APPLICATION_ID}.extra.PATH_URI"
 
@@ -48,31 +48,37 @@ val Intent.saveAsPath: Path?
         return uri?.toPathOrNull()
     }
 
-private fun Uri.toPathOrNull(): Path? =
-    when (scheme) {
-        ContentResolver.SCHEME_FILE, null -> path?.takeIfNotEmpty()?.let { Paths.get(it) }
-        ContentResolver.SCHEME_CONTENT -> {
-            val uri = URI::class.createOrLog(toString())
-                // Some people use Uri.parse() without encoding their path. Let's try saving
-                // them by calling the other URI constructor that encodes everything.
-                ?: URI::class.createOrLog(scheme, userInfo, host, port, path, query, fragment)
-            uri?.let { Paths.get(it) }
-        }
-        else -> null
+private fun Uri.toPathOrNull(): Path? = when (scheme) {
+    ContentResolver.SCHEME_FILE, null -> path?.takeIfNotEmpty()?.let { Paths.get(it) }
+
+    ContentResolver.SCHEME_CONTENT -> {
+        val uri = URI::class.createOrLog(toString())
+            // Some people use Uri.parse() without encoding their path. Let's try saving
+            // them by calling the other URI constructor that encodes everything.
+            ?: URI::class.createOrLog(scheme, userInfo, host, port, path, query, fragment)
+        uri?.let { Paths.get(it) }
     }
+
+    else -> null
+}
 
 private const val EXTRA_PATH_URI_LIST = "${BuildConfig.APPLICATION_ID}.extra.PATH_URI_LIST"
 
 var Intent.extraPathList: List<Path>
-    get() {
-        @Suppress("UNCHECKED_CAST")
-        val extraPathUris = (getSerializableExtra(EXTRA_PATH_URI_LIST) as List<URI>?)
-            ?.takeIfNotEmpty()
-        extraPathUris?.let { return it.map { uri -> Paths.get(uri) } }
-        return listOfNotNull(extraPath)
-    }
+    get() = getPathListExtra(EXTRA_PATH_URI_LIST) ?: listOfNotNull(extraPath)
     set(value) {
-        // We cannot put Path into intent here, otherwise we will crash other apps unmarshalling it.
-        val pathUris = value.map { it.toUri() }
-        putExtra(EXTRA_PATH_URI_LIST, pathUris as Serializable)
+        putPathListExtra(EXTRA_PATH_URI_LIST, value)
     }
+
+/** Returns null when the extra is absent or empty. */
+fun Intent.getPathListExtra(name: String): List<Path>? {
+    @Suppress("UNCHECKED_CAST")
+    val pathUris = (getSerializableExtra(name) as List<URI>?)?.takeIfNotEmpty() ?: return null
+    return pathUris.map { Paths.get(it) }
+}
+
+fun Intent.putPathListExtra(name: String, paths: List<Path>) {
+    // We cannot put Path into intent here, otherwise we will crash other apps unmarshalling it.
+    val pathUris = paths.map { it.toUri() }
+    putExtra(name, pathUris as Serializable)
+}

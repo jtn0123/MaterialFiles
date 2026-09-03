@@ -60,6 +60,7 @@ import me.zhanghai.android.files.databinding.VideoViewerFragmentBinding
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.fileProviderUri
 import me.zhanghai.android.files.file.guessFromPath
+import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.provider.common.delete
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.ParcelableArgs
@@ -77,6 +78,7 @@ import me.zhanghai.android.files.util.mediumAnimTime
 import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ConfirmDeleteDialogFragment
@@ -362,10 +364,19 @@ class VideoViewerFragment :
     }
 
     private suspend fun loadSubtitles() {
-        // A remote directory can be slow to list, and subtitles aren't worth waiting long for.
-        subtitlesByPath = withTimeoutOrNull(SUBTITLE_TIMEOUT_MILLIS) {
-            runInterruptible(Dispatchers.IO) { VideoSubtitles.findForAll(paths) }
-        } ?: emptyMap()
+        val knownSubtitlePaths = VideoViewerActivity.getSubtitlePathsExtra(args.intent)
+        subtitlesByPath = when {
+            // Our file list already listed the directory and told us what it found.
+            knownSubtitlePaths != null -> VideoSubtitles.findForAll(paths, knownSubtitlePaths)
+
+            // Listing a remote directory just for subtitles is slower than it is worth, so only
+            // scan when we were opened from elsewhere with local files.
+            paths.any { it.isRemotePath } -> emptyMap()
+
+            else -> withTimeoutOrNull(SUBTITLE_TIMEOUT_MILLIS) {
+                runInterruptible(Dispatchers.IO) { VideoSubtitles.findForAll(paths) }
+            } ?: emptyMap()
+        }
         // Re-preparing the player interrupts playback, so only do it if we found anything.
         if (subtitlesByPath.values.any { it.isNotEmpty() }) {
             setMediaItems()
@@ -623,7 +634,7 @@ class VideoViewerFragment :
             path.delete()
         } catch (e: IOException) {
             e.printStackTrace()
-            showToast(e.toString())
+            showToast(e.toUserMessage(requireContext()))
             return
         }
         VideoPlaybackPositions.remove(path)

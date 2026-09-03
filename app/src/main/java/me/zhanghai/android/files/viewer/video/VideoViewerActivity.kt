@@ -12,7 +12,9 @@ import androidx.fragment.app.commit
 import java8.nio.file.Path
 import me.zhanghai.android.files.app.AppActivity
 import me.zhanghai.android.files.util.extraPathList
+import me.zhanghai.android.files.util.getPathListExtra
 import me.zhanghai.android.files.util.putArgs
+import me.zhanghai.android.files.util.putPathListExtra
 
 class VideoViewerActivity : AppActivity() {
     private val fragment: VideoViewerFragment?
@@ -45,11 +47,27 @@ class VideoViewerActivity : AppActivity() {
         private const val FRAGMENT_TAG = "VideoViewerFragment"
 
         private val EXTRA_POSITION = "${VideoViewerActivity::class.java.name}.extra.POSITION"
+        private val EXTRA_SUBTITLE_PATH_URI_LIST =
+            "${VideoViewerActivity::class.java.name}.extra.SUBTITLE_PATH_URI_LIST"
 
-        fun putExtras(intent: Intent, paths: List<Path>, position: Int) {
+        /**
+         * [subtitlePaths] are the sidecar subtitle candidates the caller already knows about
+         * from listing the directory, so that the player doesn't have to list it again, which
+         * matters on a remote share.
+         */
+        fun putExtras(
+            intent: Intent,
+            paths: List<Path>,
+            position: Int,
+            subtitlePaths: List<Path> = emptyList()
+        ) {
             // All extra put here must be framework classes, or we may crash the resolver activity.
             intent.extraPathList = paths
             intent.putExtra(EXTRA_POSITION, position)
+            intent.putPathListExtra(EXTRA_SUBTITLE_PATH_URI_LIST, subtitlePaths)
         }
+
+        fun getSubtitlePathsExtra(intent: Intent): List<Path>? =
+            intent.getPathListExtra(EXTRA_SUBTITLE_PATH_URI_LIST)
     }
 }

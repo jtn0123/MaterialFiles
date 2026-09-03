@@ -140,6 +140,7 @@ import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.viewModels
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ImageViewerActivity
+import me.zhanghai.android.files.viewer.video.VideoSubtitles
 import me.zhanghai.android.files.viewer.video.VideoViewerActivity
 
 class FileListFragment :
@@ -1426,7 +1427,10 @@ class FileListFragment :
             return
         }
         val (paths, position) = collectSiblingPaths(path) { it.isVideo } ?: return
-        VideoViewerActivity.putExtras(intent, paths, position)
+        val subtitlePaths = (0..<adapter.itemCount)
+            .map { adapter.getItem(it).path }
+            .filter { VideoSubtitles.isSidecarCandidate(it) }
+        VideoViewerActivity.putExtras(intent, paths, position, subtitlePaths)
     }
 
     /**
@@ -1437,7 +1441,7 @@ class FileListFragment :
         path: Path,
         predicate: (MimeType) -> Boolean
     ): Pair<List<Path>, Int>? {
-        var paths = mutableListOf<Path>()
+        val paths = mutableListOf<Path>()
         // We need the ordered list from our adapter instead of the list from FileListLiveData.
         for (index in 0..<adapter.itemCount) {
             val file = adapter.getItem(index)
@@ -1446,18 +1450,14 @@ class FileListFragment :
                 paths.add(filePath)
             }
         }
-        var position = paths.indexOf(path)
+        val position = paths.indexOf(path)
         if (position == -1) {
             return null
         }
-        // HACK: Don't send too many paths to avoid TransactionTooLargeException.
-        if (paths.size > VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX) {
-            val start = (position - VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX / 2)
-                .coerceIn(0, paths.size - VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX)
-            paths = paths.subList(start, start + VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX)
-            position -= start
+        // The list travels in an intent, so bound it by size rather than by count.
+        return windowWithinBudget(paths, position, VIEWER_ACTIVITY_PATH_URI_LENGTH_MAX) {
+            it.toUri().toString().length
         }
-        return paths to position
     }
 
     override fun cutFile(file: FileItem) {
@@ -1780,7 +1780,9 @@ class FileListFragment :
         private const val ACTION_VIEW_DOWNLOADS =
             "me.zhanghai.android.files.intent.action.VIEW_DOWNLOADS"
 
-        private const val VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX = 1000
+        // Well under the 1 MB binder limit even after the URIs are serialized into the intent
+        // and the intent is copied on its way to the viewer.
+        private const val VIEWER_ACTIVITY_PATH_URI_LENGTH_MAX = 64 * 1024
     }
 
     private class RequestAllFilesAccessContract : ActivityResultContract<Unit, Boolean>() {

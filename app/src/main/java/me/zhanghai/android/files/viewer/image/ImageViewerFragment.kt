@@ -44,6 +44,7 @@ import me.zhanghai.android.files.util.mediumAnimTime
 import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.systemuihelper.SystemUiHelper
 
@@ -176,7 +177,7 @@ class ImageViewerFragment :
             path.delete()
         } catch (e: IOException) {
             e.printStackTrace()
-            showToast(e.toString())
+            showToast(e.toUserMessage(requireContext()))
             return
         }
         deletedPaths.add(path)
