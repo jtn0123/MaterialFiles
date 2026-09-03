@@ -3432,37 +3432,4 @@
         <error line="74" column="25" source="standard:chain-wrapping" />
         <error line="74" column="64" source="standard:wrapping" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/viewer/video/VideoViewerFragment.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="84" column="29" source="standard:class-signature" />
-        <error line="84" column="41" source="standard:class-signature" />
-        <error line="110" column="13" source="standard:chain-wrapping" />
-        <error line="116" column="13" source="standard:chain-wrapping" />
-        <error line="127" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="128" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="129" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="151" column="17" source="standard:chain-wrapping" />
-        <error line="151" column="63" source="standard:wrapping" />
-        <error line="215" column="14" source="standard:function-signature" />
-        <error line="235" column="23" source="standard:argument-list-wrapping" />
-        <error line="235" column="55" source="standard:argument-list-wrapping" />
-        <error line="270" column="31" source="standard:argument-list-wrapping" />
-        <error line="271" column="62" source="standard:argument-list-wrapping" />
-        <error line="319" column="66" source="standard:function-signature" />
-        <error line="325" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="329" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="333" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="337" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="341" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="482" column="13" source="standard:chain-wrapping" />
-        <error line="482" column="39" source="standard:wrapping" />
-        <error line="534" column="35" source="standard:argument-list-wrapping" />
-        <error line="540" column="32" source="standard:argument-list-wrapping" />
-        <error line="545" column="31" source="standard:argument-list-wrapping" />
-        <error line="551" column="31" source="standard:argument-list-wrapping" />
-        <error line="569" column="22" source="standard:argument-list-wrapping" />
-        <error line="569" column="31" source="standard:argument-list-wrapping" />
-        <error line="636" column="56" source="standard:argument-list-wrapping" />
-        <error line="636" column="74" source="standard:argument-list-wrapping" />
-    </file>
 </baseline>

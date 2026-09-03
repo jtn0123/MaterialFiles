@@ -5,32 +5,18 @@
 
 package me.zhanghai.android.files.viewer.video
 
-import android.app.PendingIntent
-import android.app.PictureInPictureParams
-import android.app.RemoteAction
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ActivityInfo
-import android.content.pm.PackageManager
 import android.graphics.Color
-import android.graphics.Rect
-import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
-import android.util.Rational
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.DrawableRes
-import androidx.annotation.RequiresApi
-import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
@@ -40,10 +26,8 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.common.Timeline
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -62,7 +46,6 @@ import me.zhanghai.android.files.file.fileProviderUri
 import me.zhanghai.android.files.file.guessFromPath
 import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.provider.common.delete
-import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableListParceler
 import me.zhanghai.android.files.util.ParcelableState
@@ -79,7 +62,6 @@ import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.toUserMessage
-import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ConfirmDeleteDialogFragment
 import me.zhanghai.android.systemuihelper.SystemUiHelper
@@ -102,50 +84,18 @@ class VideoViewerFragment :
 
     private var binding by autoCleared<VideoViewerFragmentBinding>()
 
+    private var pictureInPicture by autoCleared<VideoViewerPictureInPicture>()
+
     private lateinit var systemUiHelper: SystemUiHelper
 
     private var player: ExoPlayer? = null
 
     private var subtitlesByPath: Map<Path, List<MediaItem.SubtitleConfiguration>> = emptyMap()
 
-    /**
-     * Where playback should start from, kept across player releases (backgrounding, and process
-     * death via [State]).
-     */
-    private var mediaItemIndex = 0
-    private var positionMillis = C.TIME_UNSET
+    private lateinit var playbackPosition: VideoViewerPlaybackPosition
 
     private var screenOrientationIndex = 0
     private var resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-
-    private val isPictureInPictureSupported: Boolean by lazy {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            requireContext().packageManager
-                .hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
-    }
-
-    private val isInPictureInPictureMode: Boolean
-        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
-            requireActivity().isInPictureInPictureMode
-
-    private val pictureInPictureReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action != ACTION_PICTURE_IN_PICTURE_CONTROL) {
-                return
-            }
-            val player = player ?: return
-            when (intent.getIntExtra(EXTRA_PICTURE_IN_PICTURE_CONTROL, 0)) {
-                // Like the play button, this restarts a video that has played to the end.
-                CONTROL_PLAY -> Util.handlePlayButtonAction(player)
-
-                CONTROL_PAUSE -> player.pause()
-
-                CONTROL_PREVIOUS -> player.seekToPreviousMediaItem()
-
-                CONTROL_NEXT -> player.seekToNextMediaItem()
-            }
-        }
-    }
 
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -153,9 +103,9 @@ class VideoViewerFragment :
             // A (re)set playlist already starts where it should, and seeking now would jump away
             // from wherever the user has scrubbed to since.
             if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
-                maybeResumePlaybackPosition()
+                playbackPosition.maybeResumePlaybackPosition()
             }
-            updatePictureInPictureParams()
+            pictureInPicture.updatePictureInPictureParams()
         }
 
         override fun onPositionDiscontinuity(
@@ -163,50 +113,25 @@ class VideoViewerFragment :
             newPosition: Player.PositionInfo,
             reason: Int
         ) {
-            if (oldPosition.mediaItemIndex == newPosition.mediaItemIndex ||
-                reason == Player.DISCONTINUITY_REASON_REMOVE
-            ) {
-                // Removals are handled by delete(), and paths is already updated by the time we
-                // get here.
-                return
-            }
-            // We are leaving a video, so this is our last chance to remember where we were.
-            val path = paths.getOrNull(oldPosition.mediaItemIndex) ?: return
-            if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
-                // It played to the end, so it should start over the next time.
-                VideoPlaybackPositions.remove(path)
-                return
-            }
-            // The player's duration is already the new video's, so ask the timeline for the old.
-            val timeline = player?.currentTimeline
-            val durationMillis =
-                if (timeline != null && oldPosition.mediaItemIndex < timeline.windowCount) {
-                    timeline.getWindow(oldPosition.mediaItemIndex, Timeline.Window()).durationMs
-                } else {
-                    C.TIME_UNSET
-                }
-            savePlaybackPosition(oldPosition.mediaItemIndex, oldPosition.positionMs, durationMillis)
+            playbackPosition.onPositionDiscontinuity(oldPosition, newPosition, reason)
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
-            if (playbackState == Player.STATE_ENDED) {
-                // Finished videos should start over the next time.
-                currentPath?.let { VideoPlaybackPositions.remove(it) }
-            }
+            playbackPosition.onPlaybackStateChanged(playbackState)
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             binding.playerView.keepScreenOn = isPlaying
-            updatePictureInPictureParams()
+            pictureInPicture.updatePictureInPictureParams()
         }
 
         override fun onVideoSizeChanged(videoSize: VideoSize) {
-            updatePictureInPictureParams()
+            pictureInPicture.updatePictureInPictureParams()
         }
 
         override fun onPlayerError(error: PlaybackException) {
             error.printStackTrace()
-            val fileName = currentPath?.fileName?.toString() ?: return
+            val fileName = playbackPosition.currentPath?.fileName?.toString() ?: return
             showToast(getString(R.string.video_viewer_error_format, fileName))
         }
     }
@@ -217,9 +142,11 @@ class VideoViewerFragment :
         val state = savedInstanceState?.getState<State>()
         state?.deletedPaths?.let { deletedPaths += it }
         paths = argsPaths.toMutableList().apply { removeAll(deletedPaths) }
-        mediaItemIndex = state?.mediaItemIndex
-            ?: args.position.coerceIn(0, paths.lastIndex.coerceAtLeast(0))
-        positionMillis = state?.positionMillis ?: C.TIME_UNSET
+        playbackPosition = VideoViewerPlaybackPosition(paths) { player }.apply {
+            mediaItemIndex = state?.mediaItemIndex
+                ?: args.position.coerceIn(0, paths.lastIndex.coerceAtLeast(0))
+            positionMillis = state?.positionMillis ?: C.TIME_UNSET
+        }
         screenOrientationIndex = state?.screenOrientationIndex ?: 0
         resizeMode = state?.resizeMode ?: AspectRatioFrameLayout.RESIZE_MODE_FIT
     }
@@ -235,6 +162,9 @@ class VideoViewerFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        pictureInPicture = VideoViewerPictureInPicture(requireActivity(), binding.playerView) {
+            player
+        }
         if (paths.isEmpty()) {
             finish()
             return
@@ -284,12 +214,7 @@ class VideoViewerFragment :
     override fun onStart() {
         super.onStart()
 
-        ContextCompat.registerReceiver(
-            requireContext(),
-            pictureInPictureReceiver,
-            IntentFilter(ACTION_PICTURE_IN_PICTURE_CONTROL),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
+        pictureInPicture.registerReceiver()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             initializePlayer()
         }
@@ -317,26 +242,33 @@ class VideoViewerFragment :
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             releasePlayer()
         }
-        requireContext().unregisterReceiver(pictureInPictureReceiver)
+        pictureInPicture.unregisterReceiver()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
-        savePlayerPosition()
+        playbackPosition.savePlayerPosition()
         outState.putState(
-            State(deletedPaths, mediaItemIndex, positionMillis, screenOrientationIndex, resizeMode)
+            State(
+                deletedPaths,
+                playbackPosition.mediaItemIndex,
+                playbackPosition.positionMillis,
+                screenOrientationIndex,
+                resizeMode
+            )
         )
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
         menuInflater.inflate(R.menu.video_viewer, menu)
-        menu.findItem(R.id.action_picture_in_picture).isVisible = isPictureInPictureSupported
+        menu.findItem(R.id.action_picture_in_picture).isVisible =
+            pictureInPicture.isPictureInPictureSupported
     }
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean = when (menuItem.itemId) {
         R.id.action_picture_in_picture -> {
-            enterPictureInPictureMode()
+            pictureInPicture.enterPictureInPictureMode()
             true
         }
 
@@ -346,7 +278,7 @@ class VideoViewerFragment :
         }
 
         R.id.action_play_from_beginning -> {
-            playFromBeginning()
+            playbackPosition.playFromBeginning()
             true
         }
 
@@ -407,7 +339,6 @@ class VideoViewerFragment :
      * scan finishes.
      */
     private fun setMediaItems() {
-        val player = player ?: return
         val mediaItems = paths.map { path ->
             MediaItem.Builder()
                 .setMediaId(path.toUri().toString())
@@ -415,71 +346,22 @@ class VideoViewerFragment :
                 .setSubtitleConfigurations(subtitlesByPath[path] ?: emptyList())
                 .build()
         }
-        // We are called again once the subtitle scan finishes, and shouldn't rewind then.
-        val isPlaylistSet = player.mediaItemCount > 0
-        val index = if (isPlaylistSet) {
-            player.currentMediaItemIndex
-        } else {
-            mediaItemIndex.coerceIn(0, paths.lastIndex)
-        }
-        val startPositionMillis = when {
-            isPlaylistSet -> player.currentPosition
-            positionMillis != C.TIME_UNSET -> positionMillis
-            else -> rememberedPlaybackPosition(paths[index]) ?: C.TIME_UNSET
-        }
-        player.setMediaItems(mediaItems, index, startPositionMillis)
-        player.prepare()
+        playbackPosition.setMediaItems(mediaItems)
     }
 
     private fun releasePlayer() {
         val player = player ?: return
-        savePlayerPosition()
-        savePlaybackPosition(player.currentMediaItemIndex, player.currentPosition, player.duration)
+        playbackPosition.savePlayerPosition()
+        playbackPosition.savePlaybackPosition(
+            player.currentMediaItemIndex,
+            player.currentPosition,
+            player.duration
+        )
         player.removeListener(playerListener)
         binding.playerView.player = null
         player.release()
         this.player = null
-        updatePictureInPictureParams()
-    }
-
-    private fun savePlayerPosition() {
-        val player = player ?: return
-        mediaItemIndex = player.currentMediaItemIndex
-        positionMillis = player.currentPosition
-    }
-
-    private fun rememberedPlaybackPosition(path: Path): Long? =
-        if (Settings.VIDEO_REMEMBER_PLAYBACK_POSITION.valueCompat) {
-            VideoPlaybackPositions.get(path)
-        } else {
-            null
-        }
-
-    private fun savePlaybackPosition(index: Int, positionMillis: Long, durationMillis: Long) {
-        if (!Settings.VIDEO_REMEMBER_PLAYBACK_POSITION.valueCompat) {
-            return
-        }
-        val path = paths.getOrNull(index) ?: return
-        VideoPlaybackPositions.set(path, positionMillis, durationMillis)
-    }
-
-    private fun maybeResumePlaybackPosition() {
-        val player = player ?: return
-        val path = currentPath ?: return
-        val position = rememberedPlaybackPosition(path) ?: return
-        // The player already starts at the remembered position for the initial video.
-        if (player.currentPosition >= position) {
-            return
-        }
-        player.seekTo(position)
-    }
-
-    private fun playFromBeginning() {
-        currentPath?.let { VideoPlaybackPositions.remove(it) }
-        player?.apply {
-            seekTo(0)
-            play()
-        }
+        pictureInPicture.updatePictureInPictureParams()
     }
 
     private fun toggleResizeMode() {
@@ -502,113 +384,10 @@ class VideoViewerFragment :
     }
 
     fun onUserLeaveHint() {
-        // Android 12+ enters picture-in-picture for us, see createPictureInPictureParams().
+        // Android 12+ enters picture-in-picture for us, see VideoViewerPictureInPicture.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && player?.isPlaying == true) {
-            enterPictureInPictureMode()
+            pictureInPicture.enterPictureInPictureMode()
         }
-    }
-
-    private fun enterPictureInPictureMode() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !isPictureInPictureSupported ||
-            isInPictureInPictureMode
-        ) {
-            return
-        }
-        requireActivity().enterPictureInPictureMode(createPictureInPictureParams())
-    }
-
-    /**
-     * Keeps the window's aspect ratio and actions current, and on Android 12+ also whether leaving
-     * the app should enter picture-in-picture, so this has to run even before we are in it.
-     */
-    private fun updatePictureInPictureParams() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !isPictureInPictureSupported) {
-            return
-        }
-        val activity = activity ?: return
-        activity.setPictureInPictureParams(createPictureInPictureParams())
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createPictureInPictureParams(): PictureInPictureParams =
-        PictureInPictureParams.Builder()
-            .apply {
-                aspectRatio()?.let { setAspectRatio(it) }
-                // Lets the system animate from where the video is instead of the whole window.
-                Rect().takeIf { binding.playerView.getGlobalVisibleRect(it) }
-                    ?.let { setSourceRectHint(it) }
-                setActions(createPictureInPictureActions())
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    // Unlike onUserLeaveHint(), this animates smoothly and works with gesture
-                    // navigation.
-                    setAutoEnterEnabled(player?.isPlaying == true)
-                }
-            }
-            .build()
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun aspectRatio(): Rational? {
-        val videoSize = player?.videoSize ?: return null
-        if (videoSize.width <= 0 || videoSize.height <= 0) {
-            return null
-        }
-        val rational = Rational(videoSize.width, videoSize.height)
-        // Android rejects anything outside this range.
-        return if (rational.toFloat() in ASPECT_RATIO_MIN..ASPECT_RATIO_MAX) rational else null
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createPictureInPictureActions(): List<RemoteAction> {
-        val player = player ?: return emptyList()
-        val actions = mutableListOf<RemoteAction>()
-        if (player.hasPreviousMediaItem()) {
-            actions += createPictureInPictureAction(
-                CONTROL_PREVIOUS,
-                androidx.media3.ui.R.drawable.exo_icon_previous,
-                androidx.media3.ui.R.string.exo_controls_previous_description
-            )
-        }
-        actions += if (player.isPlaying) {
-            createPictureInPictureAction(
-                CONTROL_PAUSE,
-                androidx.media3.ui.R.drawable.exo_icon_pause,
-                androidx.media3.ui.R.string.exo_controls_pause_description
-            )
-        } else {
-            createPictureInPictureAction(
-                CONTROL_PLAY,
-                androidx.media3.ui.R.drawable.exo_icon_play,
-                androidx.media3.ui.R.string.exo_controls_play_description
-            )
-        }
-        if (player.hasNextMediaItem()) {
-            actions += createPictureInPictureAction(
-                CONTROL_NEXT,
-                androidx.media3.ui.R.drawable.exo_icon_next,
-                androidx.media3.ui.R.string.exo_controls_next_description
-            )
-        }
-        return actions
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createPictureInPictureAction(
-        control: Int,
-        @DrawableRes iconRes: Int,
-        @StringRes titleRes: Int
-    ): RemoteAction {
-        val context = requireContext()
-        val intent = Intent(ACTION_PICTURE_IN_PICTURE_CONTROL)
-            .setPackage(context.packageName)
-            .putExtra(EXTRA_PICTURE_IN_PICTURE_CONTROL, control)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            control,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val title = getString(titleRes)
-        return RemoteAction(Icon.createWithResource(context, iconRes), title, title, pendingIntent)
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
@@ -625,7 +404,7 @@ class VideoViewerFragment :
     }
 
     private fun confirmDelete() {
-        val path = currentPath ?: return
+        val path = playbackPosition.currentPath ?: return
         ConfirmDeleteDialogFragment.show(path, this)
     }
 
@@ -651,14 +430,14 @@ class VideoViewerFragment :
             player?.removeMediaItem(index)
             if (wasCurrent) {
                 // We moved on to another video, and playlist changes don't seek by themselves.
-                maybeResumePlaybackPosition()
+                playbackPosition.maybeResumePlaybackPosition()
             }
         }
         updateTitle()
     }
 
     private fun share() {
-        val path = currentPath ?: return
+        val path = playbackPosition.currentPath ?: return
         val mimeType = MimeType.guessFromPath(path.toString())
         val intent = path.fileProviderUri.createSendStreamIntent(mimeType)
             .apply { extraPath = path }
@@ -667,25 +446,19 @@ class VideoViewerFragment :
     }
 
     private fun updateTitle() {
-        val path = currentPath ?: return
+        val path = playbackPosition.currentPath ?: return
         requireActivity().title = path.fileName.toString()
         val size = paths.size
         binding.toolbar.subtitle = if (size > 1) {
             getString(
                 R.string.video_viewer_subtitle_format,
-                currentIndex + 1,
+                playbackPosition.currentIndex + 1,
                 size
             )
         } else {
             null
         }
     }
-
-    private val currentIndex: Int
-        get() = player?.currentMediaItemIndex ?: mediaItemIndex
-
-    private val currentPath: Path?
-        get() = paths.getOrNull(currentIndex)
 
     @Parcelize
     class Args(val intent: Intent, val position: Int) : ParcelableArgs
@@ -701,19 +474,6 @@ class VideoViewerFragment :
 
     companion object {
         private const val SUBTITLE_TIMEOUT_MILLIS = 5_000L
-
-        private const val ASPECT_RATIO_MIN = 1 / 2.39f
-        private const val ASPECT_RATIO_MAX = 2.39f
-
-        private val ACTION_PICTURE_IN_PICTURE_CONTROL =
-            "${VideoViewerFragment::class.java.name}.action.PICTURE_IN_PICTURE_CONTROL"
-        private val EXTRA_PICTURE_IN_PICTURE_CONTROL =
-            "${VideoViewerFragment::class.java.name}.extra.PICTURE_IN_PICTURE_CONTROL"
-
-        private const val CONTROL_PLAY = 1
-        private const val CONTROL_PAUSE = 2
-        private const val CONTROL_PREVIOUS = 3
-        private const val CONTROL_NEXT = 4
 
         private val SCREEN_ORIENTATIONS = intArrayOf(
             ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
