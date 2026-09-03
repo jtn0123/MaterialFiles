@@ -13,31 +13,6 @@
         <error line="41" column="92" source="standard:function-expression-body" />
         <error line="50" column="12" source="standard:function-expression-body" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/app/AppUpgraders.kt">
-        <error line="88" column="35" source="standard:argument-list-wrapping" />
-        <error line="207" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="212" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="217" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="222" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="239" column="21" source="standard:wrapping" />
-        <error line="240" column="9" source="standard:chain-wrapping" />
-        <error line="242" column="22" source="standard:wrapping" />
-        <error line="242" column="23" source="standard:argument-list-wrapping" />
-        <error line="243" column="44" source="standard:wrapping" />
-        <error line="243" column="45" source="standard:argument-list-wrapping" />
-        <error line="245" column="9" source="standard:wrapping" />
-        <error line="385" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="389" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="391" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="395" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="397" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="399" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="439" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="505" column="33" source="standard:chain-wrapping" />
-        <error line="505" column="67" source="standard:wrapping" />
-        <error line="511" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="599" column="1" source="standard:blank-line-between-when-conditions" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/app/BackgroundActivityStarter.kt">
         <error line="69" column="22" source="standard:argument-list-wrapping" />
         <error line="69" column="41" source="standard:argument-list-wrapping" />
