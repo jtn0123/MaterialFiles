@@ -81,6 +81,32 @@ android {
     }
 }
 
+// Hard limit on source file length. A file over it gets split, never exempted.
+def maxSourceFileLines = 500
+def sourceFiles = fileTree('src') { include '**/*.kt', '**/*.java' }
+tasks.register('checkSourceFileLength') {
+    group = 'verification'
+    description = "Fails if any Kotlin or Java source file has more than $maxSourceFileLines lines."
+    inputs.files(sourceFiles)
+    def limit = maxSourceFileLines
+    def projectDirPath = projectDir.toPath()
+    doLast {
+        def offenders = sourceFiles.files
+            .collect { [file: it, lines: it.readLines().size()] }
+            .findAll { it.lines > limit }
+            .sort { -it.lines }
+        if (!offenders.empty) {
+            def report = offenders.collect {
+                "  ${it.lines} lines  ${projectDirPath.relativize(it.file.toPath())}"
+            }.join('\n')
+            throw new GradleException(
+                "${offenders.size()} source file(s) exceed $limit lines; split them:\n$report"
+            )
+        }
+    }
+}
+tasks.named('check') { dependsOn 'checkSourceFileLength' }
+
 ktlint {
     version = '1.8.0'
     android = true
