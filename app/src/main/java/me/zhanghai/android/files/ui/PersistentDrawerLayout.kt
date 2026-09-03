@@ -29,8 +29,10 @@ class PersistentDrawerLayout @JvmOverloads constructor(
     @AttrRes defStyleAttr: Int = 0,
     @StyleRes defStyleRes: Int = 0
 ) : ViewGroup(context, attrs, defStyleAttr, defStyleRes) {
-    private val leftDragger = ViewDragHelper.create(this, ViewDragCallback(Gravity.LEFT))
-    private val rightDragger = ViewDragHelper.create(this, ViewDragCallback(Gravity.RIGHT))
+    private val leftDragger =
+        ViewDragHelper.create(this, PersistentDrawerLayoutDragCallback(this, Gravity.LEFT))
+    private val rightDragger =
+        ViewDragHelper.create(this, PersistentDrawerLayoutDragCallback(this, Gravity.RIGHT))
 
     private var lastInsets: WindowInsetsCompat? = null
 
@@ -77,7 +79,7 @@ class PersistentDrawerLayout @JvmOverloads constructor(
         return WindowInsetsCompat.CONSUMED.toWindowInsets()!!
     }
 
-    private fun updateContentViewsWindowInsets() {
+    internal fun updateContentViewsWindowInsets() {
         var contentInsets = lastInsets ?: return
         for (child in children) {
             if (isDrawerView(child)) {
@@ -184,7 +186,7 @@ class PersistentDrawerLayout @JvmOverloads constructor(
         measureContentViews()
     }
 
-    private fun measureContentViews() {
+    internal fun measureContentViews() {
         var contentWidth = measuredWidth
         val contentHeight = measuredHeight
         for (child in children) {
@@ -305,7 +307,7 @@ class PersistentDrawerLayout @JvmOverloads constructor(
         }
     }
 
-    private fun layoutContentViews() {
+    internal fun layoutContentViews() {
         var contentLeft = 0
         for (child in children) {
             if (child.visibility == View.GONE) {
@@ -457,98 +459,6 @@ class PersistentDrawerLayout @JvmOverloads constructor(
         val drawerView = findDrawerView(gravity)
             ?: throw IllegalArgumentException("No drawer view found with gravity $gravity")
         toggleDrawer(drawerView)
-    }
-
-    private fun findDrawerView(gravity: Int): View? {
-        val horizontalGravity = (
-            Gravity.getAbsoluteGravity(gravity, layoutDirection)
-                and Gravity.HORIZONTAL_GRAVITY_MASK
-            )
-        for (child in children) {
-            val childHorizontalGravity = getChildAbsoluteHorizontalGravity(child)
-            if (childHorizontalGravity == horizontalGravity) {
-                return child
-            }
-        }
-        return null
-    }
-
-    private fun isDrawerView(child: View): Boolean {
-        val horizontalGravity = getChildAbsoluteHorizontalGravity(child)
-        return horizontalGravity == Gravity.LEFT || horizontalGravity == Gravity.RIGHT
-    }
-
-    private fun isLeftDrawerView(drawerView: View): Boolean {
-        val horizontalGravity = getChildAbsoluteHorizontalGravity(drawerView)
-        return horizontalGravity == Gravity.LEFT
-    }
-
-    private fun isContentView(child: View): Boolean = getChildGravity(child) == Gravity.NO_GRAVITY
-
-    private fun isFillView(child: View): Boolean = getChildGravity(child) == Gravity.FILL
-
-    private fun getChildGravity(child: View): Int = (child.layoutParams as LayoutParams).gravity
-
-    private fun getChildAbsoluteHorizontalGravity(child: View): Int = (
-        Gravity.getAbsoluteGravity(getChildGravity(child), layoutDirection)
-            and Gravity.HORIZONTAL_GRAVITY_MASK
-        )
-
-    private inner class ViewDragCallback(private val gravity: Int) : ViewDragHelper.Callback() {
-        override fun tryCaptureView(child: View, pointerId: Int): Boolean = false
-
-        override fun onViewPositionChanged(
-            changedView: View,
-            left: Int,
-            top: Int,
-            dx: Int,
-            dy: Int
-        ) {
-            val childRange = getViewHorizontalDragRange(changedView)
-            val childLayoutParams = changedView.layoutParams as LayoutParams
-            if (isLeftDrawerView(changedView)) {
-                childLayoutParams.offset = (left - childLayoutParams.leftMargin + childRange)
-                    .toFloat() / childRange
-            } else {
-                val width = width
-                childLayoutParams.offset = (
-                    (childLayoutParams.leftMargin + width - left).toFloat() /
-                        childRange
-                    )
-            }
-            changedView.isInvisible = childLayoutParams.offset <= 0
-            updateContentViewsWindowInsets()
-            measureContentViews()
-            layoutContentViews()
-        }
-
-        override fun onViewCaptured(capturedChild: View, activePointerId: Int) {
-            closeOtherDrawer()
-        }
-
-        private fun closeOtherDrawer() {
-            val otherGravity = if (gravity == Gravity.LEFT) Gravity.RIGHT else Gravity.LEFT
-            val otherDrawer = findDrawerView(otherGravity)
-            otherDrawer?.let { closeDrawer(it) }
-        }
-
-        override fun getViewHorizontalDragRange(child: View): Int {
-            if (!isDrawerView(child)) {
-                return 0
-            }
-            val childLayoutParams = child.layoutParams as LayoutParams
-            return childLayoutParams.leftMargin + child.width + childLayoutParams.rightMargin
-        }
-
-        override fun clampViewPositionHorizontal(child: View, left: Int, dx: Int): Int =
-            if (isLeftDrawerView(child)) {
-                left.coerceIn(-getViewHorizontalDragRange(child)..0)
-            } else {
-                val width = width
-                left.coerceIn(width - getViewHorizontalDragRange(child)..width)
-            }
-
-        override fun clampViewPositionVertical(child: View, top: Int, dy: Int): Int = child.top
     }
 
     class LayoutParams : MarginLayoutParams {
