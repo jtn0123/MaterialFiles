@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
@@ -32,8 +33,8 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
-    <!-- Crashlytics and Shizuku requires API 23. -->
-    <uses-sdk tools:overrideLibrary="com.google.firebase,com.google.firebase.components,com.google.firebase.crashlytics,com.google.firebase.crashlytics.ndk,com.google.firebase.installations,com.google.firebase.sessions,rikka.shizuku.aidl,rikka.shizuku.api,rikka.shizuku.shared" />
+    <!-- Shizuku requires API 23. -->
+    <uses-sdk tools:overrideLibrary="rikka.shizuku.aidl,rikka.shizuku.api,rikka.shizuku.shared" />
 
     <!--
       ~ Samsung DeX requires explicitly setting android:resizeableActivity="true" for the app to be
@@ -365,8 +366,17 @@
             android:name="me.zhanghai.android.files.filejob.FileJobService"
             android:foregroundServiceType="dataSync" />
 
-        <service android:name="me.zhanghai.android.files.ftpserver.FtpServerService"
-            android:foregroundServiceType="dataSync" />
+        <!--
+          ~ A server the user started has no natural end, unlike a data sync, which Android 15
+          ~ stops after 6 hours a day.
+          -->
+        <service
+            android:name="me.zhanghai.android.files.ftpserver.FtpServerService"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="FTP server started by the user, running until the user stops it" />
+        </service>
 
         <service
             android:name="me.zhanghai.android.files.ftpserver.FtpServerTileService"
@@ -406,9 +416,5 @@
         <receiver android:name="me.zhanghai.android.files.filejob.FileJobReceiver" />
 
         <receiver android:name="me.zhanghai.android.files.ftpserver.FtpServerReceiver" />
-
-        <meta-data
-            android:name="firebase_crashlytics_collection_enabled"
-            android:value="false" />
     </application>
 </manifest>

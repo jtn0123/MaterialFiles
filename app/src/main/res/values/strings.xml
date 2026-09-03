@@ -125,6 +125,7 @@
         <item quantity="one">Moving %1$,d file to “%2$s”</item>
         <item quantity="other">Moving %1$,d files to “%2$s”</item>
     </plurals>
+    <string name="file_job_timeout_message">File operations were stopped by the system after running for 6 hours. Start them again to continue.</string>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
     <plurals name="file_job_delete_scan_notification_title_format">
@@ -817,7 +818,6 @@
     <string name="about_version_title">Version</string>
     <string name="about_github_title">View on GitHub</string>
     <string name="about_licenses_title">Licenses</string>
-    <string name="about_privacy_policy_title">Privacy policy</string>
     <string name="about_author_title">Author</string>
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Follow on GitHub</string>

@@ -9,21 +9,6 @@ apply plugin: 'org.jlleitschuh.gradle.ktlint'
 
 apply from: '../signing.gradle'
 
-//#ifdef NONFREE
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.google.gms:google-services:4.4.4'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.6'
-    }
-}
-apply plugin: 'com.google.gms.google-services'
-apply plugin: 'com.google.firebase.crashlytics'
-//#endif
-
 android {
     namespace 'me.zhanghai.android.files'
     buildToolsVersion = '37.0.0'
@@ -32,9 +17,7 @@ android {
     defaultConfig {
         applicationId 'me.zhanghai.android.files'
         minSdk 23
-        // Not supporting foreground service timeout yet.
-        //noinspection OldTargetApi
-        targetSdk 34
+        targetSdk 36
         versionCode 39
         versionName '1.7.4'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -78,11 +61,6 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
-//#ifdef NONFREE
-            firebaseCrashlytics {
-                nativeSymbolUploadEnabled true
-            }
-//#endif
         }
     }
     packagingOptions {
@@ -215,10 +193,4 @@ dependencies {
     implementation libs.mina.core
     // Also a dependency of jCIFS-NG.
     implementation libs.slf4j.android
-
-//#ifdef NONFREE
-    implementation platform('com.google.firebase:firebase-bom:34.11.0')
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-crashlytics-ndk'
-//#endif
 }

@@ -8,6 +8,7 @@ package me.zhanghai.android.files.navigation
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.os.Build
 import android.util.AttributeSet
 import android.view.WindowInsets
 import androidx.annotation.AttrRes
@@ -100,7 +101,13 @@ class NavigationRecyclerView : RecyclerView {
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-        if (context.activity!!.window.statusBarColor == Color.TRANSPARENT) {
+        // Android 15+ (for apps targeting it) keeps the status bar transparent and no longer
+        // draws a scrim behind it, so we have to.
+        @Suppress("DEPRECATION")
+        val isStatusBarTransparent =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM ||
+                context.activity!!.window.statusBarColor == Color.TRANSPARENT
+        if (isStatusBarTransparent) {
             canvas.withSave {
                 canvas.translate(scrollX.toFloat(), scrollY.toFloat())
                 scrim.setBounds(0, 0, width, insetTop)

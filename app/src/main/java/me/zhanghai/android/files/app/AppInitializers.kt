@@ -9,6 +9,7 @@ import android.os.AsyncTask
 import android.os.Build
 import android.os.StrictMode
 import android.webkit.WebView
+import java.util.Properties
 import jcifs.context.SingletonContext
 import me.zhanghai.android.files.BuildConfig
 import me.zhanghai.android.files.coil.initializeCoil
@@ -16,6 +17,10 @@ import me.zhanghai.android.files.filejob.fileJobNotificationTemplate
 import me.zhanghai.android.files.ftpserver.ftpServerServiceNotificationTemplate
 import me.zhanghai.android.files.hiddenapi.HiddenApi
 import me.zhanghai.android.files.provider.FileSystemProviders
+import me.zhanghai.android.files.provider.ftp.client.Client as FtpClient
+import me.zhanghai.android.files.provider.sftp.client.Client as SftpClient
+import me.zhanghai.android.files.provider.smb.client.Client as SmbClient
+import me.zhanghai.android.files.provider.webdav.client.Client as WebDavClient
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.storage.FtpServerAuthenticator
 import me.zhanghai.android.files.storage.SftpServerAuthenticator
@@ -24,14 +29,8 @@ import me.zhanghai.android.files.storage.StorageVolumeListLiveData
 import me.zhanghai.android.files.storage.WebDavServerAuthenticator
 import me.zhanghai.android.files.theme.custom.CustomThemeHelper
 import me.zhanghai.android.files.theme.night.NightModeHelper
-import java.util.Properties
-import me.zhanghai.android.files.provider.ftp.client.Client as FtpClient
-import me.zhanghai.android.files.provider.sftp.client.Client as SftpClient
-import me.zhanghai.android.files.provider.smb.client.Client as SmbClient
-import me.zhanghai.android.files.provider.webdav.client.Client as WebDavClient
 
 val appInitializers = listOf(
-    ::initializeCrashlytics,
     ::disableHiddenApiChecks,
     ::initializeWebViewDebugging,
     ::initializeStrictMode,
@@ -43,12 +42,6 @@ val appInitializers = listOf(
     ::initializeNightMode,
     ::createNotificationChannels
 )
-
-private fun initializeCrashlytics() {
-//#ifdef NONFREE
-    me.zhanghai.android.files.nonfree.CrashlyticsInitializer.initialize()
-//#endif
-}
 
 private fun disableHiddenApiChecks() {
     HiddenApi.disableHiddenApiChecks()
