@@ -6,18 +6,18 @@
 package me.zhanghai.android.files.provider.common
 
 import android.os.Parcelable
-import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.math.min
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 
-@Parcelize
 // @see https://youtrack.jetbrains.com/issue/KT-24842
 // @Parcelize throws IllegalAccessError if the primary constructor is private.
-class ByteString internal constructor(
-    private val bytes: ByteArray
-) : Comparable<ByteString>, Parcelable {
+@Parcelize
+class ByteString internal constructor(private val bytes: ByteArray) :
+    Comparable<ByteString>,
+    Parcelable {
     val length: Int
         get() = bytes.size
 
@@ -74,7 +74,7 @@ class ByteString internal constructor(
     fun contains(byte: Byte): Boolean = indexOf(byte) != -1
 
     fun indexOf(substring: ByteString, fromIndex: Int = 0): Int {
-        for (index in fromIndex.coerceAtLeast(0)..<length - substring.length) {
+        for (index in fromIndex.coerceAtLeast(0)..length - substring.length) {
             if (startsWith(substring, index)) {
                 return index
             }
@@ -219,16 +219,18 @@ fun ByteString.dropLast(n: Int): ByteString {
 
 inline fun ByteString.dropLastWhile(predicate: (Byte) -> Boolean): ByteString {
     for (index in lastIndex downTo 0) {
-        if (!predicate(this[index]))
+        if (!predicate(this[index])) {
             return substring(0, index + 1)
+        }
     }
     return ByteString.EMPTY
 }
 
 inline fun ByteString.dropWhile(predicate: (Byte) -> Boolean): ByteString {
     for (index in indices) {
-        if (!predicate(this[index]))
+        if (!predicate(this[index])) {
             return substring(index)
+        }
     }
     return ByteString.EMPTY
 }
