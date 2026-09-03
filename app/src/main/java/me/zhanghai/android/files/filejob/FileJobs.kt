@@ -33,6 +33,7 @@ import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.BasicFileAttributes
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.BackgroundActivityStarter
@@ -494,10 +495,24 @@ private class TransferInfo(scanInfo: ScanInfo, val target: Path?) {
     }
 }
 
+/**
+ * Blocks until the user has answered, without keeping the device awake while they take their
+ * time.
+ */
+@Throws(InterruptedException::class)
+private fun <T> FileJob.waitingForUser(block: suspend CoroutineScope.() -> T): T {
+    service.setJobWaitingForUser(this, true)
+    try {
+        return runBlocking(block = block)
+    } finally {
+        service.setJobWaitingForUser(this, false)
+    }
+}
+
 // TODO: Make invalid file name, remount etc user actions as well.
 @Throws(InterruptedIOException::class)
 private fun FileJob.showUserAction(exception: UserActionRequiredException): Boolean = try {
-    runBlocking {
+    waitingForUser {
         suspendCoroutine { continuation ->
             val userAction = exception.getUserAction(continuation, service)
             BackgroundActivityStarter.startActivity(
@@ -522,7 +537,7 @@ private fun FileJob.showErrorDialog(
     negativeButtonText: CharSequence?,
     neutralButtonText: CharSequence?
 ): ErrorResult = try {
-    runBlocking {
+    waitingForUser {
         suspendCoroutine { continuation ->
             BackgroundActivityStarter.startActivity(
                 FileJobErrorDialogActivity::class.createIntent().putArgs(
@@ -569,7 +584,7 @@ private fun FileJob.showConflictDialog(
     targetFile: FileItem,
     type: CopyMoveType
 ): ConflictResult = try {
-    runBlocking {
+    waitingForUser {
         suspendCoroutine { continuation ->
             BackgroundActivityStarter.startActivity(
                 FileJobConflictDialogActivity::class.createIntent().putArgs(

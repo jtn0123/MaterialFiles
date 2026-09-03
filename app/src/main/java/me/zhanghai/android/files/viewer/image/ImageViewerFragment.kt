@@ -56,6 +56,12 @@ class ImageViewerFragment :
 
     private lateinit var paths: MutableList<Path>
 
+    /**
+     * What we deleted from [argsPaths], which is all the saved state needs to rebuild [paths]:
+     * a folder of images can be too large to save again (a binder transaction is capped at 1 MB).
+     */
+    private val deletedPaths = mutableListOf<Path>()
+
     private var binding by autoCleared<ImageViewerFragmentBinding>()
 
     private lateinit var systemUiHelper: SystemUiHelper
@@ -65,7 +71,8 @@ class ImageViewerFragment :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        paths = (savedInstanceState?.getState<State>()?.paths ?: argsPaths).toMutableList()
+        savedInstanceState?.getState<State>()?.let { deletedPaths += it.deletedPaths }
+        paths = argsPaths.toMutableList().apply { removeAll(deletedPaths) }
     }
 
     override fun onCreateView(
@@ -139,7 +146,7 @@ class ImageViewerFragment :
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
-        outState.putState(State(paths))
+        outState.putState(State(deletedPaths))
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -172,6 +179,7 @@ class ImageViewerFragment :
             showToast(e.toString())
             return
         }
+        deletedPaths.add(path)
         paths.removeAll(listOf(path))
         if (paths.isEmpty()) {
             finish()
@@ -219,5 +227,6 @@ class ImageViewerFragment :
     class Args(val intent: Intent, val position: Int) : ParcelableArgs
 
     @Parcelize
-    private class State(val paths: @WriteWith<ParcelableListParceler> List<Path>) : ParcelableState
+    private class State(val deletedPaths: @WriteWith<ParcelableListParceler> List<Path>) :
+        ParcelableState
 }

@@ -92,6 +92,12 @@ class VideoViewerFragment :
 
     private lateinit var paths: MutableList<Path>
 
+    /**
+     * What we deleted from [argsPaths], which is all the saved state needs to rebuild [paths]:
+     * a folder of videos can be too large to save again (a binder transaction is capped at 1 MB).
+     */
+    private val deletedPaths = mutableListOf<Path>()
+
     private var binding by autoCleared<VideoViewerFragmentBinding>()
 
     private lateinit var systemUiHelper: SystemUiHelper
@@ -207,7 +213,8 @@ class VideoViewerFragment :
         super.onCreate(savedInstanceState)
 
         val state = savedInstanceState?.getState<State>()
-        paths = (state?.paths ?: argsPaths).toMutableList()
+        state?.deletedPaths?.let { deletedPaths += it }
+        paths = argsPaths.toMutableList().apply { removeAll(deletedPaths) }
         mediaItemIndex = state?.mediaItemIndex
             ?: args.position.coerceIn(0, paths.lastIndex.coerceAtLeast(0))
         positionMillis = state?.positionMillis ?: C.TIME_UNSET
@@ -316,7 +323,7 @@ class VideoViewerFragment :
 
         savePlayerPosition()
         outState.putState(
-            State(paths, mediaItemIndex, positionMillis, screenOrientationIndex, resizeMode)
+            State(deletedPaths, mediaItemIndex, positionMillis, screenOrientationIndex, resizeMode)
         )
     }
 
@@ -620,6 +627,7 @@ class VideoViewerFragment :
             return
         }
         VideoPlaybackPositions.remove(path)
+        deletedPaths.add(path)
         val index = paths.indexOf(path)
         paths.removeAll(listOf(path))
         if (paths.isEmpty()) {
@@ -673,7 +681,7 @@ class VideoViewerFragment :
 
     @Parcelize
     private class State(
-        val paths: @WriteWith<ParcelableListParceler> List<Path>,
+        val deletedPaths: @WriteWith<ParcelableListParceler> List<Path>,
         val mediaItemIndex: Int,
         val positionMillis: Long,
         val screenOrientationIndex: Int,

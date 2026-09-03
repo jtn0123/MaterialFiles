@@ -8,7 +8,6 @@ package me.zhanghai.android.files.viewer.video
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
-import java.io.IOException
 import java.util.Locale
 import java8.nio.file.Path
 import me.zhanghai.android.files.file.fileProviderUri
@@ -50,7 +49,10 @@ object VideoSubtitles {
         directory.newDirectoryStream().use { directoryStream ->
             directoryStream.filter { it.extension in MIME_TYPES_BY_EXTENSION }
         }
-    } catch (e: IOException) {
+    } catch (e: Exception) {
+        // Remote providers can fail with unchecked exceptions too, e.g. SMBJ wraps the
+        // InterruptedException of a timed-out scan in an SMBRuntimeException while closing the
+        // directory, and no subtitle is worth crashing the player over.
         e.printStackTrace()
         null
     }
