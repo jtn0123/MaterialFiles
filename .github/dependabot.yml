@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Libraries with pin-reason comments in gradle/libs.versions.toml are excluded so their
+      # bumps are reviewed one by one.
+      androidx:
+        patterns:
+          - "androidx.*"
+          - "com.google.android.material:*"
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin:*"
+          - "org.jetbrains.kotlinx:*"
+      build:
+        patterns:
+          - "com.android.tools.build:*"
+          - "com.android.tools:*"
+          - "org.jlleitschuh.gradle.ktlint"
+    ignore:
+      - dependency-name: "com.hierynomus:smbj"
+      - dependency-name: "de.psdev.licensesdialog:licensesdialog"
+      - dependency-name: "org.apache.mina:mina-core"
+      - dependency-name: "com.github.bitfireAT:dav4jvm"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"
