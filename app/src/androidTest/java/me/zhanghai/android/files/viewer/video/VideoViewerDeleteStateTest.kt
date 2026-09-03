@@ -11,6 +11,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
@@ -69,9 +70,9 @@ class VideoViewerDeleteStateTest {
         assertNotNull("Expected 1/3 in the title", waitForText("1/3"))
 
         // The app bar and its overflow menu show along with the playback controls.
-        device.findObject(By.res(context.packageName, "playerView")).click()
-        val overflow = device.wait(Until.findObject(By.desc("More options")), TIMEOUT_MILLIS)
-        assertNotNull("The overflow menu button never appeared", overflow)
+        val overflow = checkNotNull(waitForShown(By.desc("More options"))) {
+            "The overflow menu button never appeared"
+        }
         overflow.click()
         device.wait(Until.findObject(By.text("Delete")), TIMEOUT_MILLIS).click()
         device.wait(Until.findObject(By.text("OK")), TIMEOUT_MILLIS).click()
@@ -91,10 +92,19 @@ class VideoViewerDeleteStateTest {
      * The title lives in the app bar, which hides together with the playback controls a few
      * seconds after the last tap, so tap the player to bring it back when it is not showing.
      */
-    private fun waitForText(text: String): UiObject2? {
-        device.wait(Until.findObject(By.text(text)), SHORT_TIMEOUT_MILLIS)?.let { return it }
-        device.findObject(By.res(context.packageName, "playerView"))?.click()
-        return device.wait(Until.findObject(By.text(text)), TIMEOUT_MILLIS)
+    private fun waitForText(text: String): UiObject2? = waitForShown(By.text(text))
+
+    /**
+     * The app bar hides together with the playback controls a few seconds after the last tap, and
+     * a hidden app bar is still in the accessibility tree (faded out, not gone), so a lookup that
+     * misses taps the player, which toggles both, and looks again.
+     */
+    private fun waitForShown(selector: BySelector): UiObject2? {
+        repeat(3) {
+            device.wait(Until.findObject(selector), SHORT_TIMEOUT_MILLIS)?.let { return it }
+            device.findObject(By.res(context.packageName, "playerView"))?.click()
+        }
+        return device.wait(Until.findObject(selector), TIMEOUT_MILLIS)
     }
 
     private fun shell(command: String) {
