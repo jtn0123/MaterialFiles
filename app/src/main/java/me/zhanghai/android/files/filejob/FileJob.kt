@@ -9,11 +9,19 @@ import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.SocketTimeoutException
 import java.util.Random
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.runInterruptible
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.util.getQuantityString
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.toUserMessage
 
+/**
+ * A unit of file work run by [FileJobService] in its own coroutine. [run] is blocking code: it
+ * drives the providers, which are blocking, and waits for the user in dialogs by blocking too,
+ * so it executes under [runInterruptible] and cancelling the job's coroutine interrupts its
+ * thread, which every provider turns into an [InterruptedIOException].
+ */
 abstract class FileJob {
     val id = Random().nextInt()
 
@@ -27,10 +35,10 @@ abstract class FileJob {
         ++skippedErrorCount
     }
 
-    fun runOn(service: FileJobService) {
+    suspend fun runOn(service: FileJobService) {
         this.service = service
         try {
-            run()
+            runInterruptible { run() }
             if (skippedErrorCount > 0) {
                 service.showToast(
                     service.getQuantityString(
@@ -46,6 +54,8 @@ abstract class FileJob {
             if (e is SocketTimeoutException) {
                 onFailed(e)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             onFailed(e)
         } finally {

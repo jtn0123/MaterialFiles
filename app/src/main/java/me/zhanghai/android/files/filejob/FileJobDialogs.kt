@@ -39,7 +39,8 @@ internal fun FileJob.showToast(text: CharSequence, duration: Int = Toast.LENGTH_
 
 /**
  * Blocks until the user has answered, without keeping the device awake while they take their
- * time.
+ * time. A job runs its blocking body under `runInterruptible` (see [FileJob]), so cancelling
+ * the job interrupts this wait, which the callers turn into an [InterruptedIOException].
  */
 @Throws(InterruptedException::class)
 private fun <T> FileJob.waitingForUser(block: suspend CoroutineScope.() -> T): T {
