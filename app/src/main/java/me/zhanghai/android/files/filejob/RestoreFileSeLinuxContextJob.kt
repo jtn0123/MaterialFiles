@@ -92,6 +92,7 @@ private fun FileJob.restoreSeLinuxContext(
         } catch (e: IOException) {
             e.printStackTrace()
             if (actionAllInfo.skipRestoreSeLinuxContextError) {
+                recordSkippedError()
                 transferInfo.skipFileIgnoringSize()
                 postRestoreSeLinuxContextNotification(transferInfo, path)
                 return
@@ -123,6 +124,7 @@ private fun FileJob.restoreSeLinuxContext(
                 }
 
                 FileJobErrorAction.NEGATIVE -> {
+                    recordSkippedError()
                     if (result.isAll) {
                         actionAllInfo.skipRestoreSeLinuxContextError = true
                     }

@@ -205,16 +205,9 @@ internal class TransferInfo(scanInfo: ScanInfo, val target: Path?) {
         ++transferredFileCount
     }
 
-    fun addTransferredFile(path: Path) {
+    fun addTransferredFile(size: Long) {
         ++transferredFileCount
-        try {
-            transferredSize += path.readAttributes(
-                BasicFileAttributes::class.java,
-                LinkOption.NOFOLLOW_LINKS
-            ).size()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
+        transferredSize += size
     }
 
     fun skipFile(path: Path) {

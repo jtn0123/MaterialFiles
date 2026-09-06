@@ -5,10 +5,14 @@
 
 package me.zhanghai.android.files.filejob
 
-import me.zhanghai.android.files.util.showToast
 import java.io.IOException
 import java.io.InterruptedIOException
+import java.net.SocketTimeoutException
 import java.util.Random
+import me.zhanghai.android.files.R
+import me.zhanghai.android.files.util.getQuantityString
+import me.zhanghai.android.files.util.showToast
+import me.zhanghai.android.files.util.toUserMessage
 
 abstract class FileJob {
     val id = Random().nextInt()
@@ -16,20 +20,44 @@ abstract class FileJob {
     internal lateinit var service: FileJobService
         private set
 
+    /** Files the user (or a "skip all") chose to leave behind after an error. */
+    private var skippedErrorCount = 0
+
+    internal fun recordSkippedError() {
+        ++skippedErrorCount
+    }
+
     fun runOn(service: FileJobService) {
         this.service = service
         try {
             run()
-            // TODO: Toast
+            if (skippedErrorCount > 0) {
+                service.showToast(
+                    service.getQuantityString(
+                        R.plurals.file_job_finished_with_skipped_errors_format,
+                        skippedErrorCount,
+                        skippedErrorCount
+                    )
+                )
+            }
         } catch (e: InterruptedIOException) {
-            // TODO
-            e.printStackTrace()
+            // Cancellation from the notification or a dialog arrives as a bare
+            // InterruptedIOException; a socket timeout is a subclass, but a failure.
+            if (e is SocketTimeoutException) {
+                onFailed(e)
+            }
         } catch (e: Exception) {
-            e.printStackTrace()
-            service.showToast(e.toString())
+            onFailed(e)
         } finally {
             service.notificationManager.cancel(id)
         }
+    }
+
+    private fun onFailed(e: Exception) {
+        e.printStackTrace()
+        service.showToast(
+            service.getString(R.string.file_job_failed_format, e.toUserMessage(service))
+        )
     }
 
     @Throws(IOException::class)

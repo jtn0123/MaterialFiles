@@ -121,6 +121,7 @@ private fun FileJob.setMode(
         } catch (e: IOException) {
             e.printStackTrace()
             if (actionAllInfo.skipSetModeError) {
+                recordSkippedError()
                 transferInfo.skipFileIgnoringSize()
                 postSetModeNotification(transferInfo, path)
                 return
@@ -152,6 +153,7 @@ private fun FileJob.setMode(
                 }
 
                 FileJobErrorAction.NEGATIVE -> {
+                    recordSkippedError()
                     if (result.isAll) {
                         actionAllInfo.skipSetModeError = true
                     }

@@ -42,11 +42,11 @@ fun FileJob.getQuantityString(
     vararg formatArguments: Any?
 ): String = service.getQuantityString(pluralRes, quantity, *formatArguments)
 
-internal fun FileJob.getFileName(path: Path): String = if (path.isAbsolute && path.nameCount == 0) {
-    path.fileSystem.separator
-} else {
-    path.fileName.toString()
-}
+internal fun FileJob.getFileName(path: Path): String = path.displayName
+
+/** The file name, or the separator for a root, which has none. */
+internal val Path.displayName: String
+    get() = if (isAbsolute && nameCount == 0) fileSystem.separator else fileName.toString()
 
 internal fun FileJob.getTargetFileName(source: Path): Path {
     if (source.isArchivePath) {

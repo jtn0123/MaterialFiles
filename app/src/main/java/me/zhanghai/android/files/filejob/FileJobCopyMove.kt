@@ -212,7 +212,7 @@ internal fun FileJob.copyOrMove(
             }
             val isMerge = sourceIsDirectory && targetIsDirectory
             if (isMerge && actionAllInfo.merge) {
-                transferInfo.addTransferredFile(target)
+                transferInfo.addTransferredFile(targetFile.attributesNoFollowLinks.size())
                 postCopyMoveNotification(transferInfo, source, type)
                 return true
             } else if (!isMerge && actionAllInfo.replace) {
@@ -237,7 +237,7 @@ internal fun FileJob.copyOrMove(
                         }
                     }
                     if (isMerge) {
-                        transferInfo.addTransferredFile(target)
+                        transferInfo.addTransferredFile(targetFile.attributesNoFollowLinks.size())
                         postCopyMoveNotification(transferInfo, source, type)
                         true
                     } else {
@@ -286,6 +286,7 @@ internal fun FileJob.copyOrMove(
         } catch (e: IOException) {
             e.printStackTrace()
             if (actionAllInfo.skipCopyMoveError) {
+                recordSkippedError()
                 transferInfo.skipFile(source)
                 postCopyMoveNotification(transferInfo, source, type)
                 return false
@@ -328,6 +329,7 @@ internal fun FileJob.copyOrMove(
                 }
 
                 FileJobErrorAction.NEGATIVE -> {
+                    recordSkippedError()
                     if (result.isAll) {
                         actionAllInfo.skipCopyMoveError = true
                     }

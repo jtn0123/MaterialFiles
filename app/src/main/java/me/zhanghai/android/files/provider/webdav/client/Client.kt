@@ -5,8 +5,6 @@
 
 package me.zhanghai.android.files.provider.webdav.client
 
-import java8.nio.file.Path as Java8Path
-import okhttp3.Response as OkHttpResponse
 import at.bitfire.dav4jvm.DavCollection
 import at.bitfire.dav4jvm.DavResource
 import at.bitfire.dav4jvm.HttpUtils
@@ -32,6 +30,7 @@ import java.time.Instant
 import java.util.Collections
 import java.util.WeakHashMap
 import java8.nio.channels.SeekableByteChannel
+import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.app.okHttpClient
 import me.zhanghai.android.files.provider.common.LocalWatchService
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedOutputStream
@@ -40,6 +39,7 @@ import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response as OkHttpResponse
 import okhttp3.Route
 
 // See also https://github.com/miquels/webdavfs/blob/master/fuse.go
@@ -110,12 +110,12 @@ object Client {
     }
 
     @Throws(DavException::class)
-    fun move(source: Path, target: Path) {
+    fun move(source: Path, target: Path, overwrite: Boolean = false) {
         if (source.authority != target.authority) {
             throw IOException("Paths aren't on the same authority")
         }
         try {
-            DavResource(getClient(source.authority), source.url).move(target.url, false) {}
+            DavResource(getClient(source.authority), source.url).move(target.url, overwrite) {}
         } catch (e: IOException) {
             throw e.toDavException()
         }
@@ -126,43 +126,40 @@ object Client {
     }
 
     @Throws(DavException::class)
-    fun get(path: Path): InputStream =
-        try {
-            DavResource(getClient(path.authority), path.url).getCompat("*/*", null)
-        } catch (e: IOException) {
-            throw e.toDavException()
-        }
+    fun get(path: Path): InputStream = try {
+        DavResource(getClient(path.authority), path.url).getCompat("*/*", null)
+    } catch (e: IOException) {
+        throw e.toDavException()
+    }
 
     @Throws(DavException::class)
-    fun findCollectionMembers(path: Path): List<Path> =
-        buildList {
-            try {
-                DavCollection(getClient(path.authority), path.url)
-                    .propfind(1, *FILE_PROPERTIES) { response, relation ->
-                        if (relation != Response.HrefRelation.MEMBER) {
-                            return@propfind
-                        }
-                        this += path.resolve(response.hrefName())
-                            .also {
-                                if (response.isSuccess()) {
-                                    collectionMemberCache[it] = response
-                                }
-                            }
+    fun findCollectionMembers(path: Path): List<Path> = buildList {
+        try {
+            DavCollection(getClient(path.authority), path.url)
+                .propfind(1, *FILE_PROPERTIES) { response, relation ->
+                    if (relation != Response.HrefRelation.MEMBER) {
+                        return@propfind
                     }
-            } catch (e: IOException) {
-                throw e.toDavException()
-            }
-        }
-
-    @Throws(DavException::class)
-    fun findPropertiesOrNull(path: Path, noFollowLinks: Boolean): Response? =
-        try {
-            findProperties(path, noFollowLinks)
-        } catch (e: NotFoundException) {
-            null
+                    this += path.resolve(response.hrefName())
+                        .also {
+                            if (response.isSuccess()) {
+                                collectionMemberCache[it] = response
+                            }
+                        }
+                }
         } catch (e: IOException) {
             throw e.toDavException()
         }
+    }
+
+    @Throws(DavException::class)
+    fun findPropertiesOrNull(path: Path, noFollowLinks: Boolean): Response? = try {
+        findProperties(path, noFollowLinks)
+    } catch (e: NotFoundException) {
+        null
+    } catch (e: IOException) {
+        throw e.toDavException()
+    }
 
     // TODO: Support noFollowLinks.
     @Throws(DavException::class)
@@ -172,7 +169,8 @@ object Client {
         }
         try {
             return findProperties(
-                DavResource(getClient(path.authority), path.url), *FILE_PROPERTIES
+                DavResource(getClient(path.authority), path.url),
+                *FILE_PROPERTIES
             )
         } catch (e: IOException) {
             throw e.toDavException()
@@ -203,7 +201,8 @@ object Client {
             val resource = DavResource(client, path.url)
             val patchSupport = resource.getPatchSupport()
             return NotifyEntryModifiedSeekableByteChannel(
-                FileByteChannel(resource, patchSupport, isAppend), path as Java8Path
+                FileByteChannel(resource, patchSupport, isAppend),
+                path as Java8Path
             )
         } catch (e: IOException) {
             throw e.toDavException()
@@ -219,7 +218,8 @@ object Client {
         // https://github.com/sabre-io/dav/issues/1277
         try {
             DavResource(getClient(path.authority), path.url).proppatch(
-                mapOf(GetLastModified.NAME to HttpUtils.formatDate(lastModifiedTime)), emptyList()
+                mapOf(GetLastModified.NAME to HttpUtils.formatDate(lastModifiedTime)),
+                emptyList()
             ) { response, _ -> response.checkSuccess() }
         } catch (e: IOException) {
             throw e.toDavException()
@@ -228,14 +228,14 @@ object Client {
     }
 
     @Throws(DavException::class)
-    fun put(path: Path): OutputStream =
-        try {
-            NotifyEntryModifiedOutputStream(
-                DavResource(getClient(path.authority), path.url).putCompat(), path as Java8Path
-            )
-        } catch (e: IOException) {
-            throw e.toDavException()
-        }
+    fun put(path: Path): OutputStream = try {
+        NotifyEntryModifiedOutputStream(
+            DavResource(getClient(path.authority), path.url).putCompat(),
+            path as Java8Path
+        )
+    } catch (e: IOException) {
+        throw e.toDavException()
+    }
 
     // @see DavResource.checkStatus
     private fun Response.checkSuccess() {
@@ -270,10 +270,9 @@ object Client {
         private fun getAuthenticatorInterceptor(): AuthenticatorInterceptor {
             val authentication = authenticator.getAuthentication(authority)
                 ?: throw IOException("No authentication found for $authority")
-            authenticatorInterceptorCache?.let {
-                (cachedAuthentication, cachedAuthenticatorInterceptor) ->
+            authenticatorInterceptorCache?.let { (cachedAuthentication, cachedInterceptor) ->
                 if (cachedAuthentication == authentication) {
-                    return cachedAuthenticatorInterceptor
+                    return cachedInterceptor
                 }
             }
             return authentication.createAuthenticatorInterceptor(authority).also {

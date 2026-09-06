@@ -92,6 +92,7 @@ private fun FileJob.setGroup(
         } catch (e: IOException) {
             e.printStackTrace()
             if (actionAllInfo.skipSetGroupError) {
+                recordSkippedError()
                 transferInfo.skipFileIgnoringSize()
                 postSetGroupNotification(transferInfo, path)
                 return
@@ -123,6 +124,7 @@ private fun FileJob.setGroup(
                 }
 
                 FileJobErrorAction.NEGATIVE -> {
+                    recordSkippedError()
                     if (result.isAll) {
                         actionAllInfo.skipSetGroupError = true
                     }

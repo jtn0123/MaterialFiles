@@ -349,9 +349,6 @@
         <error line="174" column="9" source="standard:class-signature" />
         <error line="174" column="52" source="standard:class-signature" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/filejob/FileJob.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/filejob/FileJobConflictDialogFragment.kt">
         <error line="90" column="33" source="standard:argument-list-wrapping" />
         <error line="90" column="58" source="standard:argument-list-wrapping" />
@@ -1200,23 +1197,6 @@
     <file name="src/main/java/me/zhanghai/android/files/provider/common/FileSystemCache.kt">
         <error line="8" column="1" source="standard:import-ordering" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/provider/common/ForeignCopyMove.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="34" column="15" source="standard:wrapping" />
-        <error line="35" column="17" source="standard:chain-wrapping" />
-        <error line="35" column="50" source="standard:wrapping" />
-        <error line="35" column="51" source="standard:wrapping" />
-        <error line="53" column="56" source="standard:argument-list-wrapping" />
-        <error line="58" column="43" source="standard:argument-list-wrapping" />
-        <error line="79" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="86" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="100" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="131" column="36" source="standard:argument-list-wrapping" />
-        <error line="139" column="46" source="standard:argument-list-wrapping" />
-        <error line="139" column="52" source="standard:argument-list-wrapping" />
-        <error line="139" column="59" source="standard:argument-list-wrapping" />
-        <error line="139" column="65" source="standard:argument-list-wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/provider/common/FutureExtensions.kt">
         <error line="8" column="1" source="standard:import-ordering" />
         <error line="26" column="15" source="standard:function-signature" />
@@ -1965,27 +1945,6 @@
     <file name="src/main/java/me/zhanghai/android/files/provider/sftp/OpenOptionsSftpExtensions.kt">
         <error line="13" column="56" source="standard:function-signature" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/provider/sftp/SftpCopyMove.kt">
-        <error line="38" column="36" source="standard:argument-list-wrapping" />
-        <error line="38" column="42" source="standard:argument-list-wrapping" />
-        <error line="104" column="49" source="standard:argument-list-wrapping" />
-        <error line="131" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="149" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="164" column="59" source="standard:wrapping" />
-        <error line="180" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="188" column="25" source="standard:chain-wrapping" />
-        <error line="188" column="75" source="standard:wrapping" />
-        <error line="192" column="25" source="standard:chain-wrapping" />
-        <error line="192" column="73" source="standard:wrapping" />
-        <error line="203" column="31" source="standard:wrapping" />
-        <error line="203" column="32" source="standard:argument-list-wrapping" />
-        <error line="225" column="36" source="standard:argument-list-wrapping" />
-        <error line="225" column="42" source="standard:argument-list-wrapping" />
-        <error line="277" column="46" source="standard:argument-list-wrapping" />
-        <error line="277" column="52" source="standard:argument-list-wrapping" />
-        <error line="277" column="59" source="standard:argument-list-wrapping" />
-        <error line="277" column="65" source="standard:argument-list-wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/provider/sftp/SftpFileAttributeView.kt">
         <error line="8" column="1" source="standard:import-ordering" />
         <error line="125" column="50" source="standard:function-signature" />
@@ -2245,16 +2204,6 @@
         <error line="24" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="25" column="1" source="standard:blank-line-between-when-conditions" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/provider/webdav/WebDavCopyMove.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="61" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="63" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="78" column="49" source="standard:argument-list-wrapping" />
-        <error line="167" column="46" source="standard:argument-list-wrapping" />
-        <error line="167" column="52" source="standard:argument-list-wrapping" />
-        <error line="167" column="59" source="standard:argument-list-wrapping" />
-        <error line="167" column="65" source="standard:argument-list-wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/provider/webdav/WebDavFileAttributeView.kt">
         <error line="8" column="1" source="standard:import-ordering" />
     </file>
@@ -2309,19 +2258,6 @@
         <error line="43" column="76" source="standard:argument-list-wrapping" />
         <error line="56" column="5" source="standard:class-signature" />
         <error line="56" column="28" source="standard:class-signature" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/provider/webdav/client/Client.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="129" column="39" source="standard:function-signature" />
-        <error line="137" column="56" source="standard:function-signature" />
-        <error line="158" column="78" source="standard:function-signature" />
-        <error line="175" column="67" source="standard:argument-list-wrapping" />
-        <error line="206" column="68" source="standard:argument-list-wrapping" />
-        <error line="222" column="88" source="standard:argument-list-wrapping" />
-        <error line="231" column="40" source="standard:function-signature" />
-        <error line="234" column="79" source="standard:argument-list-wrapping" />
-        <error line="274" column="1" source="standard:indent" />
-        <error line="274" column="17" source="standard:function-literal" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/provider/webdav/client/DavResourceCompat.kt">
         <error line="8" column="1" source="standard:import-ordering" />

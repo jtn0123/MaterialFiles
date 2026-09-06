@@ -92,6 +92,7 @@ private fun FileJob.setOwner(
         } catch (e: IOException) {
             e.printStackTrace()
             if (actionAllInfo.skipSetOwnerError) {
+                recordSkippedError()
                 transferInfo.skipFileIgnoringSize()
                 postSetOwnerNotification(transferInfo, path)
                 return
@@ -123,6 +124,7 @@ private fun FileJob.setOwner(
                 }
 
                 FileJobErrorAction.NEGATIVE -> {
+                    recordSkippedError()
                     if (result.isAll) {
                         actionAllInfo.skipSetOwnerError = true
                     }

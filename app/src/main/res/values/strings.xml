@@ -128,6 +128,11 @@
     <string name="file_job_timeout_message">File operations were stopped by the system after running for 6 hours. Start them again to continue.</string>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Finished, %1$,d file skipped because of an error</item>
+        <item quantity="other">Finished, %1$,d files skipped because of errors</item>
+    </plurals>
+    <string name="file_job_failed_format">Failed: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Preparing to delete %1$,d file</item>
         <item quantity="other">Preparing to delete %1$,d files</item>

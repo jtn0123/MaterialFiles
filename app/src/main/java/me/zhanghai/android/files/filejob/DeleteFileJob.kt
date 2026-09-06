@@ -88,6 +88,7 @@ internal fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllIn
         } catch (e: IOException) {
             e.printStackTrace()
             if (actionAllInfo.skipDeleteError) {
+                recordSkippedError()
                 if (transferInfo != null) {
                     transferInfo.skipFileIgnoringSize()
                     postDeleteNotification(transferInfo, path)
@@ -121,6 +122,7 @@ internal fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllIn
                 }
 
                 FileJobErrorAction.NEGATIVE -> {
+                    recordSkippedError()
                     if (result.isAll) {
                         actionAllInfo.skipDeleteError = true
                     }

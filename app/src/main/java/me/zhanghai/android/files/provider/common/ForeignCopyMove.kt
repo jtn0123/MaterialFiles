@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
 import java8.nio.file.AtomicMoveNotSupportedException
 import java8.nio.file.CopyOption
 import java8.nio.file.FileAlreadyExistsException
@@ -16,7 +17,6 @@ import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.BasicFileAttributeView
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileTime
-import java.io.IOException
 
 internal object ForeignCopyMove {
     @Throws(IOException::class)
@@ -31,8 +31,11 @@ internal object ForeignCopyMove {
             emptyArray()
         }
         val sourceAttributes = source.readAttributes(BasicFileAttributes::class.java, *linkOptions)
-        if (!(sourceAttributes.isRegularFile || sourceAttributes.isDirectory
-                || sourceAttributes.isSymbolicLink)) {
+        if (!(
+                sourceAttributes.isRegularFile || sourceAttributes.isDirectory ||
+                    sourceAttributes.isSymbolicLink
+                )
+        ) {
             throw IOException("Cannot copy special file to foreign provider")
         }
         if (!copyOptions.replaceExisting && target.exists(LinkOption.NOFOLLOW_LINKS)) {
@@ -40,22 +43,26 @@ internal object ForeignCopyMove {
         }
         when {
             sourceAttributes.isRegularFile -> {
-                if (copyOptions.replaceExisting) {
-                    target.deleteIfExists()
-                }
+                // A replacement is written beside the target and renamed over it once complete,
+                // so that a failed transfer never leaves the user with neither file.
+                val isReplacing =
+                    copyOptions.replaceExisting && target.exists(LinkOption.NOFOLLOW_LINKS)
+                val writeTarget = if (isReplacing) target.replacementSibling() else target
                 val openOptions = if (copyOptions.noFollowLinks) {
                     arrayOf(LinkOption.NOFOLLOW_LINKS)
                 } else {
                     emptyArray()
                 }
                 source.newInputStream(*openOptions).use { inputStream ->
-                    val outputStream = target.newOutputStream(
-                        StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE
+                    val outputStream = writeTarget.newOutputStream(
+                        StandardOpenOption.CREATE_NEW,
+                        StandardOpenOption.WRITE
                     )
                     var successful = false
                     try {
                         inputStream.copyTo(
-                            outputStream, copyOptions.progressIntervalMillis,
+                            outputStream,
+                            copyOptions.progressIntervalMillis,
                             copyOptions.progressListener
                         )
                         successful = true
@@ -64,18 +71,24 @@ internal object ForeignCopyMove {
                             outputStream.close()
                         } finally {
                             if (!successful) {
-                                try {
-                                    target.deleteIfExists()
-                                } catch (e: IOException) {
-                                    e.printStackTrace()
-                                } catch (e: UnsupportedOperationException) {
-                                    e.printStackTrace()
-                                }
+                                writeTarget.deleteIfExistsLogging()
                             }
                         }
                     }
                 }
+                if (isReplacing) {
+                    try {
+                        writeTarget.moveTo(target, StandardCopyOption.REPLACE_EXISTING)
+                    } catch (e: IOException) {
+                        writeTarget.deleteIfExistsLogging()
+                        throw e
+                    } catch (e: UnsupportedOperationException) {
+                        writeTarget.deleteIfExistsLogging()
+                        throw e
+                    }
+                }
             }
+
             sourceAttributes.isDirectory -> {
                 if (copyOptions.replaceExisting) {
                     target.deleteIfExists()
@@ -83,6 +96,7 @@ internal object ForeignCopyMove {
                 target.createDirectory()
                 copyOptions.progressListener?.invoke(sourceAttributes.size())
             }
+
             sourceAttributes.isSymbolicLink -> {
                 val sourceTarget = source.readSymbolicLink()
                 try {
@@ -97,6 +111,7 @@ internal object ForeignCopyMove {
                 }
                 copyOptions.progressListener?.invoke(sourceAttributes.size())
             }
+
             else -> throw AssertionError()
         }
         // We don't take error when copying attribute fatal, so errors will only be logged from
@@ -123,12 +138,23 @@ internal object ForeignCopyMove {
         }
     }
 
+    private fun Path.deleteIfExistsLogging() {
+        try {
+            deleteIfExists()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } catch (e: UnsupportedOperationException) {
+            e.printStackTrace()
+        }
+    }
+
     @Throws(IOException::class)
     fun move(source: Path, target: Path, vararg options: CopyOption) {
         val copyOptions = options.toCopyOptions()
         if (copyOptions.atomicMove) {
             throw AtomicMoveNotSupportedException(
-                source.toString(), target.toString(),
+                source.toString(),
+                target.toString(),
                 "Cannot move file atomically to foreign provider"
             )
         }
@@ -136,7 +162,11 @@ internal object ForeignCopyMove {
             options
         } else {
             CopyOptions(
-                copyOptions.replaceExisting, true, false, true, copyOptions.progressIntervalMillis,
+                copyOptions.replaceExisting,
+                true,
+                false,
+                true,
+                copyOptions.progressIntervalMillis,
                 copyOptions.progressListener
             ).toArray()
         }
