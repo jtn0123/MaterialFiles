@@ -115,8 +115,6 @@ tasks.named('check') { dependsOn 'checkSourceFileLength' }
 ktlint {
     version = '1.8.0'
     android = true
-    // Existing violations are recorded in the baseline; new code is checked in full.
-    baseline = file('ktlint-baseline.xml')
 }
 
 repositories {

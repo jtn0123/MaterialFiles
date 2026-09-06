@@ -15,15 +15,13 @@ version of the build requirements.
 ## Checks
 
 ```sh
-./gradlew ktlintCheck checkSourceFileLength assembleDebug testDebugUnitTest lintVitalRelease
+./gradlew ktlintCheck checkSourceFileLength assembleDebug testDebugUnitTest lintDebug lintVitalRelease
 ```
 
-- **ktlint.** Existing violations are grandfathered in `app/ktlint-baseline.xml`, which is
-  line-number based: inserting lines in a file re-flags the old violations below the insertion.
-  The policy is that any file you edit gets formatted once so that it leaves the baseline: run
-  `./gradlew :app:ktlintFormat` (it touches every file), revert the files you did not mean to
-  change, fix what the formatter could not, and delete the file's block from the baseline. Do not
-  regenerate the baseline to make a check pass; that silently absorbs new violations.
+- **ktlint.** Every Kotlin file is clean; there is no baseline. `ktlintCheck` fails on any
+  violation, so run `./gradlew :app:ktlintFormat` before committing and fix by hand what it
+  cannot (it prints the rule). Two rules contradict each other on an annotated function type;
+  route such a type through a `typealias` instead of suppressing either.
 - **File length.** `checkSourceFileLength` fails the build when any Kotlin or Java file under
   `app/src` exceeds 500 lines. Split the file; there is no exemption list.
 - **Unit tests** live in `app/src/test`. `TestPath` in `provider/common` is a provider-less
@@ -31,11 +29,22 @@ version of the build requirements.
   `Path.iterator()` is deliberately unsupported in this code base; use `path.names`.
 - **Dependency verification.** `gradle/verification-metadata.xml` pins a SHA-256 for every
   artifact the checks resolve. After a dependency or plugin bump, regenerate it with
-  `./gradlew --write-verification-metadata sha256 :app:ktlintCheck :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintVitalRelease`,
-  then re-add the `aapt2-<version>-linux.jar` and `-windows.jar` entries next to the macOS one
-  (their checksums are published as `.sha256` sidecars under
-  `https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/`). CI runs on Linux
-  and fails without them.
+  `./gradlew --write-verification-metadata sha256 :app:ktlintCheck :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:lintVitalRelease`.
+  A regeneration on macOS misses what only a Linux resolution fetches: the
+  `aapt2-<version>-linux.jar` (and `-windows.jar`; checksums are published as `.sha256` sidecars
+  under `https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/`) and Gradle
+  `.module` files the local cache happened to have as POM-only. The first CI step resolves
+  everything on Linux in dry-run mode and fails with the missing entries as a diff, so add
+  exactly those lines. Keep the file in Gradle's own ordering (versions sort as strings), or
+  that diff is never empty.
+- **Screenshots.** The `screenshots` CI job installs the debug build on an API 35 emulator, runs
+  `scripts/screenshots/capture.sh` through the inset-sensitive screens and, once
+  `screenshots/baseline/api35/` exists, pixel-diffs against it with `scripts/screenshots/compare.py`
+  (more than 0.5 % of pixels changed fails). Commit the baseline from the job's artifact, not
+  from a local emulator; see `screenshots/README.md`.
+- **Logging.** The provider and file-job layers record exceptions they survive with
+  `Throwable.logWarning(tag, operation)` from `util/Logging.kt`, which puts the class, the
+  operation and usually the path into logcat. Do not add `printStackTrace()`.
 
 ## Instrumented tests and the emulator
 
