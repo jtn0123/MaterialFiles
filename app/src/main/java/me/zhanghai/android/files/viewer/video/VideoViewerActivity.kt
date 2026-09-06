@@ -13,6 +13,7 @@ import java8.nio.file.Path
 import me.zhanghai.android.files.app.AppActivity
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.getPathListExtra
+import me.zhanghai.android.files.util.hasTrustedPathExtras
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.putPathListExtra
 
@@ -67,7 +68,10 @@ class VideoViewerActivity : AppActivity() {
             intent.putPathListExtra(EXTRA_SUBTITLE_PATH_URI_LIST, subtitlePaths)
         }
 
-        fun getSubtitlePathsExtra(intent: Intent): List<Path>? =
+        fun getSubtitlePathsExtra(intent: Intent): List<Path>? = if (intent.hasTrustedPathExtras) {
             intent.getPathListExtra(EXTRA_SUBTITLE_PATH_URI_LIST)
+        } else {
+            null
+        }
     }
 }

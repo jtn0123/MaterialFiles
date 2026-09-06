@@ -23,7 +23,6 @@ import me.zhanghai.android.files.provider.common.createDirectories
 import me.zhanghai.android.files.provider.common.resolveForeign
 import me.zhanghai.android.files.util.createIntent
 import me.zhanghai.android.files.util.createViewIntent
-import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.withChooser
 
@@ -38,9 +37,10 @@ class OpenFileJob(
             R.string.file_open_from_background_title_format,
             R.string.file_open_from_background_text
         ) { file ->
+            // This intent goes to whichever app the user picks, so it carries only the content
+            // URI and none of the private path extras.
             file.fileProviderUri.createViewIntent(mimeType)
                 .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                .apply { extraPath = file }
                 .let {
                     if (withChooser) {
                         it.withChooser(

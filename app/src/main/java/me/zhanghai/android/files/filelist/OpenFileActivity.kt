@@ -36,9 +36,9 @@ class OpenFileActivity : AppActivity() {
         if (path.isArchivePath) {
             FileJobService.open(path, mimeType, false, this)
         } else {
+            // Implicit: any app may end up handling it, so no private path extras.
             val intent = path.fileProviderUri.createViewIntent(mimeType)
                 .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                .apply { extraPath = path }
             startActivitySafe(intent)
         }
     }
@@ -46,10 +46,9 @@ class OpenFileActivity : AppActivity() {
     companion object {
         private const val ACTION_OPEN_FILE = "me.zhanghai.android.files.intent.action.OPEN_FILE"
 
-        fun createIntent(path: Path, mimeType: MimeType): Intent =
-            Intent(ACTION_OPEN_FILE)
-                .setPackage(application.packageName)
-                .setType(mimeType.value)
-                .apply { extraPath = path }
+        fun createIntent(path: Path, mimeType: MimeType): Intent = Intent(ACTION_OPEN_FILE)
+            .setPackage(application.packageName)
+            .setType(mimeType.value)
+            .apply { extraPath = path }
     }
 }

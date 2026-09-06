@@ -62,6 +62,17 @@ class TextEditorFragment :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Resolve the file before anything can touch the view model: an intent without a usable
+        // file (which any app can send, since the activity is exported) must end here, not in
+        // an uninitialized-property crash once the collectors below start.
+        val argsFile = args.intent.extraPath
+        if (argsFile == null) {
+            showToast(R.string.error_file_not_found)
+            finish()
+            return
+        }
+        this.argsFile = argsFile
+
         lifecycleScope.launchWhenStarted {
             onBackPressedCallback = object : OnBackPressedCallback(false) {
                 override fun handleOnBackPressed() {
@@ -93,14 +104,11 @@ class TextEditorFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        requireActivity().addMenuProvider(this, viewLifecycleOwner)
-        val argsFile = args.intent.extraPath
-        if (argsFile == null) {
-            // TODO: Show a toast.
-            finish()
+        if (!::argsFile.isInitialized) {
+            // onCreate() finished the activity; the view still gets created in this pass.
             return
         }
-        this.argsFile = argsFile
+        requireActivity().addMenuProvider(this, viewLifecycleOwner)
 
         val activity = requireActivity() as AppCompatActivity
         activity.lifecycleScope.launchWhenCreated {

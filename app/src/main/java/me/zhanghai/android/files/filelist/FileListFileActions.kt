@@ -124,15 +124,19 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
             val intent = path.fileProviderUri.createViewIntent(mimeType)
                 .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                 .apply {
-                    extraPath = path
-                    maybeAddImageViewerActivityExtras(this, path, mimeType)
-                    maybeAddVideoViewerActivityExtras(this, path, mimeType)
-                    if (!withChooser) {
-                        // Open images and videos in our own viewers directly. Sending them
-                        // through the resolver lists both our viewer and SaveAsActivity, and
-                        // some resolvers (One UI) collapse the two into a single app entry
-                        // whose "Always" choice then lands on "Save as" for every tap.
-                        maybeSetBuiltInViewer(this, mimeType)
+                    // Open images and videos in our own viewers directly. Sending them
+                    // through the resolver lists both our viewer and SaveAsActivity, and
+                    // some resolvers (One UI) collapse the two into a single app entry
+                    // whose "Always" choice then lands on "Save as" for every tap.
+                    //
+                    // The private path extras (the real path, its siblings, subtitle
+                    // candidates) go only on that explicit launch of our own viewer. Anything
+                    // that reaches the resolver or a chooser may land in another app, and
+                    // must not carry the token that makes those extras trusted.
+                    if (!withChooser && maybeSetBuiltInViewer(this, mimeType)) {
+                        extraPath = path
+                        maybeAddImageViewerActivityExtras(this, path, mimeType)
+                        maybeAddVideoViewerActivityExtras(this, path, mimeType)
                     }
                 }
                 .let {
@@ -151,13 +155,15 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
         }
     }
 
-    private fun maybeSetBuiltInViewer(intent: Intent, mimeType: MimeType) {
+    /** Returns whether [intent] now targets one of our own viewers. */
+    private fun maybeSetBuiltInViewer(intent: Intent, mimeType: MimeType): Boolean {
         val viewerClass = when {
             mimeType.isImage -> ImageViewerActivity::class.java
             mimeType.isVideo -> VideoViewerActivity::class.java
-            else -> return
+            else -> return false
         }
         intent.setClass(fragment.requireContext(), viewerClass)
+        return true
     }
 
     private fun maybeAddImageViewerActivityExtras(intent: Intent, path: Path, mimeType: MimeType) {

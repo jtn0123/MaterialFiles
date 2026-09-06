@@ -25,6 +25,7 @@ import me.zhanghai.android.files.util.create
 import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.getQuantityString
+import me.zhanghai.android.files.util.removeTrustedPathExtras
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.valueCompat
 
@@ -155,6 +156,11 @@ internal class FileListPick(private val fragment: FileListFragment) {
             addFlags(flags)
         }
         fragment.requireActivity().run {
+            // Our own contracts read the real paths back; any other caller gets the content
+            // URIs only, and never the token that vouches for the private extras.
+            if (callingPackage != packageName) {
+                intent.removeTrustedPathExtras()
+            }
             setResult(Activity.RESULT_OK, intent)
             finish()
         }

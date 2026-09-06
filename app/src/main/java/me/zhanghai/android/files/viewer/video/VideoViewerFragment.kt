@@ -53,7 +53,6 @@ import me.zhanghai.android.files.util.applySystemWindowInsetsToPadding
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createSendStreamIntent
-import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
@@ -439,9 +438,7 @@ class VideoViewerFragment :
     private fun share() {
         val path = playbackPosition.currentPath ?: return
         val mimeType = MimeType.guessFromPath(path.toString())
-        val intent = path.fileProviderUri.createSendStreamIntent(mimeType)
-            .apply { extraPath = path }
-            .withChooser()
+        val intent = path.fileProviderUri.createSendStreamIntent(mimeType).withChooser()
         startActivitySafe(intent)
     }
 

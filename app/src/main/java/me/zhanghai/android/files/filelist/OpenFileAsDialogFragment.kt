@@ -22,7 +22,6 @@ import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableParceler
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.createViewIntent
-import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.withChooser
@@ -40,9 +39,9 @@ class OpenFileAsDialogFragment : AppCompatDialogFragment() {
             .create()
 
     private fun openAs(mimeType: MimeType) {
+        // The chooser hands this to another app, so it carries only the content URI.
         val intent = args.path.fileProviderUri.createViewIntent(mimeType)
             .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            .apply { extraPath = args.path }
             .withChooser()
         startActivitySafe(intent)
         finish()

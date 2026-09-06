@@ -36,7 +36,6 @@ import me.zhanghai.android.files.util.applySystemWindowInsetsToPadding
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createSendImageIntent
-import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
@@ -215,9 +214,7 @@ class ImageViewerFragment :
 
     private fun share() {
         val path = currentPath
-        val intent = path.fileProviderUri.createSendImageIntent()
-            .apply { extraPath = path }
-            .withChooser()
+        val intent = path.fileProviderUri.createSendImageIntent().withChooser()
         startActivitySafe(intent)
     }
 

@@ -17,11 +17,39 @@ import me.zhanghai.android.files.compat.DocumentsContractCompat
 import me.zhanghai.android.files.storage.createOrLog
 
 private const val EXTRA_PATH_URI = "${BuildConfig.APPLICATION_ID}.extra.PATH_URI"
+private const val EXTRA_PATH_URI_LIST = "${BuildConfig.APPLICATION_ID}.extra.PATH_URI_LIST"
+private const val EXTRA_PATH_TOKEN = "${BuildConfig.APPLICATION_ID}.extra.PATH_TOKEN"
+
+/**
+ * Whether the private path extras on this intent were put there by this app.
+ *
+ * Only intents this app built for itself carry [TrustedIntentToken]; the private extras on any
+ * other intent are ignored, and the caller falls back to the intent data, which never grants more
+ * than the caller could reach on its own.
+ */
+val Intent.hasTrustedPathExtras: Boolean
+    get() = getStringExtra(EXTRA_PATH_TOKEN) == TrustedIntentToken.value
+
+private fun Intent.markPathExtrasTrusted() {
+    putExtra(EXTRA_PATH_TOKEN, TrustedIntentToken.value)
+}
+
+/**
+ * Strips the private path extras and the token that vouches for them. Call this on any intent
+ * that is handed to another app, so that the token does not leak.
+ */
+fun Intent.removeTrustedPathExtras() {
+    removeExtra(EXTRA_PATH_URI)
+    removeExtra(EXTRA_PATH_URI_LIST)
+    removeExtra(EXTRA_PATH_TOKEN)
+}
 
 var Intent.extraPath: Path?
     get() {
-        val extraPathUri = getStringExtra(EXTRA_PATH_URI)
-        extraPathUri?.let { URI::class.createOrLog(it) }?.let { return Paths.get(it) }
+        if (hasTrustedPathExtras) {
+            val extraPathUri = getStringExtra(EXTRA_PATH_URI)
+            extraPathUri?.let { URI::class.createOrLog(it) }?.let { return Paths.get(it) }
+        }
         data?.toPathOrNull()?.let { return it }
         val extraInitialUri = getParcelableExtraSafe<Uri>(DocumentsContractCompat.EXTRA_INITIAL_URI)
         extraInitialUri?.toPathOrNull()?.let { return it }
@@ -35,6 +63,7 @@ var Intent.extraPath: Path?
         // We cannot put URI into intent here either, because ShortcutInfo uses PersistableBundle
         // which doesn't support Serializable.
         putExtra(EXTRA_PATH_URI, value?.toUri()?.toString())
+        markPathExtrasTrusted()
     }
 
 val Intent.saveAsPath: Path?
@@ -62,18 +91,28 @@ private fun Uri.toPathOrNull(): Path? = when (scheme) {
     else -> null
 }
 
-private const val EXTRA_PATH_URI_LIST = "${BuildConfig.APPLICATION_ID}.extra.PATH_URI_LIST"
-
 var Intent.extraPathList: List<Path>
-    get() = getPathListExtra(EXTRA_PATH_URI_LIST) ?: listOfNotNull(extraPath)
+    get() {
+        if (hasTrustedPathExtras) {
+            getPathListExtra(EXTRA_PATH_URI_LIST)?.let { return it }
+        }
+        return listOfNotNull(extraPath)
+    }
     set(value) {
         putPathListExtra(EXTRA_PATH_URI_LIST, value)
+        markPathExtrasTrusted()
     }
 
-/** Returns null when the extra is absent or empty. */
+/**
+ * Returns null when the extra is absent or empty. Callers must check [hasTrustedPathExtras]
+ * themselves; this only guards against a wrong type in the extra.
+ */
 fun Intent.getPathListExtra(name: String): List<Path>? {
-    @Suppress("UNCHECKED_CAST")
-    val pathUris = (getSerializableExtra(name) as List<URI>?)?.takeIfNotEmpty() ?: return null
+    @Suppress("DEPRECATION")
+    val pathUris = (getSerializableExtra(name) as? List<*>)
+        ?.filterIsInstance<URI>()
+        ?.takeIfNotEmpty()
+        ?: return null
     return pathUris.map { Paths.get(it) }
 }
 
