@@ -34,7 +34,7 @@ object Settings {
     const val NAME_SUFFIX_NO_BACKUP = "no_backup"
 
     val STORAGES: SettingLiveData<List<Storage>> =
-        ParcelValueSettingLiveData(
+        EncryptedParcelValueSettingLiveData(
             NAME_SUFFIX_NO_BACKUP,
             R.string.pref_key_storages,
             null,

@@ -9,7 +9,9 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.PreferenceManagerCompat
+import me.zhanghai.android.files.settings.EncryptedParcelValueSettingLiveData
 import me.zhanghai.android.files.settings.Settings
+import me.zhanghai.android.files.storage.Storage
 
 internal fun upgradeAppTo1_7_5() {
     migrateNoBackupSettings1_7_5()
@@ -55,6 +57,32 @@ private fun migrateNoBackupSettings1_7_5() {
         }
     }
     defaultSharedPreferences.edit(commit = true) { oldValues.keys.forEach { remove(it) } }
+}
+
+internal fun upgradeAppTo1_7_6() {
+    encryptStorages1_7_6()
+}
+
+/**
+ * Stored servers are now encrypted with a keystore key (see [EncryptedParcelValueSettingLiveData]).
+ * The reader still understands the plaintext form, so this only rewrites the value once instead of
+ * leaving it readable until the user next edits a storage.
+ */
+private fun encryptStorages1_7_6() {
+    val key = application.getString(R.string.pref_key_storages)
+    val value = noBackupSharedPreferences.getString(key, null) ?: return
+    if (value.startsWith(EncryptedParcelValueSettingLiveData.PREFIX)) {
+        return
+    }
+    val storages = try {
+        EncryptedParcelValueSettingLiveData.decode<List<Storage>>(value)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return
+    }
+    noBackupSharedPreferences.edit(commit = true) {
+        putString(key, EncryptedParcelValueSettingLiveData.encode(storages))
+    }
 }
 
 internal val noBackupSharedPreferences: SharedPreferences
