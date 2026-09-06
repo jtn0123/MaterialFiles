@@ -6,7 +6,7 @@ version of the build requirements.
 ## Toolchain
 
 - JDK 21 (`JAVA_HOME` must point at it; the Gradle daemon does not pick up a newer default).
-- Gradle 9.3 and AGP 9.1 via the wrapper. Versions of everything else live in
+- Gradle 9.7 and AGP 9.4 via the wrapper (compileSdk 37, minSdk 35). Versions of everything else live in
   `gradle/libs.versions.toml`; Dependabot proposes bumps.
 - `local.properties` (git-ignored) with `sdk.dir=...`.
 - The `dav4jvm` dependency is pinned by a full 40-character commit SHA. JitPack's build for the
