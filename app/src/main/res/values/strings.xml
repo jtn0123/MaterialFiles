@@ -749,6 +749,7 @@
     <string name="ftp_server_add_tile_result_error">Error while adding “FTP server” to Quick Settings</string>
     <string name="ftp_server_configuration_title">Configuration</string>
     <string name="ftp_server_anonymous_login_title">Anonymous login</string>
+    <string name="ftp_server_error_password_empty">Set a password, or enable anonymous login, before starting the FTP server</string>
     <string name="ftp_server_username_title">Username</string>
     <string name="ftp_server_password_title">Password</string>
     <string name="ftp_server_port_title">Port</string>

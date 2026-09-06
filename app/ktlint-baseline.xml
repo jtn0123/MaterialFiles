@@ -507,9 +507,6 @@
     <file name="src/main/java/me/zhanghai/android/files/filelist/OpenApkDialogFragment.kt">
         <error line="27" column="70" source="standard:function-expression-body" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/filelist/OpenFileActivity.kt">
-        <error line="49" column="67" source="standard:function-signature" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/filelist/PasteState.kt">
         <error line="10" column="5" source="standard:class-signature" />
         <error line="11" column="5" source="standard:class-signature" />
@@ -807,10 +804,6 @@
     </file>
     <file name="src/main/java/me/zhanghai/android/files/ftpserver/FtpServerReceiver.kt">
         <error line="24" column="37" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/ftpserver/FtpServerService.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="137" column="26" source="standard:argument-list-wrapping" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/ftpserver/FtpServerStatePreference.kt">
         <error line="24" column="18" source="standard:argument-list-wrapping" />
@@ -2462,25 +2455,6 @@
         <error line="293" column="9" source="standard:function-signature" />
         <error line="293" column="24" source="standard:function-signature" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/settings/Settings.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="56" column="52" source="standard:argument-list-wrapping" />
-        <error line="77" column="52" source="standard:argument-list-wrapping" />
-        <error line="82" column="52" source="standard:argument-list-wrapping" />
-        <error line="87" column="48" source="standard:argument-list-wrapping" />
-        <error line="99" column="52" source="standard:argument-list-wrapping" />
-        <error line="104" column="44" source="standard:argument-list-wrapping" />
-        <error line="110" column="50" source="standard:argument-list-wrapping" />
-        <error line="115" column="43" source="standard:argument-list-wrapping" />
-        <error line="121" column="49" source="standard:argument-list-wrapping" />
-        <error line="126" column="52" source="standard:argument-list-wrapping" />
-        <error line="131" column="52" source="standard:argument-list-wrapping" />
-        <error line="140" column="52" source="standard:wrapping" />
-        <error line="140" column="53" source="standard:argument-list-wrapping" />
-        <error line="148" column="31" source="standard:wrapping" />
-        <error line="148" column="32" source="standard:argument-list-wrapping" />
-        <error line="157" column="46" source="standard:argument-list-wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/settings/SettingsActivity.kt">
         <error line="30" column="26" source="standard:class-signature" />
         <error line="30" column="41" source="standard:class-signature" />
@@ -3005,12 +2979,6 @@
         <error line="170" column="47" source="standard:function-signature" />
         <error line="175" column="39" source="standard:function-signature" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/util/IntentPathExtensions.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="51" column="40" source="standard:function-signature" />
-        <error line="54" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="61" column="1" source="standard:blank-line-between-when-conditions" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/util/LazyReflection.kt">
         <error line="41" column="48" source="standard:argument-list-wrapping" />
         <error line="65" column="48" source="standard:argument-list-wrapping" />
@@ -3072,42 +3040,11 @@
         <error line="93" column="49" source="standard:argument-list-wrapping" />
         <error line="167" column="17" source="standard:chain-wrapping" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/viewer/image/ImageViewerFragment.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="48" column="29" source="standard:class-signature" />
-        <error line="48" column="41" source="standard:class-signature" />
-        <error line="72" column="14" source="standard:function-signature" />
-        <error line="93" column="23" source="standard:argument-list-wrapping" />
-        <error line="93" column="55" source="standard:argument-list-wrapping" />
-        <error line="146" column="66" source="standard:function-signature" />
-        <error line="152" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="156" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="194" column="56" source="standard:argument-list-wrapping" />
-        <error line="194" column="91" source="standard:argument-list-wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/viewer/text/ConfirmCloseDialogFragment.kt">
         <error line="20" column="70" source="standard:function-expression-body" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/viewer/text/ConfirmReloadDialogFragment.kt">
         <error line="20" column="70" source="standard:function-expression-body" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/viewer/text/TextEditorFragment.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="42" column="27" source="standard:wrapping" />
-        <error line="42" column="28" source="standard:class-signature" />
-        <error line="42" column="39" source="standard:wrapping" />
-        <error line="42" column="40" source="standard:class-signature" />
-        <error line="86" column="14" source="standard:function-signature" />
-        <error line="150" column="66" source="standard:function-signature" />
-        <error line="156" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="160" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="164" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="201" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="209" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="238" column="15" source="standard:wrapping" />
-        <error line="238" column="16" source="standard:argument-list-wrapping" />
-        <error line="263" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="268" column="1" source="standard:blank-line-between-when-conditions" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/viewer/text/TextEditorViewModel.kt">
         <error line="8" column="1" source="standard:import-ordering" />

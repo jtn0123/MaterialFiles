@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import java.util.concurrent.Executors
+import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.mainExecutorCompat
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.WakeWifiLock
@@ -101,6 +102,13 @@ class FtpServerService : Service() {
         } else {
             username = Settings.FTP_SERVER_USERNAME.valueCompat
             password = Settings.FTP_SERVER_PASSWORD.valueCompat
+            if (password.isEmpty()) {
+                // Never expose storage to the network behind a known username and no password.
+                val exception =
+                    IllegalStateException(getString(R.string.ftp_server_error_password_empty))
+                mainExecutorCompat.execute { onStartError(exception) }
+                return
+            }
         }
         val port = Settings.FTP_SERVER_PORT.valueCompat
         val homeDirectory = Settings.FTP_SERVER_HOME_DIRECTORY.valueCompat
