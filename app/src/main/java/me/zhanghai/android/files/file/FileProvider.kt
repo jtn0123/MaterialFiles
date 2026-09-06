@@ -25,6 +25,13 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.system.ErrnoException
 import android.system.OsConstants
+import android.util.LruCache
+import java.io.FileNotFoundException
+import java.io.IOException
+import java.io.InterruptedIOException
+import java.net.URI
+import java.nio.ByteBuffer
+import java.nio.channels.ClosedByInterruptException
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.FileSystemException
@@ -34,6 +41,7 @@ import java8.nio.file.OpenOption
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import java8.nio.file.StandardOpenOption
+import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.BuildConfig
 import me.zhanghai.android.files.app.storageManager
 import me.zhanghai.android.files.compat.ProxyFileDescriptorCallbackCompat
@@ -51,27 +59,9 @@ import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
 import me.zhanghai.android.files.util.hasBits
 import me.zhanghai.android.files.util.withoutPenaltyDeathOnNetwork
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.io.InterruptedIOException
-import java.net.URI
-import java.nio.ByteBuffer
-import java.nio.channels.ClosedByInterruptException
 
 class FileProvider : ContentProvider() {
-    private lateinit var callbackThread: HandlerThread
-    private lateinit var callbackHandler: Handler
-
-    override fun onCreate(): Boolean {
-        callbackThread = HandlerThread("FileProvider.CallbackThread")
-        callbackThread.start()
-        callbackHandler = Handler(callbackThread.looper)
-        return true
-    }
-
-    override fun shutdown() {
-        callbackThread.quitSafely()
-    }
+    override fun onCreate(): Boolean = true
 
     override fun attachInfo(context: Context, info: ProviderInfo) {
         super.attachInfo(context, info)
@@ -103,8 +93,9 @@ class FileProvider : ContentProvider() {
                     columns += column
                     values += path.fileName.toString()
                 }
+
                 OpenableColumns.SIZE -> {
-                    val size = try {
+                    val size = cachedAttributes[path]?.size ?: try {
                         path.size()
                     } catch (e: IOException) {
                         e.printStackTrace()
@@ -113,6 +104,7 @@ class FileProvider : ContentProvider() {
                     columns += column
                     values += size
                 }
+
                 MediaStore.MediaColumns.DATA -> {
                     val file = try {
                         path.toFile()
@@ -122,14 +114,16 @@ class FileProvider : ContentProvider() {
                     columns += column
                     values += file.absolutePath
                 }
+
                 // TODO: We should actually implement a DocumentsProvider since we are handling
                 //  ACTION_OPEN_DOCUMENT.
                 DocumentsContract.Document.COLUMN_MIME_TYPE -> {
                     columns += column
                     values += MimeType.guessFromPath(path.toString()).value
                 }
+
                 DocumentsContract.Document.COLUMN_LAST_MODIFIED -> {
-                    val lastModified = try {
+                    val lastModified = cachedAttributes[path]?.lastModifiedMillis ?: try {
                         path.getLastModifiedTime().toMillis()
                     } catch (e: IOException) {
                         e.printStackTrace()
@@ -146,8 +140,9 @@ class FileProvider : ContentProvider() {
     }
 
     private fun getDefaultProjection(): Array<String> =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-            && Binder.getCallingUid() == Process.SYSTEM_UID) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            Binder.getCallingUid() == Process.SYSTEM_UID
+        ) {
             // com.android.internal.app.ChooserActivity.queryResolver() in Q queries with a null
             // projection (meaning all columns) on main thread but only actually needs the display
             // name (and document flags). However if we do return all the columns, we may perform
@@ -163,26 +158,18 @@ class FileProvider : ContentProvider() {
         return MimeType.guessFromPath(path.toString()).value
     }
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? {
+    override fun insert(uri: Uri, values: ContentValues?): Uri? =
         throw UnsupportedOperationException("No external inserts")
-    }
 
     override fun update(
         uri: Uri,
         values: ContentValues?,
         selection: String?,
         selectionArgs: Array<String>?
-    ): Int {
-        throw UnsupportedOperationException("No external updates")
-    }
+    ): Int = throw UnsupportedOperationException("No external updates")
 
-    override fun delete(
-        uri: Uri,
-        selection: String?,
-        selectionArgs: Array<String>?
-    ): Int {
+    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int =
         throw UnsupportedOperationException("No external deletes")
-    }
 
     @Throws(FileNotFoundException::class)
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor? {
@@ -202,11 +189,23 @@ class FileProvider : ContentProvider() {
         } catch (e: IOException) {
             throw e.toFileNotFoundException()
         }
+        // One thread per open descriptor: the callbacks block on network reads, and a single
+        // shared thread would make two apps streaming two remote files wait on each other.
+        val callbackThread = HandlerThread("FileProvider.Callback(${path.fileName})")
+        callbackThread.start()
         return try {
             storageManager.openProxyFileDescriptorCompat(
-                modeBits, ChannelCallback(channel), callbackHandler
+                modeBits,
+                ChannelCallback(channel, callbackThread),
+                Handler(callbackThread.looper)
             )
         } catch (e: IOException) {
+            callbackThread.quitSafely()
+            try {
+                channel.close()
+            } catch (e2: IOException) {
+                e.addSuppressed(e2)
+            }
             throw e.toFileNotFoundException()
         }
     }
@@ -224,26 +223,27 @@ class FileProvider : ContentProvider() {
         return !((needRead && !file.canRead()) || (needWrite && !file.canWrite()))
     }
 
-    private fun Int.toOpenOptions(): Set<OpenOption> =
-        mutableSetOf<OpenOption>().apply {
-            // May be "r" for read-only access, "rw" for read and write access, or "rwt" for
-            // read and write access that truncates any existing file.
-            require(!hasBits(ParcelFileDescriptor.MODE_APPEND)) { "mode ${this@toOpenOptions}" }
-            if (hasBits(ParcelFileDescriptor.MODE_READ_ONLY)
-                || hasBits(ParcelFileDescriptor.MODE_READ_WRITE)) {
-                this += StandardOpenOption.READ
-            }
-            if (hasBits(ParcelFileDescriptor.MODE_WRITE_ONLY)
-                || hasBits(ParcelFileDescriptor.MODE_READ_WRITE)) {
-                this += StandardOpenOption.WRITE
-            }
-            if (hasBits(ParcelFileDescriptor.MODE_CREATE)) {
-                this += StandardOpenOption.CREATE
-            }
-            if (hasBits(ParcelFileDescriptor.MODE_TRUNCATE)) {
-                this += StandardOpenOption.TRUNCATE_EXISTING
-            }
+    private fun Int.toOpenOptions(): Set<OpenOption> = mutableSetOf<OpenOption>().apply {
+        // May be "r" for read-only access, "rw" for read and write access, or "rwt" for
+        // read and write access that truncates any existing file.
+        require(!hasBits(ParcelFileDescriptor.MODE_APPEND)) { "mode ${this@toOpenOptions}" }
+        if (hasBits(ParcelFileDescriptor.MODE_READ_ONLY) ||
+            hasBits(ParcelFileDescriptor.MODE_READ_WRITE)
+        ) {
+            this += StandardOpenOption.READ
         }
+        if (hasBits(ParcelFileDescriptor.MODE_WRITE_ONLY) ||
+            hasBits(ParcelFileDescriptor.MODE_READ_WRITE)
+        ) {
+            this += StandardOpenOption.WRITE
+        }
+        if (hasBits(ParcelFileDescriptor.MODE_CREATE)) {
+            this += StandardOpenOption.CREATE
+        }
+        if (hasBits(ParcelFileDescriptor.MODE_TRUNCATE)) {
+            this += StandardOpenOption.TRUNCATE_EXISTING
+        }
+    }
 
     private fun IOException.toFileNotFoundException(): FileNotFoundException =
         if (this is FileNotFoundException) {
@@ -253,7 +253,8 @@ class FileProvider : ContentProvider() {
         }
 
     private class ChannelCallback(
-        private val channel: SeekableByteChannel
+        private val channel: SeekableByteChannel,
+        private val callbackThread: HandlerThread
     ) : ProxyFileDescriptorCallbackCompat() {
         private var offset = 0L
         private var released = false
@@ -344,6 +345,8 @@ class FileProvider : ContentProvider() {
                 e.printStackTrace()
             }
             released = true
+            // This runs on the thread itself; the quit takes effect once this callback returns.
+            callbackThread.quitSafely()
         }
 
         private fun IOException.toErrnoException(): ErrnoException {
@@ -365,7 +368,25 @@ class FileProvider : ContentProvider() {
         }
     }
 
+    /** What a directory listing already knew about a file, so [query] need not ask again. */
+    private class CachedAttributes(val size: Long, val lastModifiedMillis: Long)
+
     companion object {
+        /**
+         * Other apps query the size and modification time of a content URI they were handed,
+         * often from their main thread, and for a remote path each answer is a network round
+         * trip on our binder thread. The listing that produced the URI already had both, so
+         * [rememberAttributes] keeps them for the paths most recently shared.
+         */
+        private val cachedAttributes = LruCache<Path, CachedAttributes>(256)
+
+        fun rememberAttributes(path: Path, attributes: BasicFileAttributes) {
+            cachedAttributes.put(
+                path,
+                CachedAttributes(attributes.size(), attributes.lastModifiedTime().toMillis())
+            )
+        }
+
         private val DEFAULT_PROJECTION = arrayOf(
             OpenableColumns.DISPLAY_NAME,
             OpenableColumns.SIZE,
@@ -396,6 +417,16 @@ val Path.fileProviderUri: Uri
             .authority(BuildConfig.FILE_PROVIDIER_AUTHORITY)
             .path(uriPath)
             .build()
+    }
+
+/**
+ * The [fileProviderUri] of a listed file, remembering its size and modification time for the
+ * queries the receiving app will make; see [FileProvider.rememberAttributes].
+ */
+val FileItem.fileProviderUri: Uri
+    get() {
+        FileProvider.rememberAttributes(path, attributes)
+        return path.fileProviderUri
     }
 
 private val Uri.fileProviderPath: Path
