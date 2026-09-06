@@ -1,7 +1,11 @@
 name: Android CI
 
+# Pushes to master and every pull request get a run; pushes to other branches do not, so a PR
+# branch is built once per push rather than twice (push + pull_request). Use "Run workflow" for
+# a branch without a PR.
 on:
   push:
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
