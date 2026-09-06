@@ -18,8 +18,8 @@ android {
         applicationId 'me.zhanghai.android.files'
         minSdk 23
         targetSdk 36
-        versionCode 39
-        versionName '1.7.4'
+        versionCode 40
+        versionName '1.7.5'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         resValue 'string', 'app_version', versionName + ' (' + versionCode + ')'
         buildConfigField 'String', 'FILE_PROVIDIER_AUTHORITY', 'APPLICATION_ID + ".file_provider"'
