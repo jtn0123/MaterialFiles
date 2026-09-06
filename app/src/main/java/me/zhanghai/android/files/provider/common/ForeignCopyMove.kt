@@ -6,9 +6,7 @@
 package me.zhanghai.android.files.provider.common
 
 import java.io.IOException
-import java8.nio.file.AtomicMoveNotSupportedException
 import java8.nio.file.CopyOption
-import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.LinkOption
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.Path
@@ -18,104 +16,106 @@ import java8.nio.file.attribute.BasicFileAttributeView
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileTime
 
-internal object ForeignCopyMove {
+/**
+ * Copy and move between two different providers, through the provider-neutral [Path] API. A
+ * move is always a copy followed by a delete here, since nothing can rename across providers.
+ */
+internal object ForeignCopyMove : AbstractCopyMove<Path, BasicFileAttributes>() {
     @Throws(IOException::class)
     fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        val copyOptions = options.toCopyOptions()
-        if (copyOptions.atomicMove) {
-            throw UnsupportedOperationException(StandardCopyOption.ATOMIC_MOVE.toString())
-        }
-        val linkOptions = if (copyOptions.noFollowLinks) {
-            arrayOf(LinkOption.NOFOLLOW_LINKS)
-        } else {
-            emptyArray()
-        }
-        val sourceAttributes = source.readAttributes(BasicFileAttributes::class.java, *linkOptions)
-        if (!(
-                sourceAttributes.isRegularFile || sourceAttributes.isDirectory ||
-                    sourceAttributes.isSymbolicLink
-                )
-        ) {
-            throw IOException("Cannot copy special file to foreign provider")
-        }
-        if (!copyOptions.replaceExisting && target.exists(LinkOption.NOFOLLOW_LINKS)) {
-            throw FileAlreadyExistsException(source.toString(), target.toString(), null)
-        }
-        when {
-            sourceAttributes.isRegularFile -> {
-                // A replacement is written beside the target and renamed over it once complete,
-                // so that a failed transfer never leaves the user with neither file.
-                val isReplacing =
-                    copyOptions.replaceExisting && target.exists(LinkOption.NOFOLLOW_LINKS)
-                val writeTarget = if (isReplacing) target.replacementSibling() else target
-                val openOptions = if (copyOptions.noFollowLinks) {
-                    arrayOf(LinkOption.NOFOLLOW_LINKS)
-                } else {
-                    emptyArray()
-                }
-                source.newInputStream(*openOptions).use { inputStream ->
-                    val outputStream = writeTarget.newOutputStream(
-                        StandardOpenOption.CREATE_NEW,
-                        StandardOpenOption.WRITE
+        copy(source, target, options.toCopyOptions())
+    }
+
+    @Throws(IOException::class)
+    fun move(source: Path, target: Path, vararg options: CopyOption) {
+        move(source, target, options.toCopyOptions())
+    }
+
+    override fun readAttributes(path: Path, noFollowLinks: Boolean): BasicFileAttributes =
+        path.readAttributes(BasicFileAttributes::class.java, *linkOptions(noFollowLinks))
+
+    override fun readAttributesOrNull(path: Path): BasicFileAttributes? = try {
+        path.readAttributes(BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+    } catch (e: NoSuchFileException) {
+        null
+    }
+
+    // Two paths on different providers are never the same file.
+    override fun isSameFile(
+        source: Path,
+        sourceAttributes: BasicFileAttributes,
+        target: Path,
+        targetAttributes: BasicFileAttributes
+    ): Boolean = false
+
+    override fun getFileType(attributes: BasicFileAttributes): FileType = when {
+        attributes.isRegularFile -> FileType.REGULAR_FILE
+        attributes.isDirectory -> FileType.DIRECTORY
+        attributes.isSymbolicLink -> FileType.SYMBOLIC_LINK
+        else -> FileType.OTHER
+    }
+
+    override fun getSize(attributes: BasicFileAttributes): Long = attributes.size()
+
+    override fun copyRegularFile(
+        source: Path,
+        sourceAttributes: BasicFileAttributes,
+        target: Path,
+        copyOptions: CopyOptions
+    ) {
+        source.newInputStream(*linkOptions(copyOptions.noFollowLinks)).use { inputStream ->
+            target.newOutputStream(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+                .use { outputStream ->
+                    inputStream.copyTo(
+                        outputStream,
+                        copyOptions.progressIntervalMillis,
+                        copyOptions.progressListener
                     )
-                    var successful = false
-                    try {
-                        inputStream.copyTo(
-                            outputStream,
-                            copyOptions.progressIntervalMillis,
-                            copyOptions.progressListener
-                        )
-                        successful = true
-                    } finally {
-                        try {
-                            outputStream.close()
-                        } finally {
-                            if (!successful) {
-                                writeTarget.deleteIfExistsLogging()
-                            }
-                        }
-                    }
                 }
-                if (isReplacing) {
-                    try {
-                        writeTarget.moveTo(target, StandardCopyOption.REPLACE_EXISTING)
-                    } catch (e: IOException) {
-                        writeTarget.deleteIfExistsLogging()
-                        throw e
-                    } catch (e: UnsupportedOperationException) {
-                        writeTarget.deleteIfExistsLogging()
-                        throw e
-                    }
-                }
-            }
-
-            sourceAttributes.isDirectory -> {
-                if (copyOptions.replaceExisting) {
-                    target.deleteIfExists()
-                }
-                target.createDirectory()
-                copyOptions.progressListener?.invoke(sourceAttributes.size())
-            }
-
-            sourceAttributes.isSymbolicLink -> {
-                val sourceTarget = source.readSymbolicLink()
-                try {
-                    // Might throw UnsupportedOperationException, so we cannot delete beforehand.
-                    target.createSymbolicLink(sourceTarget)
-                } catch (e: FileAlreadyExistsException) {
-                    if (!copyOptions.replaceExisting) {
-                        throw e
-                    }
-                    target.deleteIfExists()
-                    target.createSymbolicLink(sourceTarget)
-                }
-                copyOptions.progressListener?.invoke(sourceAttributes.size())
-            }
-
-            else -> throw AssertionError()
         }
-        // We don't take error when copying attribute fatal, so errors will only be logged from
-        // now on.
+    }
+
+    override fun createDirectory(
+        target: Path,
+        sourceAttributes: BasicFileAttributes,
+        copyOptions: CopyOptions
+    ) {
+        target.createDirectory()
+    }
+
+    override fun copySymbolicLink(
+        source: Path,
+        sourceAttributes: BasicFileAttributes,
+        target: Path,
+        copyOptions: CopyOptions
+    ) {
+        target.createSymbolicLink(source.readSymbolicLink())
+    }
+
+    override fun delete(path: Path) {
+        path.deleteIfExists()
+    }
+
+    override fun replacementSibling(target: Path): Path = target.replacementSibling()
+
+    override val canRename: Boolean
+        get() = false
+
+    // Only reached for a replacement, whose sibling is on the same provider as the target.
+    override fun rename(source: Path, target: Path, replaceExisting: Boolean) {
+        if (replaceExisting) {
+            source.moveTo(target, StandardCopyOption.REPLACE_EXISTING)
+        } else {
+            source.moveTo(target)
+        }
+    }
+
+    override fun copyAttributes(
+        source: Path,
+        sourceAttributes: BasicFileAttributes,
+        target: Path,
+        copyOptions: CopyOptions
+    ) {
         val targetAttributeView = target.getFileAttributeView(BasicFileAttributeView::class.java)!!
         val lastModifiedTime = sourceAttributes.lastModifiedTime()
             .takeIf { it != FileTime::class.EPOCH }
@@ -138,61 +138,6 @@ internal object ForeignCopyMove {
         }
     }
 
-    private fun Path.deleteIfExistsLogging() {
-        try {
-            deleteIfExists()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } catch (e: UnsupportedOperationException) {
-            e.printStackTrace()
-        }
-    }
-
-    @Throws(IOException::class)
-    fun move(source: Path, target: Path, vararg options: CopyOption) {
-        val copyOptions = options.toCopyOptions()
-        if (copyOptions.atomicMove) {
-            throw AtomicMoveNotSupportedException(
-                source.toString(),
-                target.toString(),
-                "Cannot move file atomically to foreign provider"
-            )
-        }
-        val optionsForCopy = if (copyOptions.copyAttributes && copyOptions.noFollowLinks) {
-            options
-        } else {
-            CopyOptions(
-                copyOptions.replaceExisting,
-                true,
-                false,
-                true,
-                copyOptions.progressIntervalMillis,
-                copyOptions.progressListener
-            ).toArray()
-        }
-        copy(source, target, *optionsForCopy)
-        try {
-            source.delete()
-        } catch (e: IOException) {
-            if (e !is NoSuchFileException) {
-                try {
-                    target.delete()
-                } catch (e2: IOException) {
-                    e.addSuppressed(e2)
-                } catch (e2: UnsupportedOperationException) {
-                    e.addSuppressed(e2)
-                }
-            }
-            throw e
-        } catch (e: UnsupportedOperationException) {
-            try {
-                target.delete()
-            } catch (e2: IOException) {
-                e.addSuppressed(e2)
-            } catch (e2: UnsupportedOperationException) {
-                e.addSuppressed(e2)
-            }
-            throw e
-        }
-    }
+    private fun linkOptions(noFollowLinks: Boolean): Array<LinkOption> =
+        if (noFollowLinks) arrayOf(LinkOption.NOFOLLOW_LINKS) else emptyArray()
 }
