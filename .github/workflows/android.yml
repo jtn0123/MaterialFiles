@@ -40,6 +40,17 @@ jobs:
       uses: gradle/actions/setup-gradle@v4
       with:
         cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+    - name: Check that the dependency verification metadata is complete
+      # gradle/verification-metadata.xml is usually regenerated on macOS, which never resolves
+      # the Linux-only artifacts (aapt2) and can miss Gradle module files its cache already had
+      # as POM-only. Resolving everything the build needs here, on Linux, and diffing the result
+      # turns "verification failed" into a diff that says exactly what to add.
+      run: |
+        ./gradlew --write-verification-metadata sha256 --dry-run ktlintCheck checkSourceFileLength testDebugUnitTest lintDebug lintVitalRelease assembleDebug assembleDebugAndroidTest
+        if ! diff -u gradle/verification-metadata.xml gradle/verification-metadata.dryrun.xml; then
+          echo "::error file=gradle/verification-metadata.xml::Missing entries above; add them to gradle/verification-metadata.xml"
+          exit 1
+        fi
     - name: ktlint, file length rule, unit tests, lint
       run: ./gradlew ktlintCheck checkSourceFileLength testDebugUnitTest lintDebug lintVitalRelease
     - name: Assemble the app and the instrumented-test APK
