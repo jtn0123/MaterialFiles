@@ -17,6 +17,7 @@ class FileJobReceiver : BroadcastReceiver() {
                 val jobId = intent.getIntExtra(EXTRA_JOB_ID, 0)
                 FileJobService.cancelJob(jobId)
             }
+
             else -> throw IllegalArgumentException(action)
         }
     }
@@ -26,9 +27,8 @@ class FileJobReceiver : BroadcastReceiver() {
 
         private const val EXTRA_JOB_ID = "jobId"
 
-        fun createIntent(jobId: Int): Intent =
-            Intent(application, FileJobReceiver::class.java)
-                .setAction(ACTION_CANCEL)
-                .putExtra(EXTRA_JOB_ID, jobId)
+        fun createIntent(jobId: Int): Intent = Intent(application, FileJobReceiver::class.java)
+            .setAction(ACTION_CANCEL)
+            .putExtra(EXTRA_JOB_ID, jobId)
     }
 }

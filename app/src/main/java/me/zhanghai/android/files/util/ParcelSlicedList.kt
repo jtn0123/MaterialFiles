@@ -38,7 +38,8 @@ class ParcelSlicedList<out T> : Parcelable {
     private fun readSliceFromParcel(list: MutableList<T>, source: Parcel) {
         val size = source.readInt()
         repeat(size) {
-            @Suppress("UNCHECKED_CAST") val element = source.readValue<T>() as T
+            @Suppress("UNCHECKED_CAST")
+            val element = source.readValue<T>() as T
             list += element
         }
     }
@@ -57,16 +58,16 @@ class ParcelSlicedList<out T> : Parcelable {
                     data: Parcel,
                     reply: Parcel?,
                     flags: Int
-                ): Boolean =
-                    when (code) {
-                        FIRST_CALL_TRANSACTION -> {
-                            if (reply != null) {
-                                writeSliceToParcel(iterator, reply)
-                            }
-                            true
+                ): Boolean = when (code) {
+                    FIRST_CALL_TRANSACTION -> {
+                        if (reply != null) {
+                            writeSliceToParcel(iterator, reply)
                         }
-                        else -> super.onTransact(code, data, reply, flags)
+                        true
                     }
+
+                    else -> super.onTransact(code, data, reply, flags)
+                }
             })
         }
     }

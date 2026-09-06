@@ -9,6 +9,7 @@ import android.content.pm.PermissionInfo
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
+import java.util.Locale
 import me.zhanghai.android.files.app.clipboardManager
 import me.zhanghai.android.files.compat.protectionCompat
 import me.zhanghai.android.files.databinding.PermissionItemBinding
@@ -16,7 +17,6 @@ import me.zhanghai.android.files.ui.SimpleAdapter
 import me.zhanghai.android.files.util.copyText
 import me.zhanghai.android.files.util.isBold
 import me.zhanghai.android.files.util.layoutInflater
-import java.util.Locale
 
 class PermissionListAdapter : SimpleAdapter<PermissionItem, PermissionListAdapter.ViewHolder>() {
     override val hasStableIds: Boolean
@@ -37,8 +37,10 @@ class PermissionListAdapter : SimpleAdapter<PermissionItem, PermissionListAdapte
         }
         val label = permission.label
         binding.labelText.text = label?.capitalize(Locale.getDefault()) ?: name
-        binding.labelText.isBold = (permission.permissionInfo?.protectionCompat
-            == PermissionInfo.PROTECTION_DANGEROUS)
+        binding.labelText.isBold = (
+            permission.permissionInfo?.protectionCompat
+                == PermissionInfo.PROTECTION_DANGEROUS
+            )
         binding.nameText.isVisible = label != null
         binding.nameText.text = name
         binding.descriptionText.text = permission.description

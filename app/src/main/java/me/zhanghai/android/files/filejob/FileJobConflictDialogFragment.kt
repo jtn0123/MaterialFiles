@@ -54,6 +54,9 @@ import me.zhanghai.android.files.util.setTextWithSelection
 import me.zhanghai.android.files.util.shortAnimTime
 import me.zhanghai.android.files.util.showSoftInput
 
+/** Called with the chosen action, the new name for a rename, and whether it applies to all. */
+typealias FileJobConflictListener = (FileJobConflictAction, String?, Boolean) -> Unit
+
 class FileJobConflictDialogFragment : AppCompatDialogFragment() {
     private val args by args<Args>()
 
@@ -87,8 +90,11 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
                     }
                 )
                 bindFileItem(
-                    targetFile, binding.targetIconImage, binding.targetThumbnailImage,
-                    binding.targetAppIconBadgeImage, binding.targetBadgeImage,
+                    targetFile,
+                    binding.targetIconImage,
+                    binding.targetThumbnailImage,
+                    binding.targetAppIconBadgeImage,
+                    binding.targetBadgeImage,
                     binding.targetDescriptionText
                 )
                 binding.sourceNameText.setText(
@@ -99,8 +105,11 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
                     }
                 )
                 bindFileItem(
-                    sourceFile, binding.sourceIconImage, binding.sourceThumbnailImage,
-                    binding.sourceAppIconBadgeImage, binding.sourceBadgeImage,
+                    sourceFile,
+                    binding.sourceIconImage,
+                    binding.sourceThumbnailImage,
+                    binding.sourceAppIconBadgeImage,
+                    binding.sourceBadgeImage,
                     binding.sourceDescriptionText
                 )
                 binding.showNameLayout.setOnClickListener {
@@ -223,16 +232,19 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
                     name = null
                     all = binding.allCheck.isChecked
                 }
+
             DialogInterface.BUTTON_NEGATIVE -> {
                 action = FileJobConflictAction.SKIP
                 name = null
                 all = binding.allCheck.isChecked
             }
+
             DialogInterface.BUTTON_NEUTRAL -> {
                 action = FileJobConflictAction.CANCEL
                 name = null
                 all = false
             }
+
             else -> throw AssertionError(which)
         }
         notifyListenerOnce(action, name, all)
@@ -319,8 +331,7 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
         val sourceFile: FileItem,
         val targetFile: FileItem,
         val type: CopyMoveType,
-        val listener: @WriteWith<ListenerParceler>()
-        (FileJobConflictAction, String?, Boolean) -> Unit
+        val listener: @WriteWith<ListenerParceler> FileJobConflictListener
     ) : ParcelableArgs {
         object ListenerParceler : Parceler<(FileJobConflictAction, String?, Boolean) -> Unit> {
             override fun create(parcel: Parcel): (FileJobConflictAction, String?, Boolean) -> Unit =
@@ -338,7 +349,8 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
                     RemoteCallback {
                         val args = it.getArgs<ListenerArgs>()
                         this(args.action, args.name, args.isAll)
-                    }, flags
+                    },
+                    flags
                 )
             }
 
@@ -352,7 +364,5 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
     }
 
     @Parcelize
-    private class State(
-        val isAllChecked: Boolean
-    ) : ParcelableState
+    private class State(val isAllChecked: Boolean) : ParcelableState
 }

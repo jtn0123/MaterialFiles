@@ -58,7 +58,9 @@ class ThemeColorPreference : BaseColorPreference {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(
@@ -83,7 +85,8 @@ class ThemeColorPreference : BaseColorPreference {
     companion object {
         init {
             PreferenceFragmentCompat.registerPreferenceFragment(
-                ThemeColorPreference::class.java, ColorPreferenceDialogFragment::class.java
+                ThemeColorPreference::class.java,
+                ColorPreferenceDialogFragment::class.java
             )
         }
     }

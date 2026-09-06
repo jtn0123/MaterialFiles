@@ -34,7 +34,9 @@ class FtpServerUrlPreference : Preference {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(
@@ -93,7 +95,9 @@ class FtpServerUrlPreference : Preference {
                         val password = Settings.FTP_SERVER_PASSWORD.valueCompat
                         if (password.isNotEmpty()) {
                             add(
-                                Menu.NONE, Menu.NONE, Menu.NONE,
+                                Menu.NONE,
+                                Menu.NONE,
+                                Menu.NONE,
                                 R.string.ftp_server_url_menu_copy_password
                             ).setOnMenuItemClickListener {
                                 clipboardManager.copyText(password, context)

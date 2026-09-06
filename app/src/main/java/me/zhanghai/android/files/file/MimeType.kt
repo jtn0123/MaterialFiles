@@ -20,7 +20,8 @@ value class MimeType(val value: String) : Parcelable {
             val indexOfSlash = value.indexOf('/')
             val indexOfSemicolon = value.indexOf(';')
             return value.substring(
-                indexOfSlash + 1, if (indexOfSemicolon != -1) indexOfSemicolon else value.length
+                indexOfSlash + 1,
+                if (indexOfSemicolon != -1) indexOfSemicolon else value.length
             )
         }
 
@@ -35,7 +36,8 @@ value class MimeType(val value: String) : Parcelable {
                 return null
             }
             return value.substring(
-                indexOfPlus + 1, if (indexOfSemicolon != -1) indexOfSemicolon else value.length
+                indexOfPlus + 1,
+                if (indexOfSemicolon != -1) indexOfSemicolon else value.length
             )
         }
 
@@ -45,10 +47,9 @@ value class MimeType(val value: String) : Parcelable {
             return if (indexOfSemicolon != -1) value.substring(indexOfSemicolon + 1) else null
         }
 
-    fun match(mimeType: MimeType): Boolean =
-        type.let { it == "*" || mimeType.type == it }
-            && subtype.let { it == "*" || mimeType.subtype == it }
-            && parameters.let { it == null || mimeType.parameters == it }
+    fun match(mimeType: MimeType): Boolean = type.let { it == "*" || mimeType.type == it } &&
+        subtype.let { it == "*" || mimeType.subtype == it } &&
+        parameters.let { it == null || mimeType.parameters == it }
 
     companion object {
         val ANY = "*/*".asMimeType()
@@ -87,8 +88,9 @@ private val String.isValidMimeType: Boolean
         }
         val indexOfPlus = indexOf('+')
         if (indexOfPlus != -1 && !(indexOfSemicolon != -1 && indexOfPlus > indexOfSemicolon)) {
-            if (indexOfPlus !in indexOfSlash + 2..<
-                if (indexOfSemicolon != -1) indexOfSemicolon - 1 else length) {
+            if (indexOfPlus !in
+                indexOfSlash + 2..<if (indexOfSemicolon != -1) indexOfSemicolon - 1 else length
+            ) {
                 return false
             }
         }

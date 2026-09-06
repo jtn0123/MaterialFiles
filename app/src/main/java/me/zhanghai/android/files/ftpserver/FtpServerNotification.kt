@@ -53,17 +53,25 @@ class FtpServerNotification(private val service: Service) {
             pendingIntentFlags = pendingIntentFlags or PendingIntent.FLAG_IMMUTABLE
         }
         val contentPendingIntent = PendingIntent.getActivity(
-            service, FtpServerActivity::class.hashCode(), contentIntent, pendingIntentFlags
+            service,
+            FtpServerActivity::class.hashCode(),
+            contentIntent,
+            pendingIntentFlags
         )
         val stopIntent = FtpServerReceiver.createIntent()
         val stopPendingIntent = PendingIntent.getBroadcast(
-            service, FtpServerReceiver::class.hashCode(), stopIntent, pendingIntentFlags
+            service,
+            FtpServerReceiver::class.hashCode(),
+            stopIntent,
+            pendingIntentFlags
         )
         val notification = ftpServerServiceNotificationTemplate.createBuilder(service)
             .setContentText(contextText)
             .setContentIntent(contentPendingIntent)
             .addAction(
-                R.drawable.stop_icon_white_24dp, service.getString(R.string.stop), stopPendingIntent
+                R.drawable.stop_icon_white_24dp,
+                service.getString(R.string.stop),
+                stopPendingIntent
             )
             .build()
         service.startForeground(NotificationIds.FTP_SERVER, notification)

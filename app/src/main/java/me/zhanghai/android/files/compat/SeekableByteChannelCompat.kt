@@ -7,10 +7,10 @@ package me.zhanghai.android.files.compat
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import java8.nio.channels.SeekableByteChannel
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.SeekableByteChannel as JavaSeekableByteChannel
+import java8.nio.channels.SeekableByteChannel
 
 @RequiresApi(Build.VERSION_CODES.N)
 fun SeekableByteChannel.toJavaSeekableByteChannel(): JavaSeekableByteChannel =
@@ -19,9 +19,8 @@ fun SeekableByteChannel.toJavaSeekableByteChannel(): JavaSeekableByteChannel =
     this as? JavaSeekableByteChannel ?: DelegateJavaSeekableByteChannel(this)
 
 @RequiresApi(Build.VERSION_CODES.N)
-private class DelegateJavaSeekableByteChannel(
-    private val channel: SeekableByteChannel
-) : JavaSeekableByteChannel {
+private class DelegateJavaSeekableByteChannel(private val channel: SeekableByteChannel) :
+    JavaSeekableByteChannel {
     @Throws(IOException::class)
     override fun read(dst: ByteBuffer): Int = channel.read(dst)
 

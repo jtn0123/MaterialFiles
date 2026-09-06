@@ -38,7 +38,8 @@ fun lazyReflectedConstructor(
     vararg parameterTypes: Any
 ): Lazy<Constructor<*>> = lazy {
     getReflectedConstructor(
-        getReflectedClass(declaringClassName), *getParameterTypes(parameterTypes)
+        getReflectedClass(declaringClassName),
+        *getParameterTypes(parameterTypes)
     )
 }
 
@@ -62,7 +63,9 @@ fun lazyReflectedMethod(
     vararg parameterTypes: Any
 ): Lazy<Method> = lazy {
     getReflectedMethod(
-        getReflectedClass(declaringClassName), methodName, *getParameterTypes(parameterTypes)
+        getReflectedClass(declaringClassName),
+        methodName,
+        *getParameterTypes(parameterTypes)
     )
 }
 

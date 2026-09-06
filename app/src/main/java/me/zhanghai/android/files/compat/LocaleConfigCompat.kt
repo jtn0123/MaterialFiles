@@ -14,8 +14,8 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.XmlRes
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.os.LocaleListCompat
-import org.xmlpull.v1.XmlPullParser
 import java.io.FileNotFoundException
+import org.xmlpull.v1.XmlPullParser
 
 /**
  * @see android.app.LocaleConfig
@@ -130,7 +130,9 @@ class LocaleConfigCompat(context: Context) {
                                 continue
                             }
                             return parser.getAttributeResourceValue(
-                                NAMESPACE_ANDROID, ATTR_LOCALE_CONFIG, ResourcesCompat.ID_NULL
+                                NAMESPACE_ANDROID,
+                                ATTR_LOCALE_CONFIG,
+                                ResourcesCompat.ID_NULL
                             )
                         }
                     } while (parser.next() != XmlPullParser.END_DOCUMENT)
@@ -171,7 +173,8 @@ class LocaleConfigCompat(context: Context) {
             do {
                 type = next()
             } while (type != XmlPullParser.END_DOCUMENT &&
-                (type != XmlPullParser.END_TAG || depth > outerDepth))
+                (type != XmlPullParser.END_TAG || depth > outerDepth)
+            )
         }
 
         companion object {

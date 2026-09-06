@@ -9,6 +9,8 @@ import android.content.Intent
 import android.location.Geocoder
 import androidx.lifecycle.lifecycleScope
 import java8.nio.file.Path
+import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -31,8 +33,6 @@ import me.zhanghai.android.files.util.isGeocoderPresent
 import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.userFriendlyString
 import me.zhanghai.android.files.util.viewModels
-import kotlin.math.pow
-import kotlin.math.roundToInt
 
 class FilePropertiesImageTabFragment : FilePropertiesTabFragment() {
     private val args by args<Args>()
@@ -58,10 +58,12 @@ class FilePropertiesImageTabFragment : FilePropertiesTabFragment() {
         addressJob = null
         bindView(stateful) { imageInfo ->
             addItemView(
-                R.string.file_properties_media_dimensions, if (imageInfo.dimensions != null) {
+                R.string.file_properties_media_dimensions,
+                if (imageInfo.dimensions != null) {
                     getString(
                         R.string.file_properties_media_dimensions_format,
-                        imageInfo.dimensions.width, imageInfo.dimensions.height
+                        imageInfo.dimensions.width,
+                        imageInfo.dimensions.height
                     )
                 } else {
                     getString(R.string.unknown)
@@ -77,27 +79,33 @@ class FilePropertiesImageTabFragment : FilePropertiesTabFragment() {
                 }
                 if (exifInfo.gpsCoordinates != null) {
                     addItemView(
-                        R.string.file_properties_media_coordinates, getString(
+                        R.string.file_properties_media_coordinates,
+                        getString(
                             R.string.file_properties_media_coordinates_format,
-                            exifInfo.gpsCoordinates.first, exifInfo.gpsCoordinates.second
+                            exifInfo.gpsCoordinates.first,
+                            exifInfo.gpsCoordinates.second
                         )
                     ) {
                         startActivitySafe(
                             Intent::class.createViewLocation(
                                 exifInfo.gpsCoordinates.first.toFloat(),
-                                exifInfo.gpsCoordinates.second.toFloat(), args.path.name
+                                exifInfo.gpsCoordinates.second.toFloat(),
+                                args.path.name
                             )
                         )
                     }
                     if (isGeocoderPresent) {
                         val textView = addItemView(
-                            R.string.file_properties_media_address, getString(R.string.loading)
+                            R.string.file_properties_media_address,
+                            getString(R.string.loading)
                         )
                         val geocoder = Geocoder(requireContext())
                         addressJob = viewLifecycleOwner.lifecycleScope.launch {
                             val address = try {
                                 geocoder.awaitGetFromLocation(
-                                    exifInfo.gpsCoordinates.first, exifInfo.gpsCoordinates.second, 1
+                                    exifInfo.gpsCoordinates.first,
+                                    exifInfo.gpsCoordinates.second,
+                                    1
                                 ).first()
                             } catch (e: Exception) {
                                 null
@@ -111,8 +119,10 @@ class FilePropertiesImageTabFragment : FilePropertiesTabFragment() {
                 }
                 if (exifInfo.gpsAltitude != null) {
                     addItemView(
-                        R.string.file_properties_image_gps_altitude, getString(
-                            R.string.file_properties_image_gps_altitude_format, exifInfo.gpsAltitude
+                        R.string.file_properties_image_gps_altitude,
+                        getString(
+                            R.string.file_properties_image_gps_altitude_format,
+                            exifInfo.gpsAltitude
                         )
                     )
                 }
@@ -122,8 +132,10 @@ class FilePropertiesImageTabFragment : FilePropertiesTabFragment() {
                 }
                 if (exifInfo.fNumber != null) {
                     addItemView(
-                        R.string.file_properties_image_f_number, getString(
-                            R.string.file_properties_image_f_number_format, exifInfo.fNumber
+                        R.string.file_properties_image_f_number,
+                        getString(
+                            R.string.file_properties_image_f_number_format,
+                            exifInfo.fNumber
                         )
                     )
                 }
@@ -135,14 +147,17 @@ class FilePropertiesImageTabFragment : FilePropertiesTabFragment() {
                 }
                 if (exifInfo.focalLength != null) {
                     addItemView(
-                        R.string.file_properties_image_focal_length, getString(
-                            R.string.file_properties_image_focal_length_format, exifInfo.focalLength
+                        R.string.file_properties_image_focal_length,
+                        getString(
+                            R.string.file_properties_image_focal_length_format,
+                            exifInfo.focalLength
                         )
                     )
                 }
                 if (exifInfo.photographicSensitivity != null) {
                     addItemView(
-                        R.string.file_properties_image_photographic_sensitivity, getString(
+                        R.string.file_properties_image_photographic_sensitivity,
+                        getString(
                             R.string.file_properties_image_photographic_sensitivity_format,
                             exifInfo.photographicSensitivity
                         )
@@ -164,40 +179,39 @@ class FilePropertiesImageTabFragment : FilePropertiesTabFragment() {
         }
     }
 
-    private fun getEquipment(make: String?, model: String?): String? =
-        when {
-            make != null && model != null -> {
-                if (model.startsWith(make, true)) {
-                    model
-                } else {
-                    getString(R.string.file_properties_image_equipment_format, make, model)
-                }
+    private fun getEquipment(make: String?, model: String?): String? = when {
+        make != null && model != null -> {
+            if (model.startsWith(make, true)) {
+                model
+            } else {
+                getString(R.string.file_properties_image_equipment_format, make, model)
             }
-            make != null -> make
-            model != null -> model
-            else -> null
         }
 
+        make != null -> make
+
+        model != null -> model
+
+        else -> null
+    }
+
     // @see com.android.documentsui.inspector.MediaView.formatShutterSpeed
-    private fun getShutterSpeedText(value: Double): String =
-        if (value <= 0) {
-            val shutterSpeed = 2.0.pow(-1 * value)
-            ((shutterSpeed * 10.0).roundToInt() / 10.0).toString()
-        } else {
-            val approximateDenominator = 2.0.pow(value).toInt() + 1
-            getString(
-                R.string.file_properties_image_shutter_speed_with_denominator_format,
-                approximateDenominator
-            )
-        }
+    private fun getShutterSpeedText(value: Double): String = if (value <= 0) {
+        val shutterSpeed = 2.0.pow(-1 * value)
+        ((shutterSpeed * 10.0).roundToInt() / 10.0).toString()
+    } else {
+        val approximateDenominator = 2.0.pow(value).toInt() + 1
+        getString(
+            R.string.file_properties_image_shutter_speed_with_denominator_format,
+            approximateDenominator
+        )
+    }
 
     companion object {
         fun isAvailable(file: FileItem): Boolean = file.mimeType.isImage
     }
 
     @Parcelize
-    class Args(
-        val path: @WriteWith<ParcelableParceler> Path,
-        val mimeType: MimeType
-    ) : ParcelableArgs
+    class Args(val path: @WriteWith<ParcelableParceler> Path, val mimeType: MimeType) :
+        ParcelableArgs
 }

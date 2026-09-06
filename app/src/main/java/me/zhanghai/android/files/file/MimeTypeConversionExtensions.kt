@@ -65,6 +65,7 @@ fun MimeType.Companion.forSpecialPosixFileType(type: PosixFileType): MimeType? =
     specialPosixFileTypeToMimeTypeMap[type]
 
 // See also https://developer.gnome.org/shared-mime-info-spec/
+
 /** @see specialPosixFileTypeToNameResMap */
 private val specialPosixFileTypeToMimeTypeMap = mapOf(
     PosixFileType.CHARACTER_DEVICE to "inode/chardevice",

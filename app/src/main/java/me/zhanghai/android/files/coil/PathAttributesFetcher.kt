@@ -19,6 +19,8 @@ import coil.fetch.SourceResult
 import coil.key.Keyer
 import coil.request.Options
 import coil.size.Dimension
+import java.io.Closeable
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.R
@@ -47,12 +49,10 @@ import me.zhanghai.android.files.util.isGetPackageArchiveInfoCompatible
 import me.zhanghai.android.files.util.isMediaMetadataRetrieverCompatible
 import me.zhanghai.android.files.util.runWithCancellationSignal
 import me.zhanghai.android.files.util.setDataSource
+import me.zhanghai.android.files.util.setDataSource as appSetDataSource
 import me.zhanghai.android.files.util.valueCompat
 import okio.buffer
 import okio.source
-import java.io.Closeable
-import java.io.IOException
-import me.zhanghai.android.files.util.setDataSource as appSetDataSource
 
 class PathAttributesKeyer : Keyer<Pair<Path, BasicFileAttributes>> {
     override fun key(data: Pair<Path, BasicFileAttributes>, options: Options): String {
@@ -73,8 +73,8 @@ class PathAttributesFetcher(
         val (path, attributes) = data
         val (width, height) = options.size
         // @see android.provider.MediaStore.ThumbnailConstants.MINI_SIZE
-        val isThumbnail = width is Dimension.Pixels && width.px <= 512
-            && height is Dimension.Pixels && height.px <= 384
+        val isThumbnail = width is Dimension.Pixels && width.px <= 512 &&
+            height is Dimension.Pixels && height.px <= 384
         if (isThumbnail) {
             width as Dimension.Pixels
             height as Dimension.Pixels
@@ -82,7 +82,10 @@ class PathAttributesFetcher(
                 val thumbnail = runWithCancellationSignal { signal ->
                     try {
                         DocumentResolver.getThumbnail(
-                            path as DocumentResolver.Path, width.px, height.px, signal
+                            path as DocumentResolver.Path,
+                            width.px,
+                            height.px,
+                            signal
                         )
                     } catch (e: ResolverException) {
                         e.printStackTrace()
@@ -91,14 +94,16 @@ class PathAttributesFetcher(
                 }
                 if (thumbnail != null) {
                     return DrawableResult(
-                        thumbnail.toDrawable(options.context.resources), true, path.dataSource
+                        thumbnail.toDrawable(options.context.resources),
+                        true,
+                        path.dataSource
                     )
                 }
             }
             if (path.isRemotePath) {
                 // FTP doesn't support random access and requires one connection per parallel read.
-                val shouldReadRemotePath = !path.isFtpPath
-                    && Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
+                val shouldReadRemotePath = !path.isFtpPath &&
+                    Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
                 if (!shouldReadRemotePath) {
                     error("Cannot read $path for thumbnail")
                 }
@@ -113,13 +118,16 @@ class PathAttributesFetcher(
                     e.printStackTrace()
                 }
             }
+
             mimeType.isImage || mimeType == MimeType.GENERIC -> {
                 val inputStream = path.newInputStream()
                 return SourceResult(
                     ImageSource(inputStream.source().buffer(), options.context),
-                    if (mimeType != MimeType.GENERIC) mimeType.value else null, path.dataSource
+                    if (mimeType != MimeType.GENERIC) mimeType.value else null,
+                    path.dataSource
                 )
             }
+
             mimeType.isMedia && path.isMediaMetadataRetrieverCompatible -> {
                 val embeddedPicture = try {
                     MediaMetadataRetriever().use { retriever ->
@@ -133,8 +141,11 @@ class PathAttributesFetcher(
                 if (embeddedPicture != null) {
                     return SourceResult(
                         ImageSource(
-                            embeddedPicture.inputStream().source().buffer(), options.context
-                        ), null, path.dataSource
+                            embeddedPicture.inputStream().source().buffer(),
+                            options.context
+                        ),
+                        null,
+                        path.dataSource
                     )
                 }
                 if (mimeType.isVideo) {
@@ -145,6 +156,7 @@ class PathAttributesFetcher(
                     }
                 }
             }
+
             mimeType.isPdf && (path.isLinuxPath || path.isDocumentPath) -> {
                 try {
                     return pdfPageFetcherFactory.create(path, options, imageLoader).fetch()
@@ -159,7 +171,8 @@ class PathAttributesFetcher(
     class Factory(private val context: Context) : Fetcher.Factory<Pair<Path, BasicFileAttributes>> {
         private val appIconFetcherFactory = object : AppIconFetcher.Factory<Path>(
             // This is used by FileListAdapter.
-            context.getDimensionPixelSize(R.dimen.large_icon_size), context
+            context.getDimensionPixelSize(R.dimen.large_icon_size),
+            context
         ) {
             override fun getApplicationInfo(data: Path): Pair<ApplicationInfo, Closeable?> {
                 val (packageInfo, closeable) =
@@ -180,24 +193,34 @@ class PathAttributesFetcher(
         }
 
         private val pdfPageFetcherFactory = object : PdfPageFetcher.Factory<Path>() {
-            override fun openParcelFileDescriptor(data: Path): ParcelFileDescriptor =
-                when {
-                    data.isLinuxPath ->
-                        ParcelFileDescriptor.open(data.toFile(), ParcelFileDescriptor.MODE_READ_ONLY)
-                    data.isDocumentPath ->
-                        DocumentResolver.openParcelFileDescriptor(data as DocumentResolver.Path, "r")
-                    else -> throw IllegalArgumentException(data.toString())
-                }
+            override fun openParcelFileDescriptor(data: Path): ParcelFileDescriptor = when {
+                data.isLinuxPath ->
+                    ParcelFileDescriptor.open(
+                        data.toFile(),
+                        ParcelFileDescriptor.MODE_READ_ONLY
+                    )
+
+                data.isDocumentPath ->
+                    DocumentResolver.openParcelFileDescriptor(
+                        data as DocumentResolver.Path,
+                        "r"
+                    )
+
+                else -> throw IllegalArgumentException(data.toString())
+            }
         }
 
         override fun create(
             data: Pair<Path, BasicFileAttributes>,
             options: Options,
             imageLoader: ImageLoader
-        ): Fetcher =
-            PathAttributesFetcher(
-                data, options, imageLoader, appIconFetcherFactory, videoFrameFetcherFactory,
-                pdfPageFetcherFactory
-            )
+        ): Fetcher = PathAttributesFetcher(
+            data,
+            options,
+            imageLoader,
+            appIconFetcherFactory,
+            videoFrameFetcherFactory,
+            pdfPageFetcherFactory
+        )
     }
 }

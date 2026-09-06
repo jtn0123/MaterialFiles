@@ -13,30 +13,24 @@ import androidx.annotation.RequiresApi
 
 abstract class ProxyFileDescriptorCallbackCompat {
     @Throws(ErrnoException::class)
-    open fun onGetSize(): Long {
-        throw ErrnoException("onGetSize", OsConstants.EBADF)
-    }
+    open fun onGetSize(): Long = throw ErrnoException("onGetSize", OsConstants.EBADF)
 
     @Throws(ErrnoException::class)
-    open fun onRead(offset: Long, size: Int, data: ByteArray): Int {
+    open fun onRead(offset: Long, size: Int, data: ByteArray): Int =
         throw ErrnoException("onRead", OsConstants.EBADF)
-    }
 
     @Throws(ErrnoException::class)
-    open fun onWrite(offset: Long, size: Int, data: ByteArray): Int {
+    open fun onWrite(offset: Long, size: Int, data: ByteArray): Int =
         throw ErrnoException("onWrite", OsConstants.EBADF)
-    }
 
     @Throws(ErrnoException::class)
-    open fun onFsync() {
-        throw ErrnoException("onFsync", OsConstants.EINVAL)
-    }
+    open fun onFsync(): Unit = throw ErrnoException("onFsync", OsConstants.EINVAL)
 
     abstract fun onRelease()
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun toProxyFileDescriptorCallback(): ProxyFileDescriptorCallback {
-        return object : ProxyFileDescriptorCallback() {
+    fun toProxyFileDescriptorCallback(): ProxyFileDescriptorCallback =
+        object : ProxyFileDescriptorCallback() {
             @Throws(ErrnoException::class)
             override fun onGetSize(): Long = this@ProxyFileDescriptorCallbackCompat.onGetSize()
 
@@ -53,5 +47,4 @@ abstract class ProxyFileDescriptorCallbackCompat {
 
             override fun onRelease() = this@ProxyFileDescriptorCallbackCompat.onRelease()
         }
-    }
 }

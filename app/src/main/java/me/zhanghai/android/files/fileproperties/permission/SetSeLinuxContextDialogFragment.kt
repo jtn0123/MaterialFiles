@@ -59,7 +59,10 @@ class SetSeLinuxContextDialogFragment : AppCompatDialogFragment() {
             }
         }
         FileJobService.setSeLinuxContext(
-            args.file.path, seLinuxContext, recursive, requireContext()
+            args.file.path,
+            seLinuxContext,
+            recursive,
+            requireContext()
         )
     }
 
