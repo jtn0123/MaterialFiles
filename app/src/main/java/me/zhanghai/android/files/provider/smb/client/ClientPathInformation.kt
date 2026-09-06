@@ -17,6 +17,7 @@ import com.hierynomus.smbj.share.PrinterShare
 import me.zhanghai.android.files.provider.smb.client.Client.Path
 import me.zhanghai.android.files.util.closeSafe
 import me.zhanghai.android.files.util.enumSetOf
+import me.zhanghai.android.files.util.logWarning
 
 @Throws(ClientException::class)
 internal fun Client.getFileInformation(
@@ -56,7 +57,7 @@ internal fun Client.getShareInformation(session: Session, shareName: String): Sh
             val shareInfo = try {
                 share.shareInformation
             } catch (e: SMBRuntimeException) {
-                e.printStackTrace()
+                e.logWarning("ClientPathInformation", "getShareInformation")
                 null
             }
             ShareInformation(ShareType.DISK, shareInfo)

@@ -22,6 +22,7 @@ import me.zhanghai.android.files.provider.common.DelegateOutputStream
 import me.zhanghai.android.files.provider.common.LocalWatchService
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedOutputStream
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedSeekableByteChannel
+import me.zhanghai.android.files.util.logWarning
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPClientConfig
 import org.apache.commons.net.ftp.FTPCmd
@@ -57,7 +58,7 @@ class Client(internal val authenticator: Authenticator) {
             val isAlive = try {
                 client.sendNoOp()
             } catch (e: IOException) {
-                e.printStackTrace()
+                e.logWarning("FtpClient", "acquireClient")
                 false
             }
             if (!isAlive) {
@@ -163,7 +164,7 @@ class Client(internal val authenticator: Authenticator) {
         try {
             client.logout()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("FtpClient", "closeClient")
         }
         client.disconnect()
     }
@@ -371,7 +372,8 @@ class Client(internal val authenticator: Authenticator) {
                     // We may close the input stream before the file is fully read (may happen when
                     // decoding images) and it will result in an error reported here, but that's
                     // totally fine.
-                    client.createNegativeReplyCodeException().printStackTrace()
+                    client.createNegativeReplyCodeException()
+                        .logWarning("FtpClient", "completePendingCommand")
                 }
             } finally {
                 releaseClient(authority, client)

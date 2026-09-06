@@ -6,13 +6,14 @@
 package me.zhanghai.android.files.provider.document
 
 import android.net.Uri
+import java.io.IOException
+import java.io.InterruptedIOException
 import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.StandardCopyOption
 import me.zhanghai.android.files.provider.common.CopyOptions
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
-import java.io.IOException
-import java.io.InterruptedIOException
+import me.zhanghai.android.files.util.logWarning
 
 internal object DocumentCopyMove {
     @Throws(IOException::class)
@@ -42,7 +43,10 @@ internal object DocumentCopyMove {
         }
         return try {
             DocumentResolver.copy(
-                source, target, copyOptions.progressIntervalMillis, copyOptions.progressListener
+                source,
+                target,
+                copyOptions.progressIntervalMillis,
+                copyOptions.progressListener
             )
         } catch (e: ResolverException) {
             (e.cause as? InterruptedIOException)?.let { throw it }
@@ -74,7 +78,10 @@ internal object DocumentCopyMove {
         }
         return try {
             DocumentResolver.move(
-                source, target, copyOptions.atomicMove, copyOptions.progressIntervalMillis,
+                source,
+                target,
+                copyOptions.atomicMove,
+                copyOptions.progressIntervalMillis,
                 copyOptions.progressListener
             )
         } catch (e: ResolverException) {
@@ -87,7 +94,7 @@ internal object DocumentCopyMove {
         val size = try {
             DocumentResolver.getSize(uri)
         } catch (e: ResolverException) {
-            e.printStackTrace()
+            e.logWarning("DocumentCopyMove", "getSize($uri)")
             return
         } ?: return
         this(size)

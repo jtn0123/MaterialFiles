@@ -16,6 +16,7 @@ import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.common.PosixUser
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.setOwner
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class SetFileOwnerJob(
@@ -90,7 +91,7 @@ private fun FileJob.setOwner(
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("SetFileOwnerJob", "setOwner($path)")
             if (actionAllInfo.skipSetOwnerError) {
                 recordSkippedError()
                 transferInfo.skipFileIgnoringSize()

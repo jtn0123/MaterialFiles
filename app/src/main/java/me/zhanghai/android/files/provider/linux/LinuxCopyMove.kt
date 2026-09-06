@@ -17,6 +17,7 @@ import me.zhanghai.android.files.provider.linux.syscall.StructStat
 import me.zhanghai.android.files.provider.linux.syscall.StructTimespec
 import me.zhanghai.android.files.provider.linux.syscall.Syscall
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
+import me.zhanghai.android.files.util.logWarning
 
 internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
     private const val SEND_FILE_COUNT = 8 * 1024
@@ -205,14 +206,14 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
                 Syscall.lchown(target, sourceAttributes.st_uid, sourceAttributes.st_gid)
             }
         } catch (e: SyscallException) {
-            e.printStackTrace()
+            e.logWarning("LinuxCopyMove", "copyAttributes($source)")
         }
         try {
             if (!OsConstants.S_ISLNK(sourceAttributes.st_mode)) {
                 Syscall.chmod(target, sourceAttributes.st_mode)
             }
         } catch (e: SyscallException) {
-            e.printStackTrace()
+            e.logWarning("LinuxCopyMove", "copyAttributes($source)")
         }
         try {
             val times = arrayOf(
@@ -225,7 +226,7 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
             )
             Syscall.lutimens(target, times)
         } catch (e: SyscallException) {
-            e.printStackTrace()
+            e.logWarning("LinuxCopyMove", "copyAttributes($source)")
         }
         try {
             val xattrNames = Syscall.llistxattr(source)
@@ -237,7 +238,7 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
                 Syscall.lsetxattr(target, xattrName, xattrValue, 0)
             }
         } catch (e: SyscallException) {
-            e.printStackTrace()
+            e.logWarning("LinuxCopyMove", "copyAttributes($source)")
         }
     }
 }

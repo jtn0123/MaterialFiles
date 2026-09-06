@@ -20,6 +20,7 @@ import me.zhanghai.android.files.provider.smb.client.ClientException
 import me.zhanghai.android.files.provider.smb.client.FileInformation
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.hasBits
+import me.zhanghai.android.files.util.logWarning
 
 internal object SmbCopyMove : AbstractCopyMove<SmbPath, FileInformation>() {
     override fun readAttributes(path: SmbPath, noFollowLinks: Boolean): FileInformation {
@@ -170,7 +171,7 @@ internal object SmbCopyMove : AbstractCopyMove<SmbPath, FileInformation>() {
             )
             client.setFileInformation(target, true, fileInformation)
         } catch (e: ClientException) {
-            e.printStackTrace()
+            e.logWarning("SmbCopyMove", "copyAttributes($source)")
         }
         // TODO: Copy FileFullEaInformation.
     }

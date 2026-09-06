@@ -28,6 +28,7 @@ import java8.nio.channels.SeekableByteChannel
 import me.zhanghai.android.files.provider.common.CloseableIterator
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.hasBits
+import me.zhanghai.android.files.util.logWarning
 
 /**
  * The connections of this provider, one pool per authority, created on demand with credentials
@@ -161,7 +162,7 @@ class Client(internal val authenticator: Authenticator) {
                         try {
                             it.deleteOnClose()
                         } catch (e: SMBRuntimeException) {
-                            e.printStackTrace()
+                            e.logWarning("SmbClient", "createSymbolicLink($path)")
                         }
                     }
                 }

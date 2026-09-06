@@ -12,6 +12,7 @@ import me.zhanghai.android.files.provider.common.CopyOptions
 import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.ftp.client.Client
+import me.zhanghai.android.files.util.logWarning
 import org.apache.commons.net.ftp.FTPFile
 
 internal object FtpCopyMove : AbstractCopyMove<FtpPath, FTPFile>() {
@@ -136,7 +137,7 @@ internal object FtpCopyMove : AbstractCopyMove<FtpPath, FTPFile>() {
         try {
             client.setLastModifiedTime(target, timestamp.toInstant())
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("FtpCopyMove", "copyAttributes($source)")
         }
     }
 }

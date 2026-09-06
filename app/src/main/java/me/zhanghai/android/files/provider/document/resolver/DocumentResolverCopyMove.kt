@@ -17,6 +17,7 @@ import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.content.resolver.Resolver
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver.Path
+import me.zhanghai.android.files.util.logWarning
 
 @RequiresApi(Build.VERSION_CODES.N)
 @Throws(ResolverException::class)
@@ -70,7 +71,7 @@ internal fun DocumentResolver.copyManually(
     val mimeType = try {
         getMimeType(sourceUri)
     } catch (e: ResolverException) {
-        e.printStackTrace()
+        e.logWarning("DocumentResolverCopyMove", "copyManually")
         null
     } ?: MimeType.GENERIC.value
     if (mimeType == MimeType.DIRECTORY.value) {
@@ -143,7 +144,7 @@ internal fun ((Long) -> Unit).invokeWithSize(uri: Uri) {
     val size = try {
         DocumentResolver.getSize(uri)
     } catch (e: ResolverException) {
-        e.printStackTrace()
+        e.logWarning("DocumentResolverCopyMove", "moveApi24")
         return
     } ?: return
     this(size)

@@ -18,6 +18,7 @@ import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.sftp.client.Client
 import me.zhanghai.android.files.provider.sftp.client.ClientException
 import me.zhanghai.android.files.util.enumSetOf
+import me.zhanghai.android.files.util.logWarning
 import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.FileMode
 import net.schmizz.sshj.sftp.OpenMode
@@ -199,7 +200,7 @@ internal object SftpCopyMove : AbstractCopyMove<SftpPath, FileAttributes>() {
         try {
             client.setstat(target, attributes)
         } catch (e: ClientException) {
-            e.printStackTrace()
+            e.logWarning("SftpCopyMove", "copyAttributes($source)")
         }
     }
 

@@ -14,6 +14,7 @@ import java8.nio.file.SimpleFileVisitor
 import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.common.resolveForeign
+import me.zhanghai.android.files.util.logWarning
 
 class MoveFileJob(private val sources: List<Path>, private val targetDirectory: Path) : FileJob() {
     @Throws(IOException::class)
@@ -63,7 +64,7 @@ class MoveFileJob(private val sources: List<Path>, private val targetDirectory: 
                     } catch (e: InterruptedIOException) {
                         throw e
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        e.logWarning("MoveFileJob", "preVisitDirectory($directory)")
                     }
                     val copied =
                         copyForMove(directory, directoryInTarget, transferInfo, actionAllInfo)
@@ -84,7 +85,7 @@ class MoveFileJob(private val sources: List<Path>, private val targetDirectory: 
                     } catch (e: InterruptedIOException) {
                         throw e
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        e.logWarning("MoveFileJob", "visitFile($file)")
                     }
                     moveByCopy(file, fileInTarget, transferInfo, actionAllInfo)
                     throwIfInterrupted()

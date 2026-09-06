@@ -20,6 +20,7 @@ import me.zhanghai.android.files.provider.common.ProgressCopyOption
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.common.moveTo
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 enum class CopyMoveType {
@@ -296,7 +297,7 @@ internal fun FileJob.copyOrMove(
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("FileJobCopyMove", "copyOrMove($source)")
             if (actionAllInfo.skipCopyMoveError) {
                 recordSkippedError()
                 transferInfo.skipFile(source)

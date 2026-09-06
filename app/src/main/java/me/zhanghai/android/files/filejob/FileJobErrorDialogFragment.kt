@@ -36,6 +36,7 @@ import me.zhanghai.android.files.util.getState
 import me.zhanghai.android.files.util.isReady
 import me.zhanghai.android.files.util.isRunning
 import me.zhanghai.android.files.util.layoutInflater
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.readParcelable
@@ -105,7 +106,7 @@ class FileJobErrorDialogFragment : AppCompatDialogFragment() {
 
             is ActionState.Error -> {
                 val throwable = state.throwable
-                throwable.printStackTrace()
+                throwable.logWarning("FileJobErrorDialogFragment", "onRemountStateChanged")
                 showToast(throwable.toUserMessage(requireContext()))
                 viewModel.finishRemounting()
             }

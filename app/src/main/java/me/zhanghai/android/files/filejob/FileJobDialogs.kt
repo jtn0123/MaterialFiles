@@ -22,6 +22,7 @@ import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.getFileStore
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.util.createIntent
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.showToast
 
@@ -113,7 +114,7 @@ internal fun FileJob.getReadOnlyFileStore(path: Path, exception: IOException): P
     val fileStore = try {
         path.getFileStore() as PosixFileStore
     } catch (e: IOException) {
-        e.printStackTrace()
+        e.logWarning("FileJobDialogs", "getReadOnlyFileStore($path)")
         return null
     }
     return if (fileStore.isReadOnly) fileStore else null

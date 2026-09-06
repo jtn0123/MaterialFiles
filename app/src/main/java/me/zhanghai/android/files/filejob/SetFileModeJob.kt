@@ -18,6 +18,7 @@ import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.getMode
 import me.zhanghai.android.files.provider.common.setMode
 import me.zhanghai.android.files.provider.common.toModeString
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toEnumSet
 import me.zhanghai.android.files.util.toUserMessage
 
@@ -119,7 +120,7 @@ private fun FileJob.setMode(
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("SetFileModeJob", "setMode($path)")
             if (actionAllInfo.skipSetModeError) {
                 recordSkippedError()
                 transferInfo.skipFileIgnoringSize()

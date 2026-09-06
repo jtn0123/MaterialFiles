@@ -13,6 +13,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runInterruptible
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.util.getQuantityString
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.toUserMessage
 
@@ -64,7 +65,7 @@ abstract class FileJob {
     }
 
     private fun onFailed(e: Exception) {
-        e.printStackTrace()
+        e.logWarning("FileJob", "onFailed")
         service.showToast(
             service.getString(R.string.file_job_failed_format, e.toUserMessage(service))
         )

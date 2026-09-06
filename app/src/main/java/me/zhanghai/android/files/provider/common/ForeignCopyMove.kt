@@ -15,6 +15,7 @@ import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.BasicFileAttributeView
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileTime
+import me.zhanghai.android.files.util.logWarning
 
 /**
  * Copy and move between two different providers, through the provider-neutral [Path] API. A
@@ -132,9 +133,9 @@ internal object ForeignCopyMove : AbstractCopyMove<Path, BasicFileAttributes>() 
         try {
             targetAttributeView.setTimes(lastModifiedTime, lastAccessTime, creationTime)
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("ForeignCopyMove", "copyAttributes($source)")
         } catch (e: UnsupportedOperationException) {
-            e.printStackTrace()
+            e.logWarning("ForeignCopyMove", "copyAttributes($source)")
         }
     }
 

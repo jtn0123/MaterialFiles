@@ -5,6 +5,9 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
+import java.io.InterruptedIOException
+import java.util.concurrent.atomic.AtomicInteger
 import java8.nio.file.DirectoryIteratorException
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
@@ -13,9 +16,7 @@ import java8.nio.file.WatchEvent
 import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.BuildConfig
 import me.zhanghai.android.files.provider.FileSystemProviders
-import java.io.IOException
-import java.io.InterruptedIOException
-import java.util.concurrent.atomic.AtomicInteger
+import me.zhanghai.android.files.util.logWarning
 
 class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
     private val pollers = mutableMapOf<Path, Poller>()
@@ -31,8 +32,10 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
             when (kind) {
                 StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
                 StandardWatchEventKinds.ENTRY_MODIFY -> kindSet += kind
+
                 // Ignored.
                 StandardWatchEventKinds.OVERFLOW -> {}
+
                 else -> throw UnsupportedOperationException(kind.name())
             }
         }
@@ -64,7 +67,7 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
         try {
             poller.join()
         } catch (e: InterruptedException) {
-            e.printStackTrace()
+            e.logWarning("PollingWatchService", "cancel")
         }
     }
 
@@ -91,7 +94,9 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
         exception?.let { throw it }
     }
 
-    private class Poller @Throws(IOException::class) constructor(
+    private class Poller
+    @Throws(IOException::class)
+    constructor(
         private val watchService: PollingWatchService,
         private val path: Path,
         @Volatile
@@ -120,8 +125,10 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
                             val newAttributes = newFiles[path]
                             val kind = when {
                                 newAttributes == null -> StandardWatchEventKinds.ENTRY_DELETE
+
                                 newAttributes != oldAttributes ->
                                     StandardWatchEventKinds.ENTRY_MODIFY
+
                                 else -> continue
                             }
                             if (kind !in kinds) {
@@ -143,7 +150,7 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
                     oldFiles = newFiles
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.logWarning("PollingWatchService", "run")
                 key.setInvalid()
                 if (!(e is InterruptedException || e is InterruptedIOException)) {
                     key.signal()
@@ -161,10 +168,11 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
                             directoryStream.forEach {
                                 val attributes = try {
                                     it.readAttributes(
-                                        BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS
+                                        BasicFileAttributes::class.java,
+                                        LinkOption.NOFOLLOW_LINKS
                                     )
                                 } catch (e: IOException) {
-                                    e.printStackTrace()
+                                    e.logWarning("PollingWatchService", "getFiles")
                                     return@forEach
                                 }
                                 this[it] = attributes
@@ -175,7 +183,8 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
                     }
                 } else {
                     this[path] = path.readAttributes(
-                        BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS
+                        BasicFileAttributes::class.java,
+                        LinkOption.NOFOLLOW_LINKS
                     )
                 }
             }.also {

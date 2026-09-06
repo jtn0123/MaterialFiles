@@ -17,6 +17,7 @@ import me.zhanghai.android.files.provider.webdav.client.isDirectory
 import me.zhanghai.android.files.provider.webdav.client.isSymbolicLink
 import me.zhanghai.android.files.provider.webdav.client.lastModifiedTime
 import me.zhanghai.android.files.provider.webdav.client.size
+import me.zhanghai.android.files.util.logWarning
 
 internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
     override fun readAttributes(path: WebDavPath, noFollowLinks: Boolean): Response = try {
@@ -136,7 +137,7 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
         try {
             client.setLastModifiedTime(target, lastModifiedTime)
         } catch (e: DavException) {
-            e.printStackTrace()
+            e.logWarning("WebDavCopyMove", "copyAttributes($source)")
         }
     }
 }
