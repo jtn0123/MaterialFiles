@@ -38,7 +38,11 @@ internal fun File.serverCopy(
         val chunksTargetOffset = targetOffset + totalBytesWritten
         val chunksLength = length - totalBytesWritten
         val chunks = createServerCopyChunks(
-            chunksSourceOffset, chunksTargetOffset, chunksLength, maxNumberOfChunks, maxChunkSize,
+            chunksSourceOffset,
+            chunksTargetOffset,
+            chunksLength,
+            maxNumberOfChunks,
+            maxChunkSize,
             maxRequestSize
         )
         val request = CopyChunkRequest(resumeKey, chunks)

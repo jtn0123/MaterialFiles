@@ -5,6 +5,8 @@
 
 package me.zhanghai.android.files.provider.remote
 
+import java.io.File
+import java.net.URI
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
 import java8.nio.file.CopyOption
@@ -24,25 +26,21 @@ import java8.nio.file.attribute.FileAttribute
 import java8.nio.file.attribute.FileAttributeView
 import java8.nio.file.attribute.UserPrincipalLookupService
 import java8.nio.file.spi.FileSystemProvider
-import java.io.File
-import java.net.URI
 
 val filesAcceptAllFilter: DirectoryStream.Filter<in Path> = run {
     var capturedFilter: DirectoryStream.Filter<in Path>? = null
     val path = object : StubPath() {
-        override fun getFileSystem(): FileSystem =
-            object : StubFileSystem() {
-                override fun provider(): FileSystemProvider =
-                    object : StubFileSystemProvider() {
-                        override fun newDirectoryStream(
-                            dir: Path,
-                            filter: DirectoryStream.Filter<in Path>
-                        ): DirectoryStream<Path> {
-                            capturedFilter = filter
-                            return StubDirectoryStream()
-                        }
-                    }
+        override fun getFileSystem(): FileSystem = object : StubFileSystem() {
+            override fun provider(): FileSystemProvider = object : StubFileSystemProvider() {
+                override fun newDirectoryStream(
+                    dir: Path,
+                    filter: DirectoryStream.Filter<in Path>
+                ): DirectoryStream<Path> {
+                    capturedFilter = filter
+                    return StubDirectoryStream()
+                }
             }
+        }
     }
     Files.newDirectoryStream(path)
     capturedFilter!!
@@ -196,8 +194,7 @@ private open class StubFileSystemProvider : FileSystemProvider() {
     override fun move(source: Path, target: Path, vararg options: CopyOption) =
         throw AssertionError()
 
-    override fun createDirectory(dir: Path, vararg attrs: FileAttribute<*>) =
-        throw AssertionError()
+    override fun createDirectory(dir: Path, vararg attrs: FileAttribute<*>) = throw AssertionError()
 }
 
 private open class StubDirectoryStream<T> : DirectoryStream<T> {

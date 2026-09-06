@@ -8,6 +8,7 @@ package me.zhanghai.android.files.provider.content
 import android.os.Parcel
 import android.os.Parcelable
 import androidx.core.net.toUri
+import java.io.IOException
 import java8.nio.file.FileStore
 import java8.nio.file.FileSystem
 import java8.nio.file.Path
@@ -17,15 +18,14 @@ import java8.nio.file.attribute.UserPrincipalLookupService
 import java8.nio.file.spi.FileSystemProvider
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.ByteStringListPathCreator
-import java.io.IOException
 
-internal class ContentFileSystem(private val provider: ContentFileSystemProvider) : FileSystem(),
-    ByteStringListPathCreator, Parcelable {
+internal class ContentFileSystem(private val provider: ContentFileSystemProvider) :
+    FileSystem(),
+    ByteStringListPathCreator,
+    Parcelable {
     override fun provider(): FileSystemProvider = provider
 
-    override fun close() {
-        throw UnsupportedOperationException()
-    }
+    override fun close(): Unit = throw UnsupportedOperationException()
 
     override fun isOpen(): Boolean = true
 
@@ -59,13 +59,11 @@ internal class ContentFileSystem(private val provider: ContentFileSystemProvider
         return ContentPath(this, uri)
     }
 
-    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher {
+    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher =
         throw UnsupportedOperationException()
-    }
 
-    override fun getUserPrincipalLookupService(): UserPrincipalLookupService {
+    override fun getUserPrincipalLookupService(): UserPrincipalLookupService =
         throw UnsupportedOperationException()
-    }
 
     @Throws(IOException::class)
     override fun newWatchService(): WatchService {

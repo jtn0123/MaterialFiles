@@ -5,6 +5,10 @@
 
 package me.zhanghai.android.files.provider.archive.archiver
 
+import java.io.Closeable
+import java.io.IOException
+import java.io.OutputStream
+import java.nio.ByteBuffer
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.charset.StandardCharsets
 import java8.nio.file.attribute.FileTime
@@ -16,12 +20,10 @@ import me.zhanghai.android.files.provider.common.toInt
 import me.zhanghai.android.libarchive.Archive
 import me.zhanghai.android.libarchive.ArchiveEntry
 import me.zhanghai.android.libarchive.ArchiveException
-import java.io.Closeable
-import java.io.IOException
-import java.io.OutputStream
-import java.nio.ByteBuffer
 
-class WriteArchive @Throws(ArchiveException::class) constructor(
+class WriteArchive
+@Throws(ArchiveException::class)
+constructor(
     channel: SeekableByteChannel,
     format: Int,
     filter: Int,
@@ -40,11 +42,18 @@ class WriteArchive @Throws(ArchiveException::class) constructor(
                 require(format == Archive.FORMAT_ZIP)
                 Archive.writeSetPassphrase(archive, password.toByteArray())
                 Archive.writeSetFormatOption(
-                    archive, null, "encryption".toByteArray(), "zipcrypt".toByteArray()
+                    archive,
+                    null,
+                    "encryption".toByteArray(),
+                    "zipcrypt".toByteArray()
                 )
             }
             Archive.writeOpen(
-                archive, null, null, { _, _, buffer -> channel.write(buffer) }, null
+                archive,
+                null,
+                null,
+                { _, _, buffer -> channel.write(buffer) },
+                null
             )
             successful = true
         } finally {
@@ -87,20 +96,25 @@ class WriteArchive @Throws(ArchiveException::class) constructor(
             if (lastModifiedTime != null) {
                 val lastModifiedTimeInstant = lastModifiedTime.toInstant()
                 ArchiveEntry.setMtime(
-                    entry, lastModifiedTimeInstant.epochSecond,
+                    entry,
+                    lastModifiedTimeInstant.epochSecond,
                     lastModifiedTimeInstant.nano.toLong()
                 )
             }
             if (lastAccessTime != null) {
                 val lastAccessTimeInstant = lastAccessTime.toInstant()
                 ArchiveEntry.setAtime(
-                    entry, lastAccessTimeInstant.epochSecond, lastAccessTimeInstant.nano.toLong()
+                    entry,
+                    lastAccessTimeInstant.epochSecond,
+                    lastAccessTimeInstant.nano.toLong()
                 )
             }
             if (creationTime != null) {
                 val creationTimeInstant = creationTime.toInstant()
                 ArchiveEntry.setBirthtime(
-                    entry, creationTimeInstant.epochSecond, creationTimeInstant.nano.toLong()
+                    entry,
+                    creationTimeInstant.epochSecond,
+                    creationTimeInstant.nano.toLong()
                 )
             }
             ArchiveEntry.setFiletype(entry, type.mode)

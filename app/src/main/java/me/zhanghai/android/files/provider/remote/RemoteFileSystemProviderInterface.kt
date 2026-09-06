@@ -5,17 +5,16 @@
 
 package me.zhanghai.android.files.provider.remote
 
+import java.util.concurrent.Executors
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.spi.FileSystemProvider
 import me.zhanghai.android.files.provider.common.PathObservableProvider
 import me.zhanghai.android.files.provider.common.Searchable
 import me.zhanghai.android.files.util.RemoteCallback
 import me.zhanghai.android.files.util.toBundle
-import java.util.concurrent.Executors
 
-class RemoteFileSystemProviderInterface(
-    private val provider: FileSystemProvider
-) : IRemoteFileSystemProvider.Stub() {
+class RemoteFileSystemProviderInterface(private val provider: FileSystemProvider) :
+    IRemoteFileSystemProvider.Stub() {
     private val executorService = Executors.newCachedThreadPool()
 
     override fun newInputStream(
@@ -30,20 +29,18 @@ class RemoteFileSystemProviderInterface(
         options: ParcelableSerializable,
         attributes: ParcelableFileAttributes,
         exception: ParcelableException
-    ): RemoteSeekableByteChannel? =
-        tryRun(exception) {
-            provider.newByteChannel(file.value(), options.value(), *attributes.value).toRemote()
-        }
+    ): RemoteSeekableByteChannel? = tryRun(exception) {
+        provider.newByteChannel(file.value(), options.value(), *attributes.value).toRemote()
+    }
 
     override fun newDirectoryStream(
         directory: ParcelableObject,
         filter: ParcelableObject,
         exception: ParcelableException
-    ): ParcelableDirectoryStream? =
-        tryRun(exception) {
-            provider.newDirectoryStream(directory.value(), filter.value())
-                .use { ParcelableDirectoryStream(it) }
-        }
+    ): ParcelableDirectoryStream? = tryRun(exception) {
+        provider.newDirectoryStream(directory.value(), filter.value())
+            .use { ParcelableDirectoryStream(it) }
+    }
 
     override fun createDirectory(
         directory: ParcelableObject,
@@ -141,23 +138,23 @@ class RemoteFileSystemProviderInterface(
         type: ParcelableSerializable,
         options: ParcelableSerializable,
         exception: ParcelableException
-    ): ParcelableObject? =
-        tryRun(exception) {
-            provider.readAttributes(
-                // We have to explicitly specify the Class type here, or it will be resolved to the
-                // String overload.
-                path.value(), type.value<Class<BasicFileAttributes>>(), *options.value()
-            ).toParcelable()
-        }
+    ): ParcelableObject? = tryRun(exception) {
+        provider.readAttributes(
+            // We have to explicitly specify the Class type here, or it will be resolved to the
+            // String overload.
+            path.value(),
+            type.value<Class<BasicFileAttributes>>(),
+            *options.value()
+        ).toParcelable()
+    }
 
     override fun observe(
         path: ParcelableObject,
         intervalMillis: Long,
         exception: ParcelableException
-    ): RemotePathObservable? =
-        tryRun(exception) {
-            (provider as PathObservableProvider).observe(path.value(), intervalMillis).toRemote()
-        }
+    ): RemotePathObservable? = tryRun(exception) {
+        (provider as PathObservableProvider).observe(path.value(), intervalMillis).toRemote()
+    }
 
     override fun search(
         directory: ParcelableObject,
@@ -170,7 +167,10 @@ class RemoteFileSystemProviderInterface(
             val exception = ParcelableException()
             tryRun(exception) {
                 (provider as Searchable).search(
-                    directory.value(), query, intervalMillis, listener.value
+                    directory.value(),
+                    query,
+                    intervalMillis,
+                    listener.value
                 )
             }
             callback.sendResult(RemoteFileSystemProvider.CallbackArgs(exception).toBundle())

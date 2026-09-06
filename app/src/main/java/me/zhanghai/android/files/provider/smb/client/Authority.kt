@@ -12,12 +12,8 @@ import me.zhanghai.android.files.provider.common.UriAuthority
 import me.zhanghai.android.files.util.takeIfNotEmpty
 
 @Parcelize
-data class Authority(
-    val host: String,
-    val port: Int,
-    val username: String,
-    val domain: String?
-) : Parcelable {
+data class Authority(val host: String, val port: Int, val username: String, val domain: String?) :
+    Parcelable {
     fun toUriAuthority(): UriAuthority {
         val userInfo = if (domain != null) "$domain\\$username" else username.takeIfNotEmpty()
         val uriPort = port.takeIf { it != DEFAULT_PORT }

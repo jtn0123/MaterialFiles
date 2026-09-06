@@ -6,11 +6,11 @@
 package me.zhanghai.android.files.provider.document
 
 import android.net.Uri
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.ProviderMismatchException
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
-import java.io.IOException
 
 val Path.documentUri: Uri
     @Throws(IOException::class)

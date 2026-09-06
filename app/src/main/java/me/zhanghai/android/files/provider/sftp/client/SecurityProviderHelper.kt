@@ -6,8 +6,8 @@
 package me.zhanghai.android.files.provider.sftp.client
 
 import android.os.Build
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 // @see https://android-developers.googleblog.com/2018/03/cryptography-changes-in-android-p.html
 // @see net.schmizz.sshj.common.SecurityUtils

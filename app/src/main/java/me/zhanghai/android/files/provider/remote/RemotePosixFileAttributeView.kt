@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.remote
 
+import java.io.IOException
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.PosixFileAttributeView
@@ -13,7 +14,6 @@ import me.zhanghai.android.files.provider.common.PosixFileModeBit
 import me.zhanghai.android.files.provider.common.PosixGroup
 import me.zhanghai.android.files.provider.common.PosixUser
 import me.zhanghai.android.files.provider.common.toParcelable
-import java.io.IOException
 
 abstract class RemotePosixFileAttributeView(
     private val remoteInterface: RemoteInterface<IRemotePosixFileAttributeView>
@@ -30,8 +30,10 @@ abstract class RemotePosixFileAttributeView(
     ) {
         remoteInterface.get().call { exception ->
             setTimes(
-                lastModifiedTime?.toParcelable(), lastAccessTime?.toParcelable(),
-                createTime?.toParcelable(), exception
+                lastModifiedTime?.toParcelable(),
+                lastAccessTime?.toParcelable(),
+                createTime?.toParcelable(),
+                exception
             )
         }
     }

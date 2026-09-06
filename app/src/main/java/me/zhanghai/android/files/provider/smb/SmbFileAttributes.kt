@@ -43,14 +43,22 @@ internal class SmbFileAttributes(
             val type = when {
                 attributes.hasBits(FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT.value) ->
                     BasicFileType.SYMBOLIC_LINK
+
                 attributes.hasBits(FileAttributes.FILE_ATTRIBUTE_DIRECTORY.value) ->
                     BasicFileType.DIRECTORY
+
                 else -> BasicFileType.REGULAR_FILE
             }
             val size = fileInformation.endOfFile
             val fileKey = SmbFileKey(path, fileInformation.fileId)
             return SmbFileAttributes(
-                lastModifiedTime, lastAccessTime, creationTime, type, size, fileKey, attributes
+                lastModifiedTime,
+                lastAccessTime,
+                creationTime,
+                type,
+                size,
+                fileKey,
+                attributes
             )
         }
     }

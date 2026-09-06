@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.provider.root
 
 import android.os.Parcelable
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.common.ByteString
@@ -14,13 +15,13 @@ import me.zhanghai.android.files.provider.common.PosixFileAttributes
 import me.zhanghai.android.files.provider.common.PosixFileModeBit
 import me.zhanghai.android.files.provider.common.PosixGroup
 import me.zhanghai.android.files.provider.common.PosixUser
-import java.io.IOException
 
 abstract class RootablePosixFileAttributeView(
     private val path: Path,
     private val localAttributeView: PosixFileAttributeView,
     rootAttributeViewCreator: (PosixFileAttributeView) -> RootPosixFileAttributeView
-) : PosixFileAttributeView, Parcelable {
+) : PosixFileAttributeView,
+    Parcelable {
     private val rootAttributeView: RootPosixFileAttributeView = rootAttributeViewCreator(this)
 
     override fun name(): String = localAttributeView.name()

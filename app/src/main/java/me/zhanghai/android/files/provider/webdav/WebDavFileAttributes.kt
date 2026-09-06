@@ -31,36 +31,47 @@ internal data class WebDavFileAttributes(
     override val fileKey: Parcelable
 ) : AbstractBasicFileAttributes() {
     companion object {
-        fun from(response: Response, path: WebDavPath): WebDavFileAttributes =
-            when {
-                response.isSuccess() -> {
-                    val lastModifiedTime = FileTime.from(response.lastModifiedTime ?: Instant.EPOCH)
-                    val lastAccessTime = lastModifiedTime
-                    val creationTime =
-                        response.creationTime?.let { FileTime.from(it) } ?: lastModifiedTime
-                    val type = if (response.isDirectory) {
-                        BasicFileType.DIRECTORY
-                    } else {
-                        BasicFileType.REGULAR_FILE
-                    }
-                    val size = response.size
-                    val fileKey = path
-                    WebDavFileAttributes(
-                        lastModifiedTime, lastAccessTime, creationTime, type, size, fileKey
-                    )
+        fun from(response: Response, path: WebDavPath): WebDavFileAttributes = when {
+            response.isSuccess() -> {
+                val lastModifiedTime = FileTime.from(response.lastModifiedTime ?: Instant.EPOCH)
+                val lastAccessTime = lastModifiedTime
+                val creationTime =
+                    response.creationTime?.let { FileTime.from(it) } ?: lastModifiedTime
+                val type = if (response.isDirectory) {
+                    BasicFileType.DIRECTORY
+                } else {
+                    BasicFileType.REGULAR_FILE
                 }
-                response.isSymbolicLink -> {
-                    val lastModifiedTime = FileTime::class.EPOCH
-                    val lastAccessTime = lastModifiedTime
-                    val creationTime = lastModifiedTime
-                    val type = BasicFileType.SYMBOLIC_LINK
-                    val size = 0L
-                    val fileKey = path
-                    WebDavFileAttributes(
-                        lastModifiedTime, lastAccessTime, creationTime, type, size, fileKey
-                    )
-                }
-                else -> error(response)
+                val size = response.size
+                val fileKey = path
+                WebDavFileAttributes(
+                    lastModifiedTime,
+                    lastAccessTime,
+                    creationTime,
+                    type,
+                    size,
+                    fileKey
+                )
             }
+
+            response.isSymbolicLink -> {
+                val lastModifiedTime = FileTime::class.EPOCH
+                val lastAccessTime = lastModifiedTime
+                val creationTime = lastModifiedTime
+                val type = BasicFileType.SYMBOLIC_LINK
+                val size = 0L
+                val fileKey = path
+                WebDavFileAttributes(
+                    lastModifiedTime,
+                    lastAccessTime,
+                    creationTime,
+                    type,
+                    size,
+                    fileKey
+                )
+            }
+
+            else -> error(response)
         }
+    }
 }

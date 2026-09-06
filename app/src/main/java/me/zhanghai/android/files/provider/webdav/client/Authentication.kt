@@ -20,7 +20,9 @@ sealed class Authentication : Parcelable {
     abstract fun createAuthenticatorInterceptor(authority: Authority): AuthenticatorInterceptor
 }
 
-interface AuthenticatorInterceptor : Authenticator, Interceptor
+interface AuthenticatorInterceptor :
+    Authenticator,
+    Interceptor
 
 @Parcelize
 data object NoneAuthentication : Authentication() {
@@ -34,13 +36,13 @@ data object NoneAuthentication : Authentication() {
 }
 
 @Parcelize
-data class PasswordAuthentication(
-    val password: String
-) : Authentication() {
+data class PasswordAuthentication(val password: String) : Authentication() {
     override fun createAuthenticatorInterceptor(authority: Authority): AuthenticatorInterceptor =
         object : AuthenticatorInterceptor {
             private val basicDigestAuthHandler = BasicDigestAuthHandler(
-                UrlUtils.hostToDomain(authority.host), authority.username, password.toCharArray()
+                UrlUtils.hostToDomain(authority.host),
+                authority.username,
+                password.toCharArray()
             )
 
             override fun authenticate(route: Route?, response: Response): Request? =
@@ -52,9 +54,7 @@ data class PasswordAuthentication(
 }
 
 @Parcelize
-data class AccessTokenAuthentication(
-    val accessToken: String
-) : Authentication() {
+data class AccessTokenAuthentication(val accessToken: String) : Authentication() {
     override fun createAuthenticatorInterceptor(authority: Authority): AuthenticatorInterceptor =
         object : AuthenticatorInterceptor {
             override fun authenticate(route: Route?, response: Response): Request? = null

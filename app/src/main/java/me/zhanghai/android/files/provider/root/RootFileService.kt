@@ -36,11 +36,14 @@ object RootFileService : RemoteFileService(
     // Not actually restricted because there's no restriction when running as root.
     //@RestrictedHiddenApi
     private val activityThreadCurrentActivityThreadMethod by lazyReflectedMethod(
-        "android.app.ActivityThread", "currentActivityThread"
+        "android.app.ActivityThread",
+        "currentActivityThread"
     )
+
     //@RestrictedHiddenApi
     private val activityThreadGetSystemContextMethod by lazyReflectedMethod(
-        "android.app.ActivityThread", "getSystemContext"
+        "android.app.ActivityThread",
+        "getSystemContext"
     )
 
     fun main() {
@@ -55,7 +58,8 @@ object RootFileService : RemoteFileService(
         val activityThread = activityThreadCurrentActivityThreadMethod.invoke(null)
         val systemContext = activityThreadGetSystemContextMethod.invoke(activityThread) as Context
         return systemContext.createPackageContext(
-            packageName, Context.CONTEXT_IGNORE_SECURITY or Context.CONTEXT_INCLUDE_CODE
+            packageName,
+            Context.CONTEXT_IGNORE_SECURITY or Context.CONTEXT_INCLUDE_CODE
         )
     }
 }

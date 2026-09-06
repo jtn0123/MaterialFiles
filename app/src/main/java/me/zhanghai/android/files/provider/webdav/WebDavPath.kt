@@ -7,6 +7,8 @@ package me.zhanghai.android.files.provider.webdav
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.File
+import java.io.IOException
 import java8.nio.file.FileSystem
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
@@ -22,10 +24,10 @@ import me.zhanghai.android.files.provider.webdav.client.Authority
 import me.zhanghai.android.files.provider.webdav.client.Client
 import me.zhanghai.android.files.util.readParcelable
 import okhttp3.HttpUrl
-import java.io.File
-import java.io.IOException
 
-internal class WebDavPath : ByteStringListPath<WebDavPath>, Client.Path {
+internal class WebDavPath :
+    ByteStringListPath<WebDavPath>,
+    Client.Path {
     private val fileSystem: WebDavFileSystem
 
     constructor(
@@ -65,13 +67,10 @@ internal class WebDavPath : ByteStringListPath<WebDavPath>, Client.Path {
     override fun getRoot(): WebDavPath? = if (isAbsolute) fileSystem.rootDirectory else null
 
     @Throws(IOException::class)
-    override fun toRealPath(vararg options: LinkOption): WebDavPath {
+    override fun toRealPath(vararg options: LinkOption): WebDavPath =
         throw UnsupportedOperationException()
-    }
 
-    override fun toFile(): File {
-        throw UnsupportedOperationException()
-    }
+    override fun toFile(): File = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun register(

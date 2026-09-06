@@ -13,6 +13,8 @@ import android.os.IBinder
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -24,8 +26,6 @@ import me.zhanghai.android.files.provider.remote.RemoteFileServiceInterface
 import me.zhanghai.android.files.provider.remote.RemoteFileSystemException
 import rikka.shizuku.Shizuku
 import rikka.sui.Sui
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 object SuiFileServiceLauncher {
     private val lock = Any()

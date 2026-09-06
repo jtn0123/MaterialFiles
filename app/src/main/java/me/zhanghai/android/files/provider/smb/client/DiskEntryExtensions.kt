@@ -41,14 +41,17 @@ class SymbolicLinkReparseData(
 @Throws(SMBRuntimeException::class)
 internal fun DiskEntry.getSymbolicLinkReparseData(): SymbolicLinkReparseData {
     val buffer = Buffer.PlainBuffer(
-        ioctl(FSCTL_GET_REPARSE_POINT, true, ByteArray(0), 0, 0), Endian.LE
+        ioctl(FSCTL_GET_REPARSE_POINT, true, ByteArray(0), 0, 0),
+        Endian.LE
     )
     return try {
         // ReparseTag (4 bytes)
         val reparseTag = buffer.readUInt32()
         if (reparseTag != IO_REPARSE_TAG_SYMLINK) {
             throw SMBApiException(
-                NtStatuses.STATUS_IO_REPARSE_TAG_MISMATCH, SMB2MessageCommandCode.SMB2_IOCTL, null
+                NtStatuses.STATUS_IO_REPARSE_TAG_MISMATCH,
+                SMB2MessageCommandCode.SMB2_IOCTL,
+                null
             )
         }
         // ReparseDataLength (2 bytes)

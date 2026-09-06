@@ -5,6 +5,12 @@
 
 package me.zhanghai.android.files.provider.sftp.client
 
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.channels.AsynchronousCloseException
+import java.nio.channels.ClosedByInterruptException
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Future
 import me.zhanghai.android.files.provider.common.AbstractFileByteChannel
 import me.zhanghai.android.files.provider.common.EMPTY
 import me.zhanghai.android.files.provider.common.asFuture
@@ -16,17 +22,9 @@ import net.schmizz.sshj.sftp.RemoteFile
 import net.schmizz.sshj.sftp.RemoteFileAccessor
 import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPException
-import java.io.IOException
-import java.nio.ByteBuffer
-import java.nio.channels.AsynchronousCloseException
-import java.nio.channels.ClosedByInterruptException
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Future
 
-class FileByteChannel(
-    private val file: RemoteFile,
-    isAppend: Boolean
-) : AbstractFileByteChannel(isAppend) {
+class FileByteChannel(private val file: RemoteFile, isAppend: Boolean) :
+    AbstractFileByteChannel(isAppend) {
     override fun onReadAsync(position: Long, size: Int, timeoutMillis: Long): Future<ByteBuffer> =
         try {
             RemoteFileAccessor.asyncRead(file, position, size)
@@ -42,9 +40,11 @@ class FileByteChannel(
                             response.ensureStatusIs(Response.StatusCode.EOF)
                             return@map ByteBuffer::class.EMPTY
                         }
+
                         PacketType.DATA -> {
                             dataLength = response.readUInt32AsInt()
                         }
+
                         else -> throw SFTPException("Unexpected packet type ${response.type}")
                     }
                     if (dataLength == 0) {
@@ -52,7 +52,8 @@ class FileByteChannel(
                     }
                     val length = dataLength.coerceAtMost(size)
                     ByteBuffer.wrap(response.array(), response.rpos(), length)
-                }, { e ->
+                },
+                { e ->
                     ((e as? ExecutionException)?.cause as? IOException)?.maybeToSpecificException()
                         ?.let { ExecutionException(it) } ?: e
                 }
@@ -63,7 +64,9 @@ class FileByteChannel(
         // I don't think we are using native or read-only ByteBuffer, so just call array() here.
         try {
             file.write(
-                position, source.array(), source.arrayOffset() + source.position(),
+                position,
+                source.array(),
+                source.arrayOffset() + source.position(),
                 source.remaining()
             )
         } catch (e: IOException) {
@@ -82,25 +85,25 @@ class FileByteChannel(
     }
 
     @Throws(IOException::class)
-    override fun onSize(): Long =
-        try{
-            file.length()
-        } catch (e: IOException) {
-            throw e.maybeToSpecificException()
+    override fun onSize(): Long = try {
+        file.length()
+    } catch (e: IOException) {
+        throw e.maybeToSpecificException()
+    }
+
+    private fun IOException.maybeToSpecificException(): IOException = when {
+        this is SFTPException && statusCode == Response.StatusCode.INVALID_HANDLE -> {
+            setClosed()
+            AsynchronousCloseException().apply { initCause(this@maybeToSpecificException) }
         }
 
-    private fun IOException.maybeToSpecificException(): IOException =
-        when {
-            this is SFTPException && statusCode == Response.StatusCode.INVALID_HANDLE -> {
-                setClosed()
-                AsynchronousCloseException().apply { initCause(this@maybeToSpecificException) }
-            }
-            findCauseByClass<InterruptedException>() != null -> {
-                closeSafe()
-                ClosedByInterruptException().apply { initCause(this@maybeToSpecificException) }
-            }
-            else -> this
+        findCauseByClass<InterruptedException>() != null -> {
+            closeSafe()
+            ClosedByInterruptException().apply { initCause(this@maybeToSpecificException) }
         }
+
+        else -> this
+    }
 
     @Throws(IOException::class)
     override fun onClose() {

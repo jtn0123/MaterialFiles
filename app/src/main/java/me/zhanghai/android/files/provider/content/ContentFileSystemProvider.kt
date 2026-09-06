@@ -7,6 +7,10 @@ package me.zhanghai.android.files.provider.content
 
 import android.content.ContentResolver
 import android.os.Build
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessDeniedException
@@ -34,10 +38,6 @@ import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toOpenOptions
 import me.zhanghai.android.files.provider.content.resolver.Resolver
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.URI
 
 object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider {
     private const val SCHEME = ContentResolver.SCHEME_CONTENT

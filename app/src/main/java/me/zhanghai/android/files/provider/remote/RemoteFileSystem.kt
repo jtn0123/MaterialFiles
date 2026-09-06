@@ -5,12 +5,11 @@
 
 package me.zhanghai.android.files.provider.remote
 
-import java8.nio.file.FileSystem
 import java.io.IOException
+import java8.nio.file.FileSystem
 
-abstract class RemoteFileSystem(
-    private val remoteInterface: RemoteInterface<IRemoteFileSystem>
-) : FileSystem() {
+abstract class RemoteFileSystem(private val remoteInterface: RemoteInterface<IRemoteFileSystem>) :
+    FileSystem() {
     @Throws(IOException::class)
     override fun close() {
         if (!remoteInterface.has()) {
