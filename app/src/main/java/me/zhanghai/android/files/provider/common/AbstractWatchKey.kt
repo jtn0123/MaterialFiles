@@ -34,8 +34,9 @@ abstract class AbstractWatchKey<K : AbstractWatchKey<K, P>, P : Path>(
         synchronized(lock) {
             if (events.isNotEmpty()) {
                 val lastEvent = events.last()
-                if (lastEvent.kind() == StandardWatchEventKinds.OVERFLOW
-                    || (lastEvent.kind() == kind && lastEvent.context() == context)) {
+                if (lastEvent.kind() == StandardWatchEventKinds.OVERFLOW ||
+                    (lastEvent.kind() == kind && lastEvent.context() == context)
+                ) {
                     lastEvent.repeat()
                     return
                 }

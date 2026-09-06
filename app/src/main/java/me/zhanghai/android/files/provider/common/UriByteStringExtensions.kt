@@ -62,13 +62,14 @@ private fun encode(decoded: ByteString, charset: String): String {
     return builder.toString()
 }
 
-private fun encodeHexCharacter(halfByte: Byte): Char =
-    when (halfByte) {
-        in 0..9 -> '0' + halfByte.toInt()
-        in 10..15 -> 'A' + (halfByte.toInt() - 10)
-        else ->
-            throw IllegalArgumentException("Non-half-byte $halfByte for percent-encoding in URI")
-    }
+private fun encodeHexCharacter(halfByte: Byte): Char = when (halfByte) {
+    in 0..9 -> '0' + halfByte.toInt()
+
+    in 10..15 -> 'A' + (halfByte.toInt() - 10)
+
+    else ->
+        throw IllegalArgumentException("Non-half-byte $halfByte for percent-encoding in URI")
+}
 
 val URI.decodedPathByteString: ByteString?
     get() = rawPath?.let { decode(it) }
@@ -91,6 +92,7 @@ private fun decode(encoded: String): ByteString {
                 builder.append(byte)
                 index += 3
             }
+
             else -> {
                 builder.append(byte)
                 ++index
@@ -106,15 +108,17 @@ private fun getAsciiCharacterAt(string: String, index: Int): Byte {
     return char.code.toByte()
 }
 
-private fun decodeHexCharacter(hexCharacter: Byte): Byte =
-    when (hexCharacter) {
-        in '0'.code.toByte()..'9'.code.toByte() -> (hexCharacter.toInt().toChar() - '0').toByte()
-        in 'A'.code.toByte()..'F'.code.toByte() ->
-            (10 + (hexCharacter.toInt().toChar() - 'A')).toByte()
-        in 'a'.code.toByte()..'f'.code.toByte() ->
-            (10 + (hexCharacter.toInt().toChar() - 'a')).toByte()
-        else ->
-            throw IllegalArgumentException(
-                "Non-hex-character ${hexCharacter.toInt().toChar()} for percent-encoding in URI"
-            )
-    }
+private fun decodeHexCharacter(hexCharacter: Byte): Byte = when (hexCharacter) {
+    in '0'.code.toByte()..'9'.code.toByte() -> (hexCharacter.toInt().toChar() - '0').toByte()
+
+    in 'A'.code.toByte()..'F'.code.toByte() ->
+        (10 + (hexCharacter.toInt().toChar() - 'A')).toByte()
+
+    in 'a'.code.toByte()..'f'.code.toByte() ->
+        (10 + (hexCharacter.toInt().toChar() - 'a')).toByte()
+
+    else ->
+        throw IllegalArgumentException(
+            "Non-hex-character ${hexCharacter.toInt().toChar()} for percent-encoding in URI"
+        )
+}

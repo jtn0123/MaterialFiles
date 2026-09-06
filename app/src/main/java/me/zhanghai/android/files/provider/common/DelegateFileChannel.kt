@@ -5,13 +5,13 @@
 
 package me.zhanghai.android.files.provider.common
 
-import java8.nio.channels.FileChannel
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileLock
 import java.nio.channels.ReadableByteChannel
 import java.nio.channels.WritableByteChannel
+import java8.nio.channels.FileChannel
 
 open class DelegateFileChannel(private val channel: FileChannel) : FileChannel() {
     @Throws(IOException::class)

@@ -28,7 +28,9 @@ class SyscallException @JvmOverloads constructor(
 ) : Exception(perror(errno, functionName), cause) {
 
     constructor(errnoException: ErrnoException) : this(
-        errnoException.functionNameCompat, errnoException.errno, errnoException
+        errnoException.functionNameCompat,
+        errnoException.errno,
+        errnoException
     )
 
     @Throws(AtomicMoveNotSupportedException::class)

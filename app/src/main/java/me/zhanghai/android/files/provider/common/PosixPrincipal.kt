@@ -7,11 +7,13 @@ package me.zhanghai.android.files.provider.common
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.security.Principal
 import me.zhanghai.android.files.util.hash
 import me.zhanghai.android.files.util.readParcelable
-import java.security.Principal
 
-abstract class PosixPrincipal(val id: Int, name: ByteString?) : Parcelable, Principal {
+abstract class PosixPrincipal(val id: Int, name: ByteString?) :
+    Parcelable,
+    Principal {
     private val nameByteString = name
 
     override fun getName(): String? = nameByteString?.toString()

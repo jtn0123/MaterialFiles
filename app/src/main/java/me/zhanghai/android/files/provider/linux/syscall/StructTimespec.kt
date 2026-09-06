@@ -13,6 +13,7 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 class StructTimespec(
-    val tv_sec: Long, /*time_t*/
+    // A time_t.
+    val tv_sec: Long,
     val tv_nsec: Long
 ) : Parcelable
