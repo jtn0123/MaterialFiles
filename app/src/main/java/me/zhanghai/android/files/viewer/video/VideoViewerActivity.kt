@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.commit
+import androidx.media3.common.util.UnstableApi
 import java8.nio.file.Path
 import me.zhanghai.android.files.app.AppActivity
 import me.zhanghai.android.files.util.extraPathList
@@ -17,6 +18,8 @@ import me.zhanghai.android.files.util.hasTrustedPathExtras
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.putPathListExtra
 
+// The fragment is @UnstableApi (Media3); referencing it opts this class in too.
+@UnstableApi
 class VideoViewerActivity : AppActivity() {
     private val fragment: VideoViewerFragment?
         get() = supportFragmentManager.findFragmentByTag(FRAGMENT_TAG) as VideoViewerFragment?

@@ -11,6 +11,7 @@ import android.os.Build
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import androidx.media3.common.util.UnstableApi
 import java8.nio.file.Path
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.clipboardManager
@@ -156,6 +157,7 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
     }
 
     /** Returns whether [intent] now targets one of our own viewers. */
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun maybeSetBuiltInViewer(intent: Intent, mimeType: MimeType): Boolean {
         val viewerClass = when {
             mimeType.isImage -> ImageViewerActivity::class.java
@@ -174,6 +176,7 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
         ImageViewerActivity.putExtras(intent, paths, position)
     }
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun maybeAddVideoViewerActivityExtras(intent: Intent, path: Path, mimeType: MimeType) {
         if (!mimeType.isVideo) {
             return
