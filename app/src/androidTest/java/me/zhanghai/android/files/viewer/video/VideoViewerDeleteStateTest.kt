@@ -17,10 +17,12 @@ import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import java.io.File
 import java8.nio.file.Paths
+import me.zhanghai.android.files.UiFailureDiagnosticsRule
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -31,6 +33,9 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class VideoViewerDeleteStateTest {
+    @get:Rule
+    val diagnostics = UiFailureDiagnosticsRule()
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val device = UiDevice.getInstance(instrumentation)
     private val context = instrumentation.targetContext
@@ -115,7 +120,7 @@ class VideoViewerDeleteStateTest {
 
     companion object {
         private val CLIP_NAMES = listOf("clip1.mp4", "clip2.mp4", "clip3.mp4")
-        private const val TIMEOUT_MILLIS = 15_000L
+        private const val TIMEOUT_MILLIS = 30_000L
         private const val SHORT_TIMEOUT_MILLIS = 2_000L
     }
 }

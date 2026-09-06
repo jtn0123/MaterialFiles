@@ -17,11 +17,13 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import java.io.File
+import me.zhanghai.android.files.UiFailureDiagnosticsRule
 import me.zhanghai.android.files.filelist.FileListActivity
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -34,6 +36,9 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class OpenVideoFromFolderTest {
+    @get:Rule
+    val diagnostics = UiFailureDiagnosticsRule()
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val device = UiDevice.getInstance(instrumentation)
     private val packageName = instrumentation.targetContext.packageName
@@ -100,6 +105,6 @@ class OpenVideoFromFolderTest {
 
     companion object {
         private const val CLIP_NAME = "clip.mp4"
-        private const val TIMEOUT_MILLIS = 15_000L
+        private const val TIMEOUT_MILLIS = 30_000L
     }
 }

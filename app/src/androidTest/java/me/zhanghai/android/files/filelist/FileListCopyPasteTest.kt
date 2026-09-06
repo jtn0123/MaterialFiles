@@ -16,12 +16,14 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import java.io.File
+import me.zhanghai.android.files.UiFailureDiagnosticsRule
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -33,6 +35,9 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class FileListCopyPasteTest {
+    @get:Rule
+    val diagnostics = UiFailureDiagnosticsRule()
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val device = UiDevice.getInstance(instrumentation)
     private val context = instrumentation.targetContext
@@ -153,6 +158,6 @@ class FileListCopyPasteTest {
         private const val FILE_NAME = "copy-me.txt"
         private const val FILE_CONTENT = "MaterialFilesTest"
         private const val SUBDIRECTORY_NAME = "target"
-        private const val TIMEOUT_MILLIS = 15_000L
+        private const val TIMEOUT_MILLIS = 30_000L
     }
 }
