@@ -5,7 +5,8 @@
 
 package me.zhanghai.android.files.filelist
 
-import android.os.AsyncTask
+import java.io.IOException
+import java.util.concurrent.Future
 import java8.nio.file.DirectoryIteratorException
 import java8.nio.file.Path
 import me.zhanghai.android.files.file.FileItem
@@ -16,10 +17,8 @@ import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
+import me.zhanghai.android.files.util.backgroundExecutor
 import me.zhanghai.android.files.util.valueCompat
-import java.io.IOException
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 
 class FileListLiveData(private val path: Path) : CloseableLiveData<Stateful<List<FileItem>>>() {
     private var future: Future<Unit>? = null
@@ -37,7 +36,7 @@ class FileListLiveData(private val path: Path) : CloseableLiveData<Stateful<List
     fun loadValue() {
         future?.cancel(true)
         value = Loading(value?.value)
-        future = (AsyncTask.THREAD_POOL_EXECUTOR as ExecutorService).submit<Unit> {
+        future = backgroundExecutor.submit<Unit> {
             val value = try {
                 path.newDirectoryStream().use { directoryStream ->
                     val fileList = mutableListOf<FileItem>()

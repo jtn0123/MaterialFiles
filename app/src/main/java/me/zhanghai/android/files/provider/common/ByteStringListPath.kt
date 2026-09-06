@@ -21,6 +21,24 @@ import me.zhanghai.android.files.util.hash
 import me.zhanghai.android.files.util.readParcelableListCompat
 import me.zhanghai.android.files.util.startsWith
 
+/**
+ * A path held as a list of byte-string name segments plus an absolute flag, which is what every
+ * provider except the Linux one needs: names are bytes because remote servers and archives do not
+ * promise valid UTF-8, and the string form is built on demand and cached.
+ *
+ * Rules that the tests in `ByteStringListPathTest` pin down:
+ * - Empty path: one empty segment, relative; it is the only path with an empty segment.
+ * - [getParent]: null for a relative single name and for a root; a root has no segments.
+ * - [startsWith]/[endsWith] compare whole segments, and [startsWith] also requires the same
+ *   absoluteness; `endsWith` on an absolute argument requires equality.
+ * - [normalize] removes `.` and resolves `..` against the segment before it; leading `..` on a
+ *   root is dropped, on a relative path it is kept.
+ * - [resolve] with an absolute argument returns the argument; [relativize] requires the same
+ *   absoluteness.
+ *
+ * Subclasses supply [createPath] (typically with their file system and root), [isPathAbsolute],
+ * and the root URI pieces for [toUri].
+ */
 abstract class ByteStringListPath<T : ByteStringListPath<T>> :
     AbstractPath<T>,
     Parcelable {

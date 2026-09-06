@@ -5,7 +5,6 @@
 
 package me.zhanghai.android.files.fileproperties
 
-import android.os.AsyncTask
 import java8.nio.file.Path
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.file.loadFileItem
@@ -13,12 +12,11 @@ import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
+import me.zhanghai.android.files.util.backgroundExecutor
 import me.zhanghai.android.files.util.valueCompat
 
-class FileLiveData private constructor(
-    path: Path,
-    file: FileItem?
-) : PathObserverLiveData<Stateful<FileItem>>(path) {
+class FileLiveData private constructor(path: Path, file: FileItem?) :
+    PathObserverLiveData<Stateful<FileItem>>(path) {
     constructor(path: Path) : this(path, null)
 
     constructor(file: FileItem) : this(file.path, file)
@@ -34,7 +32,7 @@ class FileLiveData private constructor(
 
     override fun loadValue() {
         value = Loading(value?.value)
-        AsyncTask.THREAD_POOL_EXECUTOR.execute {
+        backgroundExecutor.execute {
             val value = try {
                 val file = path.loadFileItem()
                 Success(file)

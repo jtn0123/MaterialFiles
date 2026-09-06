@@ -10,6 +10,7 @@ import java.io.Closeable
 import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.Charset
+import java.util.IdentityHashMap
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.charset.StandardCharsets
 import java8.nio.file.Path
@@ -29,14 +30,12 @@ import me.zhanghai.android.files.util.valueCompat
 
 object ArchiveReader {
     @Throws(IOException::class)
-    fun readEntries(
-        file: Path,
-        passwords: List<String>,
-        rootPath: Path
-    ): Pair<Map<Path, ReadArchive.Entry>, Map<Path, List<Path>>> {
+    fun readEntries(file: Path, passwords: List<String>, rootPath: Path): Entries {
         val entries = mutableMapOf<Path, ReadArchive.Entry>()
         val rawEntries = readEntries(file, passwords)
-        for (entry in rawEntries) {
+        val indices = IdentityHashMap<ReadArchive.Entry, Int>()
+        for ((index, entry) in rawEntries.withIndex()) {
+            indices[entry] = index
             val path = normalizeEntryPath(rootPath, entry.name, entry.isDirectory) ?: continue
             entries.getOrPut(path) { entry }
         }
@@ -60,8 +59,18 @@ object ArchiveReader {
                 path = parentPath
             }
         }
-        return entries to tree
+        return Entries(entries, tree, indices)
     }
+
+    /**
+     * @param indices the position of each entry in the archive's read order, for
+     * [OpenArchive.seekTo]; synthesized directory entries have none.
+     */
+    class Entries(
+        val entries: Map<Path, ReadArchive.Entry>,
+        val tree: Map<Path, List<Path>>,
+        val indices: Map<ReadArchive.Entry, Int>
+    )
 
     /**
      * Resolves an archive entry name under [rootPath] so that it can never escape the archive,
@@ -114,34 +123,50 @@ object ArchiveReader {
         }
     }
 
-    @Throws(IOException::class)
-    fun newInputStream(
-        file: Path,
-        passwords: List<String>,
-        entry: ReadArchive.Entry
-    ): InputStream? {
-        val charset = archiveFileNameCharset
-        val (archive, closeable) = openArchive(file, passwords)
-        var successful = false
-        return try {
-            while (true) {
-                val currentEntry = archive.readEntry(charset) ?: break
-                if (currentEntry.name != entry.name) {
-                    continue
-                }
-                successful = true
-                break
+    /**
+     * An archive positioned for reading entry data. libarchive only reads forward, so extracting
+     * several entries reuses one [OpenArchive] as long as each is at a later position than the
+     * last; see [ArchiveFileSystem].
+     */
+    class OpenArchive internal constructor(
+        private val archive: ReadArchive,
+        private val closeable: Closeable,
+        private val charset: Charset
+    ) : Closeable {
+        /** Read-order index of the entry whose header was read last, or -1 before the first. */
+        var position = -1
+            private set
+
+        private var currentName: String? = null
+
+        /**
+         * Reads headers forward until the entry at [index], and returns whether it is there and
+         * named [name].
+         */
+        @Throws(IOException::class)
+        fun seekTo(index: Int, name: String): Boolean {
+            require(index > position) { "Cannot seek backwards from $position to $index" }
+            while (position < index) {
+                val entry = archive.readEntry(charset) ?: return false
+                ++position
+                currentName = entry.name
             }
-            if (successful) {
-                CloseableInputStream(archive.newDataInputStream(), closeable)
-            } else {
-                null
-            }
-        } finally {
-            if (!successful) {
-                closeable.close()
-            }
+            return currentName == name
         }
+
+        @Throws(IOException::class)
+        fun newDataInputStream(): InputStream = archive.newDataInputStream()
+
+        @Throws(IOException::class)
+        override fun close() {
+            closeable.close()
+        }
+    }
+
+    @Throws(IOException::class)
+    fun open(file: Path, passwords: List<String>): OpenArchive {
+        val (archive, closeable) = openArchive(file, passwords)
+        return OpenArchive(archive, closeable, archiveFileNameCharset)
     }
 
     @Throws(IOException::class)
@@ -232,16 +257,6 @@ object ArchiveReader {
             } finally {
                 closeable.close()
             }
-        }
-    }
-
-    private class CloseableInputStream(inputStream: InputStream, private val closeable: Closeable) :
-        DelegateInputStream(inputStream) {
-        @Throws(IOException::class)
-        override fun close() {
-            super.close()
-
-            closeable.close()
         }
     }
 }

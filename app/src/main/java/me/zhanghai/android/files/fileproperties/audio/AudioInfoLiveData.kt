@@ -6,7 +6,6 @@
 package me.zhanghai.android.files.fileproperties.audio
 
 import android.media.MediaMetadataRetriever
-import android.os.AsyncTask
 import android.os.Build
 import java.time.Duration
 import java8.nio.file.Path
@@ -18,6 +17,7 @@ import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
+import me.zhanghai.android.files.util.backgroundExecutor
 import me.zhanghai.android.files.util.setDataSource
 import me.zhanghai.android.files.util.valueCompat
 
@@ -29,7 +29,7 @@ class AudioInfoLiveData(path: Path) : PathObserverLiveData<Stateful<AudioInfo>>(
 
     override fun loadValue() {
         value = Loading(value?.value)
-        AsyncTask.THREAD_POOL_EXECUTOR.execute {
+        backgroundExecutor.execute {
             val value = try {
                 val audioInfo = MediaMetadataRetriever().use { retriever ->
                     retriever.setDataSource(path)

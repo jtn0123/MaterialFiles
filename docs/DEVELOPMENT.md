@@ -89,3 +89,11 @@ Notes that cost time to rediscover:
   `res/xml/data_extraction_rules.xml` exclude from every kind of backup and device transfer.
 - The FTP server defaults to a named user, read-only, and refuses to start with an empty password
   unless anonymous login is switched on explicitly.
+- Stored servers are additionally encrypted with an AES-GCM key in the Android Keystore
+  (`util/CredentialCipher.kt`, `settings/EncryptedParcelValueSettingLiveData.kt`).
+- SFTP host keys are trust-on-first-use (`provider/sftp/client/TrustOnFirstUseHostKeyVerifier.kt`,
+  stored by `storage/SftpServerHostKeyStore.kt`); a changed key is refused and the user is shown
+  both fingerprints before deciding.
+- The network security config trusts system certificate authorities only. Cleartext stays
+  permitted because it only affects WebDAV, where `dav://` is an explicit per-server choice.
+- jCIFS-NG (used for NetBIOS name resolution and LAN discovery) negotiates SMB 2 or 3 only.

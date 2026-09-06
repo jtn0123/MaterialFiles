@@ -76,7 +76,26 @@ internal fun FileJob.moveAtomically(source: Path, target: Path) {
     source.moveTo(target, LinkOption.NOFOLLOW_LINKS, StandardCopyOption.ATOMIC_MOVE)
 }
 
-// @see https://github.com/GNOME/nautilus/blob/master/src/nautilus-file-operations.c copy_move_file
+/**
+ * Copies or moves one file, resolving conflicts and errors with the user, and returns whether a
+ * directory source should be descended into (true after a merge; false after a skip or when the
+ * target was created as a whole).
+ *
+ * The decision flow, modelled on Nautilus' `copy_move_file`:
+ * 1. Copying into or over the source itself is refused with a skip/cancel dialog.
+ * 2. The transfer is attempted. `FileAlreadyExistsException` opens the conflict dialog:
+ *    replace (retry with `REPLACE_EXISTING`), merge (directory onto directory; caller recurses),
+ *    rename (retry with the new name), skip, or cancel.
+ * 3. `UserActionRequiredException` (for example a read-only mount) runs its action and retries.
+ * 4. Any other `IOException` opens the error dialog: retry, skip (recorded for the job's final
+ *    toast), or cancel.
+ *
+ * Every "apply to all" choice is remembered in [actionAllInfo] so later files take the same
+ * branch without a dialog. Cancel is delivered as `InterruptedIOException`, which ends the job
+ * silently. [transferInfo] is kept current for the progress notification on every branch.
+ *
+ * @see <a href="https://github.com/GNOME/nautilus/blob/master/src/nautilus-file-operations.c">nautilus-file-operations.c</a>
+ */
 @Throws(IOException::class)
 internal fun FileJob.copyOrMove(
     source: Path,

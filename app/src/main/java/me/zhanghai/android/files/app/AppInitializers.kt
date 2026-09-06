@@ -5,8 +5,6 @@
 
 package me.zhanghai.android.files.app
 
-import android.os.AsyncTask
-import android.os.Build
 import android.os.StrictMode
 import android.webkit.WebView
 import java.util.Properties
@@ -30,6 +28,7 @@ import me.zhanghai.android.files.storage.StorageVolumeListLiveData
 import me.zhanghai.android.files.storage.WebDavServerAuthenticator
 import me.zhanghai.android.files.theme.custom.CustomThemeHelper
 import me.zhanghai.android.files.theme.night.NightModeHelper
+import me.zhanghai.android.files.util.backgroundExecutor
 
 val appInitializers = listOf(
     ::disableHiddenApiChecks,
@@ -79,7 +78,7 @@ private fun initializeFileSystemProviders() {
     FileSystemProviders.install()
     FileSystemProviders.overflowWatchEvents = true
     // SingletonContext.init() calls NameServiceClientImpl.initCache() which connects to network.
-    AsyncTask.THREAD_POOL_EXECUTOR.execute {
+    backgroundExecutor.execute {
         SingletonContext.init(
             Properties().apply {
                 setProperty("jcifs.netbios.cachePolicy", "0")
@@ -112,7 +111,9 @@ private fun initializeNightMode() {
 }
 
 private fun createNotificationChannels() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+    // A binder call into NotificationManager; nothing posts a notification before the first
+    // activity has drawn, so it need not hold up ContentProvider.onCreate().
+    backgroundExecutor.execute {
         notificationManager.createNotificationChannels(
             listOf(
                 backgroundActivityStartNotificationTemplate.channelTemplate,

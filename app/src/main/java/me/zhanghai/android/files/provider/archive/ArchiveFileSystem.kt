@@ -7,6 +7,8 @@ package me.zhanghai.android.files.provider.archive
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.IOException
+import java.io.InputStream
 import java8.nio.file.ClosedFileSystemException
 import java8.nio.file.FileStore
 import java8.nio.file.FileSystem
@@ -23,16 +25,18 @@ import me.zhanghai.android.files.provider.archive.archiver.ReadArchive
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.ByteStringBuilder
 import me.zhanghai.android.files.provider.common.ByteStringListPathCreator
+import me.zhanghai.android.files.provider.common.DelegateInputStream
 import me.zhanghai.android.files.provider.common.IsDirectoryException
 import me.zhanghai.android.files.provider.common.toByteString
+import me.zhanghai.android.files.util.closeSafe
 import me.zhanghai.android.libarchive.ArchiveException
-import java.io.IOException
-import java.io.InputStream
 
 internal class ArchiveFileSystem(
     private val provider: ArchiveFileSystemProvider,
     val archiveFile: Path
-) : FileSystem(), ByteStringListPathCreator, Parcelable {
+) : FileSystem(),
+    ByteStringListPathCreator,
+    Parcelable {
     val rootDirectory = ArchivePath(this, SEPARATOR_BYTE_STRING)
 
     init {
@@ -59,56 +63,137 @@ internal class ArchiveFileSystem(
 
     private var tree: Map<Path, List<Path>>? = null
 
-    @Throws(IOException::class)
-    fun getEntry(path: Path): ReadArchive.Entry =
-        synchronized(lock) {
-            ensureEntriesLocked(path)
-            getEntryLocked(path)
-        }
+    private var entryIndices: Map<ReadArchive.Entry, Int>? = null
+
+    // One forward-reading archive kept between newInputStream() calls, so that extracting entries
+    // in archive order reads the archive once instead of once per entry.
+    private var cachedArchive: ArchiveReader.OpenArchive? = null
+
+    private var isCachedArchiveInUse = false
+
+    private var isCachedArchiveStale = false
 
     @Throws(IOException::class)
-    private fun getEntryLocked(path: Path): ReadArchive.Entry =
-        synchronized(lock) {
-            entries!![path] ?: throw NoSuchFileException(path.toString())
-        }
+    fun getEntry(path: Path): ReadArchive.Entry = synchronized(lock) {
+        ensureEntriesLocked(path)
+        getEntryLocked(path)
+    }
 
     @Throws(IOException::class)
-    fun newInputStream(file: Path): InputStream =
-        synchronized(lock) {
-            ensureEntriesLocked(file)
-            val entry = getEntryLocked(file)
-            if (entry.isDirectory) {
-                throw IsDirectoryException(file.toString())
+    private fun getEntryLocked(path: Path): ReadArchive.Entry = synchronized(lock) {
+        entries!![path] ?: throw NoSuchFileException(path.toString())
+    }
+
+    @Throws(IOException::class)
+    fun newInputStream(file: Path): InputStream = synchronized(lock) {
+        ensureEntriesLocked(file)
+        val entry = getEntryLocked(file)
+        if (entry.isDirectory) {
+            throw IsDirectoryException(file.toString())
+        }
+        val index = entryIndices!![entry] ?: throw NoSuchFileException(file.toString())
+        val cached = cachedArchive
+        val canReuseCached =
+            cached != null && !isCachedArchiveInUse && !isCachedArchiveStale &&
+                cached.position < index
+        val archive = if (canReuseCached) {
+            cached!!
+        } else {
+            if (!isCachedArchiveInUse) {
+                cached?.closeSafe()
+                cachedArchive = null
+                isCachedArchiveStale = false
             }
-            val inputStream = try {
-                ArchiveReader.newInputStream(archiveFile, passwords, entry)
+            try {
+                ArchiveReader.open(archiveFile, passwords)
             } catch (e: ArchiveException) {
                 throw e.toFileSystemOrInterruptedIOException(file)
-            } ?: throw NoSuchFileException(file.toString())
-            ArchiveExceptionInputStream(inputStream, file)
+            }
         }
+        val found = try {
+            archive.seekTo(index, entry.name)
+        } catch (e: ArchiveException) {
+            archive.closeSafe()
+            if (archive === cachedArchive) {
+                cachedArchive = null
+            }
+            throw e.toFileSystemOrInterruptedIOException(file)
+        }
+        if (!found) {
+            archive.closeSafe()
+            if (archive === cachedArchive) {
+                cachedArchive = null
+            }
+            throw NoSuchFileException(file.toString())
+        }
+        val isCaching = cachedArchive == null || archive === cachedArchive
+        if (isCaching) {
+            cachedArchive = archive
+            isCachedArchiveInUse = true
+        }
+        val inputStream = try {
+            archive.newDataInputStream()
+        } catch (e: ArchiveException) {
+            releaseArchiveLocked(archive, isCaching)
+            throw e.toFileSystemOrInterruptedIOException(file)
+        }
+        ArchiveExceptionInputStream(
+            object : DelegateInputStream(inputStream) {
+                override fun close() {
+                    try {
+                        super.close()
+                    } finally {
+                        synchronized(lock) { releaseArchiveLocked(archive, isCaching) }
+                    }
+                }
+            },
+            file
+        )
+    }
+
+    private fun releaseArchiveLocked(archive: ArchiveReader.OpenArchive, isCached: Boolean) {
+        if (isCached && archive === cachedArchive) {
+            isCachedArchiveInUse = false
+            if (!isOpen || isCachedArchiveStale) {
+                cachedArchive = null
+                isCachedArchiveStale = false
+                archive.closeSafe()
+            }
+        } else {
+            archive.closeSafe()
+        }
+    }
+
+    private fun discardCachedArchiveLocked() {
+        if (isCachedArchiveInUse) {
+            // The stream holding it closes it, see releaseArchiveLocked().
+            isCachedArchiveStale = true
+        } else {
+            cachedArchive?.closeSafe()
+            cachedArchive = null
+            isCachedArchiveStale = false
+        }
+    }
 
     @Throws(IOException::class)
-    fun getDirectoryChildren(directory: Path): List<Path> =
-        synchronized(lock) {
-            ensureEntriesLocked(directory)
-            val entry = getEntryLocked(directory)
-            if (!entry.isDirectory) {
-                throw NotDirectoryException(directory.toString())
-            }
-            tree!![directory]!!
+    fun getDirectoryChildren(directory: Path): List<Path> = synchronized(lock) {
+        ensureEntriesLocked(directory)
+        val entry = getEntryLocked(directory)
+        if (!entry.isDirectory) {
+            throw NotDirectoryException(directory.toString())
         }
+        tree!![directory]!!
+    }
 
     @Throws(IOException::class)
-    fun readSymbolicLink(link: Path): String =
-        synchronized(lock) {
-            ensureEntriesLocked(link)
-            val entry = getEntryLocked(link)
-            if (!entry.isSymbolicLink) {
-                throw NotLinkException(link.toString())
-            }
-            entry.symbolicLinkTarget.orEmpty()
+    fun readSymbolicLink(link: Path): String = synchronized(lock) {
+        ensureEntriesLocked(link)
+        val entry = getEntryLocked(link)
+        if (!entry.isSymbolicLink) {
+            throw NotLinkException(link.toString())
         }
+        entry.symbolicLinkTarget.orEmpty()
+    }
 
     fun addPassword(password: String) {
         synchronized(lock) {
@@ -116,6 +201,7 @@ internal class ArchiveFileSystem(
                 throw ClosedFileSystemException()
             }
             passwords += password
+            discardCachedArchiveLocked()
         }
     }
 
@@ -125,6 +211,7 @@ internal class ArchiveFileSystem(
                 throw ClosedFileSystemException()
             }
             isRefreshNeeded = true
+            discardCachedArchiveLocked()
         }
     }
 
@@ -134,13 +221,14 @@ internal class ArchiveFileSystem(
             throw ClosedFileSystemException()
         }
         if (isRefreshNeeded) {
-            val entriesAndTree = try {
+            val readEntries = try {
                 ArchiveReader.readEntries(archiveFile, passwords, rootDirectory)
             } catch (e: ArchiveException) {
                 throw e.toFileSystemOrInterruptedIOException(file)
             }
-            entries = entriesAndTree.first
-            tree = entriesAndTree.second
+            entries = readEntries.entries
+            tree = readEntries.tree
+            entryIndices = readEntries.indices
             isRefreshNeeded = false
         }
     }
@@ -156,7 +244,9 @@ internal class ArchiveFileSystem(
             isRefreshNeeded = false
             entries = null
             tree = null
+            entryIndices = null
             isOpen = false
+            discardCachedArchiveLocked()
         }
     }
 
@@ -190,13 +280,11 @@ internal class ArchiveFileSystem(
         return ArchivePath(this, path)
     }
 
-    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher {
+    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher =
         throw UnsupportedOperationException()
-    }
 
-    override fun getUserPrincipalLookupService(): UserPrincipalLookupService {
+    override fun getUserPrincipalLookupService(): UserPrincipalLookupService =
         throw UnsupportedOperationException()
-    }
 
     @Throws(IOException::class)
     override fun newWatchService(): WatchService {

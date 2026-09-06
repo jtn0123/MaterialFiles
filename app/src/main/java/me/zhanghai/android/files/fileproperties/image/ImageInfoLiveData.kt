@@ -6,11 +6,11 @@
 package me.zhanghai.android.files.fileproperties.image
 
 import android.graphics.BitmapFactory
-import android.os.AsyncTask
 import android.util.Size
 import androidx.exifinterface.media.ExifInterface
 import com.caverock.androidsvg.SVG
 import java8.nio.file.Path
+import kotlin.math.roundToInt
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.fileproperties.PathObserverLiveData
 import me.zhanghai.android.files.provider.common.getLastModifiedTime
@@ -19,15 +19,13 @@ import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
+import me.zhanghai.android.files.util.backgroundExecutor
 import me.zhanghai.android.files.util.valueCompat
 import okio.buffer
 import okio.source
-import kotlin.math.roundToInt
 
-class ImageInfoLiveData(
-    path: Path,
-    private val mimeType: MimeType
-) : PathObserverLiveData<Stateful<ImageInfo>>(path) {
+class ImageInfoLiveData(path: Path, private val mimeType: MimeType) :
+    PathObserverLiveData<Stateful<ImageInfo>>(path) {
     init {
         loadValue()
         observe()
@@ -35,7 +33,7 @@ class ImageInfoLiveData(
 
     override fun loadValue() {
         value = Loading(value?.value)
-        AsyncTask.THREAD_POOL_EXECUTOR.execute {
+        backgroundExecutor.execute {
             val value = try {
                 val imageInfo = when (mimeType) {
                     MimeType.IMAGE_SVG_XML -> {
@@ -61,6 +59,7 @@ class ImageInfoLiveData(
                         }
                         ImageInfo(dimensions, null)
                     }
+
                     else -> {
                         val bitmapOptions = BitmapFactory.Options()
                             .apply { inJustDecodeBounds = true }

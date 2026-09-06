@@ -5,11 +5,9 @@
 
 package me.zhanghai.android.files.storage
 
-import android.os.AsyncTask
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.UnknownHostException
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import jcifs.context.SingletonContext
@@ -25,6 +23,7 @@ import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
+import me.zhanghai.android.files.util.backgroundExecutor
 import me.zhanghai.android.files.util.getLocalAddress
 import me.zhanghai.android.files.util.toLinkedSet
 import me.zhanghai.android.files.util.valueCompat
@@ -39,7 +38,7 @@ class LanSmbServerListLiveData : CloseableLiveData<Stateful<List<LanSmbServer>>>
     fun loadValue() {
         cancelLoadingValue()
         value = Loading(value?.value)
-        loadFuture = (AsyncTask.THREAD_POOL_EXECUTOR as ExecutorService).submit {
+        loadFuture = backgroundExecutor.submit {
             try {
                 val newServerSet = mutableSetOf<LanSmbServer>()
                 Executors.newFixedThreadPool(60).asCoroutineDispatcher().use { dispatcher ->

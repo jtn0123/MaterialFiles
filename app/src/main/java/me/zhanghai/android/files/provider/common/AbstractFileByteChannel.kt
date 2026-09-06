@@ -5,14 +5,6 @@
 
 package me.zhanghai.android.files.provider.common
 
-import java8.nio.channels.SeekableByteChannel
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.withTimeout
-import me.zhanghai.android.files.util.closeSafe
 import java.io.Closeable
 import java.io.IOException
 import java.io.InterruptedIOException
@@ -22,12 +14,35 @@ import java.nio.channels.NonReadableChannelException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
+import java8.nio.channels.SeekableByteChannel
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withTimeout
+import me.zhanghai.android.files.util.closeSafe
 
+/**
+ * A seekable channel over a file that is read and written in positioned chunks, for providers
+ * whose protocol offers "read N bytes at offset" (SFTP, SMB, WebDAV ranges, FTP with REST)
+ * rather than a stream.
+ *
+ * Reads go through a read-ahead buffer: [onReadAsync] is asked for the next chunk as soon as the
+ * previous one was consumed, so sequential reads overlap the network round trip. When the caller
+ * seeks elsewhere the pending read is cancelled ([shouldCancelRead]) and optionally joined
+ * ([joinCancelledRead]) for protocols whose connection cannot carry two requests. Writes are
+ * synchronous through [onWrite], or [onAppend] when opened in append mode, in which case reading
+ * is refused. [position], [size] and [truncate] are bookkept locally; subclasses implement
+ * [onSize] and [onTruncate] against the server. All I/O is serialised on one lock, so one channel
+ * is safe to share between threads but never concurrent.
+ */
 abstract class AbstractFileByteChannel(
     private val isAppend: Boolean,
     private val shouldCancelRead: Boolean = true,
     private val joinCancelledRead: Boolean = false
-) : ForceableChannel, SeekableByteChannel {
+) : ForceableChannel,
+    SeekableByteChannel {
     private var position = 0L
     private val readBuffer = ReadBuffer()
     private val ioLock = Any()
@@ -70,9 +85,7 @@ abstract class AbstractFileByteChannel(
             .asFuture()
 
     @Throws(IOException::class)
-    protected open fun onRead(position: Long, size: Int): ByteBuffer {
-        throw NotImplementedError()
-    }
+    protected open fun onRead(position: Long, size: Int): ByteBuffer = throw NotImplementedError()
 
     @Throws(IOException::class)
     final override fun write(source: ByteBuffer): Int {
