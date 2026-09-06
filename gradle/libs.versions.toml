@@ -28,10 +28,11 @@ subsampling-scale-image-view = "3.10.0"
 drawer = "1.0.3"
 materialshadowninepatch = "1.0.0"
 advrecyclerview = "1.0.0"
-# SMBJ 0.12.0 broke anonymous authentication: https://github.com/hierynomus/smbj/issues/792 ,
-# and it's still an issue in 0.14.0 according to
-# https://github.com/hierynomus/smbj/issues/792#issuecomment-2548018378 .
-smbj = "0.11.5"
+# SMBJ 0.12.0 broke anonymous authentication for some servers
+# (https://github.com/hierynomus/smbj/issues/792 ; a 2024-12 report says 0.14.0 too). 0.14.0
+# was tried on 2026-09-06 against an impacket SMB2 guest share: anonymous connect, listing, read
+# and write all worked. If a NAS refuses anonymous or guest access, go back to "0.11.5".
+smbj = "0.14.0"
 bouncycastle = "1.85"
 bouncycastle-util = "1.85.1"
 sshj = "0.40.0"

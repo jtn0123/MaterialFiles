@@ -176,9 +176,10 @@ dependencies {
     // The SMBJ version is pinned; see gradle/libs.versions.toml.
     //noinspection NewerVersionAvailable
     implementation(libs.smbj) {
-        // org.bouncycastle:bcprov-jdk15on uses bytecode version unsupported by Jetifier, so use
-        // org.bouncycastle:bcprov-jdk15to18 instead.
+        // Bouncy Castle comes from the jdk15to18 artifacts below; SMBJ 0.14 pulls the jdk18on
+        // flavor, which duplicates every class.
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
     }
     implementation libs.bouncycastle.bcprov
     implementation(libs.sshj) {
