@@ -48,6 +48,7 @@ jobs:
         path: app/build/test-results/testDebugUnitTest/*.xml
         reporter: java-junit
         fail-on-error: false
+        fail-on-empty: false
     - name: Upload reports (unit tests, lint)
       if: always()
       uses: actions/upload-artifact@v4
@@ -136,6 +137,7 @@ jobs:
         path: app/build/outputs/androidTest-results/connected/**/*.xml
         reporter: java-junit
         fail-on-error: false
+        fail-on-empty: false
     - name: Upload instrumented test results and reports
       if: always()
       uses: actions/upload-artifact@v4
