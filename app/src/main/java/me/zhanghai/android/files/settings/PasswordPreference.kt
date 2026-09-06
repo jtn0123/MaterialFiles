@@ -10,8 +10,8 @@ import android.text.method.PasswordTransformationMethod
 import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
-import com.takisoft.preferencex.EditTextPreference
 import androidx.preference.EditTextPreference as AndroidXEditTextPreference
+import com.takisoft.preferencex.EditTextPreference
 
 class PasswordPreference : EditTextPreference {
     constructor(context: Context) : super(context)
@@ -19,7 +19,9 @@ class PasswordPreference : EditTextPreference {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(

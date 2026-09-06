@@ -11,11 +11,8 @@ import me.zhanghai.android.files.compat.reversedCompat
 import me.zhanghai.android.files.file.FileItem
 
 @Parcelize
-data class FileSortOptions(
-    val by: By,
-    val order: Order,
-    val isDirectoriesFirst: Boolean
-) : Parcelable {
+data class FileSortOptions(val by: By, val order: Order, val isDirectoriesFirst: Boolean) :
+    Parcelable {
     fun createComparator(): Comparator<FileItem> {
         var comparator = compareBy<FileItem> {
             NAME_UNIMPORTANT_PREFIXES.any { prefix -> it.name.startsWith(prefix) }
@@ -23,11 +20,14 @@ data class FileSortOptions(
         when (by) {
             // Nothing to do.
             By.NAME -> {}
+
             By.TYPE ->
                 comparator = compareBy<FileItem, String>(String.CASE_INSENSITIVE_ORDER) {
                     it.extension
                 }.then(comparator)
+
             By.SIZE -> comparator = compareBy<FileItem> { it.attributes.size() }.then(comparator)
+
             By.LAST_MODIFIED ->
                 comparator = compareBy<FileItem> { it.attributes.lastModifiedTime() }
                     .then(comparator)

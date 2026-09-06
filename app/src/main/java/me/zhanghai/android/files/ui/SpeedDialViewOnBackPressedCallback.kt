@@ -8,9 +8,8 @@ package me.zhanghai.android.files.ui
 import androidx.activity.OnBackPressedCallback
 import com.leinardi.android.speeddial.SpeedDialView
 
-class SpeedDialViewOnBackPressedCallback(
-    private val speedDialView: SpeedDialView
-) : OnBackPressedCallback(speedDialView.isOpen) {
+class SpeedDialViewOnBackPressedCallback(private val speedDialView: SpeedDialView) :
+    OnBackPressedCallback(speedDialView.isOpen) {
     init {
         speedDialView.setOnChangeListener(
             object : SpeedDialView.OnChangeListener {

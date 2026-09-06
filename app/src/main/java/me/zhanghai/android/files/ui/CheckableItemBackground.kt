@@ -32,18 +32,17 @@ object CheckableItemBackground {
         @Dimension(unit = Dimension.DP) insetDp: Float,
         @Dimension(unit = Dimension.DP) cornerSizeDp: Float,
         context: Context
-    ): Drawable =
-        AnimatedStateListDrawableCompat().apply {
-            val shortAnimTime = context.shortAnimTime
-            setEnterFadeDuration(shortAnimTime)
-            setExitFadeDuration(shortAnimTime)
-            val checkedDrawable = GradientDrawable().apply {
-                cornerRadius = context.dpToDimension(cornerSizeDp)
-                val primaryColor = context.getColorByAttr(androidx.appcompat.R.attr.colorPrimary)
-                setColor(primaryColor.asColor().withModulatedAlpha(0.12f).value)
-                setStroke(2 * context.dpToDimensionPixelOffset(insetDp), Color.TRANSPARENT)
-            }
-            addState(intArrayOf(android.R.attr.state_checked), checkedDrawable)
-            addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
+    ): Drawable = AnimatedStateListDrawableCompat().apply {
+        val shortAnimTime = context.shortAnimTime
+        setEnterFadeDuration(shortAnimTime)
+        setExitFadeDuration(shortAnimTime)
+        val checkedDrawable = GradientDrawable().apply {
+            cornerRadius = context.dpToDimension(cornerSizeDp)
+            val primaryColor = context.getColorByAttr(androidx.appcompat.R.attr.colorPrimary)
+            setColor(primaryColor.asColor().withModulatedAlpha(0.12f).value)
+            setStroke(2 * context.dpToDimensionPixelOffset(insetDp), Color.TRANSPARENT)
         }
+        addState(intArrayOf(android.R.attr.state_checked), checkedDrawable)
+        addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
+    }
 }

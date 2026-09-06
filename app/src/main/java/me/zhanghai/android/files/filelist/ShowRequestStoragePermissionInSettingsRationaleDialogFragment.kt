@@ -18,8 +18,8 @@ class ShowRequestStoragePermissionInSettingsRationaleDialogFragment : AppCompatD
     private val listener: Listener
         get() = requireParentFragment() as Listener
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext(), theme)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext(), theme)
             .setMessage(R.string.storage_permission_permanently_denied_message)
             .setPositiveButton(R.string.open_settings) { _, _ ->
                 listener.onShowRequestStoragePermissionInSettingsRationaleResult(true)
@@ -28,7 +28,6 @@ class ShowRequestStoragePermissionInSettingsRationaleDialogFragment : AppCompatD
                 listener.onShowRequestStoragePermissionInSettingsRationaleResult(false)
             }
             .create()
-    }
 
     override fun onCancel(dialog: DialogInterface) {
         super.onCancel(dialog)

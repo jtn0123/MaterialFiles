@@ -11,6 +11,7 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.map
+import java.io.Closeable
 import java8.nio.file.Path
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.filelist.FileSortOptions.By
@@ -20,7 +21,6 @@ import me.zhanghai.android.files.provider.archive.isArchivePath
 import me.zhanghai.android.files.util.CloseableLiveData
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.valueCompat
-import java.io.Closeable
 
 // TODO: Use SavedStateHandle to save state.
 class FileListViewModel : ViewModel() {
@@ -86,14 +86,14 @@ class FileListViewModel : ViewModel() {
             searchViewExpandedLiveData.value = value
         }
 
-    private val _searchViewQueryLiveData = MutableLiveData("")
+    private val searchViewQueryLiveData = MutableLiveData("")
     var searchViewQuery: String
-        get() = _searchViewQueryLiveData.valueCompat
+        get() = searchViewQueryLiveData.valueCompat
         set(value) {
-            if (_searchViewQueryLiveData.valueCompat == value) {
+            if (searchViewQueryLiveData.valueCompat == value) {
                 return
             }
-            _searchViewQueryLiveData.value = value
+            searchViewQueryLiveData.value = value
         }
 
     val breadcrumbLiveData: LiveData<BreadcrumbData> = BreadcrumbLiveData(trailLiveData)
@@ -219,18 +219,18 @@ class FileListViewModel : ViewModel() {
         _pasteStateLiveData.value = pasteState
     }
 
-    private val _isRequestingStorageAccessLiveData = MutableLiveData(false)
+    private val isRequestingStorageAccessLiveData = MutableLiveData(false)
     var isStorageAccessRequested: Boolean
-        get() = _isRequestingStorageAccessLiveData.valueCompat
+        get() = isRequestingStorageAccessLiveData.valueCompat
         set(value) {
-            _isRequestingStorageAccessLiveData.value = value
+            isRequestingStorageAccessLiveData.value = value
         }
 
-    private val _isRequestingNotificationPermissionLiveData = MutableLiveData(false)
+    private val isRequestingNotificationPermissionLiveData = MutableLiveData(false)
     var isNotificationPermissionRequested: Boolean
-        get() = _isRequestingNotificationPermissionLiveData.valueCompat
+        get() = isRequestingNotificationPermissionLiveData.valueCompat
         set(value) {
-            _isRequestingNotificationPermissionLiveData.value = value
+            isRequestingNotificationPermissionLiveData.value = value
         }
 
     override fun onCleared() {
@@ -244,7 +244,8 @@ class FileListViewModel : ViewModel() {
     private class FileListSwitchMapLiveData(
         private val pathLiveData: LiveData<Path>,
         private val searchStateLiveData: LiveData<SearchState>
-    ) : MediatorLiveData<Stateful<List<FileItem>>>(), Closeable {
+    ) : MediatorLiveData<Stateful<List<FileItem>>>(),
+        Closeable {
         private var liveData: CloseableLiveData<Stateful<List<FileItem>>>? = null
 
         init {

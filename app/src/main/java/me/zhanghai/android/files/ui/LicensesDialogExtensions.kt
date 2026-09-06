@@ -17,13 +17,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import de.psdev.licensesdialog.model.Notices
+import java.nio.charset.StandardCharsets
+import kotlin.math.roundToInt
 import me.zhanghai.android.files.compat.scrollIndicatorsCompat
 import me.zhanghai.android.files.util.createViewIntent
 import me.zhanghai.android.files.util.getColorByAttr
 import me.zhanghai.android.files.util.getDimensionPixelSize
 import me.zhanghai.android.files.util.startActivitySafe
-import java.nio.charset.StandardCharsets
-import kotlin.math.roundToInt
 
 /**
  * @see de.psdev.licensesdialog.LicensesDialog
@@ -34,36 +34,35 @@ fun AlertDialog.Builder.setLicensesView(notices: Notices): AlertDialog.Builder {
     return setView(createView(html, context))
 }
 
-private fun createHtml(notices: Notices, context: Context): String =
-    StringBuilder().apply {
-        append("<!DOCTYPE html><html lang=\"en-US\"><head><meta charset=\"utf-8\"><style>")
-        append(createStyle(context))
-        append("</style></head><body><ul>")
-        for (notice in notices.notices) {
-            append("<li><div>")
-            append(notice.name)
-            val url = notice.url
-            if (!url.isNullOrEmpty()) {
-                append(" (<a href=\"")
-                append(url)
-                append("\" target=\"_blank\">")
-                append(url)
-                append("</a>)")
-            }
-            append("</div><pre>")
-            val copyright = notice.copyright
-            if (!copyright.isNullOrEmpty()) {
-                append(copyright)
-                append("<br><br>")
-            }
-            val license = notice.license
-            if (license != null) {
-                append(license.getSummaryText(context))
-            }
-            append("</pre></li>")
+private fun createHtml(notices: Notices, context: Context): String = StringBuilder().apply {
+    append("<!DOCTYPE html><html lang=\"en-US\"><head><meta charset=\"utf-8\"><style>")
+    append(createStyle(context))
+    append("</style></head><body><ul>")
+    for (notice in notices.notices) {
+        append("<li><div>")
+        append(notice.name)
+        val url = notice.url
+        if (!url.isNullOrEmpty()) {
+            append(" (<a href=\"")
+            append(url)
+            append("\" target=\"_blank\">")
+            append(url)
+            append("</a>)")
         }
-        append("</ul></body></html>")
-    }.toString()
+        append("</div><pre>")
+        val copyright = notice.copyright
+        if (!copyright.isNullOrEmpty()) {
+            append(copyright)
+            append("<br><br>")
+        }
+        val license = notice.license
+        if (license != null) {
+            append(license.getSummaryText(context))
+        }
+        append("</pre></li>")
+    }
+    append("</ul></body></html>")
+}.toString()
 
 private fun createStyle(context: Context): String {
     val primaryTextColor = context.getColorByAttr(android.R.attr.textColorPrimary).toCssColor()
@@ -106,19 +105,20 @@ private fun createStyle(context: Context): String {
     """.trimIndent()
 }
 
-private fun Int.toCssColor(): String =
-    if (Color.alpha(this) == 0xFF) {
-        "#%06X".format(this and 0x00FFFFFF)
-    } else {
-        "rgba(${Color.red(this)}, ${Color.green(this)}, ${Color.blue(this)}, ${
-            Color.alpha(this).toFloat() / 0xFF
-        })"
-    }
+private fun Int.toCssColor(): String = if (Color.alpha(this) == 0xFF) {
+    "#%06X".format(this and 0x00FFFFFF)
+} else {
+    "rgba(${Color.red(this)}, ${Color.green(this)}, ${Color.blue(this)}, ${
+        Color.alpha(this).toFloat() / 0xFF
+    })"
+}
 
 private fun createView(html: String, context: Context): View {
     val webView = WebView(context).apply {
-        scrollIndicatorsCompat = (ViewCompat.SCROLL_INDICATOR_TOP
-            or ViewCompat.SCROLL_INDICATOR_BOTTOM)
+        scrollIndicatorsCompat = (
+            ViewCompat.SCROLL_INDICATOR_TOP
+                or ViewCompat.SCROLL_INDICATOR_BOTTOM
+            )
         setBackgroundColor(Color.TRANSPARENT)
         settings.setSupportMultipleWindows(true)
         webChromeClient = object : WebChromeClient() {
@@ -139,9 +139,12 @@ private fun createView(html: String, context: Context): View {
     }
     return FrameLayout(context).apply {
         setPaddingRelative(
-            0, context.getDimensionPixelSize(
+            0,
+            context.getDimensionPixelSize(
                 androidx.appcompat.R.dimen.abc_dialog_title_divider_material
-            ), 0, 0
+            ),
+            0,
+            0
         )
         addView(webView)
     }

@@ -23,7 +23,9 @@ import me.zhanghai.android.files.navigation.NavigationRootMapLiveData
 import me.zhanghai.android.files.util.startActivityForResultSafe
 import me.zhanghai.android.files.util.valueCompat
 
-abstract class PathPreference : Preference, PreferenceActivityResultListener {
+abstract class PathPreference :
+    Preference,
+    PreferenceActivityResultListener {
     private val openPathContract = FileListActivity.OpenDirectoryContract()
 
     var path: Path = persistedPath
@@ -45,7 +47,9 @@ abstract class PathPreference : Preference, PreferenceActivityResultListener {
     }
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     ) {
         init(attrs, defStyleAttr, 0)
     }
@@ -63,12 +67,18 @@ abstract class PathPreference : Preference, PreferenceActivityResultListener {
     private fun init(attrs: AttributeSet?, @AttrRes defStyleAttr: Int, @StyleRes defStyleRes: Int) {
         isPersistent = false
         context.obtainStyledAttributes(
-            attrs, androidx.preference.R.styleable.EditTextPreference, defStyleAttr, defStyleRes
+            attrs,
+            androidx.preference.R.styleable.EditTextPreference,
+            defStyleAttr,
+            defStyleRes
         ).use {
             if (TypedArrayUtils.getBoolean(
-                it, androidx.preference.R.styleable.EditTextPreference_useSimpleSummaryProvider,
-                androidx.preference.R.styleable.EditTextPreference_useSimpleSummaryProvider, false
-            )) {
+                    it,
+                    androidx.preference.R.styleable.EditTextPreference_useSimpleSummaryProvider,
+                    androidx.preference.R.styleable.EditTextPreference_useSimpleSummaryProvider,
+                    false
+                )
+            ) {
                 summaryProvider = SimpleSummaryProvider
             }
         }
@@ -76,7 +86,8 @@ abstract class PathPreference : Preference, PreferenceActivityResultListener {
 
     override fun onPreferenceClick(fragment: PreferenceFragmentCompat, preference: Preference) {
         fragment.startActivityForResultSafe(
-            openPathContract.createIntent(fragment.requireContext(), path), requestCode
+            openPathContract.createIntent(fragment.requireContext(), path),
+            requestCode
         )
     }
 

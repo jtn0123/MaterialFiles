@@ -12,38 +12,31 @@ class ListDiffer<T>(
     private val updateCallback: ListUpdateCallback,
     private val diffCallback: DiffUtil.ItemCallback<T>
 ) {
-    private var _list: List<T> = emptyList()
+    private var currentList: List<T> = emptyList()
     var list: List<T>
-        get() = _list
+        get() = currentList
         set(newList) {
-            if (newList === _list || newList.isEmpty() && _list.isEmpty()) {
+            if (newList === currentList || (newList.isEmpty() && currentList.isEmpty())) {
                 return
             }
             if (newList.isEmpty()) {
-                val oldListSize = _list.size
-                _list = emptyList()
+                val oldListSize = currentList.size
+                currentList = emptyList()
                 updateCallback.onRemoved(0, oldListSize)
                 return
             }
-            if (_list.isEmpty()) {
-                _list = newList
+            if (currentList.isEmpty()) {
+                currentList = newList
                 updateCallback.onInserted(0, newList.size)
                 return
             }
-            val oldList = _list
+            val oldList = currentList
             val result = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-                override fun getOldListSize(): Int {
-                    return oldList.size
-                }
+                override fun getOldListSize(): Int = oldList.size
 
-                override fun getNewListSize(): Int {
-                    return newList.size
-                }
+                override fun getNewListSize(): Int = newList.size
 
-                override fun areItemsTheSame(
-                    oldItemPosition: Int,
-                    newItemPosition: Int
-                ): Boolean {
+                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
                     val oldItem: T? = oldList[oldItemPosition]
                     val newItem: T? = newList[newItemPosition]
                     return if (oldItem != null && newItem != null) {
@@ -68,10 +61,7 @@ class ListDiffer<T>(
                     }
                 }
 
-                override fun getChangePayload(
-                    oldItemPosition: Int,
-                    newItemPosition: Int
-                ): Any? {
+                override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
                     val oldItem: T? = oldList[oldItemPosition]
                     val newItem: T? = newList[newItemPosition]
                     return if (oldItem != null && newItem != null) {
@@ -81,7 +71,7 @@ class ListDiffer<T>(
                     }
                 }
             })
-            _list = newList
+            currentList = newList
             result.dispatchUpdatesTo(updateCallback)
         }
 }

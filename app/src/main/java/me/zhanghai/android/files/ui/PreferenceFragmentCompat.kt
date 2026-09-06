@@ -23,8 +23,9 @@ abstract class PreferenceFragmentCompat : TakisoftPreferenceFragmentCompat() {
     }
 
     override fun onDisplayPreferenceDialog(preference: Preference) {
-        if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) == null
-            && preference is ListPreference) {
+        if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) == null &&
+            preference is ListPreference
+        ) {
             displayPreferenceDialog(MaterialListPreferenceDialogFragmentCompat(), preference.key)
         } else {
             super.onDisplayPreferenceDialog(preference)

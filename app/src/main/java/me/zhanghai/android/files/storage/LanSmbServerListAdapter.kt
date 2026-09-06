@@ -11,9 +11,8 @@ import me.zhanghai.android.files.databinding.LanSmbServerItemBinding
 import me.zhanghai.android.files.ui.SimpleAdapter
 import me.zhanghai.android.files.util.layoutInflater
 
-class LanSmbServerListAdapter(
-    val listener: (LanSmbServer) -> Unit
-) : SimpleAdapter<LanSmbServer, LanSmbServerListAdapter.ViewHolder>() {
+class LanSmbServerListAdapter(val listener: (LanSmbServer) -> Unit) :
+    SimpleAdapter<LanSmbServer, LanSmbServerListAdapter.ViewHolder>() {
     override val hasStableIds: Boolean
         get() = true
 

@@ -26,7 +26,8 @@ object StorageVolumeListLiveData : LiveData<List<StorageVolume>>() {
                 override fun onReceive(context: Context, intent: Intent) {
                     loadValue()
                 }
-            }, IntentFilter().apply {
+            },
+            IntentFilter().apply {
                 // @see android.os.storage.VolumeInfo#sEnvironmentToBroadcast
                 addAction(Intent.ACTION_MEDIA_UNMOUNTED)
                 addAction(Intent.ACTION_MEDIA_CHECKING)
@@ -38,7 +39,8 @@ object StorageVolumeListLiveData : LiveData<List<StorageVolume>>() {
                 // The "file" data scheme is required to receive these broadcasts.
                 // @see https://stackoverflow.com/a/7143298
                 addDataScheme(ContentResolver.SCHEME_FILE)
-            }, ContextCompat.RECEIVER_NOT_EXPORTED
+            },
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
     }
 

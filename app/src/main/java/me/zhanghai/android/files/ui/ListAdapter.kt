@@ -9,9 +9,8 @@ import androidx.recyclerview.widget.AdapterListUpdateCallback
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 
-abstract class ListAdapter<T, VH : RecyclerView.ViewHolder>(
-    callback: DiffUtil.ItemCallback<T>
-) : RecyclerView.Adapter<VH>() {
+abstract class ListAdapter<T, VH : RecyclerView.ViewHolder>(callback: DiffUtil.ItemCallback<T>) :
+    RecyclerView.Adapter<VH>() {
     private val listDiffer = ListDiffer(AdapterListUpdateCallback(this), callback)
 
     val list: List<T>

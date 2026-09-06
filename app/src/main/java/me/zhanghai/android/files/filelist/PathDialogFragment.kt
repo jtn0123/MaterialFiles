@@ -6,12 +6,12 @@
 package me.zhanghai.android.files.filelist
 
 import android.net.Uri
+import java.net.URI
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.storage.createOrLog
 import me.zhanghai.android.files.util.asPathNameOrNull
-import java.net.URI
 
 abstract class PathDialogFragment : NameDialogFragment() {
     override fun isNameValid(name: String): Boolean {
@@ -38,7 +38,13 @@ abstract class PathDialogFragment : NameDialogFragment() {
             // Also try to accept decoded path.
             ?: Uri.parse(this).let {
                 URI::class.createOrLog(
-                    it.scheme, it.userInfo, it.host, it.port, it.path, it.query, it.fragment
+                    it.scheme,
+                    it.userInfo,
+                    it.host,
+                    it.port,
+                    it.path,
+                    it.query,
+                    it.fragment
                 )
             }
         if (uri != null) {
