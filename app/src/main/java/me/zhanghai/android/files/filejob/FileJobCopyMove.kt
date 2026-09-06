@@ -293,13 +293,6 @@ internal fun FileJob.copyOrMove(
 
                 FileJobConflictAction.CANCEL -> throw InterruptedIOException()
             }
-        } catch (e: InvalidFileNameException) {
-            // TODO: Prompt invalid name.
-            if (false) {
-                retry = true
-                continue
-            }
-            throw e
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
@@ -337,7 +330,8 @@ internal fun FileJob.copyOrMove(
                 ),
                 getReadOnlyFileStore(target, e),
                 true,
-                getString(R.string.retry),
+                // The same name fails again, so an invalid name offers skip and cancel only.
+                if (e is InvalidFileNameException) null else getString(R.string.retry),
                 getString(R.string.skip),
                 getString(android.R.string.cancel)
             )

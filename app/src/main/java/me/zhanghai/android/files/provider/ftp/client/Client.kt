@@ -39,7 +39,10 @@ class Client(internal val authenticator: Authenticator) {
             .withChronology(IsoChronology.INSTANCE)
             .withZone(ZoneOffset.UTC)
 
-    private val clientPool = mutableMapOf<Authority, MutableList<FTPClient>>()
+    private val clientPool = mutableMapOf<Authority, MutableList<PooledClient>>()
+
+    /** A connection returned to the pool, with the time it went idle. */
+    private class PooledClient(val client: FTPClient, val idleSinceMillis: Long)
 
     private val directoryFilesCache = Collections.synchronizedMap(WeakHashMap<Path, FTPFile>())
 
@@ -66,15 +69,40 @@ class Client(internal val authenticator: Authenticator) {
         return createClient(authority)
     }
 
-    private fun acquireClientUnchecked(authority: Authority): FTPClient? =
-        synchronized(clientPool) {
+    private fun acquireClientUnchecked(authority: Authority): FTPClient? {
+        val expired = mutableListOf<FTPClient>()
+        val client = synchronized(clientPool) {
             val pooledClients = clientPool[authority] ?: return null
-            pooledClients.removeLastOrNull().also {
+            evictIdleClientsLocked(pooledClients, expired)
+            pooledClients.removeLastOrNull()?.client.also {
                 if (pooledClients.isEmpty()) {
                     clientPool -= authority
                 }
             }
         }
+        expired.forEach { closeClient(it) }
+        return client
+    }
+
+    /**
+     * Servers drop control connections that stay idle for a few minutes, and a pooled connection
+     * that has been dropped costs a failed NOOP on the next acquire; connections idle for longer
+     * than [IDLE_TIMEOUT_MILLIS] are closed instead of being handed out or kept.
+     */
+    private fun evictIdleClientsLocked(
+        pooledClients: MutableList<PooledClient>,
+        expired: MutableList<FTPClient>
+    ) {
+        val now = System.currentTimeMillis()
+        val iterator = pooledClients.iterator()
+        while (iterator.hasNext()) {
+            val pooledClient = iterator.next()
+            if (now - pooledClient.idleSinceMillis >= IDLE_TIMEOUT_MILLIS) {
+                iterator.remove()
+                expired += pooledClient.client
+            }
+        }
+    }
 
     @Throws(IOException::class)
     private fun createClient(authority: Authority): FTPClient {
@@ -122,14 +150,13 @@ class Client(internal val authenticator: Authenticator) {
             client.disconnect()
             return
         }
-        // FIXME: Disconnect clients based on time.
-        if (false) {
-            closeClient(client)
-            return
-        }
+        val expired = mutableListOf<FTPClient>()
         synchronized(clientPool) {
-            clientPool.getOrPut(authority) { mutableListOf() } += client
+            val pooledClients = clientPool.getOrPut(authority) { mutableListOf() }
+            evictIdleClientsLocked(pooledClients, expired)
+            pooledClients += PooledClient(client, System.currentTimeMillis())
         }
+        expired.forEach { closeClient(it) }
     }
 
     private fun closeClient(client: FTPClient) {
@@ -368,5 +395,9 @@ class Client(internal val authenticator: Authenticator) {
                 releaseClient(authority, client)
             }
         }
+    }
+
+    companion object {
+        private const val IDLE_TIMEOUT_MILLIS = 60_000L
     }
 }
