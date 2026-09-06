@@ -5,7 +5,11 @@
 
 package me.zhanghai.android.files.provider.sftp.client
 
+import java.io.IOException
+import java.util.Collections
+import java.util.WeakHashMap
 import java8.nio.channels.SeekableByteChannel
+import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.provider.common.LocalWatchService
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedSeekableByteChannel
 import me.zhanghai.android.files.util.closeSafe
@@ -18,16 +22,14 @@ import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPClient
 import net.schmizz.sshj.sftp.SFTPException
 import net.schmizz.sshj.transport.TransportException
-import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.UserAuthException
-import java.io.IOException
-import java.util.Collections
-import java.util.WeakHashMap
-import java8.nio.file.Path as Java8Path
 
 object Client {
     @Volatile
     lateinit var authenticator: Authenticator
+
+    @Volatile
+    lateinit var hostKeyStore: HostKeyStore
 
     private val clients = mutableMapOf<Authority, SFTPClient>()
 
@@ -88,7 +90,8 @@ object Client {
     ): SeekableByteChannel {
         val file = open(path, flags, attributes)
         return NotifyEntryModifiedSeekableByteChannel(
-            FileByteChannel(file, flags.contains(OpenMode.APPEND)), path as Java8Path
+            FileByteChannel(file, flags.contains(OpenMode.APPEND)),
+            path as Java8Path
         )
     }
 
@@ -237,12 +240,16 @@ object Client {
             }
             val authentication = authenticator.getAuthentication(authority)
                 ?: throw ClientException("No authentication found for $authority")
-            val sshClient = SSHClient().apply { addHostKeyVerifier(PromiscuousVerifier()) }
+            val hostKeyVerifier =
+                TrustOnFirstUseHostKeyVerifier(authority.host, authority.port, hostKeyStore)
+            val sshClient = SSHClient().apply { addHostKeyVerifier(hostKeyVerifier) }
             try {
                 sshClient.connect(authority.host, authority.port)
             } catch (e: IOException) {
                 sshClient.closeSafe()
-                throw ClientException(e)
+                // sshj reports a refused host key as a generic transport error; ours has the
+                // fingerprints the user needs to decide.
+                throw ClientException(hostKeyVerifier.hostKeyChangedException ?: e)
             }
             try {
                 sshClient.auth(authority.username, authentication.toAuthMethod())

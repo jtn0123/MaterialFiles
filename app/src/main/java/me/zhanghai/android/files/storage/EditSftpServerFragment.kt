@@ -26,6 +26,8 @@ import me.zhanghai.android.files.databinding.EditSftpServerFragmentBinding
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.filelist.FileListActivity
 import me.zhanghai.android.files.provider.sftp.client.Authority
+import me.zhanghai.android.files.provider.sftp.client.HostKeyChange
+import me.zhanghai.android.files.provider.sftp.client.hostKeyChange
 import me.zhanghai.android.files.provider.sftp.client.PasswordAuthentication
 import me.zhanghai.android.files.provider.sftp.client.PublicKeyAuthentication
 import me.zhanghai.android.files.ui.UnfilteredArrayAdapter
@@ -43,7 +45,9 @@ import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
 
-class EditSftpServerFragment : Fragment() {
+class EditSftpServerFragment :
+    Fragment(),
+    SftpHostKeyChangedDialogFragment.Listener {
     private val openPrivateKeyFileLauncher = registerForActivityResult(
         FileListActivity.OpenFileContract(),
         this::onOpenPrivateKeyFileResult
@@ -274,10 +278,20 @@ class EditSftpServerFragment : Fragment() {
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.printStackTrace()
-                showToast(throwable.toString())
+                val hostKeyChange = throwable.hostKeyChange
+                if (hostKeyChange != null) {
+                    SftpHostKeyChangedDialogFragment.show(hostKeyChange, this)
+                } else {
+                    showToast(throwable.toString())
+                }
                 viewModel.finishConnecting()
             }
         }
+    }
+
+    override fun trustHostKey(change: HostKeyChange) {
+        SftpServerHostKeyStore.putHostKey(change.host, change.port, change.keyType, change.newKey)
+        connectAndAdd()
     }
 
     private fun remove() {

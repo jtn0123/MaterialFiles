@@ -6,9 +6,13 @@
 package me.zhanghai.android.files.storage
 
 import android.os.AsyncTask
+import java.net.Inet4Address
+import java.net.InetAddress
+import java.net.UnknownHostException
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import jcifs.context.SingletonContext
-import jcifs.smb.SmbException
-import jcifs.smb.SmbFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -24,12 +28,6 @@ import me.zhanghai.android.files.util.Success
 import me.zhanghai.android.files.util.getLocalAddress
 import me.zhanghai.android.files.util.toLinkedSet
 import me.zhanghai.android.files.util.valueCompat
-import java.net.Inet4Address
-import java.net.InetAddress
-import java.net.UnknownHostException
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 
 class LanSmbServerListLiveData : CloseableLiveData<Stateful<List<LanSmbServer>>>() {
     private var loadFuture: Future<*>? = null
@@ -46,14 +44,10 @@ class LanSmbServerListLiveData : CloseableLiveData<Stateful<List<LanSmbServer>>>
                 val newServerSet = mutableSetOf<LanSmbServer>()
                 Executors.newFixedThreadPool(60).asCoroutineDispatcher().use { dispatcher ->
                     runBlocking(dispatcher) {
-                        val serverChannel = produce {
-                            launch {
-                                getServersByComputerBrowserService().consumeEach { send(it) }
-                            }
-                            launch {
-                                getServersByScanningSubnet().consumeEach { send(it) }
-                            }
-                        }
+                        // The NetBIOS computer-browser service (NetServerEnum) needs SMB1,
+                        // which the app no longer negotiates; Windows stopped providing it
+                        // years ago in any case. Scanning the subnet is the only source.
+                        val serverChannel = getServersByScanningSubnet()
                         serverChannel.consumeEach {
                             // Use linked set to preserve UI stability.
                             val serverSet = valueCompat.value?.toLinkedSet() ?: linkedSetOf()
@@ -73,51 +67,6 @@ class LanSmbServerListLiveData : CloseableLiveData<Stateful<List<LanSmbServer>>>
             }
         }
     }
-
-    // If a computer running recent Windows 10 is elected the master browser, it won't actually
-    // provide the service to others (jCIFS-NG NetServerEnumIterator gets
-    // ERROR_SERVICE_NOT_INSTALLED), as SMBv1 has been disabled. Windows now uses WS-Discovery, but
-    // it doesn't have a good standalone Java implementation and Samba doesn't support it.
-    // https://social.technet.microsoft.com/Forums/en-US/bd0af6aa-51ec-477a-8c81-888a4e60bd94/master-browser-service-broken-after-creator-update#2c6b9e65-da8a-4e41-a2cb-db086443ef87
-    // https://docs.microsoft.com/en-nz/windows-server/storage/file-server/troubleshoot/smbv1-not-installed-by-default-in-windows
-    private fun CoroutineScope.getServersByComputerBrowserService(
-    ): ReceiveChannel<LanSmbServer> =
-        produce {
-            launch {
-                @Suppress("DEPRECATION")
-                val lan = SmbFile("smb://")
-                val domains = try {
-                    lan.listFiles()
-                } catch (e: SmbException) {
-                    e.printStackTrace()
-                    return@launch
-                }
-                val nameServiceClient = SingletonContext.getInstance().nameServiceClient
-                for (domain in domains) {
-                    launch {
-                        val servers = try {
-                            domain.listFiles()
-                        } catch (e: SmbException) {
-                            e.printStackTrace()
-                            return@launch
-                        }
-                        for (server in servers) {
-                            launch {
-                                // Drop the trailing slash
-                                val host = server.name.dropLast(1)
-                                val address = try {
-                                    nameServiceClient.getByName(host).toInetAddress()
-                                } catch (e: UnknownHostException) {
-                                    e.printStackTrace()
-                                    return@launch
-                                }
-                                send(LanSmbServer(host, address))
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
     private fun CoroutineScope.getServersByScanningSubnet(): ReceiveChannel<LanSmbServer> =
         produce {
@@ -142,20 +91,19 @@ class LanSmbServerListLiveData : CloseableLiveData<Stateful<List<LanSmbServer>>>
             }
         }
 
-    private fun Inet4Address.getSubnetAddresses(): Sequence<Inet4Address> =
-        sequence {
-            val addressBytes = address
-            for (i in 0..99) {
-                for (j in 0..2) {
-                    val lastBit = 100 * j + i
-                    if (lastBit > 255) {
-                        continue
-                    }
-                    addressBytes[3] = lastBit.toByte()
-                    yield(InetAddress.getByAddress(addressBytes) as Inet4Address)
+    private fun Inet4Address.getSubnetAddresses(): Sequence<Inet4Address> = sequence {
+        val addressBytes = address
+        for (i in 0..99) {
+            for (j in 0..2) {
+                val lastBit = 100 * j + i
+                if (lastBit > 255) {
+                    continue
                 }
+                addressBytes[3] = lastBit.toByte()
+                yield(InetAddress.getByAddress(addressBytes) as Inet4Address)
             }
         }
+    }
 
     override fun close() {
         cancelLoadingValue()

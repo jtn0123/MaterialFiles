@@ -24,6 +24,7 @@ import me.zhanghai.android.files.provider.webdav.client.Client as WebDavClient
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.storage.FtpServerAuthenticator
 import me.zhanghai.android.files.storage.SftpServerAuthenticator
+import me.zhanghai.android.files.storage.SftpServerHostKeyStore
 import me.zhanghai.android.files.storage.SmbServerAuthenticator
 import me.zhanghai.android.files.storage.StorageVolumeListLiveData
 import me.zhanghai.android.files.storage.WebDavServerAuthenticator
@@ -82,12 +83,16 @@ private fun initializeFileSystemProviders() {
         SingletonContext.init(
             Properties().apply {
                 setProperty("jcifs.netbios.cachePolicy", "0")
-                setProperty("jcifs.smb.client.maxVersion", "SMB1")
+                // jCIFS-NG only does NetBIOS name resolution and subnet discovery for us; file
+                // access goes through SMBJ. Never negotiate SMB1 for that.
+                setProperty("jcifs.smb.client.minVersion", "SMB202")
+                setProperty("jcifs.smb.client.maxVersion", "SMB311")
             }
         )
     }
     FtpClient.authenticator = FtpServerAuthenticator
     SftpClient.authenticator = SftpServerAuthenticator
+    SftpClient.hostKeyStore = SftpServerHostKeyStore
     SmbClient.authenticator = SmbServerAuthenticator
     WebDavClient.authenticator = WebDavServerAuthenticator
 }

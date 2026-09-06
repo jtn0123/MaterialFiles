@@ -30,7 +30,10 @@ import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.navigation.NavigationFragment
+import me.zhanghai.android.files.provider.sftp.client.HostKeyChange
 import me.zhanghai.android.files.settings.Settings
+import me.zhanghai.android.files.storage.SftpHostKeyChangedDialogFragment
+import me.zhanghai.android.files.storage.SftpServerHostKeyStore
 import me.zhanghai.android.files.ui.DrawerLayoutOnBackPressedCallback
 import me.zhanghai.android.files.ui.ScrollingViewOnApplyWindowInsetsListener
 import me.zhanghai.android.files.ui.SpeedDialViewOnBackPressedCallback
@@ -62,6 +65,7 @@ class FileListFragment :
     ShowRequestNotificationPermissionRationaleDialogFragment.Listener,
     ShowRequestNotificationPermissionInSettingsRationaleDialogFragment.Listener,
     ShowRequestStoragePermissionRationaleDialogFragment.Listener,
+    SftpHostKeyChangedDialogFragment.Listener,
     ShowRequestStoragePermissionInSettingsRationaleDialogFragment.Listener {
     // Registers its activity result launchers, so it must be created with the fragment.
     private val permissions = FileListPermissions(this)
@@ -398,6 +402,11 @@ class FileListFragment :
         shouldRequest: Boolean
     ) {
         permissions.onShowRequestNotificationPermissionInSettingsRationaleResult(shouldRequest)
+    }
+
+    override fun trustHostKey(change: HostKeyChange) {
+        SftpServerHostKeyStore.putHostKey(change.host, change.port, change.keyType, change.newKey)
+        viewModel.reload()
     }
 
     @Parcelize

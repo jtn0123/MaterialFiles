@@ -14,7 +14,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.file.FileItem
+import me.zhanghai.android.files.provider.sftp.client.hostKeyChange
 import me.zhanghai.android.files.settings.Settings
+import me.zhanghai.android.files.storage.SftpHostKeyChangedDialogFragment
 import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
@@ -63,6 +65,10 @@ internal class FileListContent(private val fragment: FileListFragment) {
                 fragment.showToast(error)
             } else {
                 binding.errorText.text = error
+            }
+            val hostKeyChange = throwable.hostKeyChange
+            if (hostKeyChange != null && !SftpHostKeyChangedDialogFragment.isShowing(fragment)) {
+                SftpHostKeyChangedDialogFragment.show(hostKeyChange, fragment)
             }
         }
         binding.emptyView.fadeToVisibilityUnsafe(stateful is Success && !hasFiles)
