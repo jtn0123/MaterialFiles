@@ -1,37 +1,82 @@
 name: Android CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# A new push to the same branch or PR cancels the run that is still going for the old head.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
 
 jobs:
-  build:
-
+  checks:
+    name: Static checks, unit tests, APKs
     runs-on: ubuntu-latest
+    timeout-minutes: 40
 
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
       with:
         submodules: true
+    - name: Validate the Gradle wrapper checksum
+      uses: gradle/actions/wrapper-validation@v4
     - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '21'
-        cache: 'gradle'
-    - name: Build with Gradle
-      run: ./gradlew ktlintCheck checkSourceFileLength assembleDebug assembleDebugAndroidTest testDebugUnitTest lintVitalRelease
-    - name: Upload artifact
+    - name: Set up Gradle (caches, configuration cache, build scan off)
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+    - name: ktlint, file length rule, unit tests, lint
+      run: ./gradlew ktlintCheck checkSourceFileLength testDebugUnitTest lintDebug lintVitalRelease
+    - name: Assemble the app and the instrumented-test APK
+      run: ./gradlew assembleDebug assembleDebugAndroidTest
+    - name: Publish the unit test results as a check
+      if: always()
+      uses: dorny/test-reporter@v1
+      with:
+        name: Unit tests
+        path: app/build/test-results/testDebugUnitTest/*.xml
+        reporter: java-junit
+        fail-on-error: false
+    - name: Upload reports (unit tests, lint)
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug.apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: reports-checks
+        path: |
+          app/build/reports/tests/
+          app/build/reports/lint-results-debug.html
+          app/build/reports/ktlint/
+        retention-days: 10
+    - name: Upload the APKs
+      uses: actions/upload-artifact@v4
+      with:
+        name: apks
+        path: |
+          app/build/outputs/apk/debug/app-debug.apk
+          app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
         retention-days: 10
 
   instrumented-tests:
-
+    name: Instrumented tests (API ${{ matrix.api-level }} emulator)
     runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 45
+    needs: checks
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        # minSdk and the newest platform. Add a level here to widen coverage.
+        api-level: [35, 36]
 
     steps:
     - name: Check out repository
@@ -43,26 +88,60 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '21'
-        cache: 'gradle'
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        cache-read-only: true
     - name: Enable KVM for the emulator
       run: |
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
         sudo udevadm control --reload-rules
         sudo udevadm trigger --name-match=kvm
-    - name: Run the instrumented tests on an API 36 emulator
+    - name: Cache the AVD
+      uses: actions/cache@v4
+      id: avd-cache
+      with:
+        path: |
+          ~/.android/avd/*
+          ~/.android/adb*
+        key: avd-api${{ matrix.api-level }}-google_apis-x86_64-v1
+    - name: Create the AVD snapshot on a cache miss
+      if: steps.avd-cache.outputs.cache-hit != 'true'
       uses: reactivecircus/android-emulator-runner@v2
       with:
-        api-level: 36
+        api-level: ${{ matrix.api-level }}
         arch: x86_64
         target: google_apis
         profile: pixel_6
+        force-avd-creation: false
         emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none -camera-front none
+        disable-animations: false
+        script: echo "AVD snapshot generated"
+    - name: Run the instrumented tests
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: ${{ matrix.api-level }}
+        arch: x86_64
+        target: google_apis
+        profile: pixel_6
+        force-avd-creation: false
+        emulator-options: -no-snapshot-save -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none -camera-front none
         disable-animations: true
         script: ./gradlew connectedDebugAndroidTest
-    - name: Upload instrumented test results
+    - name: Publish the instrumented test results as a check
+      if: always()
+      uses: dorny/test-reporter@v1
+      with:
+        name: Instrumented tests (API ${{ matrix.api-level }})
+        path: app/build/outputs/androidTest-results/connected/**/*.xml
+        reporter: java-junit
+        fail-on-error: false
+    - name: Upload instrumented test results and reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: instrumented-test-results
-        path: app/build/outputs/androidTest-results/
+        name: instrumented-api${{ matrix.api-level }}
+        path: |
+          app/build/outputs/androidTest-results/
+          app/build/reports/androidTests/
         retention-days: 10
