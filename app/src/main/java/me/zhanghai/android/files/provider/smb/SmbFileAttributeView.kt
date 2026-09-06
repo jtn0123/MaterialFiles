@@ -5,7 +5,9 @@
 
 package me.zhanghai.android.files.provider.smb
 
+import com.hierynomus.msdtyp.FileTime as SmbFileTime
 import com.hierynomus.msfscc.fileinformation.FileBasicInformation
+import java.io.IOException
 import java8.nio.file.attribute.BasicFileAttributeView
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileTime
@@ -13,19 +15,15 @@ import me.zhanghai.android.files.provider.smb.client.Client
 import me.zhanghai.android.files.provider.smb.client.ClientException
 import me.zhanghai.android.files.provider.smb.client.FileInformation
 import me.zhanghai.android.files.provider.smb.client.ShareInformation
-import java.io.IOException
-import com.hierynomus.msdtyp.FileTime as SmbFileTime
 
-internal class SmbFileAttributeView(
-    private val path: SmbPath,
-    private val noFollowLinks: Boolean
-) : BasicFileAttributeView {
+internal class SmbFileAttributeView(private val path: SmbPath, private val noFollowLinks: Boolean) :
+    BasicFileAttributeView {
     override fun name(): String = NAME
 
     @Throws(IOException::class)
     override fun readAttributes(): BasicFileAttributes {
         val pathInformation = try {
-            Client.getPathInformation(path, noFollowLinks)
+            client.getPathInformation(path, noFollowLinks)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -44,11 +42,14 @@ internal class SmbFileAttributeView(
             return
         }
         val fileInformation = FileBasicInformation(
-            createTime.toSmbFileTime(), lastAccessTime.toSmbFileTime(),
-            lastModifiedTime.toSmbFileTime(), SmbFileTime(0), 0
+            createTime.toSmbFileTime(),
+            lastAccessTime.toSmbFileTime(),
+            lastModifiedTime.toSmbFileTime(),
+            SmbFileTime(0),
+            0
         )
         try {
-            Client.setFileInformation(path, noFollowLinks, fileInformation)
+            client.setFileInformation(path, noFollowLinks, fileInformation)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }

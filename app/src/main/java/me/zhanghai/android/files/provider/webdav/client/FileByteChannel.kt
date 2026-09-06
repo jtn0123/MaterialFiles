@@ -8,16 +8,17 @@ package me.zhanghai.android.files.provider.webdav.client
 import at.bitfire.dav4jvm.DavResource
 import at.bitfire.dav4jvm.exception.HttpException
 import at.bitfire.dav4jvm.property.webdav.GetContentLength
+import java.io.IOException
+import java.io.OutputStream
+import java.nio.ByteBuffer
 import me.zhanghai.android.files.provider.common.AbstractFileByteChannel
 import me.zhanghai.android.files.provider.common.EMPTY
 import me.zhanghai.android.files.provider.common.readFully
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
-import java.io.OutputStream
-import java.nio.ByteBuffer
 
 // https://blog.sphere.chronosempire.org.uk/2012/11/21/webdav-and-the-http-patch-nightmare
 class FileByteChannel(
+    private val client: Client,
     private val resource: DavResource,
     private val patchSupport: PatchSupport,
     isAppend: Boolean
@@ -49,8 +50,10 @@ class FileByteChannel(
         when (patchSupport) {
             PatchSupport.APACHE ->
                 resource.putRangeCompat(source, position) {}
+
             PatchSupport.SABRE ->
                 resource.patchCompat(source, position) {}
+
             PatchSupport.NONE -> {
                 if (position != nextSequentialWritePosition) {
                     throw IOException("Unsupported non-sequential write")
@@ -61,7 +64,9 @@ class FileByteChannel(
                 // I don't think we are using native or read-only ByteBuffer, so just call array()
                 // here.
                 outputStream.write(
-                    source.array(), source.arrayOffset() + source.position(), remaining
+                    source.array(),
+                    source.arrayOffset() + source.position(),
+                    remaining
                 )
                 nextSequentialWritePosition += remaining
             }
@@ -80,7 +85,7 @@ class FileByteChannel(
     @Throws(IOException::class)
     override fun onSize(): Long {
         val getContentLength =
-            Client.findProperties(resource, GetContentLength.NAME)[GetContentLength::class.java]
+            client.findProperties(resource, GetContentLength.NAME)[GetContentLength::class.java]
                 ?: throw IOException("Missing GetContentLength")
         return getContentLength.contentLength ?: throw IOException("Invalid GetContentLength")
     }

@@ -6,11 +6,11 @@
 package me.zhanghai.android.files.provider.webdav
 
 import at.bitfire.dav4jvm.exception.DavException
+import java.io.IOException
 import java8.nio.file.LinkOption
 import java8.nio.file.attribute.BasicFileAttributeView
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.webdav.client.Client
-import java.io.IOException
 
 internal class WebDavFileAttributeView(
     private val path: WebDavPath,
@@ -21,7 +21,7 @@ internal class WebDavFileAttributeView(
     @Throws(IOException::class)
     override fun readAttributes(): WebDavFileAttributes {
         val file = try {
-            Client.findProperties(path, noFollowLinks)
+            client.findProperties(path, noFollowLinks)
         } catch (e: DavException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -48,7 +48,7 @@ internal class WebDavFileAttributeView(
             throw UnsupportedOperationException(LinkOption.NOFOLLOW_LINKS.toString())
         }
         try {
-            Client.setLastModifiedTime(path, lastModifiedTime.toInstant())
+            client.setLastModifiedTime(path, lastModifiedTime.toInstant())
         } catch (e: DavException) {
             throw e.toFileSystemException(path.toString())
         }

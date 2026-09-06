@@ -1,0 +1,161 @@
+[versions]
+# Build
+android-gradle-plugin = "9.4.0"
+kotlin = "2.4.10"
+ktlint-gradle = "14.2.0"
+desugar-jdk-libs = "2.1.5"
+
+# Kotlin
+kotlinx-coroutines = "1.11.0"
+
+# AndroidX
+androidx-activity = "1.13.0"
+androidx-appcompat = "1.8.0"
+androidx-core = "1.19.0"
+androidx-drawerlayout = "1.2.0"
+androidx-exifinterface = "1.4.2"
+androidx-fragment = "1.9.0"
+androidx-lifecycle = "2.11.0"
+androidx-media3 = "1.11.0"
+androidx-preference = "1.2.1"
+androidx-recyclerview = "1.4.0"
+androidx-swiperefreshlayout = "1.2.0"
+material = "1.14.0"
+
+# Third party
+androidsvg = "1.4"
+subsampling-scale-image-view = "3.10.0"
+drawer = "1.0.3"
+materialshadowninepatch = "1.0.0"
+advrecyclerview = "1.0.0"
+# SMBJ 0.12.0 broke anonymous authentication: https://github.com/hierynomus/smbj/issues/792 ,
+# and it's still an issue in 0.14.0 according to
+# https://github.com/hierynomus/smbj/issues/792#issuecomment-2548018378 .
+smbj = "0.11.5"
+bouncycastle = "1.85"
+bouncycastle-util = "1.85.1"
+sshj = "0.40.0"
+speed-dial = "3.3.0"
+dcerpc = "0.12.13"
+guava = "33.7.1-android"
+# Guava conflicts with com.google.guava:listenablefuture:1.0 pulled in by AndroidX Core
+guava-listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
+preferencex = "1.1.0"
+commons-net = "3.13.0"
+# LicensesDialog 2.2.0 pulls in androidx.webkit and uses setForceDark() instead of correctly
+# setting colors.
+licensesdialog = "2.1.0"
+simplemenu-preference = "1.0.3"
+shizuku = "13.1.5"
+jcifs-ng = "2.1.10"
+coil = "2.7.0"
+appiconloader = "1.5.0"
+fastscroll = "1.3.0"
+foregroundcompat = "1.0.2"
+libarchive = "1.1.6"
+libselinux = "2.1.1"
+retrofile = "1.2.0"
+systemuihelper = "1.0.0"
+ftpserver = "1.2.1"
+# Held at the version ftpserver-core declares; the old pin at 2.1.3 was for API 23, which is gone.
+mina = "2.2.9"
+slf4j = "1.7.36"
+# Transitive dependency of dcerpc; raised for the uncontrolled-recursion advisory fixed in 3.18.0.
+commons-lang3 = "3.20.0"
+
+# JitPack. The dav4jvm pin must be the full commit SHA: JitPack's build for the short hash has no
+# modules and 404s. We need
+# https://github.com/bitfireAT/dav4jvm/commit/c1bc14348831bcdb00f3a6eec4859b81c7dc3728 .
+dav4jvm = "02fe1a95e6b86e323bec3784d7d2fe2d4081dde6"
+photoview = "2.3.0"
+libsu = "6.0.0"
+
+# Tests
+junit = "4.13.2"
+androidx-test-runner = "1.7.0"
+androidx-test-ext-junit = "1.3.0"
+androidx-test-uiautomator = "2.4.0"
+
+[libraries]
+# Build classpath
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk-libs" }
+
+# Kotlin
+kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+
+# AndroidX
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "androidx-activity" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-drawerlayout = { module = "androidx.drawerlayout:drawerlayout", version.ref = "androidx-drawerlayout" }
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "androidx-exifinterface" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "androidx-fragment" }
+androidx-lifecycle-common-java8 = { module = "androidx.lifecycle:lifecycle-common-java8", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidx-lifecycle" }
+androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "androidx-media3" }
+androidx-media3-datasource = { module = "androidx.media3:media3-datasource", version.ref = "androidx-media3" }
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
+androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "androidx-media3" }
+androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "androidx-preference" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "androidx-recyclerview" }
+androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "androidx-swiperefreshlayout" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+
+# Third party
+androidsvg = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvg" }
+subsampling-scale-image-view = { module = "com.davemorrissey.labs:subsampling-scale-image-view-androidx", version.ref = "subsampling-scale-image-view" }
+drawer = { module = "com.drakeet.drawer:drawer", version.ref = "drawer" }
+materialshadowninepatch = { module = "com.h6ah4i.android.materialshadowninepatch:materialshadowninepatch", version.ref = "materialshadowninepatch" }
+advrecyclerview = { module = "com.h6ah4i.android.widget.advrecyclerview:advrecyclerview", version.ref = "advrecyclerview" }
+smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
+bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk15to18", version.ref = "bouncycastle" }
+bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bouncycastle" }
+bouncycastle-bcutil = { module = "org.bouncycastle:bcutil-jdk15to18", version.ref = "bouncycastle-util" }
+sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
+speed-dial = { module = "com.leinardi.android:speed-dial", version.ref = "speed-dial" }
+dcerpc = { module = "com.rapid7.client:dcerpc", version.ref = "dcerpc" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+guava-listenablefuture = { module = "com.google.guava:listenablefuture", version.ref = "guava-listenablefuture" }
+preferencex = { module = "com.takisoft.preferencex:preferencex", version.ref = "preferencex" }
+commons-net = { module = "commons-net:commons-net", version.ref = "commons-net" }
+licensesdialog = { module = "de.psdev.licensesdialog:licensesdialog", version.ref = "licensesdialog" }
+simplemenu-preference = { module = "dev.rikka.rikkax.preference:simplemenu-preference", version.ref = "simplemenu-preference" }
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+jcifs-ng = { module = "eu.agno3.jcifs:jcifs-ng", version.ref = "jcifs-ng" }
+coil-bom = { module = "io.coil-kt:coil-bom", version.ref = "coil" }
+coil = { module = "io.coil-kt:coil" }
+coil-gif = { module = "io.coil-kt:coil-gif" }
+coil-svg = { module = "io.coil-kt:coil-svg" }
+coil-video = { module = "io.coil-kt:coil-video" }
+appiconloader = { module = "me.zhanghai.android.appiconloader:appiconloader", version.ref = "appiconloader" }
+fastscroll = { module = "me.zhanghai.android.fastscroll:library", version.ref = "fastscroll" }
+foregroundcompat = { module = "me.zhanghai.android.foregroundcompat:library", version.ref = "foregroundcompat" }
+libarchive = { module = "me.zhanghai.android.libarchive:library", version.ref = "libarchive" }
+libselinux = { module = "me.zhanghai.android.libselinux:library", version.ref = "libselinux" }
+retrofile = { module = "me.zhanghai.android.retrofile:library", version.ref = "retrofile" }
+systemuihelper = { module = "me.zhanghai.android.systemuihelper:library", version.ref = "systemuihelper" }
+ftpserver-core = { module = "org.apache.ftpserver:ftpserver-core", version.ref = "ftpserver" }
+mina-core = { module = "org.apache.mina:mina-core", version.ref = "mina" }
+slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4j" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+
+# JitPack
+dav4jvm = { module = "com.github.bitfireAT:dav4jvm", version.ref = "dav4jvm" }
+photoview = { module = "com.github.chrisbanes:PhotoView", version.ref = "photoview" }
+libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu" }
+
+# Tests
+junit = { module = "junit:junit", version.ref = "junit" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext-junit" }
+androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidx-test-uiautomator" }
+
+[plugins]
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }

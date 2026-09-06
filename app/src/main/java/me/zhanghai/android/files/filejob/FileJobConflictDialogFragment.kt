@@ -304,7 +304,7 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
             } else {
                 R.string.file_job_replace_message_format
             }
-            return context.getString(messageRes, targetFile.path.parent.fileName)
+            return context.getString(messageRes, targetFile.path.parent.displayName)
         }
 
         private fun isMerge(sourceFile: FileItem, targetFile: FileItem): Boolean {

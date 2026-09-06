@@ -5,7 +5,6 @@
 
 package me.zhanghai.android.files.provider.ftp.client
 
-import java8.nio.file.Path as Java8Path
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -17,6 +16,7 @@ import java.util.Collections
 import java.util.Locale
 import java.util.WeakHashMap
 import java8.nio.channels.SeekableByteChannel
+import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.provider.common.DelegateInputStream
 import me.zhanghai.android.files.provider.common.DelegateOutputStream
 import me.zhanghai.android.files.provider.common.LocalWatchService
@@ -29,14 +29,15 @@ import org.apache.commons.net.ftp.FTPFile
 import org.apache.commons.net.ftp.FTPReply
 import org.apache.commons.net.ftp.FTPSClient
 
-object Client {
+/**
+ * The connections of this provider, one pool per authority, created on demand with credentials
+ * from [authenticator]. Owned by the file system provider; a test constructs its own with a fake.
+ */
+class Client(internal val authenticator: Authenticator) {
     private val TIMESTAMP_FORMATTER =
         DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.ROOT)
             .withChronology(IsoChronology.INSTANCE)
             .withZone(ZoneOffset.UTC)
-
-    @Volatile
-    lateinit var authenticator: Authenticator
 
     private val clientPool = mutableMapOf<Authority, MutableList<FTPClient>>()
 
@@ -246,12 +247,11 @@ object Client {
     }
 
     @Throws(IOException::class)
-    fun listFileOrNull(path: Path, noFollowLinks: Boolean): FTPFile? =
-        try {
-            listFile(path, noFollowLinks)
-        } catch (e: NegativeReplyCodeException) {
-            null
-        }
+    fun listFileOrNull(path: Path, noFollowLinks: Boolean): FTPFile? = try {
+        listFile(path, noFollowLinks)
+    } catch (e: NegativeReplyCodeException) {
+        null
+    }
 
     @Throws(IOException::class)
     fun listFile(path: Path, noFollowLinks: Boolean): FTPFile {
@@ -289,8 +289,12 @@ object Client {
         }
         return NotifyEntryModifiedSeekableByteChannel(
             FileByteChannel(
-                client, { releaseClient(authority, client) }, path.remotePath, isAppend
-            ), path as Java8Path
+                client,
+                { releaseClient(authority, client) },
+                path.remotePath,
+                isAppend
+            ),
+            path as Java8Path
         )
     }
 
@@ -316,7 +320,8 @@ object Client {
             throw t
         }
         return NotifyEntryModifiedOutputStream(
-            CompletePendingCommandOutputStream(outputStream, authority, client), path as Java8Path
+            CompletePendingCommandOutputStream(outputStream, authority, client),
+            path as Java8Path
         )
     }
 
@@ -326,7 +331,7 @@ object Client {
         fun resolve(other: String): Path
     }
 
-    private class CompletePendingCommandInputStream(
+    private inner class CompletePendingCommandInputStream(
         inputStream: InputStream,
         private val authority: Authority,
         private val client: FTPClient
@@ -347,7 +352,7 @@ object Client {
         }
     }
 
-    private class CompletePendingCommandOutputStream(
+    private inner class CompletePendingCommandOutputStream(
         outputStream: OutputStream,
         private val authority: Authority,
         private val client: FTPClient

@@ -8,9 +8,16 @@ package me.zhanghai.android.files.filejob
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
+import android.widget.Toast
 import androidx.annotation.MainThread
+import androidx.annotation.RequiresApi
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java8.nio.file.Path
+import me.zhanghai.android.files.R
+import me.zhanghai.android.files.compat.removeFirstCompat
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.provider.common.PosixFileModeBit
 import me.zhanghai.android.files.provider.common.PosixGroup
@@ -18,9 +25,7 @@ import me.zhanghai.android.files.provider.common.PosixUser
 import me.zhanghai.android.files.util.ForegroundNotificationManager
 import me.zhanghai.android.files.util.WakeWifiLock
 import me.zhanghai.android.files.util.removeFirst
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import me.zhanghai.android.files.compat.removeFirstCompat
+import me.zhanghai.android.files.util.showToast
 
 class FileJobService : Service() {
     private lateinit var wakeWifiLock: WakeWifiLock
@@ -31,6 +36,9 @@ class FileJobService : Service() {
     private val executorService = Executors.newCachedThreadPool()
 
     private val runningJobs = mutableMapOf<FileJob, Future<*>>()
+
+    // Guarded by runningJobs.
+    private val jobsWaitingForUser = mutableSetOf<FileJob>()
 
     override fun onCreate() {
         super.onCreate()
@@ -48,6 +56,28 @@ class FileJobService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
 
+    /**
+     * Android 15 gives a data sync foreground service 6 hours a day; after that we have to stop,
+     * or be treated as not responding.
+     */
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        super.onTimeout(startId, fgsType)
+
+        val hadJobs = jobCount > 0
+        synchronized(runningJobs) {
+            while (runningJobs.isNotEmpty()) {
+                runningJobs.removeFirst().value.cancel(true)
+            }
+            jobsWaitingForUser.clear()
+            updateWakeWifiLockLocked()
+        }
+        if (hadJobs) {
+            showToast(R.string.file_job_timeout_message, Toast.LENGTH_LONG)
+        }
+        stopSelf()
+    }
+
     private val jobCount: Int
         get() = synchronized(runningJobs) { runningJobs.size }
 
@@ -58,6 +88,7 @@ class FileJobService : Service() {
                 job.runOn(this)
                 synchronized(runningJobs) {
                     runningJobs.remove(job)
+                    jobsWaitingForUser.remove(job)
                     updateWakeWifiLockLocked()
                 }
             }
@@ -68,7 +99,10 @@ class FileJobService : Service() {
 
     private fun cancelJob(id: Int) {
         synchronized(runningJobs) {
-            runningJobs.removeFirst { it.key.id == id }?.value?.cancel(true)
+            runningJobs.removeFirst { it.key.id == id }?.let { (job, future) ->
+                jobsWaitingForUser.remove(job)
+                future.cancel(true)
+            }
             updateWakeWifiLockLocked()
         }
     }
@@ -82,6 +116,26 @@ class FileJobService : Service() {
             while (runningJobs.isNotEmpty()) {
                 runningJobs.removeFirst().value.cancel(true)
             }
+            jobsWaitingForUser.clear()
+            updateWakeWifiLockLocked()
+        }
+    }
+
+    /**
+     * A job blocked on a dialog (conflict, error, or a user action) can wait for days if nobody
+     * answers, and holding the wake and Wi-Fi locks for it the whole time drains the battery for
+     * no reason, so the locks are only held while some job is actually working.
+     */
+    internal fun setJobWaitingForUser(job: FileJob, isWaiting: Boolean) {
+        synchronized(runningJobs) {
+            if (job !in runningJobs) {
+                return
+            }
+            if (isWaiting) {
+                jobsWaitingForUser += job
+            } else {
+                jobsWaitingForUser -= job
+            }
             updateWakeWifiLockLocked()
         }
     }
@@ -89,7 +143,7 @@ class FileJobService : Service() {
     // Synchronize on runningJobs to avoid the potential race condition that the lock is
     // acquired after all jobs are finished in a very short time.
     private fun updateWakeWifiLockLocked() {
-        wakeWifiLock.isAcquired = jobCount > 0
+        wakeWifiLock.isAcquired = runningJobs.keys.any { it !in jobsWaitingForUser }
     }
 
     companion object {

@@ -16,10 +16,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.MenuProvider
 import androidx.core.view.children
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import java.nio.charset.Charset
 import java8.nio.file.Path
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -31,20 +33,23 @@ import me.zhanghai.android.files.util.DataState
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.addOnBackPressedCallback
 import me.zhanghai.android.files.util.args
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.fadeInUnsafe
 import me.zhanghai.android.files.util.fadeOutUnsafe
 import me.zhanghai.android.files.util.isReady
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.viewModels
-import java.nio.charset.Charset
 
-class TextEditorFragment : Fragment(), ConfirmReloadDialogFragment.Listener,
+class TextEditorFragment :
+    Fragment(),
+    MenuProvider,
+    ConfirmReloadDialogFragment.Listener,
     ConfirmCloseDialogFragment.Listener {
     private val args by args<Args>()
     private lateinit var argsFile: Path
 
-    private lateinit var binding: TextEditorFragmentBinding
+    private var binding by autoCleared<TextEditorFragmentBinding>()
 
     private lateinit var menuBinding: MenuBinding
 
@@ -57,7 +62,16 @@ class TextEditorFragment : Fragment(), ConfirmReloadDialogFragment.Listener,
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setHasOptionsMenu(true)
+        // Resolve the file before anything can touch the view model: an intent without a usable
+        // file (which any app can send, since the activity is exported) must end here, not in
+        // an uninitialized-property crash once the collectors below start.
+        val argsFile = args.intent.extraPath
+        if (argsFile == null) {
+            showToast(R.string.error_file_not_found)
+            finish()
+            return
+        }
+        this.argsFile = argsFile
 
         lifecycleScope.launchWhenStarted {
             onBackPressedCallback = object : OnBackPressedCallback(false) {
@@ -83,21 +97,18 @@ class TextEditorFragment : Fragment(), ConfirmReloadDialogFragment.Listener,
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        TextEditorFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = TextEditorFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val argsFile = args.intent.extraPath
-        if (argsFile == null) {
-            // TODO: Show a toast.
-            finish()
+        if (!::argsFile.isInitialized) {
+            // onCreate() finished the activity; the view still gets created in this pass.
             return
         }
-        this.argsFile = argsFile
+        requireActivity().addMenuProvider(this, viewLifecycleOwner)
 
         val activity = requireActivity() as AppCompatActivity
         activity.lifecycleScope.launchWhenCreated {
@@ -134,35 +145,33 @@ class TextEditorFragment : Fragment(), ConfirmReloadDialogFragment.Listener,
         viewModel.setEditTextSavedState(binding.textEdit.onSaveInstanceState())
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-
-        menuBinding = MenuBinding.inflate(menu, inflater)
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuBinding = MenuBinding.inflate(menu, menuInflater)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu) {
-        super.onPrepareOptionsMenu(menu)
-
+    override fun onPrepareMenu(menu: Menu) {
         updateSaveMenuItem()
         updateEncodingMenuItems()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean =
-        when (item.itemId) {
-            R.id.action_save -> {
-                save()
-                true
-            }
-            R.id.action_reload -> {
-                onReload()
-                true
-            }
-            Menu.FIRST -> {
-                viewModel.encoding.value = Charset.forName(item.titleCondensed!!.toString())
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean = when (menuItem.itemId) {
+        R.id.action_save -> {
+            save()
+            true
         }
+
+        R.id.action_reload -> {
+            onReload()
+            true
+        }
+
+        Menu.FIRST -> {
+            viewModel.encoding.value = Charset.forName(menuItem.titleCondensed!!.toString())
+            true
+        }
+
+        else -> false
+    }
 
     fun onSupportNavigateUp(): Boolean {
         if (onBackPressedCallback.isEnabled) {
@@ -198,6 +207,7 @@ class TextEditorFragment : Fragment(), ConfirmReloadDialogFragment.Listener,
                 binding.errorText.fadeOutUnsafe()
                 binding.textEdit.fadeOutUnsafe()
             }
+
             is DataState.Success -> {
                 binding.progress.fadeOutUnsafe()
                 binding.errorText.fadeOutUnsafe()
@@ -206,6 +216,7 @@ class TextEditorFragment : Fragment(), ConfirmReloadDialogFragment.Listener,
                     setText(state.data)
                 }
             }
+
             is DataState.Error -> {
                 state.throwable.printStackTrace()
                 binding.progress.fadeOutUnsafe()
@@ -235,7 +246,8 @@ class TextEditorFragment : Fragment(), ConfirmReloadDialogFragment.Listener,
                 R.string.text_editor_title_changed_format
             } else {
                 R.string.text_editor_title_format
-            }, fileName
+            },
+            fileName
         )
     }
 
@@ -260,11 +272,13 @@ class TextEditorFragment : Fragment(), ConfirmReloadDialogFragment.Listener,
     private fun onWriteFileStateChanged(state: ActionState<Pair<Path, String>, Unit>) {
         when (state) {
             is ActionState.Ready, is ActionState.Running -> updateSaveMenuItem()
+
             is ActionState.Success -> {
                 showToast(R.string.text_editor_save_success)
                 viewModel.finishWritingFile()
                 viewModel.isTextChanged.value = false
             }
+
             // The error will be toasted by service so we should never show it in UI.
             is ActionState.Error -> viewModel.finishWritingFile()
         }

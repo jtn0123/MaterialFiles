@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ Copyright (c) 2026 Hai Zhang <dreaming.in.code.zh@gmail.com>
+  ~ All Rights Reserved.
+  -->
+
+<!--
+  ~ Full-backup rules for Android 11 and below (also used by `adb backup`). Stored servers with
+  ~ their passwords and keys, the FTP server configuration and the trusted-intent token never
+  ~ leave the device. Keep in sync with data_extraction_rules.xml.
+  -->
+<full-backup-content>
+    <exclude
+        domain="sharedpref"
+        path="me.zhanghai.android.files_preferences_no_backup.xml" />
+    <exclude
+        domain="sharedpref"
+        path="trusted_intent_token.xml" />
+</full-backup-content>

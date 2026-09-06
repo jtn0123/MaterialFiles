@@ -31,6 +31,7 @@
 
             <ImageView
                 android:id="@+id/targetIconImage"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/icon_size"
                 android:layout_height="@dimen/icon_size"
                 android:layout_gravity="center"
@@ -38,12 +39,14 @@
 
             <ImageView
                 android:id="@+id/targetThumbnailImage"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/large_icon_size"
                 android:layout_height="@dimen/large_icon_size"
                 android:scaleType="centerCrop" />
 
             <me.zhanghai.android.files.ui.DisabledAlphaImageView
                 android:id="@+id/targetAppIconBadgeImage"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/badge_size_plus_1dp"
                 android:layout_height="@dimen/badge_size_plus_1dp"
                 android:layout_gravity="end|bottom"
@@ -55,6 +58,7 @@
 
             <ImageView
                 android:id="@+id/targetBadgeImage"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/badge_size"
                 android:layout_height="@dimen/badge_size"
                 android:layout_gravity="end|bottom"
@@ -107,6 +111,7 @@
 
             <ImageView
                 android:id="@+id/sourceIconImage"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/icon_size"
                 android:layout_height="@dimen/icon_size"
                 android:layout_gravity="center"
@@ -114,12 +119,14 @@
 
             <ImageView
                 android:id="@+id/sourceThumbnailImage"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/large_icon_size"
                 android:layout_height="@dimen/large_icon_size"
                 android:scaleType="centerCrop" />
 
             <me.zhanghai.android.files.ui.DisabledAlphaImageView
                 android:id="@+id/sourceAppIconBadgeImage"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/badge_size_plus_1dp"
                 android:layout_height="@dimen/badge_size_plus_1dp"
                 android:layout_gravity="end|bottom"
@@ -131,6 +138,7 @@
 
             <ImageView
                 android:id="@+id/sourceBadgeImage"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/badge_size"
                 android:layout_height="@dimen/badge_size"
                 android:layout_gravity="end|bottom"
@@ -184,6 +192,7 @@
             <!-- NOTE: Somehow android:layout_margin="-3dp" doesn't work. -->
             <ImageView
                 android:id="@+id/showNameArrowImage"
+                android:importantForAccessibility="no"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="-3dp"

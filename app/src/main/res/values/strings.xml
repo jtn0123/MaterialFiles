@@ -19,6 +19,18 @@
     <string name="empty">Empty</string>
     <string name="empty_placeholder">(Empty)</string>
     <string name="error">Error</string>
+    <string name="error_access_denied">Access denied</string>
+    <string name="error_file_not_found">File not found</string>
+    <string name="error_file_already_exists">A file with that name already exists</string>
+    <string name="error_directory_not_empty">The folder is not empty</string>
+    <string name="error_not_a_directory">Not a folder</string>
+    <string name="error_is_a_directory">This is a folder</string>
+    <string name="error_read_only_file_system">The storage is read-only</string>
+    <string name="error_invalid_file_name">Invalid file name</string>
+    <string name="error_unknown_host">Unknown host</string>
+    <string name="error_connection_timed_out">The connection timed out</string>
+    <string name="error_connection_failed">Could not connect</string>
+    <string name="error_interrupted">The operation was interrupted</string>
     <string name="hide">Hide</string>
     <string name="install">Install</string>
     <string name="keep_editing">Keep editing</string>
@@ -113,8 +125,14 @@
         <item quantity="one">Moving %1$,d file to “%2$s”</item>
         <item quantity="other">Moving %1$,d files to “%2$s”</item>
     </plurals>
+    <string name="file_job_timeout_message">File operations were stopped by the system after running for 6 hours. Start them again to continue.</string>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Finished, %1$,d file skipped because of an error</item>
+        <item quantity="other">Finished, %1$,d files skipped because of errors</item>
+    </plurals>
+    <string name="file_job_failed_format">Failed: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Preparing to delete %1$,d file</item>
         <item quantity="other">Preparing to delete %1$,d files</item>
@@ -322,6 +340,7 @@
     <string name="file_list_action_create_directory">Folder</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">More options</string>
     <string name="file_item_action_open_with">Open with</string>
     <string name="file_item_action_extract">Extract</string>
     <string name="file_item_action_archive">Compress</string>
@@ -529,6 +548,7 @@
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Storage</string>
     <string name="storage_list_empty">No storage</string>
+    <string name="list_item_drag_handle">Drag to reorder</string>
     <string name="storage_add_storage_title">Add storage</string>
     <string name="storage_add_storage_android_data" translatable="false">Android/data</string>
     <string name="storage_add_storage_android_obb" translatable="false">Android/obb</string>
@@ -612,6 +632,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Can be left empty</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Invalid private key password</string>
     <string name="storage_edit_sftp_server_connect_and_add">Connect and add</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Host key changed</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">The %2$s key of %1$s is not the one remembered from the first connection. Someone could be intercepting the connection, or the server was reinstalled.\n\nRemembered: %3$s\nPresented: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Trust new key</string>
     <string name="storage_edit_sftp_server_add">Add</string>
     <string name="storage_add_lan_smb_server_title" translatable="false">@string/storage_edit_smb_server_title_add</string>
     <string name="storage_add_lan_smb_server_loading">Searching for SMB servers…</string>
@@ -697,6 +720,16 @@
     <string name="image_viewer_title">Image viewer</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
     <string name="image_viewer_delete_message_format" translatable="false">@string/file_delete_message_file_format</string>
+
+    <string name="video_viewer_title">Video player</string>
+    <string name="video_viewer_subtitle_format" translatable="false">@string/image_viewer_subtitle_format</string>
+    <string name="video_viewer_picture_in_picture">Picture-in-picture</string>
+    <string name="video_viewer_play_from_beginning">Play from beginning</string>
+    <string name="video_viewer_screen_orientation">Screen orientation</string>
+    <string name="video_viewer_screen_orientation_auto">Auto-rotate</string>
+    <string name="video_viewer_screen_orientation_landscape">Landscape</string>
+    <string name="video_viewer_screen_orientation_portrait">Portrait</string>
+    <string name="video_viewer_error_format">Cannot play %1$s</string>
     <string name="save_as_title">Save as</string>
     <string name="save_as_error">Error while saving file</string>
     <string name="save_as_success_format">“%1$s” has been saved to “%2$s”</string>
@@ -724,6 +757,7 @@
     <string name="ftp_server_add_tile_result_error">Error while adding “FTP server” to Quick Settings</string>
     <string name="ftp_server_configuration_title">Configuration</string>
     <string name="ftp_server_anonymous_login_title">Anonymous login</string>
+    <string name="ftp_server_error_password_empty">Set a password, or enable anonymous login, before starting the FTP server</string>
     <string name="ftp_server_username_title">Username</string>
     <string name="ftp_server_password_title">Password</string>
     <string name="ftp_server_port_title">Port</string>
@@ -787,12 +821,12 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Show thumbnail for PDF documents</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Might make the app unstable on older versions of Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Read remote files for thumbnail</string>
+    <string name="settings_video_remember_playback_position_title">Remember video playback position</string>
 
     <string name="about_title">About</string>
     <string name="about_version_title">Version</string>
     <string name="about_github_title">View on GitHub</string>
     <string name="about_licenses_title">Licenses</string>
-    <string name="about_privacy_policy_title">Privacy policy</string>
     <string name="about_author_title">Author</string>
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Follow on GitHub</string>

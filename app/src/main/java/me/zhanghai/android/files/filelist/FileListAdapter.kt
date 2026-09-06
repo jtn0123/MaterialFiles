@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import coil.dispose
 import coil.load
+import java.util.Locale
 import java8.nio.file.Path
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import me.zhanghai.android.files.R
@@ -40,11 +41,10 @@ import me.zhanghai.android.files.ui.CheckableItemBackground
 import me.zhanghai.android.files.util.isMaterial3Theme
 import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.valueCompat
-import java.util.Locale
 
-class FileListAdapter(
-    private val listener: Listener
-) : AnimatedListAdapter<FileItem, FileListAdapter.ViewHolder>(CALLBACK), PopupTextProvider {
+class FileListAdapter(private val listener: Listener) :
+    AnimatedListAdapter<FileItem, FileListAdapter.ViewHolder>(CALLBACK),
+    PopupTextProvider {
     private var isSearching = false
 
     private lateinit var _viewType: FileViewType
@@ -57,17 +57,8 @@ class FileListAdapter(
             }
         }
 
-    private lateinit var _sortOptions: FileSortOptions
-    var sortOptions: FileSortOptions
-        get() = _sortOptions
-        set(value) {
-            _sortOptions = value
-            if (!isSearching) {
-                val sortedList = list.sortedWith(value.createComparator())
-                super.replace(sortedList, true)
-                rebuildFilePositionMap()
-            }
-        }
+    /** Only used for the fast scroll popup text; the list is sorted by whoever replaces it. */
+    lateinit var sortOptions: FileSortOptions
 
     var pickOptions: PickOptions? = null
         set(value) {
@@ -138,6 +129,7 @@ class FileListAdapter(
             PickOptions.Mode.OPEN_FILE, PickOptions.Mode.CREATE_FILE ->
                 !file.attributes.isDirectory &&
                     pickOptions.mimeTypes.any { it.match(file.mimeType) }
+
             PickOptions.Mode.OPEN_DIRECTORY -> file.attributes.isDirectory
         }
     }
@@ -149,15 +141,14 @@ class FileListAdapter(
     }
 
     @Deprecated("", ReplaceWith("replaceListAndSearching(list, searching)"))
-    override fun replace(list: List<FileItem>, clear: Boolean) {
+    override fun replace(list: List<FileItem>, clear: Boolean): Unit =
         throw UnsupportedOperationException()
-    }
 
+    /** [list] must already be sorted unless [isSearching]; sorting is done off the main thread. */
     fun replaceListAndIsSearching(list: List<FileItem>, isSearching: Boolean) {
         val clear = this.isSearching != isSearching
         this.isSearching = isSearching
-        val sortedList = if (!isSearching) list.sortedWith(sortOptions.createComparator()) else list
-        super.replace(sortedList, clear)
+        super.replace(list, clear)
         rebuildFilePositionMap()
     }
 
@@ -206,9 +197,8 @@ class FileListAdapter(
         }
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int): Unit =
         throw UnsupportedOperationException()
-    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: List<Any>) {
         val file = getItem(position)
@@ -293,7 +283,7 @@ class FileListAdapter(
             val hasAppIconBadge = appDirectoryPackageName != null
             isVisible = hasAppIconBadge
             if (hasAppIconBadge) {
-                load(AppIconPackageName(appDirectoryPackageName!!))
+                load(AppIconPackageName(appDirectoryPackageName))
             }
         }
         holder.badgeImage.apply {
@@ -311,7 +301,7 @@ class FileListAdapter(
             val hasBadge = badgeIconRes != null
             isVisible = hasBadge
             if (hasBadge) {
-                setImageResource(badgeIconRes!!)
+                setImageResource(badgeIconRes)
             } else {
                 setImageDrawable(null)
             }
@@ -320,7 +310,7 @@ class FileListAdapter(
         holder.descriptionText?.text = if (isDirectory) {
             null
         } else {
-            val context = holder.descriptionText!!.context
+            val context = holder.descriptionText.context
             val lastModificationTime = attributes.lastModifiedTime().toInstant()
                 .formatShort(context)
             val size = attributes.fileSize.formatHumanReadable(context)
@@ -341,50 +331,62 @@ class FileListAdapter(
                     listener.openFileWith(file)
                     true
                 }
+
                 R.id.action_cut -> {
                     listener.cutFile(file)
                     true
                 }
+
                 R.id.action_copy -> {
                     listener.copyFile(file)
                     true
                 }
+
                 R.id.action_delete -> {
                     listener.confirmDeleteFile(file)
                     true
                 }
+
                 R.id.action_rename -> {
                     listener.showRenameFileDialog(file)
                     true
                 }
+
                 R.id.action_extract -> {
                     listener.extractFile(file)
                     true
                 }
+
                 R.id.action_archive -> {
                     listener.showCreateArchiveDialog(file)
                     true
                 }
+
                 R.id.action_share -> {
                     listener.shareFile(file)
                     true
                 }
+
                 R.id.action_copy_path -> {
                     listener.copyPath(file)
                     true
                 }
+
                 R.id.action_add_bookmark -> {
                     listener.addBookmark(file)
                     true
                 }
+
                 R.id.action_create_shortcut -> {
                     listener.createShortcut(file)
                     true
                 }
+
                 R.id.action_properties -> {
                     listener.showPropertiesDialog(file)
                     true
                 }
+
                 else -> false
             }
         }
@@ -394,8 +396,11 @@ class FileListAdapter(
         val file = getItem(position)
         return when (sortOptions.by) {
             FileSortOptions.By.NAME -> file.name.take(1).uppercase(Locale.getDefault())
+
             FileSortOptions.By.TYPE -> file.extension.uppercase(Locale.getDefault())
+
             FileSortOptions.By.SIZE -> file.attributes.fileSize.formatHumanReadable(view.context)
+
             FileSortOptions.By.LAST_MODIFIED ->
                 file.attributes.lastModifiedTime().toInstant().formatShort(view.context)
         }

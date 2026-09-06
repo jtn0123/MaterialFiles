@@ -17,7 +17,6 @@ import androidx.core.content.edit
 import androidx.core.content.res.ResourcesCompat
 import me.zhanghai.android.files.app.appClassLoader
 import me.zhanghai.android.files.app.application
-import me.zhanghai.android.files.util.Base64
 import me.zhanghai.android.files.util.asBase64
 import me.zhanghai.android.files.util.getBoolean
 import me.zhanghai.android.files.util.getFloat
@@ -34,7 +33,10 @@ class StringSettingLiveData(
     @StringRes defaultValueRes: Int
 ) : SettingLiveData<String>(nameSuffix, keyRes, keySuffix, defaultValueRes) {
     constructor(@StringRes keyRes: Int, @StringRes defaultValueRes: Int) : this(
-        null, keyRes, null, defaultValueRes
+        null,
+        keyRes,
+        null,
+        defaultValueRes
     )
 
     init {
@@ -62,7 +64,10 @@ class StringSetSettingLiveData(
     @ArrayRes defaultValueRes: Int
 ) : SettingLiveData<Set<String>>(nameSuffix, keyRes, keySuffix, defaultValueRes) {
     constructor(@StringRes keyRes: Int, @ArrayRes defaultValueRes: Int) : this(
-        null, keyRes, null, defaultValueRes
+        null,
+        keyRes,
+        null,
+        defaultValueRes
     )
 
     init {
@@ -90,7 +95,10 @@ class IntegerSettingLiveData(
     @IntegerRes defaultValueRes: Int
 ) : SettingLiveData<Int>(nameSuffix, keyRes, keySuffix, defaultValueRes) {
     constructor(@StringRes keyRes: Int, @IntegerRes defaultValueRes: Int) : this(
-        null, keyRes, null, defaultValueRes
+        null,
+        keyRes,
+        null,
+        defaultValueRes
     )
 
     init {
@@ -118,7 +126,10 @@ class LongSettingLiveData(
     @StringRes defaultValueRes: Int
 ) : SettingLiveData<Long>(nameSuffix, keyRes, keySuffix, defaultValueRes) {
     constructor(@StringRes keyRes: Int, @StringRes defaultValueRes: Int) : this(
-        null, keyRes, null, defaultValueRes
+        null,
+        keyRes,
+        null,
+        defaultValueRes
     )
 
     init {
@@ -132,8 +143,7 @@ class LongSettingLiveData(
         sharedPreferences: SharedPreferences,
         key: String,
         defaultValue: Long
-    ): Long =
-        sharedPreferences.getLong(key, defaultValue)
+    ): Long = sharedPreferences.getLong(key, defaultValue)
 
     override fun putValue(sharedPreferences: SharedPreferences, key: String, value: Long) {
         sharedPreferences.edit { putLong(key, value) }
@@ -147,7 +157,10 @@ class FloatSettingLiveData(
     @DimenRes defaultValueRes: Int
 ) : SettingLiveData<Float>(nameSuffix, keyRes, keySuffix, defaultValueRes) {
     constructor(@StringRes keyRes: Int, @DimenRes defaultValueRes: Int) : this(
-        null, keyRes, null, defaultValueRes
+        null,
+        keyRes,
+        null,
+        defaultValueRes
     )
 
     init {
@@ -175,7 +188,10 @@ class BooleanSettingLiveData(
     @BoolRes defaultValueRes: Int
 ) : SettingLiveData<Boolean>(nameSuffix, keyRes, keySuffix, defaultValueRes) {
     constructor(@StringRes keyRes: Int, @BoolRes defaultValueRes: Int) : this(
-        null, keyRes, null, defaultValueRes
+        null,
+        keyRes,
+        null,
+        defaultValueRes
     )
 
     init {
@@ -227,11 +243,7 @@ class EnumSettingLiveData<E : Enum<*>?>(
             null as E
         }
 
-    override fun getValue(
-        sharedPreferences: SharedPreferences,
-        key: String,
-        defaultValue: E
-    ): E {
+    override fun getValue(sharedPreferences: SharedPreferences, key: String, defaultValue: E): E {
         val valueOrdinal = sharedPreferences.getString(key, null)?.toInt() ?: return defaultValue
         return if (valueOrdinal in enumValues.indices) enumValues[valueOrdinal] else defaultValue
     }
@@ -248,7 +260,10 @@ class ResourceIdSettingLiveData(
     @AnyRes defaultValue: Int
 ) : SettingLiveData<Int>(nameSuffix, keyRes, keySuffix, defaultValue) {
     constructor(@StringRes keyRes: Int, @AnyRes defaultValue: Int) : this(
-        null, keyRes, null, defaultValue
+        null,
+        keyRes,
+        null,
+        defaultValue
     )
 
     init {
@@ -287,37 +302,27 @@ class ParcelValueSettingLiveData<T>(
 
     override fun getDefaultValue(@AnyRes defaultValueRes: Int): T = defaultValue
 
-    override fun getValue(
-        sharedPreferences: SharedPreferences,
-        key: String,
-        defaultValue: T
-    ): T =
+    override fun getValue(sharedPreferences: SharedPreferences, key: String, defaultValue: T): T =
         try {
-            sharedPreferences.getString(key, null)?.asBase64()?.toParcelValue()
+            sharedPreferences.getString(key, null)?.asBase64()?.toByteArray()?.toParcelValue<T>()
         } catch (e: Exception) {
             e.printStackTrace()
             null
         } ?: defaultValue
 
     override fun putValue(sharedPreferences: SharedPreferences, key: String, value: T) {
-        sharedPreferences.edit { putString(key, value?.toParcelBase64()?.value) }
+        sharedPreferences.edit { putString(key, value?.toParcelBytes()?.toBase64()?.value) }
     }
+}
 
-    private fun Base64.toParcelValue(): T {
-        val bytes = toByteArray()
-        return Parcel.obtain().use { parcel ->
-            parcel.unmarshall(bytes, 0, bytes.size)
-            parcel.setDataPosition(0)
-            @Suppress("UNCHECKED_CAST")
-            parcel.readValue(appClassLoader) as T
-        }
-    }
+internal fun <T> ByteArray.toParcelValue(): T = Parcel.obtain().use { parcel ->
+    parcel.unmarshall(this, 0, size)
+    parcel.setDataPosition(0)
+    @Suppress("UNCHECKED_CAST")
+    parcel.readValue(appClassLoader) as T
+}
 
-    private fun T.toParcelBase64(): Base64 {
-        val bytes = Parcel.obtain().use { parcel ->
-            parcel.writeValue(this)
-            parcel.marshall()
-        }
-        return bytes.toBase64()
-    }
+internal fun <T> T.toParcelBytes(): ByteArray = Parcel.obtain().use { parcel ->
+    parcel.writeValue(this)
+    parcel.marshall()
 }

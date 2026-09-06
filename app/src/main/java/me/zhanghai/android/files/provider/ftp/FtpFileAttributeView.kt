@@ -5,22 +5,20 @@
 
 package me.zhanghai.android.files.provider.ftp
 
+import java.io.IOException
 import java8.nio.file.LinkOption
 import java8.nio.file.attribute.BasicFileAttributeView
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.ftp.client.Client
-import java.io.IOException
 
-internal class FtpFileAttributeView(
-    private val path: FtpPath,
-    private val noFollowLinks: Boolean
-) : BasicFileAttributeView {
+internal class FtpFileAttributeView(private val path: FtpPath, private val noFollowLinks: Boolean) :
+    BasicFileAttributeView {
     override fun name(): String = NAME
 
     @Throws(IOException::class)
     override fun readAttributes(): FtpFileAttributes {
         val file = try {
-            Client.listFile(path, noFollowLinks)
+            client.listFile(path, noFollowLinks)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(path.toString())
         }
@@ -47,7 +45,7 @@ internal class FtpFileAttributeView(
             throw UnsupportedOperationException(LinkOption.NOFOLLOW_LINKS.toString())
         }
         try {
-            Client.setLastModifiedTime(path, lastModifiedTime.toInstant())
+            client.setLastModifiedTime(path, lastModifiedTime.toInstant())
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(path.toString())
         }

@@ -4,7 +4,7 @@
 
 [![Android CI status](https://github.com/zhanghai/MaterialFiles/workflows/Android%20CI/badge.svg)](https://github.com/zhanghai/MaterialFiles/actions) [![GitHub release](https://img.shields.io/github/v/release/zhanghai/MaterialFiles)](https://github.com/zhanghai/MaterialFiles/releases) [![License](https://img.shields.io/github/license/zhanghai/MaterialFiles?color=blue)](LICENSE)
 
-An open source Material Design file manager, for Android 5.0+.
+An open source Material Design file manager, for Android 15+.
 
 [<img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" width="240">](https://play.google.com/store/apps/details?id=me.zhanghai.android.files) [<img alt="Get it on F-Droid" src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" width="240">](https://f-droid.org/packages/me.zhanghai.android.files) [<img alt="Get it on GitHub" src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" width="240">](https://github.com/zhanghai/MaterialFiles/releases/latest/download/app-release-universal.apk)
 
@@ -23,10 +23,31 @@ An open source Material Design file manager, for Android 5.0+.
 - Root support: View and manage files with root access.
 - Archive support: View, extract and create common compressed files.
 - NAS support: View and manage files on FTP, SFTP, SMB and WebDAV servers.
+- Media: Built-in image and video viewers (with sidecar subtitles, playback resume and picture-in-picture) that work on remote shares too.
 - Themes: Customizable UI colors, plus night mode with optional true black.
 - Linux-aware: Like [Nautilus](https://apps.gnome.org/Nautilus/), knows symbolic links, file permissions and SELinux context.
 - Robust: Uses Linux system calls under the hood, not yet another [`ls` parser](https://news.ycombinator.com/item?id=7994720).
 - Well-implemented: Built upon the right things, including [Java NIO2 File API](https://docs.oracle.com/javase/8/docs/api/java/nio/file/package-summary.html) and [LiveData](https://developer.android.com/topic/libraries/architecture/livedata).
+
+## Building
+
+Requirements:
+
+- JDK 21
+- Android SDK with build-tools 37.0.0 and NDK 28.1.13356709 (the Gradle build downloads them when `sdk.dir` points at a writable SDK)
+- A `local.properties` at the repository root with `sdk.dir=/path/to/android/sdk`
+
+```sh
+./gradlew :app:assembleDebug
+```
+
+The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. What CI runs, and what should pass before a pull request:
+
+```sh
+./gradlew ktlintCheck checkSourceFileLength assembleDebug testDebugUnitTest lintVitalRelease
+```
+
+`checkSourceFileLength` enforces a hard limit of 500 lines per Kotlin or Java file. Dependency checksums are pinned in `gradle/verification-metadata.xml`; see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for how to update them, and for the emulator and instrumented test setup.
 
 ## Why Material Files?
 

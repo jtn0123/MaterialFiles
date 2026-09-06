@@ -6,17 +6,18 @@
 package me.zhanghai.android.files.provider.webdav
 
 import at.bitfire.dav4jvm.exception.DavException
+import java.io.IOException
 import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.StandardCopyOption
 import me.zhanghai.android.files.provider.common.CopyOptions
 import me.zhanghai.android.files.provider.common.copyTo
+import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.webdav.client.Client
 import me.zhanghai.android.files.provider.webdav.client.isDirectory
 import me.zhanghai.android.files.provider.webdav.client.isSymbolicLink
 import me.zhanghai.android.files.provider.webdav.client.lastModifiedTime
 import me.zhanghai.android.files.provider.webdav.client.size
-import java.io.IOException
 
 internal object WebDavCopyMove {
     @Throws(IOException::class)
@@ -25,12 +26,12 @@ internal object WebDavCopyMove {
             throw UnsupportedOperationException(StandardCopyOption.ATOMIC_MOVE.toString())
         }
         val sourceResponse = try {
-            Client.findProperties(source, copyOptions.noFollowLinks)
+            client.findProperties(source, copyOptions.noFollowLinks)
         } catch (e: DavException) {
             throw e.toFileSystemException(source.toString())
         }
         val targetFile = try {
-            Client.findPropertiesOrNull(target, true)
+            client.findPropertiesOrNull(target, true)
         } catch (e: DavException) {
             throw e.toFileSystemException(target.toString())
         }
@@ -43,39 +44,52 @@ internal object WebDavCopyMove {
             if (!copyOptions.replaceExisting) {
                 throw FileAlreadyExistsException(source.toString(), target.toString(), null)
             }
-            try {
-                Client.delete(target)
-            } catch (e: DavException) {
-                throw e.toFileSystemException(target.toString())
+            if (sourceResponse.isDirectory) {
+                try {
+                    client.delete(target)
+                } catch (e: DavException) {
+                    throw e.toFileSystemException(target.toString())
+                }
             }
         }
         when {
             sourceResponse.isDirectory -> {
                 try {
-                    Client.makeCollection(target)
+                    client.makeCollection(target)
                 } catch (e: DavException) {
                     throw e.toFileSystemException(target.toString())
                 }
                 copyOptions.progressListener?.invoke(sourceSize)
             }
+
             sourceResponse.isSymbolicLink ->
                 throw UnsupportedOperationException("Cannot copy symbolic links")
+
             else -> {
+                // A replacement is written beside the target and moved over it once complete,
+                // so that a failed transfer never leaves the user with neither file.
+                val isReplacing = targetFile != null
+                val writeTarget = if (isReplacing) {
+                    target.replacementSibling() as WebDavPath
+                } else {
+                    target
+                }
                 val sourceInputStream = try {
-                    Client.get(source)
+                    client.get(source)
                 } catch (e: DavException) {
                     throw e.toFileSystemException(source.toString())
                 }
                 try {
                     val targetOutputStream = try {
-                        Client.put(target)
+                        client.put(writeTarget)
                     } catch (e: DavException) {
-                        throw e.toFileSystemException(target.toString())
+                        throw e.toFileSystemException(writeTarget.toString())
                     }
                     var successful = false
                     try {
                         sourceInputStream.copyTo(
-                            targetOutputStream, copyOptions.progressIntervalMillis,
+                            targetOutputStream,
+                            copyOptions.progressIntervalMillis,
                             copyOptions.progressListener
                         )
                         successful = true
@@ -83,14 +97,10 @@ internal object WebDavCopyMove {
                         try {
                             targetOutputStream.close()
                         } catch (e: DavException) {
-                            throw e.toFileSystemException(target.toString())
+                            throw e.toFileSystemException(writeTarget.toString())
                         } finally {
                             if (!successful) {
-                                try {
-                                    Client.delete(target)
-                                } catch (e: DavException) {
-                                    e.printStackTrace()
-                                }
+                                writeTarget.deleteLogging()
                             }
                         }
                     }
@@ -101,6 +111,14 @@ internal object WebDavCopyMove {
                         throw e.toFileSystemException(source.toString())
                     }
                 }
+                if (isReplacing) {
+                    try {
+                        client.move(writeTarget, target, overwrite = true)
+                    } catch (e: DavException) {
+                        writeTarget.deleteLogging()
+                        throw e.toFileSystemException(writeTarget.toString(), target.toString())
+                    }
+                }
             }
         }
         // We don't take error when copying attribute fatal, so errors will only be logged from now
@@ -109,7 +127,7 @@ internal object WebDavCopyMove {
             val lastModifiedTime = sourceResponse.lastModifiedTime
             if (lastModifiedTime != null) {
                 try {
-                    Client.setLastModifiedTime(target, lastModifiedTime)
+                    client.setLastModifiedTime(target, lastModifiedTime)
                 } catch (e: DavException) {
                     e.printStackTrace()
                 }
@@ -117,15 +135,23 @@ internal object WebDavCopyMove {
         }
     }
 
+    private fun WebDavPath.deleteLogging() {
+        try {
+            client.delete(this)
+        } catch (e: DavException) {
+            e.printStackTrace()
+        }
+    }
+
     @Throws(IOException::class)
     fun move(source: WebDavPath, target: WebDavPath, copyOptions: CopyOptions) {
         val sourceResponse = try {
-            Client.findProperties(source, copyOptions.noFollowLinks)
+            client.findProperties(source, copyOptions.noFollowLinks)
         } catch (e: DavException) {
             throw e.toFileSystemException(source.toString())
         }
         val targetResponse = try {
-            Client.findPropertiesOrNull(target, true)
+            client.findPropertiesOrNull(target, true)
         } catch (e: DavException) {
             throw e.toFileSystemException(target.toString())
         }
@@ -139,14 +165,14 @@ internal object WebDavCopyMove {
                 throw FileAlreadyExistsException(source.toString(), target.toString(), null)
             }
             try {
-                Client.delete(target)
+                client.delete(target)
             } catch (e: DavException) {
                 throw e.toFileSystemException(target.toString())
             }
         }
         var renameSuccessful = false
         try {
-            Client.move(source, target)
+            client.move(source, target)
             renameSuccessful = true
         } catch (e: DavException) {
             if (copyOptions.atomicMove) {
@@ -164,17 +190,21 @@ internal object WebDavCopyMove {
         var copyOptions = copyOptions
         if (!copyOptions.copyAttributes || !copyOptions.noFollowLinks) {
             copyOptions = CopyOptions(
-                copyOptions.replaceExisting, true, false, true, copyOptions.progressIntervalMillis,
+                copyOptions.replaceExisting,
+                true,
+                false,
+                true,
+                copyOptions.progressIntervalMillis,
                 copyOptions.progressListener
             )
         }
         copy(source, target, copyOptions)
         try {
-            Client.delete(source)
+            client.delete(source)
         } catch (e: DavException) {
             if (e.toFileSystemException(source.toString()) !is NoSuchFileException) {
                 try {
-                    Client.delete(target)
+                    client.delete(target)
                 } catch (e2: DavException) {
                     e.addSuppressed(e2.toFileSystemException(target.toString()))
                 }

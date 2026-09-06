@@ -7,13 +7,15 @@ package me.zhanghai.android.files.ui
 
 import android.graphics.Rect
 import android.view.View
-import android.view.WindowInsets
+import androidx.core.view.OnApplyWindowInsetsListener
+import androidx.core.view.WindowInsetsCompat
 import me.zhanghai.android.fastscroll.FastScroller
+import me.zhanghai.android.files.util.systemBarsInsets
 
 class ScrollingViewOnApplyWindowInsetsListener(
     view: View,
     private val fastScroller: FastScroller? = null
-) : View.OnApplyWindowInsetsListener {
+) : OnApplyWindowInsetsListener {
     private val initialPadding =
         Rect(view.paddingLeft, view.paddingTop, view.paddingRight, view.paddingBottom)
 
@@ -21,12 +23,15 @@ class ScrollingViewOnApplyWindowInsetsListener(
         fastScroller?.setPadding(0, 0, 0, 0)
     }
 
-    override fun onApplyWindowInsets(view: View, insets: WindowInsets): WindowInsets {
+    override fun onApplyWindowInsets(view: View, insets: WindowInsetsCompat): WindowInsetsCompat {
+        val bottom = insets.systemBarsInsets.bottom
         view.setPadding(
-            initialPadding.left, initialPadding.top, initialPadding.right,
-            initialPadding.bottom + insets.systemWindowInsetBottom
+            initialPadding.left,
+            initialPadding.top,
+            initialPadding.right,
+            initialPadding.bottom + bottom
         )
-        fastScroller?.setPadding(0, 0, 0, insets.systemWindowInsetBottom)
+        fastScroller?.setPadding(0, 0, 0, bottom)
         return insets
     }
 }

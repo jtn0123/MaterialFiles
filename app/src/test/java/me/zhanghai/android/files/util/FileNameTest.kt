@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2026 Hai Zhang <dreaming.in.code.zh@gmail.com>
+ * All Rights Reserved.
+ */
+
+package me.zhanghai.android.files.util
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class FileNameTest {
+    @Test
+    fun singleExtension() {
+        assertEquals("mp4", "Movie.mp4".asFileName().singleExtension)
+        assertEquals("gz", "archive.tar.gz".asFileName().singleExtension)
+        assertEquals("srt", "Movie.en.srt".asFileName().singleExtension)
+        assertEquals("", "README".asFileName().singleExtension)
+        assertEquals("", "name.".asFileName().singleExtension)
+    }
+
+    @Test
+    fun extensionsKeepsKnownDoubleExtensions() {
+        assertEquals("tar.gz", "archive.tar.gz".asFileName().extensions)
+        assertEquals("tar.bz2", "archive.tar.bz2".asFileName().extensions)
+        assertEquals("tar.xz", "archive.tar.xz".asFileName().extensions)
+        // The check is case-insensitive.
+        assertEquals("TAR.GZ", "ARCHIVE.TAR.GZ".asFileName().extensions)
+        // Only the listed compression extensions count as double extensions.
+        assertEquals("srt", "Movie.en.srt".asFileName().extensions)
+        assertEquals("c", "a.b.c".asFileName().extensions)
+        // A lone compression extension has nothing to pair with.
+        assertEquals("gz", "archive.gz".asFileName().extensions)
+    }
+
+    @Test
+    fun baseNameDropsExtensions() {
+        assertEquals("Movie", "Movie.mp4".asFileName().baseName)
+        assertEquals("archive", "archive.tar.gz".asFileName().baseName)
+        assertEquals("Movie.en", "Movie.en.srt".asFileName().baseName)
+        assertEquals("a.b", "a.b.c".asFileName().baseName)
+        assertEquals("README", "README".asFileName().baseName)
+        assertEquals("name.", "name.".asFileName().baseName)
+    }
+
+    @Test
+    fun invalidFileNamesAreRejected() {
+        assertNull("".asFileNameOrNull())
+        assertNull("a/b".asFileNameOrNull())
+        assertNull("a\u0000b".asFileNameOrNull())
+    }
+
+    @Test
+    fun pathNameSplitsFileAndDirectory() {
+        "/a/b/c".asPathName().let {
+            assertEquals("c", it.fileName)
+            assertEquals("/a/b", it.directoryName)
+        }
+        "/a/b/".asPathName().let {
+            assertNull(it.fileName)
+            assertEquals("/a/b", it.directoryName)
+        }
+        "file".asPathName().let {
+            assertEquals("file", it.fileName)
+            assertNull(it.directoryName)
+        }
+        "/".asPathName().let {
+            assertNull(it.fileName)
+            assertEquals("", it.directoryName)
+        }
+    }
+}

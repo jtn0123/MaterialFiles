@@ -20,24 +20,24 @@ import me.zhanghai.android.files.databinding.FilePropertiesTabItemBinding
 import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.showToast
 
 abstract class FilePropertiesTabFragment : Fragment() {
-    protected lateinit var binding: FilePropertiesTabFragmentBinding
+    protected var binding by autoCleared<FilePropertiesTabFragmentBinding>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        FilePropertiesTabFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = FilePropertiesTabFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         binding.swipeRefreshLayout.setOnRefreshListener { refresh() }
     }
@@ -95,7 +95,9 @@ abstract class FilePropertiesTabFragment : Fragment() {
             val itemBinding =
                 getScrapItemBinding(FilePropertiesTabItemBinding::class.java)?.also { addView(it) }
                     ?: FilePropertiesTabItemBinding.inflate(
-                        linearLayout.context.layoutInflater, linearLayout, true
+                        linearLayout.context.layoutInflater,
+                        linearLayout,
+                        true
                     )
                         .also { it.root.tag = it }
             itemBinding.textInputLayout.hint = hint

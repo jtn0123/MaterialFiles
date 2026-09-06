@@ -15,11 +15,12 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.MenuProvider
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.viewpager2.widget.ViewPager2
-import dev.chrisbanes.insetter.applySystemWindowInsetsToPadding
+import java.io.IOException
 import java8.nio.file.Path
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.WriteWith
@@ -31,9 +32,10 @@ import me.zhanghai.android.files.ui.DepthPageTransformer
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableListParceler
 import me.zhanghai.android.files.util.ParcelableState
+import me.zhanghai.android.files.util.applySystemWindowInsetsToPadding
 import me.zhanghai.android.files.util.args
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createSendImageIntent
-import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
@@ -41,17 +43,26 @@ import me.zhanghai.android.files.util.mediumAnimTime
 import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.systemuihelper.SystemUiHelper
-import java.io.IOException
 
-class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
+class ImageViewerFragment :
+    Fragment(),
+    MenuProvider,
+    ConfirmDeleteDialogFragment.Listener {
     private val args by args<Args>()
     private val argsPaths by lazy { args.intent.extraPathList }
 
     private lateinit var paths: MutableList<Path>
 
-    private lateinit var binding: ImageViewerFragmentBinding
+    /**
+     * What we deleted from [argsPaths], which is all the saved state needs to rebuild [paths]:
+     * a folder of images can be too large to save again (a binder transaction is capped at 1 MB).
+     */
+    private val deletedPaths = mutableListOf<Path>()
+
+    private var binding by autoCleared<ImageViewerFragmentBinding>()
 
     private lateinit var systemUiHelper: SystemUiHelper
 
@@ -60,22 +71,20 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        paths = (savedInstanceState?.getState<State>()?.paths ?: argsPaths).toMutableList()
-
-        setHasOptionsMenu(true)
+        savedInstanceState?.getState<State>()?.let { deletedPaths += it.deletedPaths }
+        paths = argsPaths.toMutableList().apply { removeAll(deletedPaths) }
     }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        ImageViewerFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = ImageViewerFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         if (paths.isEmpty()) {
             // TODO: Show a toast.
@@ -83,6 +92,7 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             return
         }
 
+        requireActivity().addMenuProvider(this, viewLifecycleOwner)
         val activity = activity as AppCompatActivity
         activity.setSupportActionBar(binding.toolbar)
         activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
@@ -90,7 +100,9 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         activity.window.statusBarColor = Color.TRANSPARENT
         binding.appBarLayout.applySystemWindowInsetsToPadding(left = true, top = true, right = true)
         systemUiHelper = SystemUiHelper(
-            activity, SystemUiHelper.LEVEL_IMMERSIVE, SystemUiHelper.FLAG_IMMERSIVE_STICKY
+            activity,
+            SystemUiHelper.LEVEL_IMMERSIVE,
+            SystemUiHelper.FLAG_IMMERSIVE_STICKY
         ) { visible: Boolean ->
             binding.appBarLayout.animate()
                 .alpha(if (visible) 1f else 0f)
@@ -134,27 +146,26 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
-        outState.putState(State(paths))
+        outState.putState(State(deletedPaths))
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-
-        inflater.inflate(R.menu.image_viewer, menu)
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.image_viewer, menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean =
-        when (item.itemId) {
-            R.id.action_delete -> {
-                confirmDelete()
-                true
-            }
-            R.id.action_share -> {
-                share()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean = when (menuItem.itemId) {
+        R.id.action_delete -> {
+            confirmDelete()
+            true
         }
+
+        R.id.action_share -> {
+            share()
+            true
+        }
+
+        else -> false
+    }
 
     private fun confirmDelete() {
         ConfirmDeleteDialogFragment.show(currentPath, this)
@@ -165,9 +176,10 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             path.delete()
         } catch (e: IOException) {
             e.printStackTrace()
-            showToast(e.toString())
+            showToast(e.toUserMessage(requireContext()))
             return
         }
+        deletedPaths.add(path)
         paths.removeAll(listOf(path))
         if (paths.isEmpty()) {
             finish()
@@ -191,7 +203,9 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         val size = paths.size
         binding.toolbar.subtitle = if (size > 1) {
             getString(
-                R.string.image_viewer_subtitle_format, binding.viewPager.currentItem + 1, size
+                R.string.image_viewer_subtitle_format,
+                binding.viewPager.currentItem + 1,
+                size
             )
         } else {
             null
@@ -200,9 +214,7 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
 
     private fun share() {
         val path = currentPath
-        val intent = path.fileProviderUri.createSendImageIntent()
-            .apply { extraPath = path }
-            .withChooser()
+        val intent = path.fileProviderUri.createSendImageIntent().withChooser()
         startActivitySafe(intent)
     }
 
@@ -213,5 +225,6 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     class Args(val intent: Intent, val position: Int) : ParcelableArgs
 
     @Parcelize
-    private class State(val paths: @WriteWith<ParcelableListParceler> List<Path>) : ParcelableState
+    private class State(val deletedPaths: @WriteWith<ParcelableListParceler> List<Path>) :
+        ParcelableState
 }

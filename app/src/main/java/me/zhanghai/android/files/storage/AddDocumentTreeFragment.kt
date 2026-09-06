@@ -17,11 +17,12 @@ import me.zhanghai.android.files.util.launchSafe
 
 class AddDocumentTreeFragment : Fragment() {
     private val openDocumentTreeLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocumentTree(), this::onOpenDocumentTreeResult
+        ActivityResultContracts.OpenDocumentTree(),
+        this::onOpenDocumentTreeResult
     )
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         if (savedInstanceState == null) {
             openDocumentTreeLauncher.launchSafe(null, this)

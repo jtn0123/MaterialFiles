@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.sftp
 
+import java.io.IOException
 import java8.nio.file.LinkOption
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.common.ByteString
@@ -16,7 +17,6 @@ import me.zhanghai.android.files.provider.common.toInt
 import me.zhanghai.android.files.provider.sftp.client.Client
 import me.zhanghai.android.files.provider.sftp.client.ClientException
 import net.schmizz.sshj.sftp.FileAttributes
-import java.io.IOException
 
 internal class SftpFileAttributeView(
     private val path: SftpPath,
@@ -62,7 +62,7 @@ internal class SftpFileAttributeView(
             )
             .build()
         try {
-            Client.setstat(path, attributes)
+            client.setstat(path, attributes)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -81,7 +81,7 @@ internal class SftpFileAttributeView(
             .withUIDGID(owner.id, currentAttributes.gid)
             .build()
         try {
-            Client.setstat(path, attributes)
+            client.setstat(path, attributes)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -100,7 +100,7 @@ internal class SftpFileAttributeView(
             .withUIDGID(currentAttributes.uid, group.id)
             .build()
         try {
-            Client.setstat(path, attributes)
+            client.setstat(path, attributes)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -115,29 +115,25 @@ internal class SftpFileAttributeView(
             .withPermissions(mode.toInt())
             .build()
         try {
-            Client.setstat(path, attributes)
+            client.setstat(path, attributes)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
     }
 
     @Throws(IOException::class)
-    private fun getAttributes(): FileAttributes =
-        try {
-            if (noFollowLinks) Client.lstat(path) else Client.stat(path)
-        } catch (e: ClientException) {
-            throw e.toFileSystemException(path.toString())
-        }
-
-    @Throws(IOException::class)
-    override fun setSeLinuxContext(context: ByteString) {
-        throw UnsupportedOperationException()
+    private fun getAttributes(): FileAttributes = try {
+        if (noFollowLinks) client.lstat(path) else client.stat(path)
+    } catch (e: ClientException) {
+        throw e.toFileSystemException(path.toString())
     }
 
     @Throws(IOException::class)
-    override fun restoreSeLinuxContext() {
+    override fun setSeLinuxContext(context: ByteString): Unit =
         throw UnsupportedOperationException()
-    }
+
+    @Throws(IOException::class)
+    override fun restoreSeLinuxContext(): Unit = throw UnsupportedOperationException()
 
     companion object {
         private val NAME = SftpFileSystemProvider.scheme

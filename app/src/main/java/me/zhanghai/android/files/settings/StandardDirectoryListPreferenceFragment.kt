@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.settings
 
 import android.os.Bundle
+import android.view.View
 import androidx.preference.Preference
 import androidx.preference.SwitchPreferenceCompat
 import me.zhanghai.android.files.compat.getDrawableCompat
@@ -17,22 +18,18 @@ import me.zhanghai.android.files.ui.PreferenceFragmentCompat
 import me.zhanghai.android.files.util.getColorByAttr
 import me.zhanghai.android.files.util.valueCompat
 
-class StandardDirectoryListPreferenceFragment : PreferenceFragmentCompat(),
+class StandardDirectoryListPreferenceFragment :
+    PreferenceFragmentCompat(),
     Preference.OnPreferenceClickListener {
-    override fun onCreatePreferencesFix(
-        savedInstanceState: Bundle?,
-        rootKey: String?
-    ) {}
+    override fun onCreatePreferencesFix(savedInstanceState: Bundle?, rootKey: String?) {}
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         StandardDirectoriesLiveData.observe(viewLifecycleOwner) { onStandardDirectoriesChanged(it) }
     }
 
-    private fun onStandardDirectoriesChanged(
-        standardDirectories: List<StandardDirectory>
-    ) {
+    private fun onStandardDirectoriesChanged(standardDirectories: List<StandardDirectory>) {
         var preferenceScreen = preferenceScreen
         val context = requireContext()
         val oldPreferences = mutableMapOf<String, Preference>()

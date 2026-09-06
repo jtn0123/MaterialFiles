@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,13 +21,16 @@ import com.h6ah4i.android.widget.advrecyclerview.utils.WrapperAdapterUtils
 import me.zhanghai.android.files.databinding.StorageListFragmentBinding
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.ui.ScrollingViewOnApplyWindowInsetsListener
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createIntent
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.getDrawable
 import me.zhanghai.android.files.util.startActivitySafe
 
-class StorageListFragment : Fragment(), StorageListAdapter.Listener {
-    private lateinit var binding: StorageListFragmentBinding
+class StorageListFragment :
+    Fragment(),
+    StorageListAdapter.Listener {
+    private var binding by autoCleared<StorageListFragmentBinding>()
 
     private lateinit var adapter: StorageListAdapter
     private lateinit var dragDropManager: RecyclerViewDragDropManager
@@ -36,19 +40,20 @@ class StorageListFragment : Fragment(), StorageListAdapter.Listener {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        StorageListFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = StorageListFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         val activity = requireActivity() as AppCompatActivity
         activity.setSupportActionBar(binding.toolbar)
         activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         binding.recyclerView.layoutManager = LinearLayoutManager(
-            activity, RecyclerView.VERTICAL, false
+            activity,
+            RecyclerView.VERTICAL,
+            false
         )
         adapter = StorageListAdapter(this)
         dragDropManager = RecyclerViewDragDropManager().apply {
@@ -62,7 +67,8 @@ class StorageListFragment : Fragment(), StorageListAdapter.Listener {
         binding.recyclerView.adapter = wrappedAdapter
         binding.recyclerView.itemAnimator = DraggableItemAnimator()
         dragDropManager.attachRecyclerView(binding.recyclerView)
-        binding.recyclerView.setOnApplyWindowInsetsListener(
+        ViewCompat.setOnApplyWindowInsetsListener(
+            binding.recyclerView,
             ScrollingViewOnApplyWindowInsetsListener(binding.recyclerView)
         )
         binding.fab.setOnClickListener { onAddStorage() }

@@ -68,6 +68,7 @@
                             android:orientation="horizontal">
 
                             <ImageView
+                                android:importantForAccessibility="no"
                                 android:layout_width="@dimen/large_icon_size"
                                 android:layout_height="@dimen/large_icon_size"
                                 android:scaleType="centerCrop"
@@ -97,6 +98,7 @@
                             android:orientation="horizontal">
 
                             <ImageView
+                                android:importantForAccessibility="no"
                                 android:layout_width="@dimen/icon_size"
                                 android:layout_height="@dimen/icon_size"
                                 android:scaleType="centerCrop"
@@ -141,6 +143,7 @@
                             android:orientation="horizontal">
 
                             <ImageView
+                                android:importantForAccessibility="no"
                                 android:layout_width="@dimen/icon_size"
                                 android:layout_height="@dimen/icon_size"
                                 android:scaleType="centerCrop"
@@ -168,6 +171,7 @@
                             android:orientation="horizontal">
 
                             <ImageView
+                                android:importantForAccessibility="no"
                                 android:layout_width="@dimen/icon_size"
                                 android:layout_height="@dimen/icon_size"
                                 android:scaleType="centerCrop"
@@ -181,34 +185,6 @@
                                 android:ellipsize="end"
                                 android:maxLines="1"
                                 android:text="@string/about_licenses_title"
-                                android:textAppearance="?textAppearanceListItem" />
-                        </me.zhanghai.android.foregroundcompat.ForegroundLinearLayout>
-
-                        <me.zhanghai.android.foregroundcompat.ForegroundLinearLayout
-                            android:id="@+id/privacyPolicyLayout"
-                            android:layout_width="match_parent"
-                            android:layout_height="?listPreferredItemHeightSmall"
-                            android:paddingStart="?android:listPreferredItemPaddingStart"
-                            android:paddingEnd="?android:listPreferredItemPaddingEnd"
-                            android:foreground="?selectableItemBackground"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:visibility="gone">
-
-                            <ImageView
-                                android:layout_width="@dimen/icon_size"
-                                android:layout_height="@dimen/icon_size"
-                                android:scaleType="centerCrop"
-                                android:src="@drawable/lock_icon_white_24dp"
-                                app:tint="?colorControlNormal" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="@dimen/content_start_from_screen_edge_margin_minus_24dp"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="@string/about_privacy_policy_title"
                                 android:textAppearance="?textAppearanceListItem" />
                         </me.zhanghai.android.foregroundcompat.ForegroundLinearLayout>
                     </LinearLayout>
@@ -257,6 +233,7 @@
                             android:orientation="horizontal">
 
                             <ImageView
+                                android:importantForAccessibility="no"
                                 android:layout_width="@dimen/icon_size"
                                 android:layout_height="@dimen/icon_size"
                                 android:scaleType="centerCrop"
@@ -284,6 +261,7 @@
                             android:orientation="horizontal">
 
                             <ImageView
+                                android:importantForAccessibility="no"
                                 android:layout_width="@dimen/icon_size"
                                 android:layout_height="@dimen/icon_size"
                                 android:scaleType="centerCrop"
@@ -311,6 +289,7 @@
                             android:orientation="horizontal">
 
                             <ImageView
+                                android:importantForAccessibility="no"
                                 android:layout_width="@dimen/icon_size"
                                 android:layout_height="@dimen/icon_size"
                                 android:scaleType="centerCrop"

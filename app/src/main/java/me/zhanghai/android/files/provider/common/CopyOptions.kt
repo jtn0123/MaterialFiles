@@ -9,6 +9,22 @@ import java8.nio.file.CopyOption
 import java8.nio.file.LinkOption
 import java8.nio.file.StandardCopyOption
 
+/**
+ * The `CopyOption`s of a copy or move, unpacked once so that providers test booleans instead of
+ * scanning the array. Built by `Array<CopyOption>.toCopyOptions()` and turned back with
+ * [toArray] when a provider delegates to another (see `ForeignCopyMove`).
+ *
+ * @property replaceExisting `REPLACE_EXISTING`: an existing target is replaced instead of raising
+ * `FileAlreadyExistsException`. Providers write the replacement beside the target and rename it
+ * over the original only when complete.
+ * @property copyAttributes `COPY_ATTRIBUTES`: also copy access and creation times, ownership and
+ * mode where the target supports them; failures there are logged, never fatal.
+ * @property atomicMove `ATOMIC_MOVE`: only a rename is acceptable; a copy-then-delete fallback
+ * must raise `AtomicMoveNotSupportedException` instead.
+ * @property noFollowLinks `NOFOLLOW_LINKS`: a symbolic link source is copied as a link.
+ * @property progressListener called with the number of bytes transferred since the previous call,
+ * at most every [progressIntervalMillis]; also called once with a directory's or link's size.
+ */
 class CopyOptions(
     val replaceExisting: Boolean,
     val copyAttributes: Boolean,
@@ -54,18 +70,25 @@ fun Array<out CopyOption>.toCopyOptions(): CopyOptions {
                     StandardCopyOption.ATOMIC_MOVE -> atomicMove = true
                     else -> throw UnsupportedOperationException(option.toString())
                 }
+
             option === LinkOption.NOFOLLOW_LINKS -> noFollowLinks = true
+
             option is ProgressCopyOption -> {
                 progressIntervalMillis = option.intervalMillis
                 progressListener = option.listener
             }
+
             else -> {
                 throw UnsupportedOperationException(option.toString())
             }
         }
     }
     return CopyOptions(
-        replaceExisting, copyAttributes, atomicMove, noFollowLinks, progressIntervalMillis,
+        replaceExisting,
+        copyAttributes,
+        atomicMove,
+        noFollowLinks,
+        progressIntervalMillis,
         progressListener
     )
 }

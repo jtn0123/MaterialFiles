@@ -13,12 +13,14 @@ import androidx.annotation.WorkerThread
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import java.util.concurrent.Executors
+import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.mainExecutorCompat
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.WakeWifiLock
 import me.zhanghai.android.files.util.showToast
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.valueCompat
-import java.util.concurrent.Executors
 
 class FtpServerService : Service() {
     private var state = State.STOPPED
@@ -66,7 +68,7 @@ class FtpServerService : Service() {
 
     private fun onStartError(exception: Exception) {
         state = State.STOPPED
-        showToast(exception.toString())
+        showToast(exception.toUserMessage(this))
         notification.stopForeground()
         wakeWifiLock.isAcquired = false
         stopSelf()
@@ -100,6 +102,13 @@ class FtpServerService : Service() {
         } else {
             username = Settings.FTP_SERVER_USERNAME.valueCompat
             password = Settings.FTP_SERVER_PASSWORD.valueCompat
+            if (password.isEmpty()) {
+                // Never expose storage to the network behind a known username and no password.
+                val exception =
+                    IllegalStateException(getString(R.string.ftp_server_error_password_empty))
+                mainExecutorCompat.execute { onStartError(exception) }
+                return
+            }
         }
         val port = Settings.FTP_SERVER_PORT.valueCompat
         val homeDirectory = Settings.FTP_SERVER_HOME_DIRECTORY.valueCompat
@@ -134,7 +143,8 @@ class FtpServerService : Service() {
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(
-                context, Intent(context, FtpServerService::class.java)
+                context,
+                Intent(context, FtpServerService::class.java)
             )
         }
 

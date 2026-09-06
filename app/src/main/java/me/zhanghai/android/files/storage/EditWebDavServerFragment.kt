@@ -17,6 +17,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputEditText
+import java.net.URI
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.R
@@ -30,6 +31,7 @@ import me.zhanghai.android.files.ui.UnfilteredArrayAdapter
 import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.args
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getTextArray
@@ -39,14 +41,13 @@ import me.zhanghai.android.files.util.setResult
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
-import java.net.URI
 
 class EditWebDavServerFragment : Fragment() {
     private val args by args<Args>()
 
     private val viewModel by viewModels { { EditWebDavServerViewModel() } }
 
-    private lateinit var binding: EditWebdavServerFragmentBinding
+    private var binding by autoCleared<EditWebdavServerFragmentBinding>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,10 +61,9 @@ class EditWebDavServerFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        EditWebdavServerFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = EditWebdavServerFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -88,7 +88,8 @@ class EditWebDavServerFragment : Fragment() {
         binding.pathEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.protocolEdit.setAdapter(
             UnfilteredArrayAdapter(
-                binding.protocolEdit.context, R.layout.dropdown_item,
+                binding.protocolEdit.context,
+                R.layout.dropdown_item,
                 objects = getTextArray(R.array.storage_edit_webdav_server_protocol_entries)
             )
         )
@@ -99,7 +100,8 @@ class EditWebDavServerFragment : Fragment() {
         }
         binding.authenticationTypeEdit.setAdapter(
             UnfilteredArrayAdapter(
-                binding.authenticationTypeEdit.context, R.layout.dropdown_item,
+                binding.authenticationTypeEdit.context,
+                R.layout.dropdown_item,
                 objects =
                     getTextArray(R.array.storage_edit_webdav_server_authentication_type_entries)
             )
@@ -152,10 +154,12 @@ class EditWebDavServerFragment : Fragment() {
                         binding.usernameEdit.setText(authority.username)
                         binding.passwordEdit.setText(authentication.password)
                     }
+
                     is AccessTokenAuthentication -> {
                         authenticationType = AuthenticationType.ACCESS_TOKEN
                         binding.accessTokenEdit.setText(authentication.accessToken)
                     }
+
                     is NoneAuthentication -> authenticationType = AuthenticationType.NONE
                 }
                 binding.pathEdit.setText(server.relativePath)
@@ -250,11 +254,13 @@ class EditWebDavServerFragment : Fragment() {
                 binding.saveOrConnectAndAddButton.isEnabled = !isConnecting
                 binding.removeOrAddButton.isEnabled = !isConnecting
             }
+
             is ActionState.Success -> {
                 Storages.addOrReplace(state.argument)
                 setResult(Activity.RESULT_OK)
                 finish()
             }
+
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.printStackTrace()
@@ -275,7 +281,8 @@ class EditWebDavServerFragment : Fragment() {
         val host = binding.hostEdit.text.toString().takeIfNotEmpty()
             ?.let { URI::class.canonicalizeHost(it) }
         if (host == null) {
-            binding.hostLayout.error = getString(R.string.storage_edit_webdav_server_host_error_empty)
+            binding.hostLayout.error =
+                getString(R.string.storage_edit_webdav_server_host_error_empty)
             if (errorEdit == null) {
                 errorEdit = binding.hostEdit
             }
@@ -310,6 +317,7 @@ class EditWebDavServerFragment : Fragment() {
                 val password = binding.passwordEdit.text.toString()
                 username to PasswordAuthentication(password)
             }
+
             AuthenticationType.ACCESS_TOKEN -> {
                 val accessToken = binding.accessTokenEdit.text.toString().takeIfNotEmpty()
                 if (accessToken == null) {
@@ -321,6 +329,7 @@ class EditWebDavServerFragment : Fragment() {
                 }
                 "" to accessToken?.let { AccessTokenAuthentication(it) }
             }
+
             AuthenticationType.NONE -> "" to NoneAuthentication
         }
         if (errorEdit != null) {
@@ -332,10 +341,7 @@ class EditWebDavServerFragment : Fragment() {
     }
 
     @Parcelize
-    class Args(
-        val server: WebDavServer? = null,
-        val host: String? = null
-    ) : ParcelableArgs
+    class Args(val server: WebDavServer? = null, val host: String? = null) : ParcelableArgs
 
     private enum class AuthenticationType {
         PASSWORD,

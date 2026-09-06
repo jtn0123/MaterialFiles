@@ -6,6 +6,10 @@
 package me.zhanghai.android.files.provider.webdav
 
 import at.bitfire.dav4jvm.exception.DavException
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
@@ -47,12 +51,12 @@ import me.zhanghai.android.files.provider.webdav.client.Authority
 import me.zhanghai.android.files.provider.webdav.client.Client
 import me.zhanghai.android.files.provider.webdav.client.Protocol
 import me.zhanghai.android.files.provider.webdav.client.isSymbolicLink
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.URI
 
 object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
+    /** Set by the app initializers before any path of this provider is used. */
+    @Volatile
+    lateinit var client: Client
+
     private val HIDDEN_FILE_NAME_PREFIX = ".".toByteString()
 
     private val fileSystems = mutableMapOf<Authority, WebDavFileSystem>()
@@ -130,13 +134,15 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         }
         if (openOptions.create || openOptions.createNew || openOptions.noFollowLinks) {
             val fileResponse = try {
-                Client.findPropertiesOrNull(file, true)
+                client.findPropertiesOrNull(file, true)
             } catch (e: DavException) {
                 throw e.toFileSystemException(file.toString())
             }
             if (openOptions.noFollowLinks && fileResponse != null && fileResponse.isSymbolicLink) {
                 throw FileSystemException(
-                    file.toString(), null, "File is a symbolic link: $fileResponse"
+                    file.toString(),
+                    null,
+                    "File is a symbolic link: $fileResponse"
                 )
             }
             if (openOptions.createNew && fileResponse != null) {
@@ -144,14 +150,14 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
             }
             if ((openOptions.create || openOptions.createNew) && fileResponse == null) {
                 try {
-                    Client.makeFile(file)
+                    client.makeFile(file)
                 } catch (e: DavException) {
                     throw e.toFileSystemException(file.toString())
                 }
             }
         }
         try {
-            return Client.get(file)
+            return client.get(file)
         } catch (e: DavException) {
             throw e.toFileSystemException(file.toString())
         }
@@ -172,7 +178,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
             throw UnsupportedOperationException("Missing ${StandardOpenOption.TRUNCATE_EXISTING}")
         }
         val fileResponse = try {
-            Client.findPropertiesOrNull(file, true)
+            client.findPropertiesOrNull(file, true)
         } catch (e: DavException) {
             throw e.toFileSystemException(file.toString())
         }
@@ -183,7 +189,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
             throw NoSuchFileException(file.toString())
         }
         try {
-            return Client.put(file)
+            return client.put(file)
         } catch (e: DavException) {
             throw e.toFileSystemException(file.toString())
         }
@@ -216,9 +222,10 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
             throw UnsupportedOperationException("Missing ${StandardOpenOption.TRUNCATE_EXISTING}")
         }
         if (openOptions.write || openOptions.create || openOptions.createNew ||
-            openOptions.noFollowLinks) {
+            openOptions.noFollowLinks
+        ) {
             val fileResponse = try {
-                Client.findPropertiesOrNull(file, true)
+                client.findPropertiesOrNull(file, true)
             } catch (e: DavException) {
                 throw e.toFileSystemException(file.toString())
             }
@@ -227,7 +234,9 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
             }
             if (openOptions.noFollowLinks && fileResponse != null && fileResponse.isSymbolicLink) {
                 throw FileSystemException(
-                    file.toString(), null, "File is a symbolic link: $fileResponse"
+                    file.toString(),
+                    null,
+                    "File is a symbolic link: $fileResponse"
                 )
             }
             if (fileResponse == null) {
@@ -235,7 +244,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
                     throw NoSuchFileException(file.toString())
                 }
                 try {
-                    Client.makeFile(file)
+                    client.makeFile(file)
                 } catch (e: DavException) {
                     throw e.toFileSystemException(file.toString())
                 }
@@ -245,7 +254,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
             throw UnsupportedOperationException(attributes.contentToString())
         }
         try {
-            return Client.openByteChannel(file, openOptions.append)
+            return client.openByteChannel(file, openOptions.append)
         } catch (e: DavException) {
             throw e.toFileSystemException(file.toString())
         }
@@ -259,7 +268,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         directory as? WebDavPath ?: throw ProviderMismatchException(directory.toString())
         val paths = try {
             @Suppress("UNCHECKED_CAST")
-            Client.findCollectionMembers(directory) as List<Path>
+            client.findCollectionMembers(directory) as List<Path>
         } catch (e: DavException) {
             throw e.toFileSystemException(directory.toString())
         }
@@ -273,7 +282,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
             throw UnsupportedOperationException(attributes.contentToString())
         }
         try {
-            Client.makeCollection(directory)
+            client.makeCollection(directory)
         } catch (e: DavException) {
             throw e.toFileSystemException(directory.toString())
         }
@@ -301,7 +310,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
     override fun delete(path: Path) {
         path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
         try {
-            Client.delete(path)
+            client.delete(path)
         } catch (e: DavException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -310,7 +319,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
     override fun readSymbolicLink(link: Path): Path {
         link as? WebDavPath ?: throw ProviderMismatchException(link.toString())
         val linkResponse = try {
-            Client.findProperties(link, true)
+            client.findProperties(link, true)
         } catch (e: DavException) {
             throw e.toFileSystemException(link.toString())
         }
@@ -364,7 +373,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         }
         // Assume the file can be read if it can be listed.
         try {
-            Client.findProperties(path, false)
+            client.findProperties(path, false)
         } catch (e: DavException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -398,7 +407,10 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         return getFileAttributeView(path, *options).readAttributes() as A
     }
 
-    private fun getFileAttributeView(path: Path, vararg options: LinkOption): WebDavFileAttributeView {
+    private fun getFileAttributeView(
+        path: Path,
+        vararg options: LinkOption
+    ): WebDavFileAttributeView {
         path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
         val linkOptions = options.toLinkOptions()
         return WebDavFileAttributeView(path, linkOptions.noFollowLinks)
@@ -443,3 +455,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
 
 val WebDavsFileSystemProvider =
     DelegateSchemeFileSystemProvider(Protocol.DAVS.scheme, WebDavFileSystemProvider)
+
+/** The provider's [Client], a shorthand for the files of this package. */
+internal val client: Client
+    get() = WebDavFileSystemProvider.client

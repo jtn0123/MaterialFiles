@@ -9,6 +9,8 @@ import com.hierynomus.msdtyp.FileTime
 import com.hierynomus.msfscc.FileAttributes
 import com.hierynomus.msfscc.fileinformation.FileBasicInformation
 import com.hierynomus.protocol.commons.EnumWithValue
+import java.io.IOException
+import java.io.InterruptedIOException
 import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
@@ -19,8 +21,6 @@ import me.zhanghai.android.files.provider.smb.client.ClientException
 import me.zhanghai.android.files.provider.smb.client.FileInformation
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.hasBits
-import java.io.IOException
-import java.io.InterruptedIOException
 
 internal object SmbCopyMove {
     @Throws(IOException::class)
@@ -29,14 +29,14 @@ internal object SmbCopyMove {
             throw UnsupportedOperationException(StandardCopyOption.ATOMIC_MOVE.toString())
         }
         val sourceInformation = try {
-            Client.getPathInformation(source, copyOptions.noFollowLinks)
+            client.getPathInformation(source, copyOptions.noFollowLinks)
         } catch (e: ClientException) {
             throw e.toFileSystemException(source.toString())
         }
         sourceInformation as? FileInformation
             ?: throw FileSystemException(source.toString(), null, "Cannot copy shares")
         val targetInformation = try {
-            Client.getPathInformation(target, true)
+            client.getPathInformation(target, true)
         } catch (e: ClientException) {
             val exception = e.toFileSystemException(target.toString())
             if (exception !is NoSuchFileException) {
@@ -49,7 +49,8 @@ internal object SmbCopyMove {
             targetInformation as? FileInformation
                 ?: throw FileSystemException(target.toString(), null, "Cannot copy shares")
             if (SmbFileKey(source, sourceInformation.fileId)
-                == SmbFileKey(target, targetInformation.fileId)) {
+                == SmbFileKey(target, targetInformation.fileId)
+            ) {
                 copyOptions.progressListener?.invoke(sourceInformation.endOfFile)
                 return
             }
@@ -65,7 +66,8 @@ internal object SmbCopyMove {
         val sourceIsRegularFile = !sourceIsDirectory && !sourceIsReparsePoint
         val attributesToCopy = if (copyOptions.copyAttributes) {
             EnumWithValue.EnumUtils.toEnumSet(
-                sourceInformation.fileAttributes, FileAttributes::class.java
+                sourceInformation.fileAttributes,
+                FileAttributes::class.java
             )
         } else {
             enumSetOf(FileAttributes.FILE_ATTRIBUTE_NORMAL)
@@ -73,7 +75,7 @@ internal object SmbCopyMove {
         if (sourceIsRegularFile) {
             if (targetInformation != null) {
                 try {
-                    Client.delete(target)
+                    client.delete(target)
                 } catch (e: ClientException) {
                     val exception = e.toFileSystemException(target.toString())
                     if (exception !is NoSuchFileException) {
@@ -82,9 +84,13 @@ internal object SmbCopyMove {
                 }
             }
             try {
-                Client.copyFile(
-                    source, target, copyOptions.copyAttributes, copyOptions.noFollowLinks,
-                    copyOptions.progressIntervalMillis, copyOptions.progressListener
+                client.copyFile(
+                    source,
+                    target,
+                    copyOptions.copyAttributes,
+                    copyOptions.noFollowLinks,
+                    copyOptions.progressIntervalMillis,
+                    copyOptions.progressListener
                 )
             } catch (e: ClientException) {
                 (e.cause as? InterruptedIOException)?.let { throw it }
@@ -94,7 +100,7 @@ internal object SmbCopyMove {
         } else if (sourceIsDirectory) {
             if (targetInformation != null) {
                 try {
-                    Client.delete(target)
+                    client.delete(target)
                 } catch (e: ClientException) {
                     val exception = e.toFileSystemException(target.toString())
                     if (exception !is NoSuchFileException) {
@@ -103,7 +109,7 @@ internal object SmbCopyMove {
                 }
             }
             try {
-                Client.createDirectory(target, attributesToCopy)
+                client.createDirectory(target, attributesToCopy)
             } catch (e: ClientException) {
                 e.maybeThrowInvalidFileNameException(target.toString())
                 throw e.toFileSystemException(target.toString())
@@ -111,17 +117,17 @@ internal object SmbCopyMove {
             copyOptions.progressListener?.invoke(sourceInformation.endOfFile)
         } else if (sourceIsReparsePoint) {
             val sourceReparseData = try {
-                Client.readSymbolicLink(source)
+                client.readSymbolicLink(source)
             } catch (e: ClientException) {
                 throw e.toFileSystemException(source.toString())
             }
             try {
-                Client.createSymbolicLink(target, sourceReparseData, attributesToCopy)
+                client.createSymbolicLink(target, sourceReparseData, attributesToCopy)
             } catch (e: ClientException) {
                 val exception = e.toFileSystemException(target.toString())
                 if (exception is FileAlreadyExistsException && copyOptions.replaceExisting) {
                     try {
-                        Client.delete(target)
+                        client.delete(target)
                     } catch (e2: ClientException) {
                         if (e2.toFileSystemException(target.toString()) !is NoSuchFileException) {
                             e2.addSuppressed(exception)
@@ -129,7 +135,7 @@ internal object SmbCopyMove {
                         }
                     }
                     try {
-                        Client.createSymbolicLink(target, sourceReparseData, attributesToCopy)
+                        client.createSymbolicLink(target, sourceReparseData, attributesToCopy)
                     } catch (e2: ClientException) {
                         e2.addSuppressed(exception)
                         throw e2.toFileSystemException(target.toString())
@@ -151,9 +157,10 @@ internal object SmbCopyMove {
                 if (copyOptions.copyAttributes) sourceInformation.creationTime else FileTime(0),
                 if (copyOptions.copyAttributes) sourceInformation.lastAccessTime else FileTime(0),
                 sourceInformation.lastWriteTime,
-                if (copyOptions.copyAttributes) sourceInformation.changeTime else FileTime(0), 0
+                if (copyOptions.copyAttributes) sourceInformation.changeTime else FileTime(0),
+                0
             )
-            Client.setFileInformation(target, true, fileInformation)
+            client.setFileInformation(target, true, fileInformation)
         } catch (e: ClientException) {
             e.printStackTrace()
         }
@@ -163,14 +170,14 @@ internal object SmbCopyMove {
     @Throws(IOException::class)
     fun move(source: SmbPath, target: SmbPath, copyOptions: CopyOptions) {
         val sourceInformation = try {
-            Client.getPathInformation(source, true)
+            client.getPathInformation(source, true)
         } catch (e: ClientException) {
             throw e.toFileSystemException(source.toString())
         }
         sourceInformation as? FileInformation
             ?: throw FileSystemException(source.toString(), null, "Cannot move shares")
         val targetInformation = try {
-            Client.getPathInformation(target, true)
+            client.getPathInformation(target, true)
         } catch (e: ClientException) {
             val exception = e.toFileSystemException(target.toString())
             if (exception !is NoSuchFileException) {
@@ -183,7 +190,8 @@ internal object SmbCopyMove {
             targetInformation as? FileInformation
                 ?: throw FileSystemException(target.toString(), null, "Cannot move shares")
             if (SmbFileKey(source, sourceInformation.fileId)
-                == SmbFileKey(target, targetInformation.fileId)) {
+                == SmbFileKey(target, targetInformation.fileId)
+            ) {
                 copyOptions.progressListener?.invoke(sourceInformation.endOfFile)
                 return
             }
@@ -191,14 +199,14 @@ internal object SmbCopyMove {
                 throw FileAlreadyExistsException(source.toString(), target.toString(), null)
             }
             try {
-                Client.delete(target)
+                client.delete(target)
             } catch (e: ClientException) {
                 throw e.toFileSystemException(target.toString())
             }
         }
         var renameSuccessful = false
         try {
-            Client.rename(source, target)
+            client.rename(source, target)
             renameSuccessful = true
         } catch (e: ClientException) {
             if (copyOptions.atomicMove) {
@@ -218,17 +226,21 @@ internal object SmbCopyMove {
         var copyOptions = copyOptions
         if (!copyOptions.copyAttributes || !copyOptions.noFollowLinks) {
             copyOptions = CopyOptions(
-                copyOptions.replaceExisting, true, false, true, copyOptions.progressIntervalMillis,
+                copyOptions.replaceExisting,
+                true,
+                false,
+                true,
+                copyOptions.progressIntervalMillis,
                 copyOptions.progressListener
             )
         }
         copy(source, target, copyOptions)
         try {
-            Client.delete(source)
+            client.delete(source)
         } catch (e: ClientException) {
             if (e.toFileSystemException(source.toString()) !is NoSuchFileException) {
                 try {
-                    Client.delete(target)
+                    client.delete(target)
                 } catch (e2: ClientException) {
                     e.addSuppressed(e2.toFileSystemException(target.toString()))
                 }

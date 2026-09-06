@@ -17,6 +17,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputEditText
+import java.net.URI
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.R
@@ -28,6 +29,7 @@ import me.zhanghai.android.files.ui.UnfilteredArrayAdapter
 import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.args
+import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getTextArray
@@ -37,14 +39,13 @@ import me.zhanghai.android.files.util.setResult
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
-import java.net.URI
 
 class EditFtpServerFragment : Fragment() {
     private val args by args<Args>()
 
     private val viewModel by viewModels { { EditFtpServerViewModel() } }
 
-    private lateinit var binding: EditFtpServerFragmentBinding
+    private var binding by autoCleared<EditFtpServerFragmentBinding>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,10 +59,9 @@ class EditFtpServerFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View =
-        EditFtpServerFragmentBinding.inflate(inflater, container, false)
-            .also { binding = it }
-            .root
+    ): View = EditFtpServerFragmentBinding.inflate(inflater, container, false)
+        .also { binding = it }
+        .root
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -86,7 +86,8 @@ class EditFtpServerFragment : Fragment() {
         binding.pathEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.protocolEdit.setAdapter(
             UnfilteredArrayAdapter(
-                binding.protocolEdit.context, R.layout.dropdown_item,
+                binding.protocolEdit.context,
+                R.layout.dropdown_item,
                 objects = getTextArray(R.array.storage_edit_ftp_server_protocol_entries)
             )
         )
@@ -97,7 +98,8 @@ class EditFtpServerFragment : Fragment() {
         }
         binding.authenticationTypeEdit.setAdapter(
             UnfilteredArrayAdapter(
-                binding.authenticationTypeEdit.context, R.layout.dropdown_item,
+                binding.authenticationTypeEdit.context,
+                R.layout.dropdown_item,
                 objects = getTextArray(R.array.storage_edit_ftp_server_authentication_type_entries)
             )
         )
@@ -110,14 +112,16 @@ class EditFtpServerFragment : Fragment() {
         binding.usernameEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.modeEdit.setAdapter(
             UnfilteredArrayAdapter(
-                binding.modeEdit.context, R.layout.dropdown_item,
+                binding.modeEdit.context,
+                R.layout.dropdown_item,
                 objects = getTextArray(R.array.storage_edit_ftp_server_mode_entries)
             )
         )
         mode = Authority.DEFAULT_MODE
         binding.encodingEdit.setAdapter(
             UnfilteredArrayAdapter(
-                binding.encodingEdit.context, R.layout.dropdown_item,
+                binding.encodingEdit.context,
+                R.layout.dropdown_item,
                 objects = viewModel.charsets.map { it.displayName() }
             )
         )
@@ -158,9 +162,10 @@ class EditFtpServerFragment : Fragment() {
                     binding.portEdit.setText(authority.port.toString())
                 }
                 when {
-                    authority.username == Authority.ANONYMOUS_USERNAME
-                        && server.password == Authority.ANONYMOUS_PASSWORD ->
+                    authority.username == Authority.ANONYMOUS_USERNAME &&
+                        server.password == Authority.ANONYMOUS_PASSWORD ->
                         authenticationType = AuthenticationType.ANONYMOUS
+
                     else -> {
                         authenticationType = AuthenticationType.PASSWORD
                         binding.usernameEdit.setText(authority.username)
@@ -288,11 +293,13 @@ class EditFtpServerFragment : Fragment() {
                 binding.saveOrConnectAndAddButton.isEnabled = !isConnecting
                 binding.removeOrAddButton.isEnabled = !isConnecting
             }
+
             is ActionState.Success -> {
                 Storages.addOrReplace(state.argument)
                 setResult(Activity.RESULT_OK)
                 finish()
             }
+
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.printStackTrace()
@@ -349,6 +356,7 @@ class EditFtpServerFragment : Fragment() {
                 }
                 password = binding.passwordEdit.text.toString()
             }
+
             AuthenticationType.ANONYMOUS -> {
                 username = Authority.ANONYMOUS_USERNAME
                 password = Authority.ANONYMOUS_PASSWORD
@@ -363,10 +371,7 @@ class EditFtpServerFragment : Fragment() {
     }
 
     @Parcelize
-    class Args(
-        val server: FtpServer? = null,
-        val host: String? = null
-    ) : ParcelableArgs
+    class Args(val server: FtpServer? = null, val host: String? = null) : ParcelableArgs
 
     private enum class AuthenticationType {
         PASSWORD,

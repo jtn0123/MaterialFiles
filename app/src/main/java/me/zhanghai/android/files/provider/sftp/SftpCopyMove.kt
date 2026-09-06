@@ -15,6 +15,7 @@ import me.zhanghai.android.files.provider.common.CopyOptions
 import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.common.newInputStream
 import me.zhanghai.android.files.provider.common.newOutputStream
+import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.sftp.client.Client
 import me.zhanghai.android.files.provider.sftp.client.ClientException
 import me.zhanghai.android.files.util.enumSetOf
@@ -29,17 +30,19 @@ internal object SftpCopyMove {
             throw UnsupportedOperationException(StandardCopyOption.ATOMIC_MOVE.toString())
         }
         val sourceAttributes = try {
-            if (copyOptions.noFollowLinks) Client.lstat(source) else Client.stat(source)
+            if (copyOptions.noFollowLinks) client.lstat(source) else client.stat(source)
         } catch (e: ClientException) {
             throw e.toFileSystemException(source.toString())
         }
         if (!sourceAttributes.has(FileAttributes.Flag.MODE)) {
             throw FileSystemException(
-                source.toString(), null, "Missing SSH_FILEXFER_ATTR_PERMISSIONS"
+                source.toString(),
+                null,
+                "Missing SSH_FILEXFER_ATTR_PERMISSIONS"
             )
         }
         val targetAttributes = try {
-            Client.lstat(target)
+            client.lstat(target)
         } catch (e: ClientException) {
             val exception = e.toFileSystemException(target.toString())
             if (exception !is NoSuchFileException) {
@@ -73,35 +76,36 @@ internal object SftpCopyMove {
             .build()
         when (sourceType) {
             FileMode.Type.REGULAR -> {
-                if (targetAttributes != null) {
-                    try {
-                        Client.remove(target)
-                    } catch (e: ClientException) {
-                        val exception = e.toFileSystemException(target.toString())
-                        if (exception !is NoSuchFileException) {
-                            throw exception
-                        }
-                    }
+                // A replacement is written beside the target and renamed over it once complete,
+                // so that a failed transfer never leaves the user with neither file.
+                val isReplacing = targetAttributes != null
+                val writeTarget = if (isReplacing) {
+                    target.replacementSibling() as SftpPath
+                } else {
+                    target
                 }
                 val sourceInputStream = try {
-                    Client.openByteChannel(source, enumSetOf(OpenMode.READ), FileAttributes.EMPTY)
+                    client.openByteChannel(source, enumSetOf(OpenMode.READ), FileAttributes.EMPTY)
                 } catch (e: ClientException) {
                     throw e.toFileSystemException(source.toString())
                 }.newInputStream()
                 try {
-                    val targetFlags = enumSetOf(OpenMode.WRITE, OpenMode.TRUNC, OpenMode.CREAT)
-                    if (!copyOptions.replaceExisting) {
-                        targetFlags += OpenMode.EXCL
-                    }
+                    val targetFlags = enumSetOf(
+                        OpenMode.WRITE,
+                        OpenMode.TRUNC,
+                        OpenMode.CREAT,
+                        OpenMode.EXCL
+                    )
                     val targetOutputStream = try {
-                        Client.openByteChannel(target, targetFlags, sourceModeAttributes)
+                        client.openByteChannel(writeTarget, targetFlags, sourceModeAttributes)
                     } catch (e: ClientException) {
-                        throw e.toFileSystemException(target.toString())
+                        throw e.toFileSystemException(writeTarget.toString())
                     }.newOutputStream()
                     var successful = false
                     try {
                         sourceInputStream.copyTo(
-                            targetOutputStream, copyOptions.progressIntervalMillis,
+                            targetOutputStream,
+                            copyOptions.progressIntervalMillis,
                             copyOptions.progressListener
                         )
                         successful = true
@@ -109,14 +113,10 @@ internal object SftpCopyMove {
                         try {
                             targetOutputStream.close()
                         } catch (e: IOException) {
-                            throw ClientException(e).toFileSystemException(target.toString())
+                            throw ClientException(e).toFileSystemException(writeTarget.toString())
                         } finally {
                             if (!successful) {
-                                try {
-                                    Client.remove(target)
-                                } catch (e: ClientException) {
-                                    e.printStackTrace()
-                                }
+                                writeTarget.removeLogging()
                             }
                         }
                     }
@@ -127,11 +127,34 @@ internal object SftpCopyMove {
                         throw ClientException(e).toFileSystemException(source.toString())
                     }
                 }
+                if (isReplacing) {
+                    try {
+                        // SFTP rename does not overwrite, so the old file goes first; its
+                        // replacement is already complete on the server at this point.
+                        try {
+                            client.remove(target)
+                        } catch (e: ClientException) {
+                            val exception = e.toFileSystemException(target.toString())
+                            if (exception !is NoSuchFileException) {
+                                throw exception
+                            }
+                        }
+                        try {
+                            client.rename(writeTarget, target)
+                        } catch (e: ClientException) {
+                            throw e.toFileSystemException(writeTarget.toString(), target.toString())
+                        }
+                    } catch (e: IOException) {
+                        writeTarget.removeLogging()
+                        throw e
+                    }
+                }
             }
+
             FileMode.Type.DIRECTORY -> {
                 if (targetAttributes != null) {
                     try {
-                        Client.remove(target)
+                        client.remove(target)
                     } catch (e: ClientException) {
                         val exception = e.toFileSystemException(target.toString())
                         if (exception !is NoSuchFileException) {
@@ -140,34 +163,36 @@ internal object SftpCopyMove {
                     }
                 }
                 try {
-                    Client.mkdir(target, sourceModeAttributes)
+                    client.mkdir(target, sourceModeAttributes)
                 } catch (e: ClientException) {
                     throw e.toFileSystemException(target.toString())
                 }
                 copyOptions.progressListener?.invoke(sourceSize)
             }
+
             FileMode.Type.SYMLINK -> {
                 val sourceTarget = try {
-                    Client.readlink(source)
+                    client.readlink(source)
                 } catch (e: ClientException) {
                     throw e.toFileSystemException(source.toString())
                 }
                 try {
-                    Client.symlink(target, sourceTarget)
+                    client.symlink(target, sourceTarget)
                 } catch (e: ClientException) {
                     val exception = e.toFileSystemException(target.toString())
                     if (exception is FileAlreadyExistsException && copyOptions.replaceExisting) {
                         try {
-                            Client.remove(target)
+                            client.remove(target)
                         } catch (e2: ClientException) {
                             if (e2.toFileSystemException(target.toString())
-                                    !is NoSuchFileException) {
+                                    !is NoSuchFileException
+                            ) {
                                 e2.addSuppressed(exception)
                                 throw e2.toFileSystemException(target.toString())
                             }
                         }
                         try {
-                            Client.symlink(target, sourceTarget)
+                            client.symlink(target, sourceTarget)
                         } catch (e2: ClientException) {
                             e2.addSuppressed(exception)
                             throw e2.toFileSystemException(target.toString())
@@ -177,6 +202,7 @@ internal object SftpCopyMove {
                 }
                 copyOptions.progressListener?.invoke(sourceSize)
             }
+
             else -> throw FileSystemException(source.toString(), null, "type $sourceType")
         }
         // We don't take error when copying attribute fatal, so errors will only be logged from now
@@ -184,12 +210,14 @@ internal object SftpCopyMove {
         if (sourceType != FileMode.Type.SYMLINK) {
             val attributes = FileAttributes.Builder()
                 .apply {
-                    if (copyOptions.copyAttributes
-                        && sourceAttributes.has(FileAttributes.Flag.UIDGID)) {
+                    if (copyOptions.copyAttributes &&
+                        sourceAttributes.has(FileAttributes.Flag.UIDGID)
+                    ) {
                         withUIDGID(sourceAttributes.uid, sourceAttributes.gid)
                     }
-                    if (sourceAttributes.type != FileMode.Type.SYMLINK
-                        && sourceAttributes.has(FileAttributes.Flag.MODE)) {
+                    if (sourceAttributes.type != FileMode.Type.SYMLINK &&
+                        sourceAttributes.has(FileAttributes.Flag.MODE)
+                    ) {
                         withPermissions(sourceAttributes.mode.mask)
                     }
                     if (sourceAttributes.has(FileAttributes.Flag.ACMODTIME)) {
@@ -200,33 +228,44 @@ internal object SftpCopyMove {
                                 // We cannot leave atime unchanged in SFTP, but since we've just
                                 // written the file, its atime is simply now.
                                 Instant.now().epochSecond
-                            }, sourceAttributes.mtime
+                            },
+                            sourceAttributes.mtime
                         )
                     }
                 }
                 .build()
             try {
-                Client.setstat(target, attributes)
+                client.setstat(target, attributes)
             } catch (e: ClientException) {
                 e.printStackTrace()
             }
         }
     }
 
+    private fun SftpPath.removeLogging() {
+        try {
+            client.remove(this)
+        } catch (e: ClientException) {
+            e.printStackTrace()
+        }
+    }
+
     @Throws(IOException::class)
     fun move(source: SftpPath, target: SftpPath, copyOptions: CopyOptions) {
         val sourceAttributes = try {
-            Client.lstat(source)
+            client.lstat(source)
         } catch (e: ClientException) {
             throw e.toFileSystemException(source.toString())
         }
         if (!sourceAttributes.has(FileAttributes.Flag.MODE)) {
             throw FileSystemException(
-                source.toString(), null, "Missing SSH_FILEXFER_ATTR_PERMISSIONS"
+                source.toString(),
+                null,
+                "Missing SSH_FILEXFER_ATTR_PERMISSIONS"
             )
         }
         val targetAttributes = try {
-            Client.lstat(target)
+            client.lstat(target)
         } catch (e: ClientException) {
             val exception = e.toFileSystemException(target.toString())
             if (exception !is NoSuchFileException) {
@@ -249,14 +288,14 @@ internal object SftpCopyMove {
                 throw FileAlreadyExistsException(source.toString(), target.toString(), null)
             }
             try {
-                Client.remove(target)
+                client.remove(target)
             } catch (e: ClientException) {
                 throw e.toFileSystemException(target.toString())
             }
         }
         var renameSuccessful = false
         try {
-            Client.rename(source, target)
+            client.rename(source, target)
             renameSuccessful = true
         } catch (e: ClientException) {
             if (copyOptions.atomicMove) {
@@ -274,17 +313,21 @@ internal object SftpCopyMove {
         var copyOptions = copyOptions
         if (!copyOptions.copyAttributes || !copyOptions.noFollowLinks) {
             copyOptions = CopyOptions(
-                copyOptions.replaceExisting, true, false, true, copyOptions.progressIntervalMillis,
+                copyOptions.replaceExisting,
+                true,
+                false,
+                true,
+                copyOptions.progressIntervalMillis,
                 copyOptions.progressListener
             )
         }
         copy(source, target, copyOptions)
         try {
-            Client.remove(source)
+            client.remove(source)
         } catch (e: ClientException) {
             if (e.toFileSystemException(source.toString()) !is NoSuchFileException) {
                 try {
-                    Client.remove(target)
+                    client.remove(target)
                 } catch (e2: ClientException) {
                     e.addSuppressed(e2.toFileSystemException(target.toString()))
                 }

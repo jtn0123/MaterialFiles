@@ -40,7 +40,10 @@ import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.readParcelable
 import me.zhanghai.android.files.util.showToast
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.viewModels
+
+private typealias FileJobErrorListener = (FileJobErrorAction, Boolean) -> Unit
 
 class FileJobErrorDialogFragment : AppCompatDialogFragment() {
     private val args by args<Args>()
@@ -97,11 +100,13 @@ class FileJobErrorDialogFragment : AppCompatDialogFragment() {
     private fun onRemountStateChanged(state: ActionState<PosixFileStore, Unit>) {
         when (state) {
             is ActionState.Ready, is ActionState.Running -> updateRemountButton()
+
             is ActionState.Success -> viewModel.finishRemounting()
+
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.printStackTrace()
-                showToast(throwable.toString())
+                showToast(throwable.toUserMessage(requireContext()))
                 viewModel.finishRemounting()
             }
         }
@@ -166,7 +171,7 @@ class FileJobErrorDialogFragment : AppCompatDialogFragment() {
         val positiveButtonText: CharSequence?,
         val negativeButtonText: CharSequence?,
         val neutralButtonText: CharSequence?,
-        val listener: @WriteWith<ListenerParceler>() (FileJobErrorAction, Boolean) -> Unit
+        val listener: @WriteWith<ListenerParceler> FileJobErrorListener
     ) : ParcelableArgs {
         object ListenerParceler : Parceler<(FileJobErrorAction, Boolean) -> Unit> {
             override fun create(parcel: Parcel): (FileJobErrorAction, Boolean) -> Unit =
@@ -177,22 +182,21 @@ class FileJobErrorDialogFragment : AppCompatDialogFragment() {
                 }
 
             override fun ((FileJobErrorAction, Boolean) -> Unit).write(parcel: Parcel, flags: Int) {
-                parcel.writeParcelable(RemoteCallback {
-                    val args = it.getArgs<ListenerArgs>()
-                    this(args.action, args.isAll)
-                }, flags)
+                parcel.writeParcelable(
+                    RemoteCallback {
+                        val args = it.getArgs<ListenerArgs>()
+                        this(args.action, args.isAll)
+                    },
+                    flags
+                )
             }
 
             @Parcelize
-            private class ListenerArgs(
-                val action: FileJobErrorAction,
-                val isAll: Boolean
-            ) : ParcelableArgs
+            private class ListenerArgs(val action: FileJobErrorAction, val isAll: Boolean) :
+                ParcelableArgs
         }
     }
 
     @Parcelize
-    private class State(
-        val isAllChecked: Boolean
-    ) : ParcelableState
+    private class State(val isAllChecked: Boolean) : ParcelableState
 }

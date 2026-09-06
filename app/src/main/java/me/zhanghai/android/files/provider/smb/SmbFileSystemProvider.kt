@@ -6,6 +6,8 @@
 package me.zhanghai.android.files.provider.smb
 
 import com.hierynomus.msdtyp.AccessMask
+import java.io.IOException
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
@@ -45,10 +47,12 @@ import me.zhanghai.android.files.provider.smb.client.FileInformation
 import me.zhanghai.android.files.provider.smb.client.SymbolicLinkReparseData
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.takeIfNotEmpty
-import java.io.IOException
-import java.net.URI
 
 object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
+    /** Set by the app initializers before any path of this provider is used. */
+    @Volatile
+    lateinit var client: Client
+
     private const val SCHEME = "smb"
 
     private val HIDDEN_FILE_NAME_PREFIX = ".".toByteString()
@@ -148,8 +152,13 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             throw UnsupportedOperationException(attributes.contentToString())
         }
         return try {
-            Client.openByteChannel(
-                file, desiredAccess, fileAttributes, shareAccess, createDisposition, createOptions,
+            client.openByteChannel(
+                file,
+                desiredAccess,
+                fileAttributes,
+                shareAccess,
+                createDisposition,
+                createOptions,
                 openOptions.append
             )
         } catch (e: ClientException) {
@@ -165,7 +174,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         directory as? SmbPath ?: throw ProviderMismatchException(directory.toString())
         val iterator = try {
             @Suppress("UNCHECKED_CAST")
-            Client.openDirectoryIterator(directory) as CloseableIterator<Path>
+            client.openDirectoryIterator(directory) as CloseableIterator<Path>
         } catch (e: ClientException) {
             throw e.toFileSystemException(directory.toString())
         }
@@ -179,7 +188,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             throw UnsupportedOperationException(attributes.contentToString())
         }
         try {
-            Client.createDirectory(directory)
+            client.createDirectory(directory)
         } catch (e: ClientException) {
             throw e.toFileSystemException(directory.toString())
         }
@@ -191,20 +200,24 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         val isRelative: Boolean
         when (target) {
             is SmbPath -> {
-                if(target.isAbsolute && target.authority.port != Authority.DEFAULT_PORT) {
+                if (target.isAbsolute && target.authority.port != Authority.DEFAULT_PORT) {
                     throw InvalidFileNameException(
-                        target.toString(), null, "Path is absolute but uses port ${
-                        target.authority.port} instead of the default port ${
-                        Authority.DEFAULT_PORT}"
+                        target.toString(),
+                        null,
+                        "Path is absolute but uses port ${
+                            target.authority.port} instead of the default port ${
+                            Authority.DEFAULT_PORT}"
                     )
                 }
                 targetString = target.toWindowsPath()
                 isRelative = !target.isAbsolute
             }
+
             is ByteStringPath -> {
                 targetString = target.toString()
                 isRelative = true
             }
+
             else -> throw ProviderMismatchException(target.toString())
         }.toString()
         if (attributes.isNotEmpty()) {
@@ -212,7 +225,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         }
         val reparseData = SymbolicLinkReparseData(targetString, targetString, isRelative)
         try {
-            Client.createSymbolicLink(link, reparseData)
+            client.createSymbolicLink(link, reparseData)
         } catch (e: ClientException) {
             e.maybeThrowInvalidFileNameException(link.toString())
             throw e.toFileSystemException(link.toString(), targetString)
@@ -223,7 +236,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         link as? SmbPath ?: throw ProviderMismatchException(link.toString())
         existing as? SmbPath ?: throw ProviderMismatchException(existing.toString())
         try {
-            Client.createLink(existing, link, true)
+            client.createLink(existing, link, true)
         } catch (e: ClientException) {
             e.maybeThrowInvalidFileNameException(link.toString())
             throw e.toFileSystemException(link.toString(), existing.toString())
@@ -234,7 +247,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     override fun delete(path: Path) {
         path as? SmbPath ?: throw ProviderMismatchException(path.toString())
         try {
-            Client.delete(path)
+            client.delete(path)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -243,7 +256,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     override fun readSymbolicLink(link: Path): Path {
         link as? SmbPath ?: throw ProviderMismatchException(link.toString())
         val reparseData = try {
-            Client.readSymbolicLink(link)
+            client.readSymbolicLink(link)
         } catch (e: ClientException) {
             throw e.toFileSystemException(link.toString())
         }
@@ -280,22 +293,25 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         }
         val sharePath = path.sharePath
         val sharePath2 = path2.sharePath
-        if (sharePath == null || sharePath2 == null || sharePath.name != sharePath2.name
-            || sharePath.path.isEmpty() || sharePath2.path.isEmpty()) {
+        if (sharePath == null || sharePath2 == null || sharePath.name != sharePath2.name ||
+            sharePath.path.isEmpty() || sharePath2.path.isEmpty()
+        ) {
             return false
         }
         val pathInformation = try {
-            Client.getPathInformation(path, true)
+            client.getPathInformation(path, true)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         } as FileInformation
         val path2Information = try {
-            Client.getPathInformation(path2, true)
+            client.getPathInformation(path2, true)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path2.toString())
         } as FileInformation
-        return (SmbFileKey(path, pathInformation.fileId)
-            == SmbFileKey(path2, path2Information.fileId))
+        return (
+            SmbFileKey(path, pathInformation.fileId)
+                == SmbFileKey(path2, path2Information.fileId)
+            )
     }
 
     override fun isHidden(path: Path): Boolean {
@@ -324,7 +340,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             desiredAccess += AccessMask.GENERIC_EXECUTE
         }
         try {
-            Client.checkAccess(path, desiredAccess, false)
+            client.checkAccess(path, desiredAccess, false)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -400,3 +416,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 }
+
+/** The provider's [Client], a shorthand for the files of this package. */
+internal val client: Client
+    get() = SmbFileSystemProvider.client
