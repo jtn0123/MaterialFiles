@@ -5,6 +5,8 @@
 
 package me.zhanghai.android.files.provider.sftp
 
+import java.io.IOException
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
@@ -42,10 +44,12 @@ import me.zhanghai.android.files.provider.sftp.client.ClientException
 import me.zhanghai.android.files.provider.sftp.client.SecurityProviderHelper
 import me.zhanghai.android.files.util.enumSetOf
 import net.schmizz.sshj.sftp.OpenMode
-import java.io.IOException
-import java.net.URI
 
 object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
+    /** Set by the app initializers before any path of this provider is used. */
+    @Volatile
+    lateinit var client: Client
+
     private const val SCHEME = "sftp"
 
     private val HIDDEN_FILE_NAME_PREFIX = ".".toByteString()
@@ -131,10 +135,12 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         file as? SftpPath ?: throw ProviderMismatchException(file.toString())
         val openOptions = options.toOpenOptions()
         val flags = openOptions.toSftpFlags()
-        val sftpAttributes = (PosixFileMode.fromAttributes(attributes)
-            ?: PosixFileMode.CREATE_FILE_DEFAULT).toSftpAttributes()
+        val sftpAttributes = (
+            PosixFileMode.fromAttributes(attributes)
+                ?: PosixFileMode.CREATE_FILE_DEFAULT
+            ).toSftpAttributes()
         return try {
-            Client.openByteChannel(file, flags, sftpAttributes)
+            client.openByteChannel(file, flags, sftpAttributes)
         } catch (e: ClientException) {
             throw e.toFileSystemException(file.toString())
         }
@@ -148,7 +154,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         directory as? SftpPath ?: throw ProviderMismatchException(directory.toString())
         val paths = try {
             @Suppress("UNCHECKED_CAST")
-            Client.scandir(directory) as List<Path>
+            client.scandir(directory) as List<Path>
         } catch (e: ClientException) {
             throw e.toFileSystemException(directory.toString())
         }
@@ -158,10 +164,12 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
     @Throws(IOException::class)
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
         directory as? SftpPath ?: throw ProviderMismatchException(directory.toString())
-        val sftpAttributes = (PosixFileMode.fromAttributes(attributes)
-            ?: PosixFileMode.CREATE_DIRECTORY_DEFAULT).toSftpAttributes()
+        val sftpAttributes = (
+            PosixFileMode.fromAttributes(attributes)
+                ?: PosixFileMode.CREATE_DIRECTORY_DEFAULT
+            ).toSftpAttributes()
         try {
-            Client.mkdir(directory, sftpAttributes)
+            client.mkdir(directory, sftpAttributes)
         } catch (e: ClientException) {
             throw e.toFileSystemException(directory.toString())
         }
@@ -178,7 +186,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
             throw UnsupportedOperationException(attributes.contentToString())
         }
         try {
-            Client.symlink(link, targetString)
+            client.symlink(link, targetString)
         } catch (e: ClientException) {
             throw e.toFileSystemException(link.toString(), targetString)
         }
@@ -194,7 +202,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
     override fun delete(path: Path) {
         path as? SftpPath ?: throw ProviderMismatchException(path.toString())
         try {
-            Client.remove(path)
+            client.remove(path)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -203,7 +211,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
     override fun readSymbolicLink(link: Path): Path {
         link as? SftpPath ?: throw ProviderMismatchException(link.toString())
         val target = try {
-            Client.readlink(link)
+            client.readlink(link)
         } catch (e: ClientException) {
             throw e.toFileSystemException(link.toString())
         }
@@ -258,7 +266,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
             }
         }
         try {
-            Client.access(path, flags)
+            client.access(path, flags)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -292,7 +300,10 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         return getFileAttributeView(path, *options).readAttributes() as A
     }
 
-    private fun getFileAttributeView(path: Path, vararg options: LinkOption): SftpFileAttributeView {
+    private fun getFileAttributeView(
+        path: Path,
+        vararg options: LinkOption
+    ): SftpFileAttributeView {
         path as? SftpPath ?: throw ProviderMismatchException(path.toString())
         val linkOptions = options.toLinkOptions()
         return SftpFileAttributeView(path, linkOptions.noFollowLinks)
@@ -334,3 +345,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 }
+
+/** The provider's [Client], a shorthand for the files of this package. */
+internal val client: Client
+    get() = SftpFileSystemProvider.client

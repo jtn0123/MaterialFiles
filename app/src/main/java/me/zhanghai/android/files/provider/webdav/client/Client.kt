@@ -43,16 +43,17 @@ import okhttp3.Response as OkHttpResponse
 import okhttp3.Route
 
 // See also https://github.com/miquels/webdavfs/blob/master/fuse.go
-object Client {
+/**
+ * The connections of this provider, one pool per authority, created on demand with credentials
+ * from [authenticator]. Owned by the file system provider; a test constructs its own with a fake.
+ */
+class Client(internal val authenticator: Authenticator) {
     private val FILE_PROPERTIES = arrayOf(
         ResourceType.NAME,
         CreationDate.NAME,
         GetContentLength.NAME,
         GetLastModified.NAME
     )
-
-    @Volatile
-    lateinit var authenticator: Authenticator
 
     private val clients = mutableMapOf<Authority, OkHttpClient>()
 
@@ -201,7 +202,7 @@ object Client {
             val resource = DavResource(client, path.url)
             val patchSupport = resource.getPatchSupport()
             return NotifyEntryModifiedSeekableByteChannel(
-                FileByteChannel(resource, patchSupport, isAppend),
+                FileByteChannel(this, resource, patchSupport, isAppend),
                 path as Java8Path
             )
         } catch (e: IOException) {

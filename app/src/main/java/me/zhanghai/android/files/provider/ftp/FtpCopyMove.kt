@@ -5,13 +5,13 @@
 
 package me.zhanghai.android.files.provider.ftp
 
+import java.io.IOException
 import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.StandardCopyOption
 import me.zhanghai.android.files.provider.common.CopyOptions
 import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.ftp.client.Client
-import java.io.IOException
 
 internal object FtpCopyMove {
     @Throws(IOException::class)
@@ -20,12 +20,12 @@ internal object FtpCopyMove {
             throw UnsupportedOperationException(StandardCopyOption.ATOMIC_MOVE.toString())
         }
         val sourceFile = try {
-            Client.listFile(source, copyOptions.noFollowLinks)
+            client.listFile(source, copyOptions.noFollowLinks)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(source.toString())
         }
         val targetFile = try {
-            Client.listFileOrNull(target, true)
+            client.listFileOrNull(target, true)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(target.toString())
         }
@@ -39,7 +39,7 @@ internal object FtpCopyMove {
                 throw FileAlreadyExistsException(source.toString(), target.toString(), null)
             }
             try {
-                Client.delete(target, targetFile.isDirectory)
+                client.delete(target, targetFile.isDirectory)
             } catch (e: IOException) {
                 throw e.toFileSystemExceptionForFtp(target.toString())
             }
@@ -47,30 +47,33 @@ internal object FtpCopyMove {
         when {
             sourceFile.isDirectory -> {
                 try {
-                    Client.createDirectory(target)
+                    client.createDirectory(target)
                 } catch (e: IOException) {
                     throw e.toFileSystemExceptionForFtp(target.toString())
                 }
                 copyOptions.progressListener?.invoke(sourceSize)
             }
+
             sourceFile.isSymbolicLink ->
                 throw UnsupportedOperationException("Cannot copy symbolic links")
+
             else -> {
                 val sourceInputStream = try {
-                    Client.retrieveFile(source)
+                    client.retrieveFile(source)
                 } catch (e: IOException) {
                     throw e.toFileSystemExceptionForFtp(source.toString())
                 }
                 try {
                     val targetOutputStream = try {
-                        Client.storeFile(target)
+                        client.storeFile(target)
                     } catch (e: IOException) {
                         throw e.toFileSystemExceptionForFtp(target.toString())
                     }
                     var successful = false
                     try {
                         sourceInputStream.copyTo(
-                            targetOutputStream, copyOptions.progressIntervalMillis,
+                            targetOutputStream,
+                            copyOptions.progressIntervalMillis,
                             copyOptions.progressListener
                         )
                         successful = true
@@ -82,7 +85,7 @@ internal object FtpCopyMove {
                         } finally {
                             if (!successful) {
                                 try {
-                                    Client.delete(target, sourceFile.isDirectory)
+                                    client.delete(target, sourceFile.isDirectory)
                                 } catch (e: IOException) {
                                     e.printStackTrace()
                                 }
@@ -104,7 +107,7 @@ internal object FtpCopyMove {
             val timestamp = sourceFile.timestamp
             if (timestamp != null) {
                 try {
-                    Client.setLastModifiedTime(target, timestamp.toInstant())
+                    client.setLastModifiedTime(target, timestamp.toInstant())
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
@@ -115,12 +118,12 @@ internal object FtpCopyMove {
     @Throws(IOException::class)
     fun move(source: FtpPath, target: FtpPath, copyOptions: CopyOptions) {
         val sourceFile = try {
-            Client.listFile(source, copyOptions.noFollowLinks)
+            client.listFile(source, copyOptions.noFollowLinks)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(source.toString())
         }
         val targetFile = try {
-            Client.listFileOrNull(target, true)
+            client.listFileOrNull(target, true)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(target.toString())
         }
@@ -134,14 +137,14 @@ internal object FtpCopyMove {
                 throw FileAlreadyExistsException(source.toString(), target.toString(), null)
             }
             try {
-                Client.delete(target, targetFile.isDirectory)
+                client.delete(target, targetFile.isDirectory)
             } catch (e: IOException) {
                 throw e.toFileSystemExceptionForFtp(target.toString())
             }
         }
         var renameSuccessful = false
         try {
-            Client.renameFile(source, target)
+            client.renameFile(source, target)
             renameSuccessful = true
         } catch (e: IOException) {
             if (copyOptions.atomicMove) {
@@ -159,17 +162,21 @@ internal object FtpCopyMove {
         var copyOptions = copyOptions
         if (!copyOptions.copyAttributes || !copyOptions.noFollowLinks) {
             copyOptions = CopyOptions(
-                copyOptions.replaceExisting, true, false, true, copyOptions.progressIntervalMillis,
+                copyOptions.replaceExisting,
+                true,
+                false,
+                true,
+                copyOptions.progressIntervalMillis,
                 copyOptions.progressListener
             )
         }
         copy(source, target, copyOptions)
         try {
-            Client.delete(source, sourceFile.isDirectory)
+            client.delete(source, sourceFile.isDirectory)
         } catch (e: IOException) {
             if (e.toFileSystemExceptionForFtp(source.toString()) !is NoSuchFileException) {
                 try {
-                    Client.delete(target, sourceFile.isDirectory)
+                    client.delete(target, sourceFile.isDirectory)
                 } catch (e2: IOException) {
                     e.addSuppressed(e2.toFileSystemExceptionForFtp(target.toString()))
                 }

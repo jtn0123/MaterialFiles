@@ -24,13 +24,12 @@ import net.schmizz.sshj.sftp.SFTPException
 import net.schmizz.sshj.transport.TransportException
 import net.schmizz.sshj.userauth.UserAuthException
 
-object Client {
-    @Volatile
-    lateinit var authenticator: Authenticator
-
-    @Volatile
-    lateinit var hostKeyStore: HostKeyStore
-
+/**
+ * The SFTP sessions of the app, one per [Authority], created on demand with credentials from
+ * [authenticator] and host keys checked against [hostKeyStore]. Owned by the file system
+ * provider; a test constructs its own with fakes.
+ */
+class Client(internal val authenticator: Authenticator, internal val hostKeyStore: HostKeyStore) {
     private val clients = mutableMapOf<Authority, SFTPClient>()
 
     private val directoryFileAttributesCache =

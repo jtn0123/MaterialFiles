@@ -28,10 +28,11 @@ import me.zhanghai.android.files.provider.common.CloseableIterator
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.hasBits
 
-object Client {
-    @Volatile
-    lateinit var authenticator: Authenticator
-
+/**
+ * The connections of this provider, one pool per authority, created on demand with credentials
+ * from [authenticator]. Owned by the file system provider; a test constructs its own with a fake.
+ */
+class Client(internal val authenticator: Authenticator) {
     internal val client = SMBClient()
 
     internal val sessions = mutableMapOf<Authority, Session>()

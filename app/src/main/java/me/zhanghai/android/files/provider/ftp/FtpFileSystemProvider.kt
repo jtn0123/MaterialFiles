@@ -6,6 +6,10 @@
 package me.zhanghai.android.files.provider.ftp
 
 import android.net.Uri
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
@@ -47,12 +51,12 @@ import me.zhanghai.android.files.provider.ftp.client.Authority
 import me.zhanghai.android.files.provider.ftp.client.Client
 import me.zhanghai.android.files.provider.ftp.client.Mode
 import me.zhanghai.android.files.provider.ftp.client.Protocol
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.URI
 
 object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
+    /** Set by the app initializers before any path of this provider is used. */
+    @Volatile
+    lateinit var client: Client
+
     private val HIDDEN_FILE_NAME_PREFIX = ".".toByteString()
 
     private val fileSystems = mutableMapOf<Authority, FtpFileSystem>()
@@ -136,7 +140,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         }
         if (openOptions.create || openOptions.createNew || openOptions.noFollowLinks) {
             val fileFile = try {
-                Client.listFileOrNull(file, true)
+                client.listFileOrNull(file, true)
             } catch (e: IOException) {
                 throw e.toFileSystemExceptionForFtp(file.toString())
             }
@@ -145,19 +149,21 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             }
             if (openOptions.noFollowLinks && fileFile != null && fileFile.isSymbolicLink) {
                 throw FileSystemException(
-                    file.toString(), null, "File is a symbolic link: $fileFile"
+                    file.toString(),
+                    null,
+                    "File is a symbolic link: $fileFile"
                 )
             }
             if ((openOptions.create || openOptions.createNew) && fileFile == null) {
                 try {
-                    Client.createFile(file)
+                    client.createFile(file)
                 } catch (e: IOException) {
                     throw e.toFileSystemExceptionForFtp(file.toString())
                 }
             }
         }
         try {
-            return Client.retrieveFile(file)
+            return client.retrieveFile(file)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(file.toString())
         }
@@ -178,7 +184,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             throw UnsupportedOperationException("Missing ${StandardOpenOption.TRUNCATE_EXISTING}")
         }
         val fileFile = try {
-            Client.listFileOrNull(file, true)
+            client.listFileOrNull(file, true)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(file.toString())
         }
@@ -189,7 +195,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             throw NoSuchFileException(file.toString())
         }
         try {
-            return Client.storeFile(file)
+            return client.storeFile(file)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(file.toString())
         }
@@ -222,9 +228,10 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             throw UnsupportedOperationException("Missing ${StandardOpenOption.TRUNCATE_EXISTING}")
         }
         if (openOptions.write || openOptions.create || openOptions.createNew ||
-            openOptions.noFollowLinks) {
+            openOptions.noFollowLinks
+        ) {
             val fileFile = try {
-                Client.listFileOrNull(file, true)
+                client.listFileOrNull(file, true)
             } catch (e: IOException) {
                 throw e.toFileSystemExceptionForFtp(file.toString())
             }
@@ -233,7 +240,9 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             }
             if (openOptions.noFollowLinks && fileFile != null && fileFile.isSymbolicLink) {
                 throw FileSystemException(
-                    file.toString(), null, "File is a symbolic link: $fileFile"
+                    file.toString(),
+                    null,
+                    "File is a symbolic link: $fileFile"
                 )
             }
             if (fileFile == null) {
@@ -241,7 +250,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
                     throw NoSuchFileException(file.toString())
                 }
                 try {
-                    Client.createFile(file)
+                    client.createFile(file)
                 } catch (e: IOException) {
                     throw e.toFileSystemExceptionForFtp(file.toString())
                 }
@@ -251,7 +260,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             throw UnsupportedOperationException(attributes.contentToString())
         }
         try {
-            return Client.openByteChannel(file, openOptions.append)
+            return client.openByteChannel(file, openOptions.append)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(file.toString())
         }
@@ -265,7 +274,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         directory as? FtpPath ?: throw ProviderMismatchException(directory.toString())
         val paths = try {
             @Suppress("UNCHECKED_CAST")
-            Client.listDirectory(directory) as List<Path>
+            client.listDirectory(directory) as List<Path>
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(directory.toString())
         }
@@ -279,7 +288,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             throw UnsupportedOperationException(attributes.contentToString())
         }
         try {
-            Client.createDirectory(directory)
+            client.createDirectory(directory)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(directory.toString())
         }
@@ -307,7 +316,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     override fun delete(path: Path) {
         path as? FtpPath ?: throw ProviderMismatchException(path.toString())
         try {
-            Client.delete(path)
+            client.delete(path)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(path.toString())
         }
@@ -316,7 +325,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     override fun readSymbolicLink(link: Path): Path {
         link as? FtpPath ?: throw ProviderMismatchException(link.toString())
         val linkFile = try {
-            Client.listFile(link, true)
+            client.listFile(link, true)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(link.toString())
         }
@@ -324,7 +333,9 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
             throw NotLinkException(link.toString(), null, linkFile.toString())
         }
         val target = linkFile.link ?: throw FileSystemException(
-            link.toString(), null, "FTPFile.getLink() returned null: $linkFile"
+            link.toString(),
+            null,
+            "FTPFile.getLink() returned null: $linkFile"
         )
         return ByteStringPath(target.toByteString())
     }
@@ -373,7 +384,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         }
         // Assume the file can be read if it can be listed.
         try {
-            Client.listFile(path, false)
+            client.listFile(path, false)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(path.toString())
         }
@@ -455,3 +466,7 @@ val FtpsFileSystemProvider =
 
 val FtpesFileSystemProvider =
     DelegateSchemeFileSystemProvider(Protocol.FTPES.scheme, FtpFileSystemProvider)
+
+/** The provider's [Client], a shorthand for the files of this package. */
+internal val client: Client
+    get() = FtpFileSystemProvider.client

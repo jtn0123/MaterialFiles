@@ -11,6 +11,10 @@ import com.hierynomus.mssmb2.SMB2CompletionFilter
 import com.hierynomus.mssmb2.SMBApiException
 import com.hierynomus.mssmb2.messages.SMB2ChangeNotifyResponse
 import com.hierynomus.smbj.share.Directory
+import java.io.IOException
+import java.io.InterruptedIOException
+import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicInteger
 import java8.nio.file.Path
 import java8.nio.file.StandardWatchEventKinds
 import java8.nio.file.WatchEvent
@@ -19,10 +23,6 @@ import me.zhanghai.android.files.provider.common.AbstractWatchService
 import me.zhanghai.android.files.provider.smb.client.Client
 import me.zhanghai.android.files.provider.smb.client.ClientException
 import me.zhanghai.android.files.util.closeSafe
-import java.io.IOException
-import java.io.InterruptedIOException
-import java.util.concurrent.Future
-import java.util.concurrent.atomic.AtomicInteger
 
 // @see https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/05869c32-39f0-4726-afc9-671b76ae5ca7
 internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
@@ -39,8 +39,10 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
             when (kind) {
                 StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
                 StandardWatchEventKinds.ENTRY_MODIFY -> kindSet += kind
+
                 // Ignored.
                 StandardWatchEventKinds.OVERFLOW -> {}
+
                 else -> throw UnsupportedOperationException(kind.name())
             }
         }
@@ -97,7 +99,9 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
         exception?.let { throw it }
     }
 
-    private class Notifier @Throws(IOException::class) constructor(
+    private class Notifier
+    @Throws(IOException::class)
+    constructor(
         private val watchService: SmbWatchService,
         path: SmbPath,
         @Volatile
@@ -113,8 +117,8 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
         init {
             isDaemon = true
             try {
-                directory = Client.openDirectoryForChangeNotification(path)
-                future = Client.requestDirectoryChangeNotification(directory, COMPLETION_FILTER)
+                directory = client.openDirectoryForChangeNotification(path)
+                future = client.requestDirectoryChangeNotification(directory, COMPLETION_FILTER)
             } catch (e: ClientException) {
                 throw e.toFileSystemException(path.toString())
             }
@@ -127,6 +131,7 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
                     when (response.header.statusCode) {
                         NtStatus.STATUS_NOTIFY_ENUM_DIR.value ->
                             key.addEvent(StandardWatchEventKinds.OVERFLOW, null)
+
                         NtStatus.STATUS_SUCCESS.value -> {
                             if (FileSystemProviders.overflowWatchEvents) {
                                 key.addEvent(StandardWatchEventKinds.OVERFLOW, null)
@@ -142,12 +147,14 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
                                 }
                             }
                         }
+
                         else ->
                             throw SMBApiException(
-                                response.header, "Change notify failed for ${key.watchable()}"
+                                response.header,
+                                "Change notify failed for ${key.watchable()}"
                             )
                     }
-                    future = Client.requestDirectoryChangeNotification(directory, COMPLETION_FILTER)
+                    future = client.requestDirectoryChangeNotification(directory, COMPLETION_FILTER)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -166,16 +173,18 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
             }
         }
 
-        private fun FileNotifyAction.toEventKind(): WatchEvent.Kind<Path> =
-            when (this) {
-                FileNotifyAction.FILE_ACTION_ADDED, FileNotifyAction.FILE_ACTION_RENAMED_NEW_NAME ->
-                    StandardWatchEventKinds.ENTRY_CREATE
-                FileNotifyAction.FILE_ACTION_REMOVED,
-                FileNotifyAction.FILE_ACTION_RENAMED_OLD_NAME ->
-                    StandardWatchEventKinds.ENTRY_DELETE
-                FileNotifyAction.FILE_ACTION_MODIFIED -> StandardWatchEventKinds.ENTRY_MODIFY
-                else -> throw AssertionError(this)
-            }
+        private fun FileNotifyAction.toEventKind(): WatchEvent.Kind<Path> = when (this) {
+            FileNotifyAction.FILE_ACTION_ADDED, FileNotifyAction.FILE_ACTION_RENAMED_NEW_NAME ->
+                StandardWatchEventKinds.ENTRY_CREATE
+
+            FileNotifyAction.FILE_ACTION_REMOVED,
+            FileNotifyAction.FILE_ACTION_RENAMED_OLD_NAME ->
+                StandardWatchEventKinds.ENTRY_DELETE
+
+            FileNotifyAction.FILE_ACTION_MODIFIED -> StandardWatchEventKinds.ENTRY_MODIFY
+
+            else -> throw AssertionError(this)
+        }
 
         companion object {
             private val COMPLETION_FILTER = setOf(

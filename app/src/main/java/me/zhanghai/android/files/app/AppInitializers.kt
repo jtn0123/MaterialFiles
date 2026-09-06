@@ -15,9 +15,13 @@ import me.zhanghai.android.files.filejob.fileJobNotificationTemplate
 import me.zhanghai.android.files.ftpserver.ftpServerServiceNotificationTemplate
 import me.zhanghai.android.files.hiddenapi.HiddenApi
 import me.zhanghai.android.files.provider.FileSystemProviders
+import me.zhanghai.android.files.provider.ftp.FtpFileSystemProvider
 import me.zhanghai.android.files.provider.ftp.client.Client as FtpClient
+import me.zhanghai.android.files.provider.sftp.SftpFileSystemProvider
 import me.zhanghai.android.files.provider.sftp.client.Client as SftpClient
+import me.zhanghai.android.files.provider.smb.SmbFileSystemProvider
 import me.zhanghai.android.files.provider.smb.client.Client as SmbClient
+import me.zhanghai.android.files.provider.webdav.WebDavFileSystemProvider
 import me.zhanghai.android.files.provider.webdav.client.Client as WebDavClient
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.storage.FtpServerAuthenticator
@@ -89,11 +93,10 @@ private fun initializeFileSystemProviders() {
             }
         )
     }
-    FtpClient.authenticator = FtpServerAuthenticator
-    SftpClient.authenticator = SftpServerAuthenticator
-    SftpClient.hostKeyStore = SftpServerHostKeyStore
-    SmbClient.authenticator = SmbServerAuthenticator
-    WebDavClient.authenticator = WebDavServerAuthenticator
+    FtpFileSystemProvider.client = FtpClient(FtpServerAuthenticator)
+    SftpFileSystemProvider.client = SftpClient(SftpServerAuthenticator, SftpServerHostKeyStore)
+    SmbFileSystemProvider.client = SmbClient(SmbServerAuthenticator)
+    WebDavFileSystemProvider.client = WebDavClient(WebDavServerAuthenticator)
 }
 
 private fun initializeLiveDataObjects() {
