@@ -8,6 +8,7 @@ package me.zhanghai.android.files.provider.sftp.client
 import java.io.IOException
 import java.util.Collections
 import java.util.WeakHashMap
+import java.util.concurrent.ConcurrentHashMap
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.provider.common.LocalWatchService
@@ -30,7 +31,11 @@ import net.schmizz.sshj.userauth.UserAuthException
  * provider; a test constructs its own with fakes.
  */
 class Client(internal val authenticator: Authenticator, internal val hostKeyStore: HostKeyStore) {
-    private val clients = mutableMapOf<Authority, SFTPClient>()
+    private val clients = ConcurrentHashMap<Authority, SFTPClient>()
+
+    // One lock per authority: connecting and authenticating to a host that does not answer
+    // takes until the timeout, and must not hold up the sessions to every other host.
+    private val clientLocks = ConcurrentHashMap<Authority, Any>()
 
     private val directoryFileAttributesCache =
         Collections.synchronizedMap(WeakHashMap<Path, FileAttributes>())
@@ -227,7 +232,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
 
     @Throws(ClientException::class)
     private fun getClient(authority: Authority): SFTPClient {
-        synchronized(clients) {
+        synchronized(clientLocks.getOrPut(authority) { Any() }) {
             var client = clients[authority]
             if (client != null) {
                 if (client.sftpEngine.subsystem.isOpen) {

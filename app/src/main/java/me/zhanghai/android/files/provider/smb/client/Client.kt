@@ -22,6 +22,7 @@ import com.hierynomus.smbj.session.Session
 import com.hierynomus.smbj.share.Directory
 import java.util.Collections
 import java.util.WeakHashMap
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java8.nio.channels.SeekableByteChannel
 import me.zhanghai.android.files.provider.common.CloseableIterator
@@ -35,7 +36,11 @@ import me.zhanghai.android.files.util.hasBits
 class Client(internal val authenticator: Authenticator) {
     internal val client = SMBClient()
 
-    internal val sessions = mutableMapOf<Authority, Session>()
+    internal val sessions = ConcurrentHashMap<Authority, Session>()
+
+    // One lock per authority: connecting and authenticating to a host that does not answer
+    // takes until the timeout, and must not hold up the sessions to every other host.
+    internal val sessionLocks = ConcurrentHashMap<Authority, Any>()
 
     internal val directoryFileInformationCache =
         Collections.synchronizedMap(WeakHashMap<Path, FileInformation>())

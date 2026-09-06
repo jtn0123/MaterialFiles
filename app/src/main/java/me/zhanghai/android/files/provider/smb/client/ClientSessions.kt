@@ -18,7 +18,7 @@ import me.zhanghai.android.files.util.closeSafe
 
 @Throws(ClientException::class)
 internal fun Client.getSession(authority: Authority): Session {
-    synchronized(sessions) {
+    synchronized(sessionLocks.getOrPut(authority) { Any() }) {
         var session = sessions[authority]
         if (session != null) {
             val connection = session.connection
