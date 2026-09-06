@@ -92,12 +92,16 @@ object Settings {
             R.string.pref_default_value_ftp_server_username
         )
 
+    /**
+     * Encrypted like the stored servers' credentials; the FTP server preference screen reads
+     * and writes it through this setting rather than through its own preferences file.
+     */
     val FTP_SERVER_PASSWORD: SettingLiveData<String> =
-        StringSettingLiveData(
+        EncryptedParcelValueSettingLiveData(
             NAME_SUFFIX_NO_BACKUP,
             R.string.pref_key_ftp_server_password,
             null,
-            R.string.pref_default_value_empty
+            ""
         )
 
     val FTP_SERVER_PORT: SettingLiveData<Int> =

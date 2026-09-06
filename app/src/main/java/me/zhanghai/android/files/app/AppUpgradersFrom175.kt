@@ -85,6 +85,31 @@ private fun encryptStorages1_7_6() {
     }
 }
 
+internal fun upgradeAppTo1_7_7() {
+    encryptFtpServerPassword1_7_7()
+}
+
+/**
+ * The FTP server password joins the stored servers in being encrypted at rest. It was a plain
+ * string, not a parcel, so the encrypted reader cannot fall back on it the way it does for
+ * storages; it is rewritten here, before [Settings] initializes.
+ */
+private fun encryptFtpServerPassword1_7_7() {
+    val key = application.getString(R.string.pref_key_ftp_server_password)
+    val password = try {
+        noBackupSharedPreferences.getString(key, null)
+    } catch (e: ClassCastException) {
+        e.printStackTrace()
+        return
+    } ?: return
+    if (password.startsWith(EncryptedParcelValueSettingLiveData.PREFIX)) {
+        return
+    }
+    noBackupSharedPreferences.edit(commit = true) {
+        putString(key, EncryptedParcelValueSettingLiveData.encode(password))
+    }
+}
+
 internal val noBackupSharedPreferences: SharedPreferences
     get() {
         val name = "${PreferenceManagerCompat.getDefaultSharedPreferencesName(application)}_${
