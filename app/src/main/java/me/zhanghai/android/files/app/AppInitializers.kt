@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.app
 
+import android.os.Looper
 import android.os.StrictMode
 import android.webkit.WebView
 import java.util.Properties
@@ -67,7 +68,12 @@ private fun preloadSharedPreferences() {
 
 private fun initializeWebViewDebugging() {
     if (BuildConfig.DEBUG) {
-        WebView.setWebContentsDebuggingEnabled(true)
+        // Loads the WebView provider, a few hundred milliseconds; nothing needs it before the
+        // first screen is up.
+        Looper.getMainLooper().queue.addIdleHandler {
+            WebView.setWebContentsDebuggingEnabled(true)
+            false
+        }
     }
 }
 

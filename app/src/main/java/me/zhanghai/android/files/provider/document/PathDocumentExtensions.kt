@@ -5,7 +5,10 @@
 
 package me.zhanghai.android.files.provider.document
 
+import android.graphics.Bitmap
 import android.net.Uri
+import android.os.CancellationSignal
+import android.os.ParcelFileDescriptor
 import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.ProviderMismatchException
@@ -31,3 +34,31 @@ val Path.documentTreeUri: Uri
 
 fun Uri.createDocumentTreeRootPath(): Path =
     DocumentFileSystemProvider.getOrNewFileSystem(this).rootDirectory
+
+/** Whether this document path is backed by local storage rather than a cloud provider. */
+val Path.isLocalDocument: Boolean
+    get() {
+        this as? DocumentPath ?: throw ProviderMismatchException(toString())
+        return DocumentResolver.isLocal(this)
+    }
+
+@Throws(IOException::class)
+fun Path.openDocumentParcelFileDescriptor(mode: String): ParcelFileDescriptor {
+    this as? DocumentPath ?: throw ProviderMismatchException(toString())
+    return try {
+        DocumentResolver.openParcelFileDescriptor(this, mode)
+    } catch (e: ResolverException) {
+        throw e.toFileSystemException(toString())
+    }
+}
+
+/** The provider's own thumbnail for this document, or null when it has none. */
+@Throws(IOException::class)
+fun Path.getDocumentThumbnail(width: Int, height: Int, signal: CancellationSignal): Bitmap? {
+    this as? DocumentPath ?: throw ProviderMismatchException(toString())
+    return try {
+        DocumentResolver.getThumbnail(this, width, height, signal)
+    } catch (e: ResolverException) {
+        throw e.toFileSystemException(toString())
+    }
+}

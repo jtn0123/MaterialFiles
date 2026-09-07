@@ -42,6 +42,7 @@ import me.zhanghai.android.files.provider.sftp.client.Authority
 import me.zhanghai.android.files.provider.sftp.client.Client
 import me.zhanghai.android.files.provider.sftp.client.ClientException
 import me.zhanghai.android.files.provider.sftp.client.SecurityProviderHelper
+import me.zhanghai.android.files.util.backgroundExecutor
 import me.zhanghai.android.files.util.enumSetOf
 import net.schmizz.sshj.sftp.OpenMode
 
@@ -59,7 +60,8 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
     private val lock = Any()
 
     init {
-        SecurityProviderHelper.init()
+        // Off the startup path; Client.getClient() waits for it if a connection comes first.
+        backgroundExecutor.execute { SecurityProviderHelper.ensureInitialized() }
     }
 
     override fun getScheme(): String = SCHEME

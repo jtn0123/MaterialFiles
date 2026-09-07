@@ -15,7 +15,7 @@ import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.Path
 import me.zhanghai.android.files.provider.common.newByteChannel
 import me.zhanghai.android.files.provider.document.isDocumentPath
-import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
+import me.zhanghai.android.files.provider.document.openDocumentParcelFileDescriptor
 import me.zhanghai.android.files.provider.ftp.isFtpPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 
@@ -31,7 +31,7 @@ fun MediaMetadataRetriever.setDataSource(path: Path) {
         path.isLinuxPath -> setDataSource(path.toFile().path)
 
         path.isDocumentPath ->
-            DocumentResolver.openParcelFileDescriptor(path as DocumentResolver.Path, "r")
+            path.openDocumentParcelFileDescriptor("r")
                 .use { pfd -> setDataSource(pfd.fileDescriptor) }
 
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {

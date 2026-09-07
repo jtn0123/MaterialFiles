@@ -246,6 +246,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
                 ?: throw ClientException("No authentication found for $authority")
             val hostKeyVerifier =
                 TrustOnFirstUseHostKeyVerifier(authority.host, authority.port, hostKeyStore)
+            SecurityProviderHelper.ensureInitialized()
             val sshClient = SSHClient().apply { addHostKeyVerifier(hostKeyVerifier) }
             try {
                 sshClient.connect(authority.host, authority.port)

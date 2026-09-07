@@ -36,10 +36,10 @@ import me.zhanghai.android.files.file.lastModifiedInstant
 import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.provider.common.AndroidFileTypeDetector
 import me.zhanghai.android.files.provider.common.newInputStream
-import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.provider.document.documentSupportsThumbnail
+import me.zhanghai.android.files.provider.document.getDocumentThumbnail
 import me.zhanghai.android.files.provider.document.isDocumentPath
-import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
+import me.zhanghai.android.files.provider.document.openDocumentParcelFileDescriptor
 import me.zhanghai.android.files.provider.ftp.isFtpPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.settings.Settings
@@ -81,13 +81,8 @@ class PathAttributesFetcher(
             if (path.isDocumentPath && attributes.documentSupportsThumbnail) {
                 val thumbnail = runWithCancellationSignal { signal ->
                     try {
-                        DocumentResolver.getThumbnail(
-                            path as DocumentResolver.Path,
-                            width.px,
-                            height.px,
-                            signal
-                        )
-                    } catch (e: ResolverException) {
+                        path.getDocumentThumbnail(width.px, height.px, signal)
+                    } catch (e: IOException) {
                         e.printStackTrace()
                         null
                     }
@@ -200,11 +195,7 @@ class PathAttributesFetcher(
                         ParcelFileDescriptor.MODE_READ_ONLY
                     )
 
-                data.isDocumentPath ->
-                    DocumentResolver.openParcelFileDescriptor(
-                        data as DocumentResolver.Path,
-                        "r"
-                    )
+                data.isDocumentPath -> data.openDocumentParcelFileDescriptor("r")
 
                 else -> throw IllegalArgumentException(data.toString())
             }

@@ -11,7 +11,7 @@ import java.io.Closeable
 import java8.nio.file.Path
 import me.zhanghai.android.files.compat.getPackageArchiveInfoCompat
 import me.zhanghai.android.files.provider.document.isDocumentPath
-import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
+import me.zhanghai.android.files.provider.document.openDocumentParcelFileDescriptor
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 
 val Path.isGetPackageArchiveInfoCompatible: Boolean
@@ -30,7 +30,7 @@ fun PackageManager.getPackageArchiveInfoCompat(
         }
 
         path.isDocumentPath -> {
-            val pfd = DocumentResolver.openParcelFileDescriptor(path as DocumentResolver.Path, "r")
+            val pfd = path.openDocumentParcelFileDescriptor("r")
             archiveFilePath = "/proc/self/fd/${pfd.fd}"
             closeable = pfd
         }
