@@ -123,6 +123,19 @@ class FileListAdapter(private val listener: Listener) :
         listener.selectFiles(files, true)
     }
 
+    /** Selects everything between the first and the last selected file. */
+    fun selectFileRange() {
+        val range = selectionRange(itemCount) { getItem(it) in selectedFiles } ?: return
+        val files = fileItemSetOf()
+        for (index in range) {
+            val file = getItem(index)
+            if (isFileSelectable(file)) {
+                files.add(file)
+            }
+        }
+        listener.selectFiles(files, true)
+    }
+
     private fun isFileSelectable(file: FileItem): Boolean {
         val pickOptions = pickOptions ?: return true
         return when (pickOptions.mode) {

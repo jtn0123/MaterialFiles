@@ -112,6 +112,7 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
             val menu = overlayActionMode.menu
             val isAnyFileReadOnly = files.any { it.path.fileSystem.isReadOnly }
             menu.findItem(R.id.action_cut).isVisible = !isAnyFileReadOnly
+            menu.findItem(R.id.action_select_range).isVisible = files.size >= 2
             val areAllFilesArchivePaths = files.all { it.path.isArchivePath }
             menu.findItem(R.id.action_copy)
                 .setIcon(
@@ -197,6 +198,11 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
 
             R.id.action_select_all -> {
                 selectAllFiles()
+                true
+            }
+
+            R.id.action_select_range -> {
+                fragment.adapter.selectFileRange()
                 true
             }
 
