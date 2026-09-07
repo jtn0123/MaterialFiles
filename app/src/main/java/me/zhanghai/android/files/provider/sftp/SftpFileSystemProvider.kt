@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.provider.sftp
 
 import java.io.IOException
+import java.io.OutputStream
 import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
@@ -20,6 +21,7 @@ import java8.nio.file.LinkOption
 import java8.nio.file.OpenOption
 import java8.nio.file.Path
 import java8.nio.file.ProviderMismatchException
+import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileAttribute
 import java8.nio.file.attribute.FileAttributeView
@@ -126,6 +128,29 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
     ): FileChannel {
         file as? SftpPath ?: throw ProviderMismatchException(file.toString())
         throw UnsupportedOperationException()
+    }
+
+    @Throws(IOException::class)
+    override fun newOutputStream(file: Path, vararg options: OpenOption): OutputStream {
+        file as? SftpPath ?: throw ProviderMismatchException(file.toString())
+        val optionsSet = mutableSetOf(*options)
+        if (optionsSet.isEmpty()) {
+            optionsSet += StandardOpenOption.CREATE
+            optionsSet += StandardOpenOption.TRUNCATE_EXISTING
+        }
+        optionsSet += StandardOpenOption.WRITE
+        val openOptions = optionsSet.toOpenOptions()
+        if (openOptions.append) {
+            // Appending needs the current size for every write, which the byte channel tracks.
+            return super.newOutputStream(file, *options)
+        }
+        val flags = openOptions.toSftpFlags()
+        val sftpAttributes = PosixFileMode.CREATE_FILE_DEFAULT.toSftpAttributes()
+        return try {
+            client.openOutputStream(file, flags, sftpAttributes)
+        } catch (e: ClientException) {
+            throw e.toFileSystemException(file.toString())
+        }
     }
 
     @Throws(IOException::class)

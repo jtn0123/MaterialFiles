@@ -13,7 +13,6 @@ import me.zhanghai.android.files.provider.common.AbstractCopyMove
 import me.zhanghai.android.files.provider.common.CopyOptions
 import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.common.newInputStream
-import me.zhanghai.android.files.provider.common.newOutputStream
 import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.sftp.client.Client
 import me.zhanghai.android.files.provider.sftp.client.ClientException
@@ -82,10 +81,10 @@ internal object SftpCopyMove : AbstractCopyMove<SftpPath, FileAttributes>() {
             val targetFlags =
                 enumSetOf(OpenMode.WRITE, OpenMode.TRUNC, OpenMode.CREAT, OpenMode.EXCL)
             val targetOutputStream = try {
-                client.openByteChannel(target, targetFlags, sourceAttributes.toModeAttributes())
+                client.openOutputStream(target, targetFlags, sourceAttributes.toModeAttributes())
             } catch (e: ClientException) {
                 throw e.toFileSystemException(target.toString())
-            }.newOutputStream()
+            }
             try {
                 sourceInputStream.copyTo(
                     targetOutputStream,
