@@ -39,7 +39,12 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
         get() = fragment.binding
 
     fun onViewCreated(binding: FileListBinding) {
-        overlayActionMode = OverlayToolbarActionMode(binding.overlayToolbar)
+        overlayActionMode =
+            OverlayToolbarActionMode(
+                binding.overlayToolbar,
+                binding.overlayToolbar,
+                binding.toolbar
+            )
         bottomActionMode = PersistentBarLayoutToolbarActionMode(
             binding.persistentBarLayout,
             binding.bottomBarLayout,
