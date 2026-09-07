@@ -46,13 +46,13 @@ jobs:
       # as POM-only. Resolving everything the build needs here, on Linux, and diffing the result
       # turns "verification failed" into a diff that says exactly what to add.
       run: |
-        ./gradlew --write-verification-metadata sha256 --dry-run ktlintCheck checkSourceFileLength testDebugUnitTest lintDebug lintVitalRelease assembleDebug assembleDebugAndroidTest
+        ./gradlew --write-verification-metadata sha256 --dry-run ktlintCheck checkSourceFileLength testDebugUnitTest :dav4jvm:test lintDebug lintVitalRelease assembleDebug assembleDebugAndroidTest
         if ! diff -u gradle/verification-metadata.xml gradle/verification-metadata.dryrun.xml; then
           echo "::error file=gradle/verification-metadata.xml::Missing entries above; add them to gradle/verification-metadata.xml"
           exit 1
         fi
     - name: ktlint, file length rule, unit tests, lint
-      run: ./gradlew ktlintCheck checkSourceFileLength testDebugUnitTest lintDebug lintVitalRelease
+      run: ./gradlew ktlintCheck checkSourceFileLength testDebugUnitTest :dav4jvm:test lintDebug lintVitalRelease
     - name: Assemble the app and the instrumented-test APK
       run: ./gradlew assembleDebug assembleDebugAndroidTest
     - name: Publish the unit test results as a check
@@ -60,7 +60,9 @@ jobs:
       uses: dorny/test-reporter@v1
       with:
         name: Unit tests
-        path: app/build/test-results/testDebugUnitTest/*.xml
+        path: |
+          app/build/test-results/testDebugUnitTest/*.xml
+          dav4jvm/build/test-results/test/*.xml
         reporter: java-junit
         fail-on-error: false
         fail-on-empty: false

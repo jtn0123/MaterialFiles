@@ -63,12 +63,11 @@ slf4j = "1.7.36"
 # Transitive dependency of dcerpc; raised for the uncontrolled-recursion advisory fixed in 3.18.0.
 commons-lang3 = "3.20.0"
 
-# JitPack. The dav4jvm pin must be the full commit SHA: JitPack's build for the short hash has no
-# modules and 404s. We need
-# https://github.com/bitfireAT/dav4jvm/commit/c1bc14348831bcdb00f3a6eec4859b81c7dc3728 .
-dav4jvm = "02fe1a95e6b86e323bec3784d7d2fe2d4081dde6"
 photoview = "1.0.3"
 libsu = "6.0.0"
+# dav4jvm (vendored in dav4jvm/) and Coil use OkHttp.
+okhttp = "5.1.0"
+xpp3 = "1.1.6"
 
 # Tests
 junit = "4.13.2"
@@ -146,9 +145,11 @@ slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4j" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
 
 # JitPack
-dav4jvm = { module = "com.github.bitfireAT:dav4jvm", version.ref = "dav4jvm" }
 photoview = { module = "io.getstream:photoview", version.ref = "photoview" }
 libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
+xpp3 = { module = "org.ogce:xpp3", version.ref = "xpp3" }
 
 # Tests
 junit = { module = "junit:junit", version.ref = "junit" }

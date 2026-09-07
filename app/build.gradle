@@ -124,9 +124,8 @@ repositories {
 }
 dependencies {
     // See the pin comment in gradle/libs.versions.toml.
-    implementation(libs.dav4jvm) {
-        exclude group: 'org.ogce', module: 'xpp3'
-    }
+    implementation project(':dav4jvm')
+    implementation libs.okhttp
     implementation libs.photoview
     implementation libs.libsu.service
 }

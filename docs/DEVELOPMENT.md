@@ -9,13 +9,12 @@ version of the build requirements.
 - Gradle 9.7 and AGP 9.4 via the wrapper (compileSdk 37, minSdk 35). Versions of everything else live in
   `gradle/libs.versions.toml`; Dependabot proposes bumps.
 - `local.properties` (git-ignored) with `sdk.dir=...`.
-- The `dav4jvm` dependency is pinned by a full 40-character commit SHA. JitPack's build for the
-  short hash has no modules and 404s, so keep the full hash when bumping it.
+- Only `libsu` still comes from JitPack; dav4jvm is vendored (see Checks).
 
 ## Checks
 
 ```sh
-./gradlew ktlintCheck checkSourceFileLength assembleDebug testDebugUnitTest lintDebug lintVitalRelease
+./gradlew ktlintCheck checkSourceFileLength assembleDebug testDebugUnitTest :dav4jvm:test lintDebug lintVitalRelease
 ```
 
 - **ktlint.** Every Kotlin file is clean; there is no baseline. `ktlintCheck` fails on any
@@ -24,12 +23,15 @@ version of the build requirements.
   route such a type through a `typealias` instead of suppressing either.
 - **File length.** `checkSourceFileLength` fails the build when any Kotlin or Java file under
   `app/src` exceeds 500 lines. Split the file; there is no exemption list.
+- **dav4jvm** is vendored in `dav4jvm/` (MPL 2.0; origin commit and the two modifications are in
+  its README). It is a plain Kotlin JVM module with its own 85 tests (`:dav4jvm:test`); ktlint and
+  the length rule do not apply to it, so keep upstream's formatting when touching it.
 - **Unit tests** live in `app/src/test`. `TestPath` in `provider/common` is a provider-less
   `ByteStringListPath` with real resolve/normalize/relativize semantics for path tests. Note that
   `Path.iterator()` is deliberately unsupported in this code base; use `path.names`.
 - **Dependency verification.** `gradle/verification-metadata.xml` pins a SHA-256 for every
   artifact the checks resolve. After a dependency or plugin bump, regenerate it with
-  `./gradlew --write-verification-metadata sha256 :app:ktlintCheck :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintDebug :app:lintVitalRelease`.
+  `./gradlew --write-verification-metadata sha256 :app:ktlintCheck :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :dav4jvm:test :app:lintDebug :app:lintVitalRelease`.
   A regeneration on macOS misses what only a Linux resolution fetches: the
   `aapt2-<version>-linux.jar` (and `-windows.jar`; checksums are published as `.sha256` sidecars
   under `https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/`) and Gradle

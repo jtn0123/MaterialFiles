@@ -6,7 +6,6 @@
 package me.zhanghai.android.files.provider.webdav.client
 
 import at.bitfire.dav4jvm.DavResource
-import at.bitfire.dav4jvm.DavResourceAccessor
 import at.bitfire.dav4jvm.QuotedStringUtils
 import at.bitfire.dav4jvm.ResponseCallback
 import at.bitfire.dav4jvm.exception.DavException
@@ -208,14 +207,6 @@ fun DavResource.putRangeCompat(
         callback.onResponse(response)
     }
 }
-
-@Throws(HttpException::class)
-private fun DavResource.checkStatus(response: Response) {
-    DavResourceAccessor.checkStatus(this, response)
-}
-
-private fun DavResource.followRedirects(sendRequest: () -> Response): Response =
-    DavResourceAccessor.followRedirects(this, sendRequest)
 
 private fun ByteBuffer.toRequestBody(contentType: MediaType? = null): RequestBody {
     val contentLength = remaining().toLong()
