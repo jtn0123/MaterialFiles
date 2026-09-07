@@ -223,6 +223,15 @@ class FileJobService : Service() {
             startJob(SaveFileJob(source, target), context)
         }
 
+        fun saveAll(
+            sources: List<Path>,
+            targetDirectory: Path,
+            names: List<String>,
+            context: Context
+        ) {
+            startJob(SaveFilesJob(sources, targetDirectory, names), context)
+        }
+
         fun setGroup(path: Path, group: PosixGroup, recursive: Boolean, context: Context) {
             startJob(SetFileGroupJob(path, group, recursive), context)
         }
