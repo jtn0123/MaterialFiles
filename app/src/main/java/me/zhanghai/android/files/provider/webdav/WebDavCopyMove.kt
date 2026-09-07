@@ -106,8 +106,13 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
     ): Unit = throw UnsupportedOperationException("Cannot copy symbolic links")
 
     override fun delete(path: WebDavPath) {
+        val attributes = readAttributesOrNull(path) ?: return
+        delete(path, getFileType(attributes))
+    }
+
+    override fun delete(path: WebDavPath, fileType: FileType) {
         try {
-            client.delete(path)
+            client.delete(path, fileType == FileType.DIRECTORY)
         } catch (e: DavException) {
             val exception = e.toFileSystemException(path.toString())
             if (exception !is NoSuchFileException) {
@@ -120,8 +125,17 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
         target.replacementSibling() as WebDavPath
 
     override fun rename(source: WebDavPath, target: WebDavPath, replaceExisting: Boolean) {
+        rename(source, target, getFileType(readAttributes(source, true)), replaceExisting)
+    }
+
+    override fun rename(
+        source: WebDavPath,
+        target: WebDavPath,
+        fileType: FileType,
+        replaceExisting: Boolean
+    ) {
         try {
-            client.move(source, target, overwrite = replaceExisting)
+            client.move(source, target, replaceExisting, fileType == FileType.DIRECTORY)
         } catch (e: DavException) {
             throw e.toFileSystemException(source.toString(), target.toString())
         }

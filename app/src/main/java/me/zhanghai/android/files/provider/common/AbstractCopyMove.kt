@@ -84,6 +84,15 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
     @Throws(IOException::class)
     protected abstract fun delete(path: P)
 
+    /**
+     * [delete] for a provider that needs to know what it is deleting (WebDAV addresses a
+     * collection with a trailing slash); the default ignores the type.
+     */
+    @Throws(IOException::class)
+    protected open fun delete(path: P, fileType: FileType) {
+        delete(path)
+    }
+
     /** A name beside [target] to write its replacement into. */
     protected abstract fun replacementSibling(target: P): P
 
@@ -101,6 +110,12 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
      */
     @Throws(IOException::class)
     protected abstract fun rename(source: P, target: P, replaceExisting: Boolean)
+
+    /** [rename] with the type of [source] known; the default ignores the type. */
+    @Throws(IOException::class)
+    protected open fun rename(source: P, target: P, fileType: FileType, replaceExisting: Boolean) {
+        rename(source, target, replaceExisting)
+    }
 
     /** Copies what [copyOptions] asks of the attributes; best effort, must not throw. */
     protected abstract fun copyAttributes(
@@ -138,7 +153,7 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
 
             FileType.DIRECTORY -> {
                 if (targetAttributes != null) {
-                    delete(target)
+                    delete(target, getFileType(targetAttributes))
                 }
                 createDirectory(target, sourceAttributes, copyOptions)
                 copyOptions.progressListener?.invoke(getSize(sourceAttributes))
@@ -153,7 +168,8 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
                     }
                     // Not deleted beforehand: the provider may not support links at all.
                     try {
-                        delete(target)
+                        // The target's own type is unknown here: the link was not deleted first.
+                        delete(target, readAttributes(target, true).let { getFileType(it) })
                         copySymbolicLink(source, sourceAttributes, target, copyOptions)
                     } catch (e2: IOException) {
                         e2.addSuppressed(e)
@@ -181,20 +197,20 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
         try {
             copyRegularFile(source, sourceAttributes, writeTarget, copyOptions)
         } catch (e: IOException) {
-            deleteSuppressing(writeTarget, e)
+            deleteSuppressing(writeTarget, FileType.REGULAR_FILE, e)
             throw e
         } catch (e: UnsupportedOperationException) {
-            deleteSuppressing(writeTarget, e)
+            deleteSuppressing(writeTarget, FileType.REGULAR_FILE, e)
             throw e
         }
         if (isReplacing) {
             try {
-                rename(writeTarget, target, true)
+                rename(writeTarget, target, FileType.REGULAR_FILE, true)
             } catch (e: IOException) {
-                deleteSuppressing(writeTarget, e)
+                deleteSuppressing(writeTarget, FileType.REGULAR_FILE, e)
                 throw e
             } catch (e: UnsupportedOperationException) {
-                deleteSuppressing(writeTarget, e)
+                deleteSuppressing(writeTarget, FileType.REGULAR_FILE, e)
                 throw e
             }
         }
@@ -215,7 +231,7 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
         }
         if (canRename) {
             val renamed = try {
-                rename(source, target, targetAttributes != null)
+                rename(source, target, getFileType(sourceAttributes), targetAttributes != null)
                 true
             } catch (e: IOException) {
                 if (copyOptions.atomicMove) {
@@ -257,20 +273,21 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
             )
         }
         copy(source, target, copyOptionsForCopy)
+        val fileType = getFileType(sourceAttributes)
         try {
-            delete(source)
+            delete(source, fileType)
         } catch (e: IOException) {
-            deleteSuppressing(target, e)
+            deleteSuppressing(target, fileType, e)
             throw e
         } catch (e: UnsupportedOperationException) {
-            deleteSuppressing(target, e)
+            deleteSuppressing(target, fileType, e)
             throw e
         }
     }
 
-    private fun deleteSuppressing(path: P, exception: Throwable) {
+    private fun deleteSuppressing(path: P, fileType: FileType, exception: Throwable) {
         try {
-            delete(path)
+            delete(path, fileType)
         } catch (e: IOException) {
             exception.addSuppressed(e)
         } catch (e: UnsupportedOperationException) {

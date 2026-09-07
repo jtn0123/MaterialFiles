@@ -206,6 +206,45 @@ class AbstractCopyMoveTest {
         replaceExisting: Boolean = false,
         atomicMove: Boolean = false
     ): CopyOptions = CopyOptions(replaceExisting, false, atomicMove, false, 0) { fs.progress += it }
+
+    @Test
+    fun replacingADirectoryTellsTheProviderItIsDeletingADirectory() {
+        fs.files["/a"] = MemoryFile.directory()
+        fs.files["/b"] = MemoryFile.directory()
+        fs.copy("/a", "/b", options(replaceExisting = true))
+        assertEquals(listOf("delete /b DIRECTORY"), fs.typedCalls)
+    }
+
+    @Test
+    fun replacingAFileRenamesTheSiblingAsARegularFile() {
+        fs.files["/a"] = MemoryFile.regular("new")
+        fs.files["/b"] = MemoryFile.regular("old")
+        fs.copy("/a", "/b", options(replaceExisting = true))
+        assertEquals(listOf("rename /b.part REGULAR_FILE"), fs.typedCalls)
+    }
+
+    @Test
+    fun movingADirectoryByRenameTellsTheProviderTheSourceType() {
+        fs.files["/a"] = MemoryFile.directory()
+        fs.move("/a", "/b", options())
+        assertEquals(listOf("rename /a DIRECTORY"), fs.typedCalls)
+    }
+
+    @Test
+    fun movingByCopyDeletesTheSourceWithItsType() {
+        fs.files["/a"] = MemoryFile.directory()
+        fs.canRenameForTest = false
+        fs.move("/a", "/b", options())
+        assertEquals(listOf("delete /a DIRECTORY"), fs.typedCalls)
+    }
+
+    @Test
+    fun aFailedPartialWriteIsCleanedUpAsARegularFile() {
+        fs.files["/a"] = MemoryFile.regular("new")
+        fs.failOn = "write"
+        assertThrows(IOException::class.java) { fs.copy("/a", "/b", options()) }
+        assertEquals(listOf("delete /b REGULAR_FILE"), fs.typedCalls)
+    }
 }
 
 private class MemoryFile(
@@ -236,6 +275,7 @@ private class MemoryFile(
 private class MemoryCopyMove : AbstractCopyMove<String, MemoryFile>() {
     val files = mutableMapOf<String, MemoryFile>()
     val log = mutableListOf<String>()
+    val typedCalls = mutableListOf<String>()
     val progress = mutableListOf<Long>()
     var failOn: String? = null
     var failDeleteOf: String? = null
@@ -312,10 +352,25 @@ private class MemoryCopyMove : AbstractCopyMove<String, MemoryFile>() {
         files -= path
     }
 
+    override fun delete(path: String, fileType: FileType) {
+        typedCalls += "delete $path $fileType"
+        delete(path)
+    }
+
     override fun replacementSibling(target: String): String = "$target.part"
 
     override val canRename: Boolean
         get() = canRenameForTest
+
+    override fun rename(
+        source: String,
+        target: String,
+        fileType: FileType,
+        replaceExisting: Boolean
+    ) {
+        typedCalls += "rename $source $fileType"
+        rename(source, target, replaceExisting)
+    }
 
     override fun rename(source: String, target: String, replaceExisting: Boolean) {
         log += "rename $source $target $replaceExisting"
