@@ -68,7 +68,7 @@ commons-lang3 = "3.20.0"
 # modules and 404s. We need
 # https://github.com/bitfireAT/dav4jvm/commit/c1bc14348831bcdb00f3a6eec4859b81c7dc3728 .
 dav4jvm = "02fe1a95e6b86e323bec3784d7d2fe2d4081dde6"
-photoview = "2.3.0"
+photoview = "1.0.3"
 libsu = "6.0.0"
 
 # Tests
@@ -149,7 +149,7 @@ commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "co
 
 # JitPack
 dav4jvm = { module = "com.github.bitfireAT:dav4jvm", version.ref = "dav4jvm" }
-photoview = { module = "com.github.chrisbanes:PhotoView", version.ref = "photoview" }
+photoview = { module = "io.getstream:photoview", version.ref = "photoview" }
 libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu" }
 
 # Tests

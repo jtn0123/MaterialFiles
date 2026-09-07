@@ -54,7 +54,7 @@ class ImageViewerAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val path = getItem(position)
         val binding = holder.binding
-        binding.image.setOnPhotoTapListener { view, _, _ -> listener(view) }
+        binding.image.setOnPhotoTapListener { view, _, _ -> listener(view ?: binding.image) }
         binding.largeImage.setOnClickListener(listener)
         loadImage(binding, path)
     }
