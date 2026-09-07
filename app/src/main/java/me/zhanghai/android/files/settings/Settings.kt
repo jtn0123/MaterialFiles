@@ -112,6 +112,15 @@ object Settings {
             R.integer.pref_default_value_ftp_server_port
         )
 
+    /** Passive-mode data ports in Apache FtpServer's syntax, or empty for any free port. */
+    val FTP_SERVER_PASSIVE_PORTS: SettingLiveData<String> =
+        StringSettingLiveData(
+            NAME_SUFFIX_NO_BACKUP,
+            R.string.pref_key_ftp_server_passive_ports,
+            null,
+            R.string.pref_default_value_ftp_server_passive_ports
+        )
+
     val FTP_SERVER_HOME_DIRECTORY: SettingLiveData<Path> =
         ParcelValueSettingLiveData(
             NAME_SUFFIX_NO_BACKUP,
