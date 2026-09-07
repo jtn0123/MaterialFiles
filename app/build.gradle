@@ -200,7 +200,6 @@ dependencies {
     implementation libs.guava
     // Guava conflicts with com.google.guava:listenablefuture:1.0 pulled in by AndroidX Core
     implementation libs.guava.listenablefuture
-    implementation libs.preferencex
     implementation libs.commons.net
     // The LicensesDialog version is pinned; see gradle/libs.versions.toml.
     //noinspection NewerVersionAvailable

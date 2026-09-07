@@ -41,7 +41,6 @@ dcerpc = "0.12.13"
 guava = "33.7.1-android"
 # Guava conflicts with com.google.guava:listenablefuture:1.0 pulled in by AndroidX Core
 guava-listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
-preferencex = "1.1.0"
 commons-net = "3.13.0"
 # LicensesDialog 2.2.0 pulls in androidx.webkit and uses setForceDark() instead of correctly
 # setting colors.
@@ -124,7 +123,6 @@ speed-dial = { module = "com.leinardi.android:speed-dial", version.ref = "speed-
 dcerpc = { module = "com.rapid7.client:dcerpc", version.ref = "dcerpc" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 guava-listenablefuture = { module = "com.google.guava:listenablefuture", version.ref = "guava-listenablefuture" }
-preferencex = { module = "com.takisoft.preferencex:preferencex", version.ref = "preferencex" }
 commons-net = { module = "commons-net:commons-net", version.ref = "commons-net" }
 licensesdialog = { module = "de.psdev.licensesdialog:licensesdialog", version.ref = "licensesdialog" }
 simplemenu-preference = { module = "dev.rikka.rikkax.preference:simplemenu-preference", version.ref = "simplemenu-preference" }

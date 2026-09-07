@@ -11,7 +11,7 @@ import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
 import androidx.preference.EditTextPreference as AndroidXEditTextPreference
-import com.takisoft.preferencex.EditTextPreference
+import me.zhanghai.android.files.ui.EditTextPreference
 
 class PasswordPreference : EditTextPreference {
     constructor(context: Context) : super(context)
