@@ -19,6 +19,7 @@ import java8.nio.file.WatchService
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.ByteStringListPath
 import me.zhanghai.android.files.provider.common.UriAuthority
+import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.smb.client.Authority
 import me.zhanghai.android.files.provider.smb.client.Client
 import me.zhanghai.android.files.util.readParcelable
@@ -53,6 +54,15 @@ internal class SmbPath :
 
     override val uriAuthority: UriAuthority
         get() = fileSystem.authority.toUriAuthority()
+
+    override val uriQuery: ByteString?
+        get() {
+            val authority = fileSystem.authority
+            if (authority.encrypt == Authority.DEFAULT_ENCRYPT) {
+                return null
+            }
+            return "$QUERY_PARAMETER_ENCRYPT=${authority.encrypt}".toByteString()
+        }
 
     override val defaultDirectory: SmbPath
         get() = fileSystem.defaultDirectory
@@ -135,6 +145,8 @@ internal class SmbPath :
 
             override fun newArray(size: Int): Array<SmbPath?> = arrayOfNulls(size)
         }
+
+        const val QUERY_PARAMETER_ENCRYPT = "encrypt"
     }
 }
 

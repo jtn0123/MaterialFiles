@@ -17,6 +17,7 @@ import com.hierynomus.mssmb2.SMB2ShareAccess
 import com.hierynomus.mssmb2.SMBApiException
 import com.hierynomus.mssmb2.messages.SMB2ChangeNotifyResponse
 import com.hierynomus.smbj.SMBClient
+import com.hierynomus.smbj.SmbConfig
 import com.hierynomus.smbj.common.SMBRuntimeException
 import com.hierynomus.smbj.session.Session
 import com.hierynomus.smbj.share.Directory
@@ -35,7 +36,13 @@ import me.zhanghai.android.files.util.logWarning
  * from [authenticator]. Owned by the file system provider; a test constructs its own with a fake.
  */
 class Client(internal val authenticator: Authenticator) {
-    internal val client = SMBClient()
+    private val client = SMBClient()
+
+    /** SMBJ only negotiates SMB3 encryption when asked to at construction, hence two clients. */
+    private val encryptingClient = SMBClient(SmbConfig.builder().withEncryptData(true).build())
+
+    internal fun clientFor(authority: Authority): SMBClient =
+        if (authority.encrypt) encryptingClient else client
 
     internal val sessions = ConcurrentHashMap<Authority, Session>()
 
