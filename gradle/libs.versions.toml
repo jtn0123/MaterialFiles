@@ -126,6 +126,7 @@ commons-net = { module = "commons-net:commons-net", version.ref = "commons-net" 
 licensesdialog = { module = "de.psdev.licensesdialog:licensesdialog", version.ref = "licensesdialog" }
 simplemenu-preference = { module = "dev.rikka.rikkax.preference:simplemenu-preference", version.ref = "simplemenu-preference" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 jcifs-ng = { module = "eu.agno3.jcifs:jcifs-ng", version.ref = "jcifs-ng" }
 coil-bom = { module = "io.coil-kt:coil-bom", version.ref = "coil" }
 coil = { module = "io.coil-kt:coil" }
