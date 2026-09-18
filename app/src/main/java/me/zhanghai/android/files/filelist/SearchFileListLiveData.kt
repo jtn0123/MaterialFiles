@@ -5,7 +5,6 @@
 
 package me.zhanghai.android.files.filelist
 
-import java.io.IOException
 import java.util.concurrent.Future
 import java8.nio.file.Path
 import me.zhanghai.android.files.file.FileItem
@@ -17,11 +16,11 @@ import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
 import me.zhanghai.android.files.util.backgroundExecutor
-import me.zhanghai.android.files.util.valueCompat
 
 class SearchFileListLiveData(private val path: Path, private val query: String) :
     CloseableLiveData<Stateful<List<FileItem>>>() {
     private var future: Future<Unit>? = null
+    private var generation = 0
 
     init {
         loadValue()
@@ -29,32 +28,36 @@ class SearchFileListLiveData(private val path: Path, private val query: String) 
 
     fun loadValue() {
         future?.cancel(true)
+        val request = ++generation
         value = Loading(emptyList())
+        fun publish(state: Stateful<List<FileItem>>) {
+            me.zhanghai.android.files.app.mainExecutor.execute {
+                if (request == generation) value = state
+            }
+        }
         future = backgroundExecutor.submit<Unit> {
-            val fileList = mutableListOf<FileItem>()
+            val result =
+                ProgressiveFileList<Path, FileItem>({ it.loadFileItem() }, { publish(Loading(it)) })
             try {
-                path.search(query, INTERVAL_MILLIS) { paths: List<Path> ->
-                    for (path in paths) {
-                        val fileItem = try {
-                            path.loadFileItem()
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                            // TODO: Support file without information.
-                            continue
-                        }
-                        fileList.add(fileItem)
+                path.search(query, INTERVAL_MILLIS) { paths: List<Path> -> result.add(paths) }
+                val error = result.problem
+                publish(
+                    if (error ==
+                        null
+                    ) {
+                        Success(result.snapshot)
+                    } else {
+                        Failure(result.snapshot, error)
                     }
-                    postValue(Loading(fileList.toList()))
-                }
-                postValue(Success(fileList))
+                )
             } catch (e: Exception) {
-                // TODO: Retrieval of previous value is racy.
-                postValue(Failure(valueCompat.value, e))
+                publish(Failure(result.snapshot, e))
             }
         }
     }
 
     override fun close() {
+        ++generation
         future?.cancel(true)
     }
 

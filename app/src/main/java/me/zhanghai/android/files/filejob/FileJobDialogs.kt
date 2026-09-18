@@ -53,7 +53,7 @@ private fun <T> FileJob.waitingForUser(block: suspend CoroutineScope.() -> T): T
 
 // TODO: Make invalid file name, remount etc user actions as well.
 @Throws(InterruptedIOException::class)
-internal fun FileJob.showUserAction(exception: UserActionRequiredException): Boolean = try {
+private fun FileJob.showAndroidUserAction(exception: UserActionRequiredException): Boolean = try {
     waitingForUser {
         suspendCoroutine { continuation ->
             val userAction = exception.getUserAction(continuation, service)
@@ -70,7 +70,7 @@ internal fun FileJob.showUserAction(exception: UserActionRequiredException): Boo
 }
 
 @Throws(InterruptedIOException::class)
-internal fun FileJob.showErrorDialog(
+private fun FileJob.showAndroidErrorDialog(
     title: CharSequence,
     message: CharSequence,
     readOnlyFileStore: PosixFileStore?,
@@ -121,7 +121,7 @@ internal fun FileJob.getReadOnlyFileStore(path: Path, exception: IOException): P
 internal class ErrorResult(val action: FileJobErrorAction, val isAll: Boolean)
 
 @Throws(IOException::class)
-internal fun FileJob.showConflictDialog(
+private fun FileJob.showAndroidConflictDialog(
     sourceFile: FileItem,
     targetFile: FileItem,
     type: CopyMoveType
@@ -152,4 +152,51 @@ internal class ConflictResult(
     val action: FileJobConflictAction,
     val name: String?,
     val isAll: Boolean
+)
+
+internal class AndroidFileJobDecisions(private val job: FileJob) : FileJobDecisions {
+    override fun error(request: FileJobErrorRequest): ErrorResult = with(request) {
+        job.showAndroidErrorDialog(
+            title,
+            message,
+            readOnlyFileStore,
+            showAll,
+            positiveButtonText,
+            negativeButtonText,
+            neutralButtonText
+        )
+    }
+    override fun conflict(source: FileItem, target: FileItem, type: CopyMoveType): ConflictResult =
+        job.showAndroidConflictDialog(source, target, type)
+    override fun userAction(exception: UserActionRequiredException): Boolean =
+        job.showAndroidUserAction(exception)
+}
+
+internal fun FileJob.showUserAction(exception: UserActionRequiredException): Boolean =
+    decisions.userAction(exception)
+
+internal fun FileJob.showConflictDialog(
+    sourceFile: FileItem,
+    targetFile: FileItem,
+    type: CopyMoveType
+): ConflictResult = decisions.conflict(sourceFile, targetFile, type)
+
+internal fun FileJob.showErrorDialog(
+    title: CharSequence,
+    message: CharSequence,
+    readOnlyFileStore: PosixFileStore?,
+    showAll: Boolean,
+    positiveButtonText: CharSequence?,
+    negativeButtonText: CharSequence?,
+    neutralButtonText: CharSequence?
+): ErrorResult = decisions.error(
+    FileJobErrorRequest(
+        title,
+        message,
+        readOnlyFileStore,
+        showAll,
+        positiveButtonText,
+        negativeButtonText,
+        neutralButtonText
+    )
 )

@@ -36,8 +36,18 @@ private var lastVersionCode: Int
     }
 
 fun upgradeApp() {
-    upgradeAppFrom(lastVersionCode)
-    lastVersionCode = VERSION_CODE_LATEST
+    try {
+        upgradeAppFrom(lastVersionCode)
+        me.zhanghai.android.files.settings.EncryptedPasswordStore.read(
+            noBackupSharedPreferences,
+            application.getString(me.zhanghai.android.files.R.string.pref_key_ftp_server_password),
+            ""
+        )
+        lastVersionCode = VERSION_CODE_LATEST
+    } catch (e: Exception) {
+        // Retain the version marker so the migration is retried on next launch.
+        e.printStackTrace()
+    }
 }
 
 private fun upgradeAppFrom(lastVersionCode: Int) {

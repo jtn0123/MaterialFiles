@@ -382,9 +382,6 @@
         <error line="20" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="29" column="47" source="standard:function-signature" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/filejob/FileJobService.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/filelist/BreadcrumbLayout.kt">
         <error line="29" column="5" source="standard:spacing-between-declarations-with-comments" />
         <error line="55" column="18" source="standard:argument-list-wrapping" />
@@ -454,33 +451,6 @@
         <error line="47" column="51" source="standard:function-signature" />
         <error line="69" column="20" source="standard:function-signature" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/filelist/FileListAdapter.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="46" column="5" source="standard:class-signature" />
-        <error line="46" column="35" source="standard:class-signature" />
-        <error line="47" column="74" source="standard:class-signature" />
-        <error line="141" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="152" column="64" source="standard:function-expression-body" />
-        <error line="209" column="70" source="standard:function-expression-body" />
-        <error line="344" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="348" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="352" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="356" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="360" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="364" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="368" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="372" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="376" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="380" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="384" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="388" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="397" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="398" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="399" column="1" source="standard:blank-line-between-when-conditions" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/filelist/FileListLiveData.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/filelist/FileListViewModel.kt">
         <error line="8" column="1" source="standard:import-ordering" />
         <error line="89" column="17" source="standard:backing-property-naming" />
@@ -517,13 +487,6 @@
     </file>
     <file name="src/main/java/me/zhanghai/android/files/filelist/PathObserver.kt">
         <error line="8" column="1" source="standard:import-ordering" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/filelist/SearchFileListLiveData.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="24" column="5" source="standard:class-signature" />
-        <error line="25" column="5" source="standard:class-signature" />
-        <error line="25" column="30" source="standard:class-signature" />
-        <error line="26" column="5" source="standard:class-signature" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/filelist/ShowRequestAllFilesAccessRationaleDialogFragment.kt">
         <error line="21" column="70" source="standard:function-expression-body" />
@@ -1521,19 +1484,6 @@
         <error line="21" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="28" column="67" source="standard:function-expression-body" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/provider/linux/LinuxCopyMove.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="72" column="36" source="standard:wrapping" />
-        <error line="73" column="42" source="standard:wrapping" />
-        <error line="102" column="29" source="standard:chain-wrapping" />
-        <error line="102" column="95" source="standard:wrapping" />
-        <error line="206" column="19" source="standard:wrapping" />
-        <error line="206" column="20" source="standard:argument-list-wrapping" />
-        <error line="286" column="46" source="standard:argument-list-wrapping" />
-        <error line="286" column="52" source="standard:argument-list-wrapping" />
-        <error line="286" column="59" source="standard:argument-list-wrapping" />
-        <error line="286" column="65" source="standard:argument-list-wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/provider/linux/LinuxDirectoryStream.kt">
         <error line="8" column="1" source="standard:import-ordering" />
         <error line="79" column="1" source="standard:indent" />
@@ -2174,11 +2124,6 @@
         <error line="43" column="18" source="standard:argument-list-wrapping" />
         <error line="43" column="25" source="standard:argument-list-wrapping" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/settings/PasswordPreference.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="22" column="18" source="standard:argument-list-wrapping" />
-        <error line="22" column="25" source="standard:argument-list-wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/settings/PathPreference.kt">
         <error line="26" column="33" source="standard:class-signature" />
         <error line="26" column="45" source="standard:class-signature" />
@@ -2615,22 +2560,6 @@
         <error line="144" column="16" source="standard:argument-list-wrapping" />
         <error line="144" column="19" source="standard:argument-list-wrapping" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/ui/ListAdapter.kt">
-        <error line="13" column="5" source="standard:class-signature" />
-        <error line="13" column="39" source="standard:class-signature" />
-        <error line="14" column="5" source="standard:class-signature" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/ui/ListDiffer.kt">
-        <error line="19" column="17" source="standard:mixed-condition-operators" />
-        <error line="35" column="52" source="standard:function-expression-body" />
-        <error line="39" column="52" source="standard:function-expression-body" />
-        <error line="44" column="21" source="standard:function-signature" />
-        <error line="45" column="21" source="standard:function-signature" />
-        <error line="45" column="41" source="standard:function-signature" />
-        <error line="72" column="21" source="standard:function-signature" />
-        <error line="73" column="21" source="standard:function-signature" />
-        <error line="73" column="41" source="standard:function-signature" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/ui/MaterialPreferenceDialogFragmentCompat.kt">
         <error line="33" column="56" source="standard:wrapping" />
         <error line="33" column="57" source="standard:class-signature" />
@@ -2839,12 +2768,6 @@
     </file>
     <file name="src/main/java/me/zhanghai/android/files/viewer/text/ConfirmReloadDialogFragment.kt">
         <error line="20" column="70" source="standard:function-expression-body" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/viewer/text/TextEditorViewModel.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="42" column="17" source="standard:backing-property-naming" />
-        <error line="105" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="119" column="1" source="standard:blank-line-between-when-conditions" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/viewer/video/VideoSubtitles.kt">
         <error line="8" column="1" source="standard:import-ordering" />

@@ -10,9 +10,28 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 
 abstract class ListAdapter<T, VH : RecyclerView.ViewHolder>(
-    callback: DiffUtil.ItemCallback<T>
+    callback: DiffUtil.ItemCallback<T>,
+    asyncDiff: Boolean = false
 ) : RecyclerView.Adapter<VH>() {
-    private val listDiffer = ListDiffer(AdapterListUpdateCallback(this), callback)
+    private val listDiffer = ListDiffer(
+        AdapterListUpdateCallback(this),
+        callback,
+        ::onListChanged,
+        if (asyncDiff) {
+            me.zhanghai.android.files.util.backgroundExecutor
+        } else {
+            java.util.concurrent.Executor {
+                it.run()
+            }
+        },
+        if (asyncDiff) {
+            me.zhanghai.android.files.app.mainExecutor
+        } else {
+            java.util.concurrent.Executor {
+                it.run()
+            }
+        }
+    )
 
     val list: List<T>
         get() = listDiffer.list
@@ -26,18 +45,20 @@ abstract class ListAdapter<T, VH : RecyclerView.ViewHolder>(
 
     open fun refresh() {
         val list = listDiffer.list
-        listDiffer.list = emptyList()
-        listDiffer.list = list
+        listDiffer.submit(emptyList())
+        listDiffer.submit(list)
     }
 
-    open fun replace(list: List<T>, clear: Boolean) {
+    open fun replace(list: List<T>, clear: Boolean, committed: () -> Unit = {}) {
         if (clear) {
-            listDiffer.list = emptyList()
+            listDiffer.submit(emptyList())
         }
-        listDiffer.list = list
+        listDiffer.submit(list, committed)
     }
+
+    protected open fun onListChanged() {}
 
     open fun clear() {
-        listDiffer.list = emptyList()
+        listDiffer.submit(emptyList())
     }
 }

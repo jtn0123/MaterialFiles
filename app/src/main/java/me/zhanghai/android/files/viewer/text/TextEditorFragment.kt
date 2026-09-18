@@ -55,6 +55,45 @@ class TextEditorFragment :
 
     private val viewModel by viewModels { { TextEditorViewModel(argsFile) } }
 
+    private val draftStore by lazy {
+        TextDraftStore(
+            java.io.File(requireContext().noBackupFilesDir, "editor-drafts"),
+            argsFile.toUri().toString()
+        )
+    }
+    private var recoveredDraft = false
+
+    private fun persistDraft() {
+        if (!::argsFile.isInitialized || view == null || !viewModel.isTextChanged.value) return
+        try {
+            draftStore.write(
+                TextDraft(
+                    binding.textEdit.text.toString(),
+                    viewModel.encoding.value.name(),
+                    binding.textEdit.selectionStart,
+                    binding.textEdit.selectionEnd
+                )
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            showToast(R.string.text_editor_draft_save_failed)
+        }
+    }
+
+    private fun discardDraft() {
+        try {
+            draftStore.clear()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        recoveredDraft = false
+    }
+
+    override fun onStop() {
+        persistDraft()
+        super.onStop()
+    }
+
     private lateinit var onBackPressedCallback: OnBackPressedCallback
 
     private var isSettingText = false
@@ -125,6 +164,24 @@ class TextEditorFragment :
         if (textEditSavedState != null) {
             binding.textEdit.onRestoreInstanceState(textEditSavedState)
         }
+        if (textEditSavedState == null) {
+            try {
+                draftStore.read()?.let { draft ->
+                    viewModel.encoding.value = Charset.forName(draft.encoding)
+                    setText(draft.text)
+                    binding.textEdit.setSelection(
+                        draft.start.coerceIn(0, draft.text.length),
+                        draft.end.coerceIn(0, draft.text.length)
+                    )
+                    viewModel.isTextChanged.value = true
+                    recoveredDraft = true
+                    showToast(R.string.text_editor_draft_restored)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                showToast(R.string.text_editor_draft_restore_failed)
+            }
+        }
         binding.textEdit.doAfterTextChanged {
             if (isSettingText) {
                 return@doAfterTextChanged
@@ -143,6 +200,7 @@ class TextEditorFragment :
         super.onSaveInstanceState(outState)
 
         viewModel.setEditTextSavedState(binding.textEdit.onSaveInstanceState())
+        persistDraft()
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -182,6 +240,10 @@ class TextEditorFragment :
     }
 
     override fun finish() {
+        if (::argsFile.isInitialized) {
+            discardDraft()
+            viewModel.isTextChanged.value = false
+        }
         requireActivity().finish()
     }
 
@@ -218,6 +280,12 @@ class TextEditorFragment :
             }
 
             is DataState.Error -> {
+                if (recoveredDraft) {
+                    binding.progress.fadeOutUnsafe()
+                    binding.errorText.fadeOutUnsafe()
+                    binding.textEdit.fadeInUnsafe()
+                    return
+                }
                 state.throwable.printStackTrace()
                 binding.progress.fadeOutUnsafe()
                 binding.errorText.fadeInUnsafe()
@@ -260,6 +328,7 @@ class TextEditorFragment :
     }
 
     override fun reload() {
+        discardDraft()
         viewModel.isTextChanged.value = false
         viewModel.reload()
     }
@@ -276,7 +345,12 @@ class TextEditorFragment :
             is ActionState.Success -> {
                 showToast(R.string.text_editor_save_success)
                 viewModel.finishWritingFile()
-                viewModel.isTextChanged.value = false
+                if (binding.textEdit.text.toString() == state.argument.second) {
+                    viewModel.isTextChanged.value = false
+                    discardDraft()
+                } else {
+                    persistDraft()
+                }
             }
 
             // The error will be toasted by service so we should never show it in UI.

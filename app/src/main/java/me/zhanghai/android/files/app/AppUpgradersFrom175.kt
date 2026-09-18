@@ -6,7 +6,6 @@
 package me.zhanghai.android.files.app
 
 import android.content.SharedPreferences
-import androidx.core.content.edit
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.PreferenceManagerCompat
 import me.zhanghai.android.files.settings.EncryptedParcelValueSettingLiveData
@@ -32,31 +31,7 @@ private fun migrateNoBackupSettings1_7_5() {
         R.string.pref_key_ftp_server_home_directory,
         R.string.pref_key_ftp_server_writable
     ).map { application.getString(it) }
-    val oldValues = defaultSharedPreferences.all.filterKeys { it in keys }
-    if (oldValues.isEmpty()) {
-        return
-    }
-    noBackupSharedPreferences.edit(commit = true) {
-        for ((key, value) in oldValues) {
-            when (value) {
-                is String -> putString(key, value)
-
-                is Boolean -> putBoolean(key, value)
-
-                is Int -> putInt(key, value)
-
-                is Long -> putLong(key, value)
-
-                is Float -> putFloat(key, value)
-
-                else -> {
-                    // A string set is the only other type SharedPreferences stores, and none
-                    // of these keys is one; leave it behind rather than guess.
-                }
-            }
-        }
-    }
-    defaultSharedPreferences.edit(commit = true) { oldValues.keys.forEach { remove(it) } }
+    migratePreferences(defaultSharedPreferences, noBackupSharedPreferences, keys.toSet())
 }
 
 internal fun upgradeAppTo1_7_6() {
@@ -70,19 +45,15 @@ internal fun upgradeAppTo1_7_6() {
  */
 private fun encryptStorages1_7_6() {
     val key = application.getString(R.string.pref_key_storages)
-    val value = noBackupSharedPreferences.getString(key, null) ?: return
-    if (value.startsWith(EncryptedParcelValueSettingLiveData.PREFIX)) {
-        return
-    }
-    val storages = try {
-        EncryptedParcelValueSettingLiveData.decode<List<Storage>>(value)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        return
-    }
-    noBackupSharedPreferences.edit(commit = true) {
-        putString(key, EncryptedParcelValueSettingLiveData.encode(storages))
-    }
+    encryptPreference(
+        noBackupSharedPreferences,
+        key,
+        { it.startsWith(EncryptedParcelValueSettingLiveData.PREFIX) },
+        { value ->
+            val storages = EncryptedParcelValueSettingLiveData.decode<List<Storage>>(value)
+            EncryptedParcelValueSettingLiveData.encode(storages)
+        }
+    )
 }
 
 internal val noBackupSharedPreferences: SharedPreferences

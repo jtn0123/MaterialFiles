@@ -17,6 +17,8 @@ import me.zhanghai.android.files.util.toUserMessage
 abstract class FileJob {
     val id = Random().nextInt()
 
+    internal var decisions: FileJobDecisions = AndroidFileJobDecisions(this)
+
     internal lateinit var service: FileJobService
         private set
 
@@ -59,6 +61,8 @@ abstract class FileJob {
             service.getString(R.string.file_job_failed_format, e.toUserMessage(service))
         )
     }
+
+    internal open fun onFinished() {}
 
     @Throws(IOException::class)
     protected abstract fun run()

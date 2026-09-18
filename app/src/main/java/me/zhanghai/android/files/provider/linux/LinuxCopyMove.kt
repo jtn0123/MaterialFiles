@@ -6,6 +6,8 @@
 package me.zhanghai.android.files.provider.linux
 
 import android.system.OsConstants
+import java.io.IOException
+import java.io.InterruptedIOException
 import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.FileSystemException
 import java8.nio.file.StandardCopyOption
@@ -16,8 +18,6 @@ import me.zhanghai.android.files.provider.linux.syscall.Constants
 import me.zhanghai.android.files.provider.linux.syscall.StructTimespec
 import me.zhanghai.android.files.provider.linux.syscall.Syscall
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
-import java.io.IOException
-import java.io.InterruptedIOException
 
 internal object LinuxCopyMove {
     private const val SEND_FILE_COUNT = 8 * 1024
@@ -69,8 +69,10 @@ internal object LinuxCopyMove {
                 throw e.toFileSystemException(source.toString())
             }
             try {
-                var targetFlags = (OsConstants.O_WRONLY or OsConstants.O_TRUNC
-                    or OsConstants.O_CREAT)
+                var targetFlags = (
+                    OsConstants.O_WRONLY or OsConstants.O_TRUNC
+                        or OsConstants.O_CREAT
+                    )
                 if (!copyOptions.replaceExisting) {
                     targetFlags = targetFlags or OsConstants.O_EXCL
                 }
@@ -98,8 +100,9 @@ internal object LinuxCopyMove {
                         copiedSize += sentSize
                         throwIfInterrupted()
                         val currentTimeMillis = System.currentTimeMillis()
-                        if (progressListener != null
-                            && currentTimeMillis >= lastProgressMillis + progressIntervalMillis) {
+                        if (progressListener != null &&
+                            currentTimeMillis >= lastProgressMillis + progressIntervalMillis
+                        ) {
                             progressListener(copiedSize)
                             lastProgressMillis = currentTimeMillis
                             copiedSize = 0
@@ -203,7 +206,8 @@ internal object LinuxCopyMove {
                     sourceStat.st_atim
                 } else {
                     StructTimespec(0, Constants.UTIME_OMIT)
-                }, sourceStat.st_mtim
+                },
+                sourceStat.st_mtim
             )
             Syscall.lutimens(target, times)
         } catch (e: SyscallException) {
@@ -216,7 +220,7 @@ internal object LinuxCopyMove {
                 if (!(copyOptions.copyAttributes || xattrName.startsWith(XATTR_NAME_PREFIX_USER))) {
                     continue
                 }
-                val xattrValue = Syscall.lgetxattr(target, xattrName)
+                val xattrValue = Syscall.lgetxattr(source, xattrName)
                 Syscall.lsetxattr(target, xattrName, xattrValue, 0)
             }
         } catch (e: SyscallException) {
@@ -255,10 +259,14 @@ internal object LinuxCopyMove {
             if (!copyOptions.replaceExisting) {
                 throw FileAlreadyExistsException(source.toString(), target.toString(), null)
             }
-            try {
-                Syscall.remove(target)
-            } catch (e: SyscallException) {
-                throw e.toFileSystemException(target.toString())
+            // rename() replaces atomically. Deleting first defeats ATOMIC_MOVE and can lose
+            // the destination when rename fails.
+            if (!copyOptions.atomicMove) {
+                try {
+                    Syscall.remove(target)
+                } catch (e: SyscallException) {
+                    throw e.toFileSystemException(target.toString())
+                }
             }
         }
         var renameSuccessful = false
@@ -283,7 +291,11 @@ internal object LinuxCopyMove {
         var copyOptions = copyOptions
         if (!copyOptions.copyAttributes || !copyOptions.noFollowLinks) {
             copyOptions = CopyOptions(
-                copyOptions.replaceExisting, true, false, true, copyOptions.progressIntervalMillis,
+                copyOptions.replaceExisting,
+                true,
+                false,
+                true,
+                copyOptions.progressIntervalMillis,
                 copyOptions.progressListener
             )
         }

@@ -9,6 +9,8 @@ import android.content.Context
 import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import java.io.IOException
+import java.nio.charset.StandardCharsets
 import java8.nio.file.Path
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -32,14 +34,12 @@ import me.zhanghai.android.files.util.isFinished
 import me.zhanghai.android.files.util.isReady
 import me.zhanghai.android.files.util.toError
 import me.zhanghai.android.files.util.toLoading
-import java.io.IOException
-import java.nio.charset.StandardCharsets
 
 class TextEditorViewModel(file: Path) : ViewModel() {
     private val _file = MutableStateFlow(file)
     val file = _file.asStateFlow()
 
-    private val _bytesState = MutableStateFlow<DataState<ByteArray>>(DataState.Loading())
+    private val bytesState = MutableStateFlow<DataState<ByteArray>>(DataState.Loading())
 
     private var loadJob: Job? = null
     private var reloadJob: Job? = null
@@ -73,7 +73,7 @@ class TextEditorViewModel(file: Path) : ViewModel() {
     }
 
     private suspend fun mapFileToBytesState(file: Path) {
-        _bytesState.value = _bytesState.value.toLoading()
+        bytesState.value = bytesState.value.toLoading()
         try {
             val bytes = runInterruptible(Dispatchers.IO) {
                 val size = file.size()
@@ -83,11 +83,11 @@ class TextEditorViewModel(file: Path) : ViewModel() {
                 file.readAllBytes()
             }
             currentCoroutineContext().ensureActive()
-            _bytesState.value = DataState.Success(bytes)
+            bytesState.value = DataState.Success(bytes)
         } catch (e: CancellationException) {
             e.printStackTrace()
         } catch (e: Exception) {
-            _bytesState.value = _bytesState.value.toError(e)
+            bytesState.value = bytesState.value.toError(e)
         }
     }
 
@@ -98,10 +98,11 @@ class TextEditorViewModel(file: Path) : ViewModel() {
 
     init {
         viewModelScope.launch {
-            _bytesState.combine(encoding) { bytesState, encoding -> bytesState to encoding }
+            bytesState.combine(encoding) { bytesState, encoding -> bytesState to encoding }
                 .collectLatest { (bytesState, encoding) ->
                     when (bytesState) {
                         is DataState.Loading -> _textState.value = _textState.value.toLoading()
+
                         is DataState.Success -> {
                             _textState.value = _textState.value.toLoading()
                             try {
@@ -116,6 +117,7 @@ class TextEditorViewModel(file: Path) : ViewModel() {
                                 _textState.value = _textState.value.toError(e)
                             }
                         }
+
                         is DataState.Error ->
                             _textState.value = _textState.value.toError(bytesState.throwable)
                     }
@@ -134,22 +136,32 @@ class TextEditorViewModel(file: Path) : ViewModel() {
             check(_writeFileState.value.isReady)
             val argument = path to text
             _writeFileState.value = ActionState.Running(argument)
-            val bytes = withContext(Dispatchers.Default) {
-                text.toByteArray(encoding.value)
-            }
-            FileJobService.write(path, bytes, context) { successful ->
-                if (successful) {
-                    loadJob?.cancel()?.also { loadJob = null }
-                    reloadJob?.cancel()?.also { reloadJob = null }
-                    _bytesState.value = DataState.Success(bytes)
+            try {
+                val bytes = withContext(Dispatchers.Default) {
+                    text.toByteArray(encoding.value)
                 }
-                _writeFileState.value = if (successful) {
-                    ActionState.Success(argument, Unit)
-                } else {
-                    // The error will be toasted by service so we should never show it in UI, but we
-                    // need a non-null value here.
-                    ActionState.Error(argument, Throwable())
+                FileJobService.write(path, bytes, context) { successful ->
+                    if (successful) {
+                        loadJob?.cancel()?.also { loadJob = null }
+                        reloadJob?.cancel()?.also { reloadJob = null }
+                        bytesState.value = DataState.Success(bytes)
+                    }
+                    _writeFileState.value = if (successful) {
+                        ActionState.Success(argument, Unit)
+                    } else {
+                        // The error will be toasted by service so we should never show it in UI, but we
+                        // need a non-null value here.
+                        ActionState.Error(argument, Throwable())
+                    }
                 }
+            } catch (e: Exception) {
+                _writeFileState.value = ActionState.Error(argument, e)
+                if (e is CancellationException) throw e
+                android.widget.Toast.makeText(
+                    context,
+                    e.message,
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
             }
         }
     }

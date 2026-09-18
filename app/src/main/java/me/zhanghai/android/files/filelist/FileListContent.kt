@@ -121,6 +121,7 @@ internal class FileListContent(private val fragment: FileListFragment) {
     fun onViewTypeChanged(viewType: FileViewType) {
         updateSpanCount()
         adapter.viewType = viewType
+        updateAdapterFileList()
         fragment.menus.updateViewSortMenuItems()
     }
 
@@ -173,9 +174,12 @@ internal class FileListContent(private val fragment: FileListFragment) {
             if (generation != adapterFileListUpdateGeneration) {
                 return@launch
             }
-            adapter.replaceListAndIsSearching(visibleFiles, isSearching)
-            if (restorePendingState) {
-                viewModel.pendingState?.let { fragment.layoutManager.onRestoreInstanceState(it) }
+            adapter.replaceListAndIsSearching(visibleFiles, isSearching) {
+                if (restorePendingState && generation == adapterFileListUpdateGeneration) {
+                    viewModel.pendingState?.let {
+                        fragment.layoutManager.onRestoreInstanceState(it)
+                    }
+                }
             }
         }
     }

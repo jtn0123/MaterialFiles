@@ -13,8 +13,9 @@ import me.zhanghai.android.files.R
 import me.zhanghai.android.files.util.getAnimation
 
 abstract class AnimatedListAdapter<T, VH : RecyclerView.ViewHolder>(
-    callback: DiffUtil.ItemCallback<T>
-) : ListAdapter<T, VH>(callback) {
+    callback: DiffUtil.ItemCallback<T>,
+    asyncDiff: Boolean = false
+) : ListAdapter<T, VH>(callback, asyncDiff) {
     private var isAnimating = false
 
     private var animationStartOffset = 0
@@ -49,11 +50,11 @@ abstract class AnimatedListAdapter<T, VH : RecyclerView.ViewHolder>(
         super.refresh()
     }
 
-    override fun replace(list: List<T>, clear: Boolean) {
+    override fun replace(list: List<T>, clear: Boolean, committed: () -> Unit) {
         if (clear) {
             resetAnimation()
         }
-        super.replace(list, clear)
+        super.replace(list, clear, committed)
     }
 
     override fun clear() {

@@ -28,6 +28,9 @@ import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException
  * The raw [toString] stays the right thing for logs; this is only for toasts and error views.
  */
 fun Throwable.toUserMessage(context: Context): String {
+    if (this is me.zhanghai.android.files.filelist.PartialFileListException) {
+        return context.getString(R.string.file_list_partial_error, missingCount)
+    }
     val (stringRes, detail) = toUserMessageParts()
     return if (stringRes != null) context.getString(stringRes).withDetail(detail) else detail!!
 }
