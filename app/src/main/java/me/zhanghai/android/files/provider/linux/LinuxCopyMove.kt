@@ -221,9 +221,21 @@ internal object LinuxCopyMove {
                     continue
                 }
                 val xattrValue = Syscall.lgetxattr(source, xattrName)
-                Syscall.lsetxattr(target, xattrName, xattrValue, 0)
+                val targetValue = try {
+                    Syscall.lgetxattr(target, xattrName)
+                } catch (e: SyscallException) {
+                    if (e.errno != OsConstants.ENODATA) throw e
+                    null
+                }
+                // Inherited security labels may already match and may not be writable by apps.
+                if (targetValue == null || !targetValue.contentEquals(xattrValue)) {
+                    Syscall.lsetxattr(target, xattrName, xattrValue, 0)
+                }
             }
         } catch (e: SyscallException) {
+            if (copyOptions.copyAttributes) {
+                throw e.toFileSystemException(source.toString(), target.toString())
+            }
             e.printStackTrace()
         }
     }

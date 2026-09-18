@@ -11,6 +11,7 @@ import androidx.test.uiautomator.Configurator
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import java.io.File
+import me.zhanghai.android.files.R
 import me.zhanghai.android.files.captureReviewScreenshot
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.provider.root.RootStrategy
@@ -36,6 +37,7 @@ class FileListPartialResultsTest {
         ).use { descriptor ->
             java.io.FileInputStream(descriptor.fileDescriptor).use { it.readBytes() }
         }
+        val expectedError = context.getString(R.string.file_list_partial_error, 2)
         val device = UiDevice.getInstance(instrumentation)
         val configurator = Configurator.getInstance()
         val previousIdleTimeout = configurator.waitForIdleTimeout
@@ -64,7 +66,12 @@ class FileListPartialResultsTest {
                         as MutableLiveData<Stateful<List<FileItem>>>
                     state.value = Loading(checkNotNull(state.value?.value))
                 }
-                assertNotNull(device.wait(Until.findObject(By.text("Loading…")), 10000))
+                assertNotNull(
+                    device.wait(
+                        Until.findObject(By.text(context.getString(R.string.loading))),
+                        10000
+                    )
+                )
                 captureReviewScreenshot("folder-loading")
                 val notification = instrumentation.uiAutomation.executeAndWaitForEvent(
                     {
@@ -84,12 +91,18 @@ class FileListPartialResultsTest {
                     },
                     { event ->
                         event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED &&
-                            event.text.any { it.contains("Some files could not be read") }
+                            event.text.any { it.toString() == expectedError }
                     },
                     5000
                 )
-                org.junit.Assert.assertTrue(notification.text.any { it.contains("2 missing") })
-                assertNotNull(device.wait(Until.findObject(By.text("Error")), 3000))
+                org.junit.Assert.assertTrue(
+                    notification.text.any {
+                        it.toString() == expectedError
+                    }
+                )
+                assertNotNull(
+                    device.wait(Until.findObject(By.text(context.getString(R.string.error))), 3000)
+                )
                 captureReviewScreenshot("folder-partial-results")
                 assertNotNull(device.findObject(By.text("Meeting notes.txt")))
             }

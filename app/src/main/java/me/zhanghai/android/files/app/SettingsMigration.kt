@@ -15,8 +15,10 @@ internal fun migratePreferences(
     if (oldValues.isEmpty()) {
         return
     }
+    val destinationValues = destination.all
     val destinationEditor = destination.edit().apply {
         for ((key, value) in oldValues) {
+            if (key in destinationValues || "${key}_encrypted_v1" in destinationValues) continue
             when (value) {
                 is String -> putString(key, value)
 

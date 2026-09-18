@@ -22,4 +22,18 @@ class TextDraftStoreTest {
         store.clear()
         assertNull(TextDraftStore(directory.root, "file:///a").read())
     }
+
+    @Test fun staleEditorCannotReplaceOrDeleteNewerDraft() {
+        val oldEditor = TextDraftStore(directory.root, "file:///a")
+        oldEditor.write(TextDraft("first", "UTF-8", 0, 0))
+        val newEditor = TextDraftStore(directory.root, "file:///a")
+        newEditor.read()
+        val newer = TextDraft("newer edits", "UTF-8", 0, 0)
+        newEditor.write(newer)
+        org.junit.Assert.assertThrows(java.io.IOException::class.java) {
+            oldEditor.write(TextDraft("stale", "UTF-8", 0, 0))
+        }
+        org.junit.Assert.assertThrows(java.io.IOException::class.java) { oldEditor.clear() }
+        assertEquals(newer, TextDraftStore(directory.root, "file:///a").read())
+    }
 }

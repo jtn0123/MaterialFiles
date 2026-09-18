@@ -66,16 +66,78 @@ class TextEditorDraftRecoveryTest {
                 captureReviewScreenshot("draft-recovered")
             }
         } finally {
+            kotlinx.coroutines.runBlocking {
+                TextDraftSession(
+                    TextDraftStore(
+                        File(context.noBackupFilesDir, "editor-drafts"),
+                        java8.nio.file.Paths.get(file.path).toUri().toString()
+                    )
+                ) { throw it }.read()
+            }
             TextDraftStore(
                 File(context.noBackupFilesDir, "editor-drafts"),
                 file.toURI().toString()
-            ).clear()
+            ).apply { read() }.clear()
             // Android's URI form may differ from java.io.File's URI form.
             TextDraftStore(
                 File(context.noBackupFilesDir, "editor-drafts"),
                 java8.nio.file.Paths.get(file.path).toUri().toString()
-            ).clear()
+            ).apply { read() }.clear()
             file.delete()
+            instrumentation.runOnMainSync { previous?.let { Settings.ROOT_STRATEGY.putValue(it) } }
+        }
+    }
+
+    @Test fun recoveredDraftRemainsVisibleAfterRotationWhenFileIsMissing() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val device = UiDevice.getInstance(instrumentation)
+        val file = File(context.cacheDir, "Missing notes.txt")
+        val store = TextDraftStore(
+            File(context.noBackupFilesDir, "editor-drafts"),
+            java8.nio.file.Paths.get(file.path).toUri().toString()
+        )
+        store.read()
+        store.write(TextDraft("Recovered without the original", "UTF-8", 0, 0))
+        var previous: RootStrategy? = null
+        instrumentation.runOnMainSync {
+            previous = Settings.ROOT_STRATEGY.value
+            Settings.ROOT_STRATEGY.putValue(RootStrategy.NEVER)
+        }
+        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.fromFile(file), "text/plain")
+            .setClass(context, TextEditorActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            ActivityScenario.launch<TextEditorActivity>(intent).use { scenario ->
+                assertNotNull(
+                    device.wait(
+                        Until.findObject(
+                            By.clazz(
+                                "android.widget.EditText"
+                            ).text("Recovered without the original")
+                        ),
+                        10000
+                    )
+                )
+                scenario.recreate()
+                assertNotNull(
+                    device.wait(
+                        Until.findObject(
+                            By.clazz(
+                                "android.widget.EditText"
+                            ).text("Recovered without the original")
+                        ),
+                        10000
+                    )
+                )
+            }
+        } finally {
+            // Drain queued lifecycle writes before deleting this fixture's draft.
+            kotlinx.coroutines.runBlocking {
+                TextDraftSession(store) { throw it }.read()
+            }
+            store.read()
+            store.clear()
             instrumentation.runOnMainSync { previous?.let { Settings.ROOT_STRATEGY.putValue(it) } }
         }
     }

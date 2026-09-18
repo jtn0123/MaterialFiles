@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SettingsMigrationTest {
@@ -43,9 +44,19 @@ class SettingsMigrationTest {
             migratePreferences(source.preferences, destination.preferences, setOf("password"))
         }
         assertEquals("legacy", destination.values["password"])
+        destination.values["password"] = "updated after failed migration"
         source.failCommit = false
         migratePreferences(source.preferences, destination.preferences, setOf("password"))
         assertFalse(source.values.containsKey("password"))
+        assertEquals("updated after failed migration", destination.values["password"])
+    }
+
+    @Test fun retryDoesNotReintroducePlaintextForAnAlreadyEncryptedPassword() {
+        val source = MemoryPreferences(mutableMapOf("password" to "legacy"))
+        val destination = MemoryPreferences(mutableMapOf("password_encrypted_v1" to "ciphertext"))
+        migratePreferences(source.preferences, destination.preferences, setOf("password"))
+        assertEquals(mapOf("password_encrypted_v1" to "ciphertext"), destination.values)
+        assertTrue(source.values.isEmpty())
     }
 
     @Test fun encryptionFailurePreservesLegacyValue() {

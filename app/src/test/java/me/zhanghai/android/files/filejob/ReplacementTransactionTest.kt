@@ -67,4 +67,37 @@ class ReplacementTransactionTest {
     @Test fun successfulWriteReplacesOriginal() {
         replace()
     }
+
+    @Test fun concurrentTransactionsForOneTargetAreSerialized() {
+        val executor = java.util.concurrent.Executors.newFixedThreadPool(2)
+        val enteredFirst = java.util.concurrent.CountDownLatch(1)
+        val releaseFirst = java.util.concurrent.CountDownLatch(1)
+        val enteredSecond = java.util.concurrent.CountDownLatch(1)
+        val startedSecond = java.util.concurrent.CountDownLatch(1)
+        val seconds = java.util.concurrent.TimeUnit.SECONDS
+        try {
+            val first = executor.submit {
+                replaceTransaction("target", "stage1", "backup1", {
+                    enteredFirst.countDown()
+                    check(releaseFirst.await(5, seconds))
+                }, { _, _ -> }, {})
+            }
+            check(enteredFirst.await(5, seconds))
+            val second = executor.submit {
+                startedSecond.countDown()
+                replaceTransaction("target", "stage2", "backup2", {
+                    enteredSecond.countDown()
+                }, { _, _ -> }, {})
+            }
+            check(startedSecond.await(5, seconds))
+            assertFalse(enteredSecond.await(100, java.util.concurrent.TimeUnit.MILLISECONDS))
+            releaseFirst.countDown()
+            first.get(5, seconds)
+            second.get(5, seconds)
+            assertEquals(0L, enteredSecond.count)
+        } finally {
+            releaseFirst.countDown()
+            executor.shutdownNow()
+        }
+    }
 }

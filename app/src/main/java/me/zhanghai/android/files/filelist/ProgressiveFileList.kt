@@ -21,15 +21,22 @@ internal class ProgressiveFileList<T, R>(
         get() = if (failures == 0) null else PartialFileListException(failures, firstFailure)
 
     fun add(entries: Iterable<T>) {
-        for (entry in entries) {
+        val iterator = entries.iterator()
+        while (true) {
             if (Thread.currentThread().isInterrupted) throw InterruptedIOException()
+            val entry = try {
+                if (!iterator.hasNext()) break
+                iterator.next()
+            } catch (e: DirectoryIteratorException) {
+                if (e.cause is InterruptedIOException) throw e.cause!!
+                recordFailure(e)
+                break
+            }
             try {
                 items += read(entry)
             } catch (e: InterruptedIOException) {
                 throw e
             } catch (e: IOException) {
-                recordFailure(e)
-            } catch (e: DirectoryIteratorException) {
                 recordFailure(e)
             }
             val current = now()

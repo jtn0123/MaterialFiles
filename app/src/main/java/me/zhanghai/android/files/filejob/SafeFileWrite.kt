@@ -58,6 +58,13 @@ internal fun Path.writeSafely(write: (OutputStream) -> Unit) {
                 write(stream)
                 stream.flush()
             }
+            val current = target.readAttributes(BasicFileAttributes::class.java)
+            if (current.fileKey() != originalAttributes.fileKey() ||
+                current.size() != originalAttributes.size() ||
+                current.lastModifiedTime() != originalAttributes.lastModifiedTime()
+            ) {
+                throw IOException("File changed during save. Reload before saving: $this")
+            }
         },
         { from, to ->
             // No REPLACE_EXISTING: if another writer created the destination, preserve both copies.

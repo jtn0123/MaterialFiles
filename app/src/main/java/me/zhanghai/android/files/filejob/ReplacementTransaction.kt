@@ -1,6 +1,8 @@
 package me.zhanghai.android.files.filejob
 
 import java.io.IOException
+import java.io.InterruptedIOException
+import java.util.concurrent.locks.ReentrantLock
 
 /** Never overwrite the only good copy, even if a provider implements replace by deleting first. */
 internal fun <T> replaceTransaction(
@@ -11,6 +13,33 @@ internal fun <T> replaceTransaction(
     move: (T, T) -> Unit,
     delete: (T) -> Unit,
     atomicReplace: ((T, T) -> Unit)? = null
+) {
+    val lock = replacementLocks[(target.hashCode() and Int.MAX_VALUE) % replacementLocks.size]
+    try {
+        lock.lockInterruptibly()
+    } catch (e: InterruptedException) {
+        Thread.currentThread().interrupt()
+        throw InterruptedIOException("Save canceled while waiting for another writer").apply {
+            initCause(e)
+        }
+    }
+    try {
+        replaceLocked(target, staged, backup, write, move, delete, atomicReplace)
+    } finally {
+        lock.unlock()
+    }
+}
+
+private val replacementLocks = Array(64) { ReentrantLock() }
+
+private fun <T> replaceLocked(
+    target: T,
+    staged: T,
+    backup: T,
+    write: (T) -> Unit,
+    move: (T, T) -> Unit,
+    delete: (T) -> Unit,
+    atomicReplace: ((T, T) -> Unit)?
 ) {
     try {
         write(staged)

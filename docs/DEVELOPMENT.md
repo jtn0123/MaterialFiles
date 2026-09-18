@@ -116,4 +116,7 @@ preserve the original under a temporary sibling name and restore it if committin
 replacement fails. Providers that cannot safely rename fail
 without truncating the original. If restoring the original also fails, the error names the
 recovery copy; keep it until its contents have been recovered. Text drafts are stored in the
-app's private no-backup directory when leaving the editor and removed after save/discard.
+app's private no-backup directory on an ordered background worker when leaving the editor,
+and removed after save/discard. Revision checks prevent stale editor instances from replacing
+or deleting a newer draft. Save transactions serialize per target and reject detected changes
+to the original during staging. Required extended-attribute copy failures abort the save.

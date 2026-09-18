@@ -36,6 +36,26 @@ import me.zhanghai.android.files.util.toError
 import me.zhanghai.android.files.util.toLoading
 
 class TextEditorViewModel(file: Path) : ViewModel() {
+    internal val drafts = TextDraftSession(
+        TextDraftStore(
+            java.io.File(
+                me.zhanghai.android.files.app.application.noBackupFilesDir,
+                "editor-drafts"
+            ),
+            file.toUri().toString()
+        )
+    ) { error ->
+        error.printStackTrace()
+        me.zhanghai.android.files.app.mainExecutor.execute {
+            android.widget.Toast.makeText(
+                me.zhanghai.android.files.app.application,
+                me.zhanghai.android.files.R.string.text_editor_draft_save_failed,
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+    internal var draftRestored = false
+
     private val _file = MutableStateFlow(file)
     val file = _file.asStateFlow()
 

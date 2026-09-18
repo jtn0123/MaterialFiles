@@ -92,4 +92,22 @@ class SafeFileWriteTest {
             directory.deleteRecursively()
         }
     }
+
+    @Test fun changedTargetIsNotOverwrittenByStagedSave() {
+        val file = File(
+            InstrumentationRegistry.getInstrumentation().targetContext.cacheDir,
+            "concurrent-save.txt"
+        ).apply { writeText("original") }
+        try {
+            assertThrows(IOException::class.java) {
+                Paths.get(file.path).writeSafely { stream ->
+                    stream.write("staged edit".toByteArray())
+                    file.writeText("newer external content")
+                }
+            }
+            assertEquals("newer external content", file.readText())
+        } finally {
+            file.delete()
+        }
+    }
 }

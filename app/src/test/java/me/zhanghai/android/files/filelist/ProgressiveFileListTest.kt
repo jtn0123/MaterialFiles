@@ -35,4 +35,52 @@ class ProgressiveFileListTest {
         assertTrue(loader.snapshot.isEmpty())
         assertEquals(2, (loader.problem as PartialFileListException).missingCount)
     }
+
+    @Test fun publishesAgainOnlyAfterThrottleInterval() {
+        var time = 0L
+        val published = mutableListOf<List<Int>>()
+        val loader = ProgressiveFileList<Int, Int>({ it }, { published += it }, { time })
+        loader.add(listOf(1))
+        time = 499_999_999L
+        loader.add(listOf(2))
+        assertEquals(1, published.size)
+        time = 500_000_001L
+        loader.add(listOf(3))
+        assertEquals(listOf(listOf(1), listOf(1, 2, 3)), published)
+    }
+
+    @Test fun interruptedMetadataReadPropagatesTheSameException() {
+        val interruption = java.io.InterruptedIOException("Canceled")
+        val loader = ProgressiveFileList<Int, Int>({ throw interruption }, {})
+        org.junit.Assert.assertSame(
+            interruption,
+            org.junit.Assert.assertThrows(
+                java.io.InterruptedIOException::class.java
+            ) { loader.add(listOf(1)) }
+        )
+    }
+
+    @Test fun iteratorFailureRetainsEntriesAndReportsPartialResults() {
+        val entries = Iterable {
+            object : Iterator<Int> {
+                private var read = false
+                override fun hasNext(): Boolean {
+                    if (read) {
+                        throw java8.nio.file.DirectoryIteratorException(
+                            IOException("Lost connection")
+                        )
+                    }
+                    return true
+                }
+                override fun next(): Int {
+                    read = true
+                    return 1
+                }
+            }
+        }
+        val loader = ProgressiveFileList<Int, Int>({ it }, {})
+        loader.add(entries)
+        assertEquals(listOf(1), loader.snapshot)
+        assertEquals(1, (loader.problem as PartialFileListException).missingCount)
+    }
 }
