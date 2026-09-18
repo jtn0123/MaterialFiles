@@ -33,7 +33,33 @@ class TextEditorDraftRecoveryTest {
                 context,
                 TextEditorActivity::class.java
             ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        try {
+        val cleanup = java.io.Closeable {
+            try {
+                kotlinx.coroutines.runBlocking {
+                    TextDraftSession(
+                        TextDraftStore(
+                            File(context.noBackupFilesDir, "editor-drafts"),
+                            java8.nio.file.Paths.get(file.path).toUri().toString()
+                        )
+                    ) { throw it }.read()
+                }
+                TextDraftStore(
+                    File(context.noBackupFilesDir, "editor-drafts"),
+                    file.toURI().toString()
+                ).apply { read() }.clear()
+                // Android's URI form may differ from java.io.File's URI form.
+                TextDraftStore(
+                    File(context.noBackupFilesDir, "editor-drafts"),
+                    java8.nio.file.Paths.get(file.path).toUri().toString()
+                ).apply { read() }.clear()
+                file.delete()
+            } finally {
+                instrumentation.runOnMainSync {
+                    previous?.let { Settings.ROOT_STRATEGY.putValue(it) }
+                }
+            }
+        }
+        cleanup.use {
             ActivityScenario.launch<TextEditorActivity>(intent).use {
                 val editor = device.wait(
                     Until.findObject(
@@ -65,31 +91,6 @@ class TextEditorDraftRecoveryTest {
                 )
                 captureReviewScreenshot("draft-recovered")
             }
-        } finally {
-            try {
-                kotlinx.coroutines.runBlocking {
-                    TextDraftSession(
-                        TextDraftStore(
-                            File(context.noBackupFilesDir, "editor-drafts"),
-                            java8.nio.file.Paths.get(file.path).toUri().toString()
-                        )
-                    ) { throw it }.read()
-                }
-                TextDraftStore(
-                    File(context.noBackupFilesDir, "editor-drafts"),
-                    file.toURI().toString()
-                ).apply { read() }.clear()
-                // Android's URI form may differ from java.io.File's URI form.
-                TextDraftStore(
-                    File(context.noBackupFilesDir, "editor-drafts"),
-                    java8.nio.file.Paths.get(file.path).toUri().toString()
-                ).apply { read() }.clear()
-                file.delete()
-            } finally {
-                instrumentation.runOnMainSync {
-                    previous?.let { Settings.ROOT_STRATEGY.putValue(it) }
-                }
-            }
         }
     }
 
@@ -112,7 +113,21 @@ class TextEditorDraftRecoveryTest {
         val intent = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.fromFile(file), "text/plain")
             .setClass(context, TextEditorActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        try {
+        val cleanup = java.io.Closeable {
+            try {
+                // Drain queued lifecycle writes before deleting this fixture's draft.
+                kotlinx.coroutines.runBlocking {
+                    TextDraftSession(store) { throw it }.read()
+                }
+                store.read()
+                store.clear()
+            } finally {
+                instrumentation.runOnMainSync {
+                    previous?.let { Settings.ROOT_STRATEGY.putValue(it) }
+                }
+            }
+        }
+        cleanup.use {
             ActivityScenario.launch<TextEditorActivity>(intent).use { scenario ->
                 assertNotNull(
                     device.wait(
@@ -135,19 +150,6 @@ class TextEditorDraftRecoveryTest {
                         10000
                     )
                 )
-            }
-        } finally {
-            try {
-                // Drain queued lifecycle writes before deleting this fixture's draft.
-                kotlinx.coroutines.runBlocking {
-                    TextDraftSession(store) { throw it }.read()
-                }
-                store.read()
-                store.clear()
-            } finally {
-                instrumentation.runOnMainSync {
-                    previous?.let { Settings.ROOT_STRATEGY.putValue(it) }
-                }
             }
         }
     }
