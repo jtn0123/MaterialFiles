@@ -18,6 +18,19 @@ class ProgressiveFileListTest {
         assertEquals(listOf(1, 2, 3), loader.snapshot)
     }
 
+    @Test fun failedFirstEntryDoesNotPublishEmptyRowsOrDelayFirstSuccess() {
+        val published = mutableListOf<List<Int>>()
+        val loader = ProgressiveFileList<Int, Int>({
+            if (it == 1) throw IOException("unreadable")
+            it
+        }, { published += it }, { 900_000_000L })
+        loader.add(listOf(1))
+        assertTrue(published.isEmpty())
+        loader.add(listOf(2))
+        assertEquals(listOf(listOf(2)), published)
+        assertNotNull(loader.problem)
+    }
+
     @Test fun metadataFailureProducesPartialResultWithError() {
         val loader = ProgressiveFileList<Int, Int>({
             if (it == 2) throw IOException("metadata unavailable")

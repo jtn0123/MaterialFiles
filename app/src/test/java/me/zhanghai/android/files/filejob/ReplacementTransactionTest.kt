@@ -69,6 +69,108 @@ class ReplacementTransactionTest {
     }
 
     @Test fun concurrentTransactionsForOneTargetAreSerialized() {
+        assertSerialized("target", "target")
+    }
+
+    @Test fun equivalentPathsShareTheSameReplacementLock() {
+        assertSerialized(
+            me.zhanghai.android.files.provider.common.TestPath("/target"),
+            me.zhanghai.android.files.provider.common.TestPath("/folder/../target")
+        )
+    }
+
+    @Test fun atomicReplacementForcesDataBeforeMoveAndDirectoryAfterward() {
+        assertDurableReplacement(atomic = true)
+    }
+
+    @Test fun fallbackReplacementForcesDirectoryBeforeDeletingBackup() {
+        assertDurableReplacement(atomic = false)
+    }
+
+    @Test fun failedStagedForcePreservesOriginal() {
+        assertDurableReplacement(atomic = true, failAt = "stage")
+    }
+
+    @Test fun failedDirectoryForceKeepsFallbackRecoveryCopy() {
+        assertDurableReplacement(atomic = false, failAt = "parent")
+    }
+
+    @Test fun failedDirectoryForceDoesNotReportAtomicSaveSuccess() {
+        assertDurableReplacement(atomic = true, failAt = "parent")
+    }
+
+    private fun assertDurableReplacement(atomic: Boolean, failAt: String? = null) {
+        val target = folder.root.toPath().resolve("durable")
+        val stage = target.resolveSibling("stage")
+        val backup = target.resolveSibling("backup")
+        Files.writeString(target, "original")
+        val events = mutableListOf<String>()
+        val operation = {
+            replaceTransaction(
+                target,
+                stage,
+                backup,
+                {
+                    Files.writeString(it, "new")
+                    events += "write"
+                },
+                { from, to ->
+                    events += if (from == target) "backup" else "replace"
+                    Files.move(from, to)
+                    Unit
+                },
+                {
+                    if (it == backup) events += "cleanup"
+                    Files.deleteIfExists(it)
+                    Unit
+                },
+                ReplacementCommit(
+                    atomicReplace = if (atomic) {
+                        { from, to ->
+                            events += "replace"
+                            Files.move(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                            Unit
+                        }
+                    } else {
+                        null
+                    },
+                    forceStaged = {
+                        assertEquals("new", Files.readString(it))
+                        assertEquals("original", Files.readString(target))
+                        events += "force stage"
+                        if (failAt == "stage") throw IOException("force failed")
+                    },
+                    forceParent = {
+                        assertEquals(target, it)
+                        assertEquals("new", Files.readString(it))
+                        events += "force parent"
+                        if (failAt == "parent") throw IOException("directory force failed")
+                    }
+                )
+            )
+        }
+        if (failAt == null) {
+            operation()
+            val expected = if (atomic) {
+                listOf("write", "force stage", "replace", "force parent")
+            } else {
+                listOf("write", "force stage", "backup", "replace", "force parent", "cleanup")
+            }
+            assertEquals(expected, events)
+        } else {
+            val error = assertThrows(IOException::class.java, operation)
+            if (failAt == "stage") {
+                assertEquals("original", Files.readString(target))
+                assertEquals(listOf("write", "force stage"), events)
+            } else if (!atomic) {
+                assertEquals("original", Files.readString(backup))
+                org.junit.Assert.assertTrue(error.message!!.contains(backup.toString()))
+            }
+        }
+        assertFalse(Files.exists(stage))
+    }
+
+    private fun <T> assertSerialized(firstTarget: T, secondTarget: T) {
         val executor = java.util.concurrent.Executors.newFixedThreadPool(2)
         val enteredFirst = java.util.concurrent.CountDownLatch(1)
         val releaseFirst = java.util.concurrent.CountDownLatch(1)
@@ -77,7 +179,7 @@ class ReplacementTransactionTest {
         val seconds = java.util.concurrent.TimeUnit.SECONDS
         try {
             val first = executor.submit {
-                replaceTransaction("target", "stage1", "backup1", {
+                replaceTransaction(firstTarget, firstTarget, firstTarget, {
                     enteredFirst.countDown()
                     check(releaseFirst.await(5, seconds))
                 }, { _, _ -> }, {})
@@ -85,7 +187,7 @@ class ReplacementTransactionTest {
             check(enteredFirst.await(5, seconds))
             val second = executor.submit {
                 startedSecond.countDown()
-                replaceTransaction("target", "stage2", "backup2", {
+                replaceTransaction(secondTarget, secondTarget, secondTarget, {
                     enteredSecond.countDown()
                 }, { _, _ -> }, {})
             }

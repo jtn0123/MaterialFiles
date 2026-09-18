@@ -66,25 +66,30 @@ class TextEditorDraftRecoveryTest {
                 captureReviewScreenshot("draft-recovered")
             }
         } finally {
-            kotlinx.coroutines.runBlocking {
-                TextDraftSession(
-                    TextDraftStore(
-                        File(context.noBackupFilesDir, "editor-drafts"),
-                        java8.nio.file.Paths.get(file.path).toUri().toString()
-                    )
-                ) { throw it }.read()
+            try {
+                kotlinx.coroutines.runBlocking {
+                    TextDraftSession(
+                        TextDraftStore(
+                            File(context.noBackupFilesDir, "editor-drafts"),
+                            java8.nio.file.Paths.get(file.path).toUri().toString()
+                        )
+                    ) { throw it }.read()
+                }
+                TextDraftStore(
+                    File(context.noBackupFilesDir, "editor-drafts"),
+                    file.toURI().toString()
+                ).apply { read() }.clear()
+                // Android's URI form may differ from java.io.File's URI form.
+                TextDraftStore(
+                    File(context.noBackupFilesDir, "editor-drafts"),
+                    java8.nio.file.Paths.get(file.path).toUri().toString()
+                ).apply { read() }.clear()
+                file.delete()
+            } finally {
+                instrumentation.runOnMainSync {
+                    previous?.let { Settings.ROOT_STRATEGY.putValue(it) }
+                }
             }
-            TextDraftStore(
-                File(context.noBackupFilesDir, "editor-drafts"),
-                file.toURI().toString()
-            ).apply { read() }.clear()
-            // Android's URI form may differ from java.io.File's URI form.
-            TextDraftStore(
-                File(context.noBackupFilesDir, "editor-drafts"),
-                java8.nio.file.Paths.get(file.path).toUri().toString()
-            ).apply { read() }.clear()
-            file.delete()
-            instrumentation.runOnMainSync { previous?.let { Settings.ROOT_STRATEGY.putValue(it) } }
         }
     }
 
@@ -132,13 +137,18 @@ class TextEditorDraftRecoveryTest {
                 )
             }
         } finally {
-            // Drain queued lifecycle writes before deleting this fixture's draft.
-            kotlinx.coroutines.runBlocking {
-                TextDraftSession(store) { throw it }.read()
+            try {
+                // Drain queued lifecycle writes before deleting this fixture's draft.
+                kotlinx.coroutines.runBlocking {
+                    TextDraftSession(store) { throw it }.read()
+                }
+                store.read()
+                store.clear()
+            } finally {
+                instrumentation.runOnMainSync {
+                    previous?.let { Settings.ROOT_STRATEGY.putValue(it) }
+                }
             }
-            store.read()
-            store.clear()
-            instrumentation.runOnMainSync { previous?.let { Settings.ROOT_STRATEGY.putValue(it) } }
         }
     }
 }
