@@ -57,7 +57,12 @@ internal class TextDraftStore(directory: File, identity: String) {
                 StandardCopyOption.REPLACE_EXISTING
             )
         } finally {
-            temporary.delete()
+            try {
+                Files.deleteIfExists(temporary.toPath())
+            } catch (e: java.io.IOException) {
+                // Cleanup must not hide a write failure or invalidate a committed draft.
+                e.printStackTrace()
+            }
         }
     }
 

@@ -62,7 +62,9 @@ abstract class FileJob {
         )
     }
 
-    internal open fun onFinished() {}
+    internal open fun onFinished() {
+        // Most jobs have no result listener; subclasses can release caller-specific state.
+    }
 
     @Throws(IOException::class)
     protected abstract fun run()

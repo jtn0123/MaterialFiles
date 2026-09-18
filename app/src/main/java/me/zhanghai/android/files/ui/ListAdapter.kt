@@ -56,7 +56,9 @@ abstract class ListAdapter<T, VH : RecyclerView.ViewHolder>(
         listDiffer.submit(list, committed)
     }
 
-    protected open fun onListChanged() {}
+    protected open fun onListChanged() {
+        // Only adapters with list-derived state need to react before update dispatch.
+    }
 
     open fun clear() {
         listDiffer.submit(emptyList())

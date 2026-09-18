@@ -45,46 +45,7 @@ class ListDiffer<T>(
         }
         val oldList = _list
         worker.execute {
-            val result = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-                override fun getOldListSize(): Int = oldList.size
-
-                override fun getNewListSize(): Int = newList.size
-
-                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    val oldItem: T? = oldList[oldItemPosition]
-                    val newItem: T? = newList[newItemPosition]
-                    return if (oldItem != null && newItem != null) {
-                        diffCallback.areItemsTheSame(oldItem, newItem)
-                    } else {
-                        oldItem == null && newItem == null
-                    }
-                }
-
-                override fun areContentsTheSame(
-                    oldItemPosition: Int,
-                    newItemPosition: Int
-                ): Boolean {
-                    val oldItem: T? = oldList[oldItemPosition]
-                    val newItem: T? = newList[newItemPosition]
-                    return if (oldItem != null && newItem != null) {
-                        diffCallback.areContentsTheSame(oldItem, newItem)
-                    } else if (oldItem == null && newItem == null) {
-                        true
-                    } else {
-                        throw AssertionError()
-                    }
-                }
-
-                override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
-                    val oldItem: T? = oldList[oldItemPosition]
-                    val newItem: T? = newList[newItemPosition]
-                    return if (oldItem != null && newItem != null) {
-                        diffCallback.getChangePayload(oldItem, newItem)
-                    } else {
-                        throw AssertionError()
-                    }
-                }
-            })
+            val result = DiffUtil.calculateDiff(ListDiffCallback(oldList, newList, diffCallback))
             main.execute {
                 if (request == generation) {
                     _list = newList
@@ -93,6 +54,48 @@ class ListDiffer<T>(
                     committed()
                 }
             }
+        }
+    }
+}
+
+private class ListDiffCallback<T>(
+    private val oldList: List<T>,
+    private val newList: List<T>,
+    private val diffCallback: DiffUtil.ItemCallback<T>
+) : DiffUtil.Callback() {
+    override fun getOldListSize(): Int = oldList.size
+
+    override fun getNewListSize(): Int = newList.size
+
+    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        val oldItem: T? = oldList[oldItemPosition]
+        val newItem: T? = newList[newItemPosition]
+        return if (oldItem != null && newItem != null) {
+            diffCallback.areItemsTheSame(oldItem, newItem)
+        } else {
+            oldItem == null && newItem == null
+        }
+    }
+
+    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        val oldItem: T? = oldList[oldItemPosition]
+        val newItem: T? = newList[newItemPosition]
+        return if (oldItem != null && newItem != null) {
+            diffCallback.areContentsTheSame(oldItem, newItem)
+        } else if (oldItem == null && newItem == null) {
+            true
+        } else {
+            throw AssertionError()
+        }
+    }
+
+    override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
+        val oldItem: T? = oldList[oldItemPosition]
+        val newItem: T? = newList[newItemPosition]
+        return if (oldItem != null && newItem != null) {
+            diffCallback.getChangePayload(oldItem, newItem)
+        } else {
+            throw AssertionError()
         }
     }
 }
