@@ -5,9 +5,7 @@
 
 package me.zhanghai.android.files.filelist
 
-import java.io.IOException
 import java.util.concurrent.Future
-import java8.nio.file.DirectoryIteratorException
 import java8.nio.file.Path
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.file.loadFileItem
@@ -18,10 +16,10 @@ import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
 import me.zhanghai.android.files.util.backgroundExecutor
-import me.zhanghai.android.files.util.valueCompat
 
 class FileListLiveData(private val path: Path) : CloseableLiveData<Stateful<List<FileItem>>>() {
     private var future: Future<Unit>? = null
+    private var generation = 0
 
     private val observer: PathObserver
 
@@ -35,28 +33,31 @@ class FileListLiveData(private val path: Path) : CloseableLiveData<Stateful<List
 
     fun loadValue() {
         future?.cancel(true)
+        val request = ++generation
         value = Loading(value?.value)
-        future = backgroundExecutor.submit<Unit> {
-            val value = try {
-                path.newDirectoryStream().use { directoryStream ->
-                    val fileList = mutableListOf<FileItem>()
-                    for (path in directoryStream) {
-                        try {
-                            fileList.add(path.loadFileItem())
-                        } catch (e: DirectoryIteratorException) {
-                            // TODO: Ignoring such a file can be misleading and we need to support
-                            //  files without information.
-                            e.printStackTrace()
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                        }
-                    }
-                    Success(fileList as List<FileItem>)
-                }
-            } catch (e: Exception) {
-                Failure(valueCompat.value, e)
+        fun publish(state: Stateful<List<FileItem>>) {
+            me.zhanghai.android.files.app.mainExecutor.execute {
+                if (request == generation) value = state
             }
-            postValue(value)
+        }
+        future = backgroundExecutor.submit<Unit> {
+            val result =
+                ProgressiveFileList<Path, FileItem>({ it.loadFileItem() }, { publish(Loading(it)) })
+            try {
+                path.newDirectoryStream().use { result.add(it) }
+                val error = result.problem
+                publish(
+                    if (error ==
+                        null
+                    ) {
+                        Success(result.snapshot)
+                    } else {
+                        Failure(result.snapshot, error)
+                    }
+                )
+            } catch (e: Exception) {
+                publish(Failure(result.snapshot, e))
+            }
         }
     }
 
@@ -76,6 +77,7 @@ class FileListLiveData(private val path: Path) : CloseableLiveData<Stateful<List
     }
 
     override fun close() {
+        ++generation
         observer.close()
         future?.cancel(true)
     }

@@ -93,7 +93,7 @@ object Settings {
         )
 
     val FTP_SERVER_PASSWORD: SettingLiveData<String> =
-        StringSettingLiveData(
+        EncryptedStringSettingLiveData(
             NAME_SUFFIX_NO_BACKUP,
             R.string.pref_key_ftp_server_password,
             null,

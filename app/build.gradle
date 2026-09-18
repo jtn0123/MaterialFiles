@@ -117,6 +117,7 @@ ktlint {
     android = true
     // Existing violations are recorded in the baseline; new code is checked in full.
     baseline = file('ktlint-baseline.xml')
+
 }
 
 repositories {
@@ -227,4 +228,36 @@ dependencies {
     implementation libs.mina.core
     // Also a dependency of jCIFS-NG.
     implementation libs.slf4j.android
+}
+
+// Real protocol tests run on the JVM; do not route their logging into Android stubs.
+configurations.matching { it.name.endsWith('UnitTestRuntimeClasspath') }.configureEach {
+    exclude group: 'org.slf4j', module: 'slf4j-android'
+}
+dependencies {
+    testRuntimeOnly 'org.slf4j:slf4j-nop:1.7.36'
+}
+
+tasks.withType(Test).configureEach {
+    def smbPort = providers.environmentVariable('MATERIAL_SMB_PORT').orNull
+    if (smbPort != null) {
+        systemProperty 'material.smb.port', smbPort
+    }
+}
+
+// An independent CLI invocation keeps touched-file formatting separate from global lint tasks.
+configurations { ktlintCli }
+dependencies { ktlintCli 'com.pinterest.ktlint:ktlint-cli:1.8.0:all' }
+def selectedFormatFiles = providers.gradleProperty('formatFiles').orNull
+if (selectedFormatFiles != null) {
+    def selected = selectedFormatFiles.split(',').collect { file(it).absolutePath }
+    ['formatSelected': true, 'checkSelected': false].each { taskName, format ->
+        tasks.register(taskName, JavaExec) {
+            classpath = configurations.ktlintCli
+            mainClass = 'com.pinterest.ktlint.Main'
+            workingDir = rootProject.projectDir
+            if (format) args '--format'
+            args selected
+        }
+    }
 }

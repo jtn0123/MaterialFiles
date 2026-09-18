@@ -84,16 +84,20 @@ class FileJobService : Service() {
     private fun startJob(job: FileJob) {
         // Synchronize on runningJobs to prevent a job from removing itself before being added.
         synchronized(runningJobs) {
-            val future = executorService.submit {
-                job.runOn(this)
-                synchronized(runningJobs) {
-                    runningJobs.remove(job)
-                    jobsWaitingForUser.remove(job)
-                    updateWakeWifiLockLocked()
+            val future = CompletingFutureTask({ job.runOn(this) }) {
+                try {
+                    job.onFinished()
+                } finally {
+                    synchronized(runningJobs) {
+                        runningJobs.remove(job)
+                        jobsWaitingForUser.remove(job)
+                        updateWakeWifiLockLocked()
+                    }
                 }
             }
             runningJobs[job] = future
             updateWakeWifiLockLocked()
+            executorService.execute(future)
         }
     }
 

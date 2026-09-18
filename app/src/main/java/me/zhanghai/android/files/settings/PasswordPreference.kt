@@ -10,8 +10,8 @@ import android.text.method.PasswordTransformationMethod
 import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
-import com.takisoft.preferencex.EditTextPreference
 import androidx.preference.EditTextPreference as AndroidXEditTextPreference
+import com.takisoft.preferencex.EditTextPreference
 
 class PasswordPreference : EditTextPreference {
     constructor(context: Context) : super(context)
@@ -19,7 +19,9 @@ class PasswordPreference : EditTextPreference {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(
@@ -32,6 +34,33 @@ class PasswordPreference : EditTextPreference {
     init {
         if (summaryProvider is AndroidXEditTextPreference.SimpleSummaryProvider) {
             summaryProvider = SimpleSummaryProvider
+        }
+    }
+
+    override fun getPersistedString(defaultReturnValue: String?): String? = if (shouldPersist()) {
+        try {
+            EncryptedPasswordStore.read(sharedPreferences!!, key, defaultReturnValue.orEmpty())
+        } catch (e: Exception) {
+            e.printStackTrace()
+            defaultReturnValue
+        }
+    } else {
+        defaultReturnValue
+    }
+
+    override fun persistString(value: String?): Boolean {
+        if (!shouldPersist()) return false
+        return try {
+            EncryptedPasswordStore.write(sharedPreferences!!, key, value.orEmpty())
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            android.widget.Toast.makeText(
+                context,
+                me.zhanghai.android.files.R.string.password_save_failed,
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            false
         }
     }
 

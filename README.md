@@ -44,7 +44,7 @@ Requirements:
 The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. What CI runs, and what should pass before a pull request:
 
 ```sh
-./gradlew ktlintCheck checkSourceFileLength assembleDebug testDebugUnitTest lintVitalRelease
+./gradlew ktlintCheck checkSourceFileLength testDebugUnitTest lintDebug lintVitalRelease assembleDebug assembleDebugAndroidTest
 ```
 
 `checkSourceFileLength` enforces a hard limit of 500 lines per Kotlin or Java file. Dependency checksums are pinned in `gradle/verification-metadata.xml`; see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for how to update them, and for the emulator and instrumented test setup.

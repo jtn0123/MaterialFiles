@@ -834,4 +834,9 @@
 
     <string name="shortcut_downloads_title" translatable="false">@string/navigation_standard_directory_downloads</string>
     <string name="shortcut_ftp_server_title" translatable="false">@string/ftp_server_title</string>
+    <string name="text_editor_draft_save_failed">Could not save a recovery draft. Save your edits before leaving.</string>
+    <string name="text_editor_draft_restored">Recovered your unsaved edits</string>
+    <string name="text_editor_draft_restore_failed">Could not recover your unsaved edits</string>
+    <string name="password_save_failed">Could not save password</string>
+    <string name="file_list_partial_error">Some files could not be read (%1$d missing). Refresh to try again.</string>
 </resources>

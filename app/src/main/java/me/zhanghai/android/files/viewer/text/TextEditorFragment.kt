@@ -55,6 +55,28 @@ class TextEditorFragment :
 
     private val viewModel by viewModels { { TextEditorViewModel(argsFile) } }
 
+    private fun persistDraft() {
+        if (!::argsFile.isInitialized || view == null || !viewModel.isTextChanged.value) return
+        viewModel.drafts.write(
+            TextDraft(
+                binding.textEdit.text.toString(),
+                viewModel.encoding.value.name(),
+                binding.textEdit.selectionStart,
+                binding.textEdit.selectionEnd
+            )
+        )
+    }
+
+    private fun discardDraft() {
+        viewModel.draftRestored = true
+        viewModel.drafts.clear()
+    }
+
+    override fun onStop() {
+        persistDraft()
+        super.onStop()
+    }
+
     private lateinit var onBackPressedCallback: OnBackPressedCallback
 
     private var isSettingText = false
@@ -125,12 +147,15 @@ class TextEditorFragment :
         if (textEditSavedState != null) {
             binding.textEdit.onRestoreInstanceState(textEditSavedState)
         }
+        if (textEditSavedState == null && !viewModel.draftRestored) {
+            restoreDraft()
+        }
         binding.textEdit.doAfterTextChanged {
             if (isSettingText) {
                 return@doAfterTextChanged
             }
             // Might happen if the animation is running and user is quick enough.
-            if (viewModel.textState.value !is DataState.Success) {
+            if (viewModel.textState.value !is DataState.Success && !viewModel.isTextChanged.value) {
                 return@doAfterTextChanged
             }
             viewModel.isTextChanged.value = true
@@ -139,10 +164,38 @@ class TextEditorFragment :
         // TODO: Request storage permission if not granted.
     }
 
+    private fun restoreDraft() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val draft = viewModel.drafts.read()
+                if (!viewModel.draftRestored && !viewModel.isTextChanged.value &&
+                    draft != null
+                ) {
+                    viewModel.encoding.value = Charset.forName(draft.encoding)
+                    setText(draft.text)
+                    binding.textEdit.setSelection(
+                        draft.start.coerceIn(0, draft.text.length),
+                        draft.end.coerceIn(0, draft.text.length)
+                    )
+                    viewModel.isTextChanged.value = true
+                    onTextStateChanged(viewModel.textState.value)
+                    showToast(R.string.text_editor_draft_restored)
+                }
+                viewModel.draftRestored = true
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                e.printStackTrace()
+                showToast(R.string.text_editor_draft_restore_failed)
+            }
+        }
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
         viewModel.setEditTextSavedState(binding.textEdit.onSaveInstanceState())
+        persistDraft()
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -182,6 +235,10 @@ class TextEditorFragment :
     }
 
     override fun finish() {
+        if (::argsFile.isInitialized) {
+            discardDraft()
+            viewModel.isTextChanged.value = false
+        }
         requireActivity().finish()
     }
 
@@ -218,6 +275,12 @@ class TextEditorFragment :
             }
 
             is DataState.Error -> {
+                if (viewModel.isTextChanged.value) {
+                    binding.progress.fadeOutUnsafe()
+                    binding.errorText.fadeOutUnsafe()
+                    binding.textEdit.fadeInUnsafe()
+                    return
+                }
                 state.throwable.printStackTrace()
                 binding.progress.fadeOutUnsafe()
                 binding.errorText.fadeInUnsafe()
@@ -260,6 +323,7 @@ class TextEditorFragment :
     }
 
     override fun reload() {
+        discardDraft()
         viewModel.isTextChanged.value = false
         viewModel.reload()
     }
@@ -276,7 +340,12 @@ class TextEditorFragment :
             is ActionState.Success -> {
                 showToast(R.string.text_editor_save_success)
                 viewModel.finishWritingFile()
-                viewModel.isTextChanged.value = false
+                if (binding.textEdit.text.toString() == state.argument.second) {
+                    viewModel.isTextChanged.value = false
+                    discardDraft()
+                } else {
+                    persistDraft()
+                }
             }
 
             // The error will be toasted by service so we should never show it in UI.

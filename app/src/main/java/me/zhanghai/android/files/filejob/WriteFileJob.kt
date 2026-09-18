@@ -14,7 +14,6 @@ import me.zhanghai.android.files.app.mainExecutor
 import me.zhanghai.android.files.file.asFileSize
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.copyTo
-import me.zhanghai.android.files.provider.common.newOutputStream
 import me.zhanghai.android.files.util.toUserMessage
 
 class WriteFileJob(
@@ -22,10 +21,17 @@ class WriteFileJob(
     private val content: ByteArray,
     private val listener: ((Boolean) -> Unit)?
 ) : FileJob() {
+    @Volatile
+    private var successful = false
+
     @Throws(IOException::class)
     override fun run() {
-        val successful = write(file, content)
-        listener?.let { mainExecutor.execute { it(successful) } }
+        successful = write(file, content)
+    }
+
+    override fun onFinished() {
+        val result = successful
+        listener?.let { mainExecutor.execute { it(result) } }
     }
 }
 
@@ -40,7 +46,7 @@ private fun FileJob.write(file: Path, content: ByteArray): Boolean {
         retry = false
         val transferInfo = TransferInfo(scanInfo, file)
         try {
-            file.newOutputStream().use { outputStream ->
+            file.writeSafely { outputStream ->
                 ByteArrayInputStream(content).copyTo(outputStream, PROGRESS_INTERVAL_MILLIS) {
                     transferInfo.addToTransferredSize(it)
                     postWriteNotification(transferInfo)

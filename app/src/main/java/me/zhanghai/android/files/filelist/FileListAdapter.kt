@@ -43,7 +43,7 @@ import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.valueCompat
 
 class FileListAdapter(private val listener: Listener) :
-    AnimatedListAdapter<FileItem, FileListAdapter.ViewHolder>(CALLBACK),
+    AnimatedListAdapter<FileItem, FileListAdapter.ViewHolder>(CALLBACK, asyncDiff = true),
     PopupTextProvider {
     private var isSearching = false
 
@@ -53,7 +53,7 @@ class FileListAdapter(private val listener: Listener) :
         set(value) {
             _viewType = value
             if (!isSearching) {
-                super.replace(list, true)
+                super.replace(list, true, {})
             }
         }
 
@@ -141,16 +141,21 @@ class FileListAdapter(private val listener: Listener) :
     }
 
     @Deprecated("", ReplaceWith("replaceListAndSearching(list, searching)"))
-    override fun replace(list: List<FileItem>, clear: Boolean): Unit =
+    override fun replace(list: List<FileItem>, clear: Boolean, committed: () -> Unit): Unit =
         throw UnsupportedOperationException()
 
     /** [list] must already be sorted unless [isSearching]; sorting is done off the main thread. */
-    fun replaceListAndIsSearching(list: List<FileItem>, isSearching: Boolean) {
+    fun replaceListAndIsSearching(
+        list: List<FileItem>,
+        isSearching: Boolean,
+        committed: () -> Unit = {}
+    ) {
         val clear = this.isSearching != isSearching
         this.isSearching = isSearching
-        super.replace(list, clear)
-        rebuildFilePositionMap()
+        super.replace(list, clear, committed)
     }
+
+    override fun onListChanged() = rebuildFilePositionMap()
 
     private fun rebuildFilePositionMap() {
         filePositionMap.clear()

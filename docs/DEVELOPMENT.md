@@ -15,14 +15,16 @@ version of the build requirements.
 ## Checks
 
 ```sh
-./gradlew ktlintCheck checkSourceFileLength assembleDebug testDebugUnitTest lintVitalRelease
+./gradlew ktlintCheck checkSourceFileLength testDebugUnitTest lintDebug lintVitalRelease assembleDebug assembleDebugAndroidTest
 ```
 
 - **ktlint.** Existing violations are grandfathered in `app/ktlint-baseline.xml`, which is
   line-number based: inserting lines in a file re-flags the old violations below the insertion.
   The policy is that any file you edit gets formatted once so that it leaves the baseline: run
-  `./gradlew :app:ktlintFormat` (it touches every file), revert the files you did not mean to
-  change, fix what the formatter could not, and delete the file's block from the baseline. Do not
+  `python3 tools/format-files.py app/src/main/java/path/to/Changed.kt` with the explicit files
+  you changed. It formats only those files and retires their baseline entries after a clean
+  scoped check. Fix any remaining violations and rerun it. Run the full check command above
+  without `-PformatFiles` before submitting changes. Do not
   regenerate the baseline to make a check pass; that silently absorbs new violations.
 - **File length.** `checkSourceFileLength` fails the build when any Kotlin or Java file under
   `app/src` exceeds 500 lines. Split the file; there is no exemption list.
@@ -37,10 +39,19 @@ version of the build requirements.
   `https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/`). CI runs on Linux
   and fails without them.
 
+## Protocol integration tests
+
+`python3 tools/network-tests.py` runs the JVM suite with a disposable, loopback-only Samba
+server (Docker required). FTP and FTPS use embedded Apache FTPServer; WebDAV uses a local HTTP
+fixture. CI runs this command. The ordinary JVM command explicitly skips the SMB test when no
+fixture port is provided. TLS fixture keys and the `test-only` passwords are public test data,
+never production credentials. The certificates cover trusted, unknown, wrong-host and expired
+servers in both implicit and explicit FTPS modes.
+
 ## Instrumented tests and the emulator
 
 The instrumented tests in `app/src/androidTest` use UiAutomator against a real Android build and
-are not part of CI. Run them on one emulator, pinned by serial, because Gradle would otherwise
+run in CI on API 35 and 36 emulators. Locally, run them on one emulator, pinned by serial, because Gradle would otherwise
 run them on every connected device:
 
 ```sh
@@ -97,3 +108,15 @@ Notes that cost time to rediscover:
 - The network security config trusts system certificate authorities only. Cleartext stays
   permitted because it only affects WebDAV, where `dav://` is an explicit per-server choice.
 - jCIFS-NG (used for NetBIOS name resolution and LAN discovery) negotiates SMB 2 or 3 only.
+
+## File-save recovery
+
+Text saves stage a complete replacement and atomically replace local files. Other providers
+preserve the original under a temporary sibling name and restore it if committing the
+replacement fails. Providers that cannot safely rename fail
+without truncating the original. If restoring the original also fails, the error names the
+recovery copy; keep it until its contents have been recovered. Text drafts are stored in the
+app's private no-backup directory on an ordered background worker when leaving the editor,
+and removed after save/discard. Revision checks prevent stale editor instances from replacing
+or deleting a newer draft. Save transactions serialize per target and reject detected changes
+to the original during staging. Required extended-attribute copy failures abort the save.

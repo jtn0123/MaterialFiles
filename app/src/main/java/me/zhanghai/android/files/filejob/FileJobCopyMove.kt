@@ -246,52 +246,32 @@ internal fun FileJob.copyOrMove(
                 return false
             }
             val result = showConflictDialog(sourceFile, targetFile, type)
-            return when (result.action) {
-                FileJobConflictAction.MERGE_OR_REPLACE -> {
-                    if (result.isAll) {
-                        if (isMerge) {
-                            actionAllInfo.merge = true
-                        } else {
-                            actionAllInfo.replace = true
-                        }
-                    }
-                    if (isMerge) {
-                        transferInfo.addTransferredFile(targetFile.attributesNoFollowLinks.size())
-                        postCopyMoveNotification(transferInfo, source, type)
-                        true
-                    } else {
-                        replaceExisting = true
-                        retry = true
-                        continue
-                    }
+            return when (copyConflictDecision(result, isMerge, actionAllInfo)) {
+                CopyConflictDecision.MERGE -> {
+                    transferInfo.addTransferredFile(targetFile.attributesNoFollowLinks.size())
+                    postCopyMoveNotification(transferInfo, source, type)
+                    true
                 }
 
-                FileJobConflictAction.RENAME -> {
+                CopyConflictDecision.REPLACE -> {
+                    replaceExisting = true
+                    retry = true
+                    continue
+                }
+
+                CopyConflictDecision.RENAME -> {
                     target = target.resolveSibling(result.name)
                     retry = true
                     continue
                 }
 
-                FileJobConflictAction.SKIP -> {
-                    if (result.isAll) {
-                        if (isMerge) {
-                            actionAllInfo.skipMerge = true
-                        } else {
-                            actionAllInfo.skipReplace = true
-                        }
-                    }
+                CopyConflictDecision.SKIP -> {
                     transferInfo.skipFile(source)
                     postCopyMoveNotification(transferInfo, source, type)
                     false
                 }
 
-                FileJobConflictAction.CANCELED -> {
-                    transferInfo.skipFile(source)
-                    postCopyMoveNotification(transferInfo, source, type)
-                    false
-                }
-
-                FileJobConflictAction.CANCEL -> throw InterruptedIOException()
+                CopyConflictDecision.CANCEL -> throw InterruptedIOException()
             }
         } catch (e: InvalidFileNameException) {
             // TODO: Prompt invalid name.
@@ -341,29 +321,20 @@ internal fun FileJob.copyOrMove(
                 getString(R.string.skip),
                 getString(android.R.string.cancel)
             )
-            return when (result.action) {
-                FileJobErrorAction.POSITIVE -> {
+            return when (copyErrorDecision(result, actionAllInfo)) {
+                CopyErrorDecision.RETRY -> {
                     retry = true
                     continue
                 }
 
-                FileJobErrorAction.NEGATIVE -> {
-                    recordSkippedError()
-                    if (result.isAll) {
-                        actionAllInfo.skipCopyMoveError = true
-                    }
+                CopyErrorDecision.SKIP -> {
+                    if (result.action == FileJobErrorAction.NEGATIVE) recordSkippedError()
                     transferInfo.skipFile(source)
                     postCopyMoveNotification(transferInfo, source, type)
                     false
                 }
 
-                FileJobErrorAction.CANCELED -> {
-                    transferInfo.skipFile(source)
-                    postCopyMoveNotification(transferInfo, source, type)
-                    false
-                }
-
-                FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
+                CopyErrorDecision.CANCEL -> throw InterruptedIOException()
             }
         }
     } while (retry)
