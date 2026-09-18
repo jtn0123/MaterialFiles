@@ -148,30 +148,7 @@ class TextEditorFragment :
             binding.textEdit.onRestoreInstanceState(textEditSavedState)
         }
         if (textEditSavedState == null && !viewModel.draftRestored) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    val draft = viewModel.drafts.read()
-                    if (!viewModel.draftRestored && !viewModel.isTextChanged.value &&
-                        draft != null
-                    ) {
-                        viewModel.encoding.value = Charset.forName(draft.encoding)
-                        setText(draft.text)
-                        binding.textEdit.setSelection(
-                            draft.start.coerceIn(0, draft.text.length),
-                            draft.end.coerceIn(0, draft.text.length)
-                        )
-                        viewModel.isTextChanged.value = true
-                        onTextStateChanged(viewModel.textState.value)
-                        showToast(R.string.text_editor_draft_restored)
-                    }
-                    viewModel.draftRestored = true
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    showToast(R.string.text_editor_draft_restore_failed)
-                }
-            }
+            restoreDraft()
         }
         binding.textEdit.doAfterTextChanged {
             if (isSettingText) {
@@ -185,6 +162,33 @@ class TextEditorFragment :
         }
 
         // TODO: Request storage permission if not granted.
+    }
+
+    private fun restoreDraft() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val draft = viewModel.drafts.read()
+                if (!viewModel.draftRestored && !viewModel.isTextChanged.value &&
+                    draft != null
+                ) {
+                    viewModel.encoding.value = Charset.forName(draft.encoding)
+                    setText(draft.text)
+                    binding.textEdit.setSelection(
+                        draft.start.coerceIn(0, draft.text.length),
+                        draft.end.coerceIn(0, draft.text.length)
+                    )
+                    viewModel.isTextChanged.value = true
+                    onTextStateChanged(viewModel.textState.value)
+                    showToast(R.string.text_editor_draft_restored)
+                }
+                viewModel.draftRestored = true
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                e.printStackTrace()
+                showToast(R.string.text_editor_draft_restore_failed)
+            }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

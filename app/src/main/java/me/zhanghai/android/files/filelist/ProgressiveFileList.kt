@@ -39,12 +39,16 @@ internal class ProgressiveFileList<T, R>(
             } catch (e: IOException) {
                 recordFailure(e)
             }
-            val current = now()
-            if ((!hasPublished && items.isNotEmpty()) || current - lastPublish >= 500_000_000L) {
-                publish(snapshot)
-                hasPublished = true
-                lastPublish = current
-            }
+            publishIfDue()
+        }
+    }
+
+    private fun publishIfDue() {
+        val current = now()
+        if ((!hasPublished && items.isNotEmpty()) || current - lastPublish >= 500_000_000L) {
+            publish(snapshot)
+            hasPublished = true
+            lastPublish = current
         }
     }
 
