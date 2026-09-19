@@ -65,6 +65,9 @@ sonar {
                 '**/src/main/kotlin/at/bitfire/dav4jvm/XmlUtils.kt',
                 '**/src/main/kotlin/at/bitfire/dav4jvm/property/caldav/namespace.kt'
             ]],
+            // The Shizuku provider only hands the Shizuku app its binder, and Shizuku requires
+            // this one system permission for it.
+            shizukuProvider: ['xml:S6361', ['**/src/main/AndroidManifest.xml']],
             // WebView debugging is only turned on when BuildConfig.DEBUG.
             debugWebView: ['kotlin:S4507', [
                 '**/src/main/java/me/zhanghai/android/files/app/AppInitializers.kt'
