@@ -3,6 +3,13 @@ package me.zhanghai.android.files.filejob
 import java.io.IOException
 import java.io.InterruptedIOException
 import java.util.concurrent.locks.ReentrantLock
+import java8.nio.file.Path
+
+internal class ReplacementCommit<T>(
+    val atomicReplace: ((T, T) -> Unit)? = null,
+    val forceStaged: (T) -> Unit = {},
+    val forceParent: (T) -> Unit = {}
+)
 
 /** Never overwrite the only good copy, even if a provider implements replace by deleting first. */
 internal fun <T> replaceTransaction(
@@ -12,9 +19,10 @@ internal fun <T> replaceTransaction(
     write: (T) -> Unit,
     move: (T, T) -> Unit,
     delete: (T) -> Unit,
-    atomicReplace: ((T, T) -> Unit)? = null
+    commit: ReplacementCommit<T> = ReplacementCommit()
 ) {
-    val lock = replacementLocks[(target.hashCode() and Int.MAX_VALUE) % replacementLocks.size]
+    val identity = if (target is Path) target.toAbsolutePath().normalize() else target
+    val lock = replacementLocks[(identity.hashCode() and Int.MAX_VALUE) % replacementLocks.size]
     try {
         lock.lockInterruptibly()
     } catch (e: InterruptedException) {
@@ -24,7 +32,7 @@ internal fun <T> replaceTransaction(
         }
     }
     try {
-        replaceLocked(target, staged, backup, write, move, delete, atomicReplace)
+        replaceLocked(target, staged, backup, write, move, delete, commit)
     } finally {
         lock.unlock()
     }
@@ -39,12 +47,14 @@ private fun <T> replaceLocked(
     write: (T) -> Unit,
     move: (T, T) -> Unit,
     delete: (T) -> Unit,
-    atomicReplace: ((T, T) -> Unit)?
+    commit: ReplacementCommit<T>
 ) {
     try {
         write(staged)
-        if (atomicReplace != null) {
-            atomicReplace(staged, target)
+        commit.forceStaged(staged)
+        if (commit.atomicReplace != null) {
+            commit.atomicReplace.invoke(staged, target)
+            commit.forceParent(target)
             return
         }
         move(target, backup)
@@ -66,6 +76,15 @@ private fun <T> replaceLocked(
                 if (interrupted) Thread.currentThread().interrupt()
             }
             throw failure
+        }
+        // Keep the backup if directory synchronization fails after replacement.
+        try {
+            commit.forceParent(target)
+        } catch (failure: IOException) {
+            throw IOException(
+                "Replacement is visible but durability failed. Your original is preserved at $backup",
+                failure
+            )
         }
         // A cleanup failure must not turn a completed save into a failed save.
         try {

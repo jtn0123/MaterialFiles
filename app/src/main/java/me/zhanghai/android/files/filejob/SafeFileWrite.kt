@@ -5,12 +5,15 @@ import java.io.OutputStream
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
 import java8.nio.file.StandardCopyOption
+import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.provider.common.ByteStringListPath
 import me.zhanghai.android.files.provider.common.PosixFileAttributes
 import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.common.deleteIfExists
+import me.zhanghai.android.files.provider.common.force
 import me.zhanghai.android.files.provider.common.moveTo
+import me.zhanghai.android.files.provider.common.newByteChannel
 import me.zhanghai.android.files.provider.common.newOutputStream
 import me.zhanghai.android.files.provider.common.readAttributes
 import me.zhanghai.android.files.provider.common.readSymbolicLinkByteString
@@ -34,6 +37,7 @@ internal fun Path.writeSafely(write: (OutputStream) -> Unit) {
             target.readAttributes(BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
     }
     if (!attributes.isRegularFile) throw IOException("Safe saving requires a regular file: $this")
+    target = target.toAbsolutePath().normalize()
     val originalAttributes = attributes
     replaceTransaction(
         target,
@@ -72,16 +76,28 @@ internal fun Path.writeSafely(write: (OutputStream) -> Unit) {
         },
         { it.deleteIfExists() },
         if (target.isLinuxPath) {
-            { from, to ->
-                from.moveTo(
-                    to,
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING,
-                    LinkOption.NOFOLLOW_LINKS
-                )
-            }
+            ReplacementCommit(
+                atomicReplace = { from, to ->
+                    from.moveTo(
+                        to,
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING,
+                        LinkOption.NOFOLLOW_LINKS
+                    )
+                },
+                forceStaged = { it.forceLocalFile() },
+                forceParent = { it.parent!!.forceLocalDirectory() }
+            )
         } else {
-            null
+            ReplacementCommit()
         }
     )
+}
+
+private fun Path.forceLocalFile() {
+    newByteChannel(StandardOpenOption.WRITE).use { it.force(true) }
+}
+
+private fun Path.forceLocalDirectory() {
+    newByteChannel(StandardOpenOption.READ).use { it.force(true) }
 }

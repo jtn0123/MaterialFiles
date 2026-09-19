@@ -45,7 +45,10 @@ internal class ProgressiveFileList<T, R>(
 
     private fun publishIfDue() {
         val current = now()
-        if ((!hasPublished && items.isNotEmpty()) || current - lastPublish >= 500_000_000L) {
+        if (
+            (!hasPublished && items.isNotEmpty()) ||
+            (hasPublished && current - lastPublish >= 500_000_000L)
+        ) {
             publish(snapshot)
             hasPublished = true
             lastPublish = current

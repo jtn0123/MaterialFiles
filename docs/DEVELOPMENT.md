@@ -111,12 +111,15 @@ Notes that cost time to rediscover:
 
 ## File-save recovery
 
-Text saves stage a complete replacement and atomically replace local files. Other providers
+Text saves stage a complete replacement and atomically replace local files. Local Linux saves force the staged file to storage before
+replacement and force the parent directory afterward before reporting success. Other providers
 preserve the original under a temporary sibling name and restore it if committing the
 replacement fails. Providers that cannot safely rename fail
 without truncating the original. If restoring the original also fails, the error names the
 recovery copy; keep it until its contents have been recovered. Text drafts are stored in the
-app's private no-backup directory on an ordered background worker when leaving the editor,
-and removed after save/discard. Revision checks prevent stale editor instances from replacing
+app's private no-backup directory on an ordered background worker: `persistDraft()` is called
+from `onStop()` and `onSaveInstanceState()`, and drafts are removed after save/discard. Abrupt
+process termination before either callback runs, or before the queued write completes, is not
+covered by draft recovery. Revision checks prevent stale editor instances from replacing
 or deleting a newer draft. Save transactions serialize per target and reject detected changes
 to the original during staging. Required extended-attribute copy failures abort the save.
