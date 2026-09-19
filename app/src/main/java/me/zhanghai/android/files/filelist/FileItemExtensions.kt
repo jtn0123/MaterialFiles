@@ -71,7 +71,7 @@ val FileItem.supportsThumbnail: Boolean
         return when {
             mimeType.isApk && path.isGetPackageArchiveInfoCompatible -> true
 
-            mimeType.isImage -> true
+            mimeType.isImage -> mimeType.value in DECODABLE_IMAGE_MIME_TYPES
 
             mimeType.isMedia && path.isMediaMetadataRetrieverCompatible -> true
 
@@ -82,6 +82,42 @@ val FileItem.supportsThumbnail: Boolean
             else -> false
         }
     }
+
+/**
+ * What Android and Coil can decode. Anything else that looks like an image (TIFF, Photoshop,
+ * drawings) would be read, in full on a server, only to fail.
+ *
+ * @see android.graphics.ImageDecoder
+ */
+private val DECODABLE_IMAGE_MIME_TYPES = setOf(
+    "image/apng",
+    "image/avif",
+    "image/bmp",
+    "image/gif",
+    "image/heic",
+    "image/heic-sequence",
+    "image/heif",
+    "image/heif-sequence",
+    "image/ico",
+    "image/jpeg",
+    "image/png",
+    "image/svg+xml",
+    "image/vnd.wap.wbmp",
+    "image/webp",
+    "image/x-icon",
+    "image/x-ms-bmp",
+    // Camera raw files, through the preview Skia extracts from them.
+    "image/x-adobe-dng",
+    "image/x-canon-cr2",
+    "image/x-fuji-raf",
+    "image/x-nikon-nef",
+    "image/x-nikon-nrw",
+    "image/x-olympus-orf",
+    "image/x-panasonic-rw2",
+    "image/x-pentax-pef",
+    "image/x-samsung-srw",
+    "image/x-sony-arw"
+)
 
 // @see android.content.pm.parsing.ApkLiteParseUtils.parsePackageSplitNames
 // @see android.content.pm.parsing.ParsingPackageUtils.validateName

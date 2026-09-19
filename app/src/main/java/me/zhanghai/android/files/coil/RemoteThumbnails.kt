@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.os.SystemClock
 import androidx.core.graphics.drawable.toBitmap
 import androidx.exifinterface.media.ExifInterface
 import coil.annotation.ExperimentalCoilApi
@@ -31,6 +32,7 @@ import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.file.lastModifiedInstant
 import me.zhanghai.android.files.provider.common.newInputStream
 import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.logWarning
 import okio.buffer
 
 /**
@@ -44,7 +46,23 @@ internal object RemoteThumbnails {
     /** Thumbnails larger than this are for a viewer rather than a list, and are not kept. */
     const val MAX_SIZE_PX = 1024
 
+    /**
+     * Set on a request that only wants the thumbnail a camera embedded in a JPEG, to show while
+     * the sharp one is read.
+     */
+    const val PARAMETER_PREVIEW = "remote_thumbnail_preview"
+
+    private const val SIZE_STEP_PX = 256
+
     private const val MAX_PARALLELISM = 4
+
+    /** Previews are a few dozen kilobytes each, so they are not queued behind whole files. */
+    private const val MAX_PREVIEW_PARALLELISM = 4
+
+    private const val MAX_UNREADABLE_COUNT = 1024
+
+    /** Long enough not to read a file that cannot be shown again while scrolling back and forth. */
+    private const val UNREADABLE_EXPIRY_MILLIS = 10L * 60 * 1000
 
     private const val MAX_CACHE_SIZE_BYTES = 128L * 1024 * 1024
 
@@ -53,6 +71,12 @@ internal object RemoteThumbnails {
     private const val CACHE_QUALITY = 85
 
     private val semaphore = Semaphore(MAX_PARALLELISM)
+
+    private val previewSemaphore = Semaphore(MAX_PREVIEW_PARALLELISM)
+
+    /** Files that were read and could not be shown. */
+    private val unreadable =
+        RecentFailures(MAX_UNREADABLE_COUNT, UNREADABLE_EXPIRY_MILLIS, SystemClock::elapsedRealtime)
 
     private val diskCache: DiskCache by lazy {
         DiskCache.Builder()
@@ -64,15 +88,45 @@ internal object RemoteThumbnails {
     /** Requests waiting here are cancellable, so a fling does not queue reads nobody wants. */
     suspend fun <T> withReadPermit(block: suspend () -> T): T = semaphore.withPermit { block() }
 
+    suspend fun <T> withPreviewPermit(block: suspend () -> T): T =
+        previewSemaphore.withPermit { block() }
+
+    /** Rounds a thumbnail size up to a step; a size for a viewer is left as it is. */
+    fun roundSize(sizePx: Int): Int = if (sizePx > MAX_SIZE_PX) {
+        sizePx
+    } else {
+        ((sizePx + SIZE_STEP_PX - 1) / SIZE_STEP_PX * SIZE_STEP_PX).coerceAtLeast(SIZE_STEP_PX)
+    }
+
+    private fun createFileKey(path: Path, attributes: BasicFileAttributes): String =
+        "${path.toUri()}:${attributes.lastModifiedInstant.toEpochMilli()}:${attributes.size()}"
+
+    fun markUnreadable(path: Path, attributes: BasicFileAttributes) {
+        unreadable.add(createFileKey(path, attributes))
+    }
+
+    /** Fails without reading [path] again if it recently could not be shown. */
+    fun checkNotUnreadable(path: Path, attributes: BasicFileAttributes) {
+        check(createFileKey(path, attributes) !in unreadable) {
+            "$path could not be shown recently"
+        }
+    }
+
     fun createKey(path: Path, attributes: BasicFileAttributes, width: Int, height: Int): String =
-        "${path.toUri()}:${attributes.lastModifiedInstant.toEpochMilli()}:${attributes.size()}:" +
-            "${width}x$height"
+        "${createFileKey(path, attributes)}:${width}x$height"
+
+    fun contains(key: String): Boolean = try {
+        diskCache.openSnapshot(key)?.use { true } ?: false
+    } catch (e: Exception) {
+        e.logWarning(TAG, "Open the cached thumbnail $key")
+        false
+    }
 
     fun get(key: String): SourceResult? {
         val snapshot = try {
             diskCache.openSnapshot(key)
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning(TAG, "Open the cached thumbnail $key")
             null
         } ?: return null
         val source = ImageSource(snapshot.data, diskCache.fileSystem, key, snapshot)
@@ -110,9 +164,11 @@ internal object RemoteThumbnails {
                 throw e
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning(TAG, "Cache the thumbnail $key")
         }
     }
+
+    private const val TAG = "RemoteThumbnails"
 }
 
 /**
@@ -161,28 +217,27 @@ internal suspend fun <T> runAbortable(block: (AbortHandle) -> T): T = coroutineS
  * Reads the thumbnail a camera embedded in a JPEG, which sits in the first few dozen kilobytes of
  * a file that is otherwise megabytes to transfer.
  *
- * @return the upright thumbnail, or `null` if there is none that fills [width] x [height]
+ * @param minSizePx the larger side of the view it is for, or 0 to take any size
+ * @return the upright thumbnail, or `null` if there is none that is large enough
  */
-internal fun Path.readExifThumbnail(width: Int, height: Int): Bitmap? =
-    newInputStream().use { inputStream ->
-        val exifInterface = ExifInterface(inputStream)
-        val thumbnail = exifInterface.thumbnailBitmap ?: return null
-        // Embedded thumbnails are small; slight upscaling in a list icon is not noticeable, more is.
-        val isLargeEnough =
-            minOf(thumbnail.width, thumbnail.height) * 5 >= maxOf(width, height) * 4
-        if (!isLargeEnough) {
-            return null
-        }
-        val rotationDegrees = exifInterface.rotationDegrees
-        val isFlipped = exifInterface.isFlipped
-        if (rotationDegrees == 0 && !isFlipped) {
-            return thumbnail
-        }
-        val matrix = Matrix().apply {
-            if (isFlipped) {
-                postScale(-1f, 1f)
-            }
-            postRotate(rotationDegrees.toFloat())
-        }
-        Bitmap.createBitmap(thumbnail, 0, 0, thumbnail.width, thumbnail.height, matrix, true)
+internal fun Path.readExifThumbnail(minSizePx: Int): Bitmap? = newInputStream().use { inputStream ->
+    val exifInterface = ExifInterface(inputStream)
+    val thumbnail = exifInterface.thumbnailBitmap ?: return null
+    // Embedded thumbnails are small; slight upscaling in a list icon is not noticeable, more is.
+    val isLargeEnough = minOf(thumbnail.width, thumbnail.height) * 5 >= minSizePx * 4
+    if (!isLargeEnough) {
+        return null
     }
+    val rotationDegrees = exifInterface.rotationDegrees
+    val isFlipped = exifInterface.isFlipped
+    if (rotationDegrees == 0 && !isFlipped) {
+        return thumbnail
+    }
+    val matrix = Matrix().apply {
+        if (isFlipped) {
+            postScale(-1f, 1f)
+        }
+        postRotate(rotationDegrees.toFloat())
+    }
+    Bitmap.createBitmap(thumbnail, 0, 0, thumbnail.width, thumbnail.height, matrix, true)
+}
