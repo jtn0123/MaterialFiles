@@ -61,12 +61,21 @@ android {
         warning 'InvalidPackage', 'MissingTranslation'
     }
     buildTypes {
+        debug {
+            // Opt in for coverage jobs; ordinary debug builds keep their normal runtime.
+            def coverage = providers.gradleProperty('coverage').orNull == 'true'
+            enableUnitTestCoverage = coverage
+            enableAndroidTestCoverage = coverage
+        }
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
+    }
+    testCoverage {
+        jacocoVersion = libs.versions.jacoco.get()
     }
     packagingOptions {
         jniLibs {
