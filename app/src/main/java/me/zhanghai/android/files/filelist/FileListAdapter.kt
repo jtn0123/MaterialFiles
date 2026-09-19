@@ -246,21 +246,21 @@ class FileListAdapter(private val listener: Listener) :
         holder.itemLayout.apply {
             setOnClickListener {
                 if (selectedFiles.isEmpty()) {
-                    listener.openFile(file)
+                    listener.openFile(holder.currentFile(file))
                 } else {
-                    selectFile(file)
+                    selectFile(holder.currentFile(file))
                 }
             }
             setOnLongClickListener {
                 if (selectedFiles.isEmpty()) {
-                    selectFile(file)
+                    selectFile(holder.currentFile(file))
                 } else {
-                    listener.openFile(file)
+                    listener.openFile(holder.currentFile(file))
                 }
                 true
             }
         }
-        holder.iconLayout.setOnClickListener { selectFile(file) }
+        holder.iconLayout.setOnClickListener { selectFile(holder.currentFile(file)) }
         holder.bindIcons(file)
         val attributes = file.attributes
         holder.nameText.text = file.name
@@ -283,70 +283,80 @@ class FileListAdapter(private val listener: Listener) :
         menu.findItem(R.id.action_archive).isVisible = !isArchivePath
         menu.findItem(R.id.action_add_bookmark).isVisible = isDirectory
         holder.popupMenu.setOnMenuItemClickListener {
+            val currentFile = holder.currentFile(file)
             when (it.itemId) {
                 R.id.action_open_with -> {
-                    listener.openFileWith(file)
+                    listener.openFileWith(currentFile)
                     true
                 }
 
                 R.id.action_cut -> {
-                    listener.cutFile(file)
+                    listener.cutFile(currentFile)
                     true
                 }
 
                 R.id.action_copy -> {
-                    listener.copyFile(file)
+                    listener.copyFile(currentFile)
                     true
                 }
 
                 R.id.action_delete -> {
-                    listener.confirmDeleteFile(file)
+                    listener.confirmDeleteFile(currentFile)
                     true
                 }
 
                 R.id.action_rename -> {
-                    listener.showRenameFileDialog(file)
+                    listener.showRenameFileDialog(currentFile)
                     true
                 }
 
                 R.id.action_extract -> {
-                    listener.extractFile(file)
+                    listener.extractFile(currentFile)
                     true
                 }
 
                 R.id.action_archive -> {
-                    listener.showCreateArchiveDialog(file)
+                    listener.showCreateArchiveDialog(currentFile)
                     true
                 }
 
                 R.id.action_share -> {
-                    listener.shareFile(file)
+                    listener.shareFile(currentFile)
                     true
                 }
 
                 R.id.action_copy_path -> {
-                    listener.copyPath(file)
+                    listener.copyPath(currentFile)
                     true
                 }
 
                 R.id.action_add_bookmark -> {
-                    listener.addBookmark(file)
+                    listener.addBookmark(currentFile)
                     true
                 }
 
                 R.id.action_create_shortcut -> {
-                    listener.createShortcut(file)
+                    listener.createShortcut(currentFile)
                     true
                 }
 
                 R.id.action_properties -> {
-                    listener.showPropertiesDialog(file)
+                    listener.showPropertiesDialog(currentFile)
                     true
                 }
 
                 else -> false
             }
         }
+    }
+
+    /**
+     * Rows whose shown contents didn't change keep their binding across a re-list, so listeners
+     * look up the current item instead of using the one captured when the row was bound.
+     */
+    private fun ViewHolder.currentFile(boundFile: FileItem): FileItem {
+        val position = bindingAdapterPosition
+        return if (position != RecyclerView.NO_POSITION) getItem(position) else boundFile
     }
 
     override fun getPopupText(view: View, position: Int): CharSequence {
@@ -374,7 +384,7 @@ class FileListAdapter(private val listener: Listener) :
                 oldItem.path == newItem.path
 
             override fun areContentsTheSame(oldItem: FileItem, newItem: FileItem): Boolean =
-                oldItem == newItem
+                oldItem.hasSameListContentsAs(newItem)
         }
     }
 

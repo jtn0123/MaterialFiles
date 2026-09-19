@@ -176,6 +176,20 @@ class FileListFragment :
                     }
                 }
         )
+        // AppCompat collapses an expanded action view on the Back key, but not on the predictive
+        // back callback, so collapse search here before navigating up.
+        addOnBackPressedCallback(
+            object : OnBackPressedCallback(false) {
+                override fun handleOnBackPressed() {
+                    menus.collapseSearchView()
+                }
+            }
+                .also { callback ->
+                    viewModel.searchViewExpandedLiveData.observe(viewLifecycleOwner) {
+                        callback.isEnabled = it
+                    }
+                }
+        )
         addOnBackPressedCallback(actionModes.overlayActionMode.onBackPressedCallback)
         addOnBackPressedCallback(SpeedDialViewOnBackPressedCallback(binding.speedDialView))
         binding.drawerLayout?.let {
