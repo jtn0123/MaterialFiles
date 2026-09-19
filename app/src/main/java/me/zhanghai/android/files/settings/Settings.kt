@@ -13,6 +13,7 @@ import java8.nio.file.Paths
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.compat.EnvironmentCompat2
+import me.zhanghai.android.files.filelist.FileListLastLocation
 import me.zhanghai.android.files.filelist.FileSortOptions
 import me.zhanghai.android.files.filelist.FileViewType
 import me.zhanghai.android.files.filelist.OpenApkDefaultAction
@@ -46,6 +47,21 @@ object Settings {
             R.string.pref_key_file_list_default_directory,
             @Suppress("DEPRECATION")
             Paths.get(Environment.getExternalStorageDirectory().absolutePath)
+        )
+
+    val FILE_LIST_REMEMBER_LAST_DIRECTORY: SettingLiveData<Boolean> =
+        BooleanSettingLiveData(
+            R.string.pref_key_file_list_remember_last_directory,
+            R.bool.pref_default_value_file_list_remember_last_directory
+        )
+
+    // Device state rather than a preference, so it stays out of backups.
+    val FILE_LIST_LAST_LOCATION: SettingLiveData<FileListLastLocation?> =
+        ParcelValueSettingLiveData(
+            NAME_SUFFIX_NO_BACKUP,
+            R.string.pref_key_file_list_last_location,
+            null,
+            null
         )
 
     val FILE_LIST_PERSISTENT_DRAWER_OPEN: SettingLiveData<Boolean> =

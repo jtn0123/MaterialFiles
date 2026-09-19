@@ -19,8 +19,8 @@ class TrailLiveData : LiveData<TrailData>() {
         value = oldTrailData.navigateTo(lastState, path)
     }
 
-    fun resetTo(path: Path) {
-        value = TrailData.of(path)
+    fun resetTo(path: Path, state: Parcelable? = null) {
+        value = TrailData.of(path, state)
     }
 
     fun navigateUp(): Boolean {

@@ -62,6 +62,12 @@
             android:title="@string/settings_default_directory_title"
             app:useSimpleSummaryProvider="true" />
 
+        <SwitchPreferenceCompat
+            android:key="@string/pref_key_file_list_remember_last_directory"
+            android:title="@string/settings_remember_last_directory_title"
+            android:summary="@string/settings_remember_last_directory_summary"
+            android:defaultValue="@bool/pref_default_value_file_list_remember_last_directory" />
+
         <me.zhanghai.android.files.settings.StoragesPreference
             android:title="@string/settings_storages_title"
             android:summary="@string/settings_storages_summary_empty" />

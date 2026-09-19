@@ -791,6 +791,8 @@
     </string-array>
     <string name="settings_behavior_title">Behavior</string>
     <string name="settings_default_directory_title">Default folder</string>
+    <string name="settings_remember_last_directory_title">Reopen last folder</string>
+    <string name="settings_remember_last_directory_summary">Start where you left off instead of in the default folder</string>
     <string name="settings_storages_title" translatable="false">@string/storage_list_title</string>
     <string name="settings_storages_summary_empty" translatable="false">@string/storage_list_empty</string>
     <string name="settings_standard_directories_title">Standard folders</string>
