@@ -7,6 +7,7 @@ package me.zhanghai.android.files.provider.smb
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.IOException
 import java8.nio.file.FileStore
 import java8.nio.file.FileSystem
 import java8.nio.file.Path
@@ -20,12 +21,13 @@ import me.zhanghai.android.files.provider.common.ByteStringListPathCreator
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.smb.client.Authority
 import me.zhanghai.android.files.util.readParcelable
-import java.io.IOException
 
 internal class SmbFileSystem(
     private val provider: SmbFileSystemProvider,
     val authority: Authority
-) : FileSystem(), ByteStringListPathCreator, Parcelable {
+) : FileSystem(),
+    ByteStringListPathCreator,
+    Parcelable {
     val rootDirectory = SmbPath(this, SEPARATOR_BYTE_STRING)
 
     init {
@@ -69,8 +71,7 @@ internal class SmbFileSystem(
         throw UnsupportedOperationException()
     }
 
-    override fun supportedFileAttributeViews(): Set<String> =
-        SmbFileAttributeView.SUPPORTED_NAMES
+    override fun supportedFileAttributeViews(): Set<String> = SmbFileAttributeView.SUPPORTED_NAMES
 
     override fun getPath(first: String, vararg more: String): SmbPath {
         val path = ByteStringBuilder(first.toByteString())
@@ -86,13 +87,11 @@ internal class SmbFileSystem(
         return SmbPath(this, path)
     }
 
-    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher {
+    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher =
         throw UnsupportedOperationException()
-    }
 
-    override fun getUserPrincipalLookupService(): UserPrincipalLookupService {
+    override fun getUserPrincipalLookupService(): UserPrincipalLookupService =
         throw UnsupportedOperationException()
-    }
 
     @Throws(IOException::class)
     override fun newWatchService(): WatchService = SmbWatchService()

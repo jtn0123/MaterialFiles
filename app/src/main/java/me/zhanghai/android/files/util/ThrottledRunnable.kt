@@ -30,10 +30,12 @@ class ThrottledRunnable(
                     scheduledUptimeMillis = currentUptimeMillis
                     handler.post(runnable)
                 }
+
                 scheduledUptimeMillis <= currentUptimeMillis -> {
                     scheduledUptimeMillis += intervalMillis
                     handler.postAtTime(runnable, scheduledUptimeMillis)
                 }
+
                 // We've been scheduled, nothing to do now.
                 else -> {}
             }

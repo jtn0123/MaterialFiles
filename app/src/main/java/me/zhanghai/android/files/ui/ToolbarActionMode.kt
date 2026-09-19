@@ -14,10 +14,7 @@ import androidx.annotation.MenuRes
 import androidx.annotation.StringRes
 import androidx.appcompat.widget.Toolbar
 
-abstract class ToolbarActionMode(
-    private val bar: ViewGroup,
-    private val toolbar: Toolbar
-) {
+abstract class ToolbarActionMode(private val bar: ViewGroup, private val toolbar: Toolbar) {
     @MenuRes
     private var menuRes = 0
 

@@ -20,8 +20,7 @@ value class FileSize(val value: Long) {
     fun formatInBytes(context: Context): String =
         context.getQuantityString(R.plurals.size_in_bytes_format, value.toInt(), value)
 
-    fun formatHumanReadable(context: Context): String =
-        Formatter.formatFileSize(context, value)
+    fun formatHumanReadable(context: Context): String = Formatter.formatFileSize(context, value)
 }
 
 fun Long.asFileSize(): FileSize = FileSize(this)

@@ -43,9 +43,8 @@ class ParcelablePathListConsumer(val value: (List<Path>) -> Unit) : Parcelable {
     }
 
     @Parcelize
-    private class ListenerArgs(
-        val paths: @WriteWith<ParcelableListParceler> List<Path>
-    ) : ParcelableArgs
+    private class ListenerArgs(val paths: @WriteWith<ParcelableListParceler> List<Path>) :
+        ParcelableArgs
 }
 
 fun ((List<Path>) -> Unit).toParcelable(): ParcelablePathListConsumer =

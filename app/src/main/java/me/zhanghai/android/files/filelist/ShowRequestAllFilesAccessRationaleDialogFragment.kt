@@ -18,8 +18,8 @@ class ShowRequestAllFilesAccessRationaleDialogFragment : AppCompatDialogFragment
     private val listener: Listener
         get() = requireParentFragment() as Listener
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext(), theme)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext(), theme)
             .setMessage(R.string.all_files_access_rationale_message)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 listener.onShowRequestAllFilesAccessRationaleResult(true)
@@ -28,7 +28,6 @@ class ShowRequestAllFilesAccessRationaleDialogFragment : AppCompatDialogFragment
                 listener.onShowRequestAllFilesAccessRationaleResult(false)
             }
             .create()
-    }
 
     override fun onCancel(dialog: DialogInterface) {
         super.onCancel(dialog)

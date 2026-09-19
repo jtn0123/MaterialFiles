@@ -13,6 +13,7 @@ import java8.nio.file.Paths
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.compat.EnvironmentCompat2
+import me.zhanghai.android.files.filelist.FileListLastLocation
 import me.zhanghai.android.files.filelist.FileSortOptions
 import me.zhanghai.android.files.filelist.FileViewType
 import me.zhanghai.android.files.filelist.OpenApkDefaultAction
@@ -46,6 +47,21 @@ object Settings {
             R.string.pref_key_file_list_default_directory,
             @Suppress("DEPRECATION")
             Paths.get(Environment.getExternalStorageDirectory().absolutePath)
+        )
+
+    val FILE_LIST_REMEMBER_LAST_DIRECTORY: SettingLiveData<Boolean> =
+        BooleanSettingLiveData(
+            R.string.pref_key_file_list_remember_last_directory,
+            R.bool.pref_default_value_file_list_remember_last_directory
+        )
+
+    // Device state rather than a preference, so it stays out of backups.
+    val FILE_LIST_LAST_LOCATION: SettingLiveData<FileListLastLocation?> =
+        ParcelValueSettingLiveData(
+            NAME_SUFFIX_NO_BACKUP,
+            R.string.pref_key_file_list_last_location,
+            null,
+            null
         )
 
     val FILE_LIST_PERSISTENT_DRAWER_OPEN: SettingLiveData<Boolean> =
@@ -92,6 +108,10 @@ object Settings {
             R.string.pref_default_value_ftp_server_username
         )
 
+    /**
+     * Encrypted like the stored servers' credentials; the FTP server preference screen reads
+     * and writes it through this setting rather than through its own preferences file.
+     */
     val FTP_SERVER_PASSWORD: SettingLiveData<String> =
         EncryptedStringSettingLiveData(
             NAME_SUFFIX_NO_BACKUP,
@@ -106,6 +126,15 @@ object Settings {
             R.string.pref_key_ftp_server_port,
             null,
             R.integer.pref_default_value_ftp_server_port
+        )
+
+    /** Passive-mode data ports in Apache FtpServer's syntax, or empty for any free port. */
+    val FTP_SERVER_PASSIVE_PORTS: SettingLiveData<String> =
+        StringSettingLiveData(
+            NAME_SUFFIX_NO_BACKUP,
+            R.string.pref_key_ftp_server_passive_ports,
+            null,
+            R.string.pref_default_value_ftp_server_passive_ports
         )
 
     val FTP_SERVER_HOME_DIRECTORY: SettingLiveData<Path> =

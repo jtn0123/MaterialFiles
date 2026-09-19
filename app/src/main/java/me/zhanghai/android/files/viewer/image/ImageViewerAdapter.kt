@@ -20,6 +20,7 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.DefaultOnImageEventListener
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
+import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,7 +38,6 @@ import me.zhanghai.android.files.util.fadeInUnsafe
 import me.zhanghai.android.files.util.fadeOutUnsafe
 import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.shortAnimTime
-import kotlin.math.max
 
 class ImageViewerAdapter(
     private val lifecycleOwner: LifecycleOwner,
@@ -54,7 +54,7 @@ class ImageViewerAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val path = getItem(position)
         val binding = holder.binding
-        binding.image.setOnPhotoTapListener { view, _, _ -> listener(view) }
+        binding.image.setOnPhotoTapListener { view, _, _ -> listener(view ?: binding.image) }
         binding.largeImage.setOnClickListener(listener)
         loadImage(binding, path)
     }
@@ -90,7 +90,9 @@ class ImageViewerAdapter(
         val bitmapOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         newInputStream().use { BitmapFactory.decodeStream(it, null, bitmapOptions) }
         return ImageInfo(
-            attributes, bitmapOptions.outWidth, bitmapOptions.outHeight,
+            attributes,
+            bitmapOptions.outWidth,
+            bitmapOptions.outHeight,
             bitmapOptions.outMimeType?.asMimeTypeOrNull() ?: mimeType
         )
     }
@@ -163,8 +165,8 @@ class ImageViewerAdapter(
             val viewWidth = (width - paddingLeft - paddingRight)
             val viewHeight = (height - paddingTop - paddingBottom)
             val orientation = appliedOrientation
-            val rotated90Or270 = orientation == SubsamplingScaleImageView.ORIENTATION_90
-                || orientation == SubsamplingScaleImageView.ORIENTATION_270
+            val rotated90Or270 = orientation == SubsamplingScaleImageView.ORIENTATION_90 ||
+                orientation == SubsamplingScaleImageView.ORIENTATION_270
             val imageWidth = if (rotated90Or270) sHeight else sWidth
             val imageHeight = if (rotated90Or270) sWidth else sHeight
             return max(viewWidth.toFloat() / imageWidth, viewHeight.toFloat() / imageHeight)

@@ -14,8 +14,8 @@ import coil.fetch.DrawableResult
 import coil.fetch.FetchResult
 import coil.fetch.Fetcher
 import coil.request.Options
-import me.zhanghai.android.appiconloader.AppIconLoader
 import java.io.Closeable
+import me.zhanghai.android.appiconloader.AppIconLoader
 
 class AppIconFetcher(
     private val options: Options,

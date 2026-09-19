@@ -24,6 +24,7 @@ import me.zhanghai.android.files.util.Success
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.getDimensionDp
 import me.zhanghai.android.files.util.getQuantityString
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.valueCompat
@@ -59,7 +60,7 @@ internal class FileListContent(private val fragment: FileListFragment) {
         binding.errorText.fadeToVisibilityUnsafe(stateful is Failure && !hasFiles)
         val throwable = (stateful as? Failure)?.throwable
         if (throwable != null) {
-            throwable.printStackTrace()
+            throwable.logWarning("FileListContent", "list(${viewModel.currentPath})")
             val error = throwable.toUserMessage(fragment.requireContext())
             if (hasFiles) {
                 fragment.showToast(error)

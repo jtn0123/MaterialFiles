@@ -8,6 +8,8 @@ package me.zhanghai.android.files.provider.ftp
 import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.File
+import java.io.IOException
 import java8.nio.file.FileSystem
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
@@ -23,10 +25,10 @@ import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.ftp.client.Authority
 import me.zhanghai.android.files.provider.ftp.client.Client
 import me.zhanghai.android.files.util.readParcelable
-import java.io.File
-import java.io.IOException
 
-internal class FtpPath : ByteStringListPath<FtpPath>, Client.Path {
+internal class FtpPath :
+    ByteStringListPath<FtpPath>,
+    Client.Path {
     private val fileSystem: FtpFileSystem
 
     constructor(
@@ -78,13 +80,10 @@ internal class FtpPath : ByteStringListPath<FtpPath>, Client.Path {
     override fun getRoot(): FtpPath? = if (isAbsolute) fileSystem.rootDirectory else null
 
     @Throws(IOException::class)
-    override fun toRealPath(vararg options: LinkOption): FtpPath {
+    override fun toRealPath(vararg options: LinkOption): FtpPath =
         throw UnsupportedOperationException()
-    }
 
-    override fun toFile(): File {
-        throw UnsupportedOperationException()
-    }
+    override fun toFile(): File = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun register(

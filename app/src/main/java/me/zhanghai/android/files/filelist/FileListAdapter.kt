@@ -123,6 +123,19 @@ class FileListAdapter(private val listener: Listener) :
         listener.selectFiles(files, true)
     }
 
+    /** Selects everything between the first and the last selected file. */
+    fun selectFileRange() {
+        val range = selectionRange(itemCount) { getItem(it) in selectedFiles } ?: return
+        val files = fileItemSetOf()
+        for (index in range) {
+            val file = getItem(index)
+            if (isFileSelectable(file)) {
+                files.add(file)
+            }
+        }
+        listener.selectFiles(files, true)
+    }
+
     private fun isFileSelectable(file: FileItem): Boolean {
         val pickOptions = pickOptions ?: return true
         return when (pickOptions.mode) {
@@ -233,84 +246,23 @@ class FileListAdapter(private val listener: Listener) :
         holder.itemLayout.apply {
             setOnClickListener {
                 if (selectedFiles.isEmpty()) {
-                    listener.openFile(file)
+                    listener.openFile(holder.currentFile(file))
                 } else {
-                    selectFile(file)
+                    selectFile(holder.currentFile(file))
                 }
             }
             setOnLongClickListener {
                 if (selectedFiles.isEmpty()) {
-                    selectFile(file)
+                    selectFile(holder.currentFile(file))
                 } else {
-                    listener.openFile(file)
+                    listener.openFile(holder.currentFile(file))
                 }
                 true
             }
         }
-        holder.iconLayout.setOnClickListener { selectFile(file) }
-        val iconRes = file.mimeType.iconRes
-        holder.iconImage.apply {
-            isVisible = true
-            setImageResource(iconRes)
-        }
-        holder.directoryThumbnailImage?.isVisible = isDirectory
-        holder.thumbnailOutlineView?.isVisible = !isDirectory
-        val supportsThumbnail = file.supportsThumbnail
-        val shouldLoadThumbnailIcon = supportsThumbnail && holder.thumbnailIconImage != null &&
-            file.mimeType.isApk
+        holder.iconLayout.setOnClickListener { selectFile(holder.currentFile(file)) }
+        holder.bindIcons(file)
         val attributes = file.attributes
-        holder.thumbnailIconImage?.apply {
-            dispose()
-            isVisible = !isDirectory
-            setImageResource(iconRes)
-            if (shouldLoadThumbnailIcon) {
-                load(path to attributes)
-            }
-        }
-        holder.thumbnailImage.apply {
-            dispose()
-            setImageDrawable(null)
-            val shouldLoadThumbnail = supportsThumbnail && !shouldLoadThumbnailIcon
-            isVisible = shouldLoadThumbnail
-            if (shouldLoadThumbnail) {
-                load(path to attributes) {
-                    listener { _, _ ->
-                        val iconImage = holder.thumbnailIconImage ?: holder.iconImage
-                        iconImage.isVisible = false
-                    }
-                }
-            }
-        }
-        holder.appIconBadgeImage.apply {
-            dispose()
-            setImageDrawable(null)
-            val appDirectoryPackageName = file.appDirectoryPackageName
-            val hasAppIconBadge = appDirectoryPackageName != null
-            isVisible = hasAppIconBadge
-            if (hasAppIconBadge) {
-                load(AppIconPackageName(appDirectoryPackageName))
-            }
-        }
-        holder.badgeImage.apply {
-            val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
-                if (file.isSymbolicLinkBroken) {
-                    R.drawable.error_badge_icon_18dp
-                } else {
-                    R.drawable.symbolic_link_badge_icon_18dp
-                }
-            } else if (file.attributesNoFollowLinks.isEncrypted()) {
-                R.drawable.encrypted_badge_icon_18dp
-            } else {
-                null
-            }
-            val hasBadge = badgeIconRes != null
-            isVisible = hasBadge
-            if (hasBadge) {
-                setImageResource(badgeIconRes)
-            } else {
-                setImageDrawable(null)
-            }
-        }
         holder.nameText.text = file.name
         holder.descriptionText?.text = if (isDirectory) {
             null
@@ -331,70 +283,80 @@ class FileListAdapter(private val listener: Listener) :
         menu.findItem(R.id.action_archive).isVisible = !isArchivePath
         menu.findItem(R.id.action_add_bookmark).isVisible = isDirectory
         holder.popupMenu.setOnMenuItemClickListener {
+            val currentFile = holder.currentFile(file)
             when (it.itemId) {
                 R.id.action_open_with -> {
-                    listener.openFileWith(file)
+                    listener.openFileWith(currentFile)
                     true
                 }
 
                 R.id.action_cut -> {
-                    listener.cutFile(file)
+                    listener.cutFile(currentFile)
                     true
                 }
 
                 R.id.action_copy -> {
-                    listener.copyFile(file)
+                    listener.copyFile(currentFile)
                     true
                 }
 
                 R.id.action_delete -> {
-                    listener.confirmDeleteFile(file)
+                    listener.confirmDeleteFile(currentFile)
                     true
                 }
 
                 R.id.action_rename -> {
-                    listener.showRenameFileDialog(file)
+                    listener.showRenameFileDialog(currentFile)
                     true
                 }
 
                 R.id.action_extract -> {
-                    listener.extractFile(file)
+                    listener.extractFile(currentFile)
                     true
                 }
 
                 R.id.action_archive -> {
-                    listener.showCreateArchiveDialog(file)
+                    listener.showCreateArchiveDialog(currentFile)
                     true
                 }
 
                 R.id.action_share -> {
-                    listener.shareFile(file)
+                    listener.shareFile(currentFile)
                     true
                 }
 
                 R.id.action_copy_path -> {
-                    listener.copyPath(file)
+                    listener.copyPath(currentFile)
                     true
                 }
 
                 R.id.action_add_bookmark -> {
-                    listener.addBookmark(file)
+                    listener.addBookmark(currentFile)
                     true
                 }
 
                 R.id.action_create_shortcut -> {
-                    listener.createShortcut(file)
+                    listener.createShortcut(currentFile)
                     true
                 }
 
                 R.id.action_properties -> {
-                    listener.showPropertiesDialog(file)
+                    listener.showPropertiesDialog(currentFile)
                     true
                 }
 
                 else -> false
             }
         }
+    }
+
+    /**
+     * Rows whose shown contents didn't change keep their binding across a re-list, so listeners
+     * look up the current item instead of using the one captured when the row was bound.
+     */
+    private fun ViewHolder.currentFile(boundFile: FileItem): FileItem {
+        val position = bindingAdapterPosition
+        return if (position != RecyclerView.NO_POSITION) getItem(position) else boundFile
     }
 
     override fun getPopupText(view: View, position: Int): CharSequence {
@@ -422,7 +384,7 @@ class FileListAdapter(private val listener: Listener) :
                 oldItem.path == newItem.path
 
             override fun areContentsTheSame(oldItem: FileItem, newItem: FileItem): Boolean =
-                oldItem == newItem
+                oldItem.hasSameListContentsAs(newItem)
         }
     }
 

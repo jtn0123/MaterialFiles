@@ -36,15 +36,13 @@ fun Cursor.getString(columnName: String): String? {
 }
 
 @Throws(ResolverException::class)
-fun Cursor.requireColumnIndex(columnName: String): Int =
-    try {
-        getColumnIndexOrThrow(columnName)
-    } catch (e: IllegalArgumentException) {
-        throw ResolverException(e)
-    }
+fun Cursor.requireColumnIndex(columnName: String): Int = try {
+    getColumnIndexOrThrow(columnName)
+} catch (e: IllegalArgumentException) {
+    throw ResolverException(e)
+}
 
 @Throws(ResolverException::class)
-fun Cursor.requireString(columnName: String): String {
-    return getStringOrNull(requireColumnIndex(columnName))
+fun Cursor.requireString(columnName: String): String =
+    getStringOrNull(requireColumnIndex(columnName))
         ?: throw ResolverException("Cursor.getStringOrNull() for $columnName returned null")
-}

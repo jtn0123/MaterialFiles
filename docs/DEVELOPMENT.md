@@ -9,35 +9,44 @@ version of the build requirements.
 - Gradle 9.7 and AGP 9.4 via the wrapper (compileSdk 37, minSdk 35). Versions of everything else live in
   `gradle/libs.versions.toml`; Dependabot proposes bumps.
 - `local.properties` (git-ignored) with `sdk.dir=...`.
-- The `dav4jvm` dependency is pinned by a full 40-character commit SHA. JitPack's build for the
-  short hash has no modules and 404s, so keep the full hash when bumping it.
+- Only `libsu` still comes from JitPack; dav4jvm is vendored (see Checks).
 
 ## Checks
 
 ```sh
-./gradlew ktlintCheck checkSourceFileLength testDebugUnitTest lintDebug lintVitalRelease assembleDebug assembleDebugAndroidTest
+./gradlew ktlintCheck checkSourceFileLength testDebugUnitTest :dav4jvm:test lintDebug lintVitalRelease assembleDebug assembleDebugAndroidTest
 ```
 
-- **ktlint.** Existing violations are grandfathered in `app/ktlint-baseline.xml`, which is
-  line-number based: inserting lines in a file re-flags the old violations below the insertion.
-  The policy is that any file you edit gets formatted once so that it leaves the baseline: run
-  `python3 tools/format-files.py app/src/main/java/path/to/Changed.kt` with the explicit files
-  you changed. It formats only those files and retires their baseline entries after a clean
-  scoped check. Fix any remaining violations and rerun it. Run the full check command above
-  without `-PformatFiles` before submitting changes. Do not
-  regenerate the baseline to make a check pass; that silently absorbs new violations.
+- **ktlint.** Every Kotlin file is clean; there is no baseline. `ktlintCheck` fails on any
+  violation, so run `./gradlew :app:ktlintFormat` before committing and fix by hand what it
+  cannot (it prints the rule). Two rules contradict each other on an annotated function type;
+  route such a type through a `typealias` instead of suppressing either.
 - **File length.** `checkSourceFileLength` fails the build when any Kotlin or Java file under
   `app/src` exceeds 500 lines. Split the file; there is no exemption list.
+- **dav4jvm** is vendored in `dav4jvm/` (MPL 2.0; origin commit and the two modifications are in
+  its README). It is a plain Kotlin JVM module with its own 85 tests (`:dav4jvm:test`); ktlint and
+  the length rule do not apply to it, so keep upstream's formatting when touching it.
 - **Unit tests** live in `app/src/test`. `TestPath` in `provider/common` is a provider-less
   `ByteStringListPath` with real resolve/normalize/relativize semantics for path tests. Note that
   `Path.iterator()` is deliberately unsupported in this code base; use `path.names`.
 - **Dependency verification.** `gradle/verification-metadata.xml` pins a SHA-256 for every
   artifact the checks resolve. After a dependency or plugin bump, regenerate it with
-  `./gradlew --write-verification-metadata sha256 :app:ktlintCheck :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :app:lintVitalRelease`,
-  then re-add the `aapt2-<version>-linux.jar` and `-windows.jar` entries next to the macOS one
-  (their checksums are published as `.sha256` sidecars under
-  `https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/`). CI runs on Linux
-  and fails without them.
+  `./gradlew --write-verification-metadata sha256 :app:ktlintCheck :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest :dav4jvm:test :app:lintDebug :app:lintVitalRelease`.
+  A regeneration on macOS misses what only a Linux resolution fetches: the
+  `aapt2-<version>-linux.jar` (and `-windows.jar`; checksums are published as `.sha256` sidecars
+  under `https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/`) and Gradle
+  `.module` files the local cache happened to have as POM-only. The first CI step resolves
+  everything on Linux in dry-run mode and fails with the missing entries as a diff, so add
+  exactly those lines. Keep the file in Gradle's own ordering (versions sort as strings), or
+  that diff is never empty.
+- **Screenshots.** The `screenshots` CI job installs the debug build on an API 35 emulator, runs
+  `scripts/screenshots/capture.sh` through the inset-sensitive screens and, once
+  `screenshots/baseline/api35/` exists, pixel-diffs against it with `scripts/screenshots/compare.py`
+  (more than 0.5 % of pixels changed fails). Commit the baseline from the job's artifact, not
+  from a local emulator; see `screenshots/README.md`.
+- **Logging.** The provider and file-job layers record exceptions they survive with
+  `Throwable.logWarning(tag, operation)` from `util/Logging.kt`, which puts the class, the
+  operation and usually the path into logcat. Do not add `printStackTrace()`.
 
 ## Protocol integration tests
 
@@ -123,3 +132,52 @@ process termination before either callback runs, or before the queued write comp
 covered by draft recovery. Revision checks prevent stale editor instances from replacing
 or deleting a newer draft. Save transactions serialize per target and reject detected changes
 to the original during staging. Required extended-attribute copy failures abort the save.
+
+## SonarCloud test coverage
+
+SonarCloud automatic analysis reads source code but cannot import test coverage. This project
+uses CI-based analysis to import JaCoCo XML from the app's JVM tests, the vendored WebDAV
+library tests, and Android instrumented tests on API 35 and 36. Coverage describes Java/Kotlin
+execution; these reports do not measure native C execution or replace physical-device testing.
+
+Coverage is opt-in through `-Pcoverage=true` (or `ORG_GRADLE_PROJECT_coverage=true`). Normal
+local debug builds and the screenshot job keep their existing runtime. To create the JVM
+reports, including the real protocol tests, run:
+
+```sh
+ORG_GRADLE_PROJECT_coverage=true python3 tools/network-tests.py :app:createDebugUnitTestCoverageReport :dav4jvm:jacocoTestReport
+python3 tools/coverage-reports.py unit
+```
+
+For an emulator running API 36, generate and collect its coverage with:
+
+```sh
+ANDROID_SERIAL=emulator-5554 ./gradlew -Pcoverage=true :app:createDebugAndroidTestCoverageReport
+python3 tools/coverage-reports.py android --api-level 36
+```
+
+The HTML reports are under `app/build/reports/coverage/test/debug/`,
+`app/build/reports/coverage/androidTest/debug/connected/`, and
+`dav4jvm/build/reports/jacoco/test/`. The collection script validates the XML and places it in
+`coverage/` with distinct names so uploads from separate CI jobs cannot overwrite each other.
+
+CI waits for both Android jobs, downloads all four reports, rejects missing/empty coverage,
+builds the source and native compilation database for analysis, and runs `./gradlew sonar`. The scanner imports
+`coverage/**/*.xml` through `sonar.coverage.jacoco.xmlReportPaths`. Test-result XML is separate
+from coverage XML; uploading passing JUnit results alone does not measure coverage. Native C
+analysis uses the arm64 CMake compilation database generated by the same build; it is not
+dropped when moving from automatic analysis to CI.
+
+One-time setup for **jtn0123/MaterialFiles**:
+
+1. Add a SonarCloud analysis token as the GitHub Actions repository secret `SONAR_TOKEN`.
+   Keep the token out of source files, logs, and chat.
+2. In SonarCloud project `jtn0123_MaterialFiles`, open **Administration → Analysis method**
+   and turn off **Automatic analysis** when the CI workflow is ready to take over.
+3. Run the workflow and verify the scanner imports all reports and the SonarCloud dashboard
+   displays coverage. A passing scan without imported reports is not sufficient evidence.
+
+The Sonar job fails clearly when its token is missing. External-fork PRs produce test and
+coverage artifacts but do not receive the token. Existing quality-gate rules are retained;
+this change measures coverage without imposing a new percentage threshold or excluding
+untested application code to improve the number.

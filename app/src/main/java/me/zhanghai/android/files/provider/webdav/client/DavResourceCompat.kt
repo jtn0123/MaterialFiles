@@ -6,11 +6,16 @@
 package me.zhanghai.android.files.provider.webdav.client
 
 import at.bitfire.dav4jvm.DavResource
-import at.bitfire.dav4jvm.DavResourceAccessor
 import at.bitfire.dav4jvm.QuotedStringUtils
 import at.bitfire.dav4jvm.ResponseCallback
 import at.bitfire.dav4jvm.exception.DavException
 import at.bitfire.dav4jvm.exception.HttpException
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.HttpURLConnection
+import java.nio.ByteBuffer
+import java.util.concurrent.CountDownLatch
 import me.zhanghai.android.files.provider.common.DelegateOutputStream
 import okhttp3.Call
 import okhttp3.Callback
@@ -23,12 +28,6 @@ import okhttp3.Response
 import okio.BufferedSink
 import okio.Pipe
 import okio.buffer
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.HttpURLConnection
-import java.nio.ByteBuffer
-import java.util.concurrent.CountDownLatch
 
 @Throws(DavException::class, IOException::class)
 fun DavResource.getCompat(accept: String, headers: Headers?): InputStream =
@@ -40,24 +39,23 @@ fun DavResource.getRangeCompat(
     offset: Long,
     size: Int,
     headers: Headers?
-): InputStream =
-    followRedirects {
-        val request = Request.Builder().get().url(location)
-        if (headers != null) {
-            request.headers(headers)
-        }
-        request.header("Accept", accept)
-        val lastIndex = offset + size - 1
-        request.header("Range", "bytes=$offset-$lastIndex")
-        httpClient.newCall(request.build()).execute()
+): InputStream = followRedirects {
+    val request = Request.Builder().get().url(location)
+    if (headers != null) {
+        request.headers(headers)
     }
-        .also {
-            checkStatus(it)
-            if (it.code != HttpURLConnection.HTTP_PARTIAL) {
-                throw HttpException(it)
-            }
+    request.header("Accept", accept)
+    val lastIndex = offset + size - 1
+    request.header("Range", "bytes=$offset-$lastIndex")
+    httpClient.newCall(request.build()).execute()
+}
+    .also {
+        checkStatus(it)
+        if (it.code != HttpURLConnection.HTTP_PARTIAL) {
+            throw HttpException(it)
         }
-        .body!!.byteStream()
+    }
+    .body!!.byteStream()
 
 // This doesn't follow redirects since the request body is one-shot anyway.
 @Throws(DavException::class, IOException::class)
@@ -65,7 +63,7 @@ fun DavResource.putCompat(
     ifETag: String? = null,
     ifScheduleTag: String? = null,
     ifNoneMatch: Boolean = false,
-    headers: Map<String, String> = emptyMap(),
+    headers: Map<String, String> = emptyMap()
 ): OutputStream {
     val pipe = Pipe(DEFAULT_BUFFER_SIZE.toLong())
     val body = object : RequestBody() {
@@ -134,6 +132,7 @@ fun DavResource.getPatchSupport(): PatchSupport {
                 PatchSupport.APACHE
 
             "sabredav-partialupdate" in davCapabilities -> PatchSupport.SABRE
+
             else -> PatchSupport.NONE
         }
     }
@@ -208,14 +207,6 @@ fun DavResource.putRangeCompat(
         callback.onResponse(response)
     }
 }
-
-@Throws(HttpException::class)
-private fun DavResource.checkStatus(response: Response) {
-    DavResourceAccessor.checkStatus(this, response)
-}
-
-private fun DavResource.followRedirects(sendRequest: () -> Response): Response =
-    DavResourceAccessor.followRedirects(this, sendRequest)
 
 private fun ByteBuffer.toRequestBody(contentType: MediaType? = null): RequestBody {
     val contentLength = remaining().toLong()

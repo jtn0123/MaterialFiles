@@ -23,6 +23,7 @@ import me.zhanghai.android.files.provider.common.newInputStream
 import me.zhanghai.android.files.provider.common.newOutputStream
 import me.zhanghai.android.files.provider.smb.client.Client.Path
 import me.zhanghai.android.files.util.enumSetOf
+import me.zhanghai.android.files.util.logWarning
 
 @Throws(ClientException::class)
 internal fun copyOpenedFile(
@@ -91,12 +92,16 @@ internal fun copyOpenedFile(
                 sourceInputStream.copyTo(targetOutputStream, intervalMillis, listener)
             }
             successful = true
+        } catch (e: ClientException) {
+            // The target exists now and may not get deleted, so starting over with a fresh
+            // session (see withSession) would only fail on it; a plain failure it is.
+            throw if (e.isSessionGone) ClientException(e.message, e) else e
         } finally {
             if (!successful) {
                 try {
                     targetFile.deleteOnClose()
                 } catch (e: SMBRuntimeException) {
-                    e.printStackTrace()
+                    e.logWarning("ClientFileCopy", "copyOpenedFile")
                 }
             }
         }

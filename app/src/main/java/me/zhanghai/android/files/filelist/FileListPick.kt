@@ -9,6 +9,7 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
 import android.os.Environment
+import android.os.Parcelable
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import me.zhanghai.android.files.R
@@ -34,8 +35,16 @@ internal class FileListPick(private val fragment: FileListFragment) {
     private val viewModel: FileListViewModel
         get() = fragment.viewModel
 
-    /** Resets the trail to the path and pick options requested by the intent that started us. */
-    fun resetTrailFromIntent(intent: Intent, argsPath: Path?) {
+    /**
+     * Resets the trail to the path and pick options requested by the intent that started us.
+     *
+     * @param restoredLocation where this instance was before the system destroyed it, if it did
+     */
+    fun resetTrailFromIntent(
+        intent: Intent,
+        argsPath: Path?,
+        restoredLocation: FileListLastLocation?
+    ) {
         var path = argsPath
         var pickOptions: PickOptions? = null
         when (val action = intent.action) {
@@ -95,10 +104,25 @@ internal class FileListPick(private val fragment: FileListFragment) {
                     }
                 }
         }
+        var state: Parcelable? = null
         if (path == null) {
-            path = Settings.FILE_LIST_DEFAULT_DIRECTORY.valueCompat
+            // Only the plain launcher start reopens where the user left off.
+            val lastLocation = if (pickOptions == null) {
+                viewModel.remembersLastLocation = true
+                fragment.navigation.lastLocation
+            } else {
+                null
+            }
+            path = lastLocation?.path ?: Settings.FILE_LIST_DEFAULT_DIRECTORY.valueCompat
+            state = lastLocation?.state
         }
-        viewModel.resetTo(path)
+        // An instance that the system destroyed and recreated goes back to where it was, whatever
+        // it was started for.
+        if (restoredLocation != null) {
+            path = restoredLocation.path
+            state = restoredLocation.state
+        }
+        viewModel.resetTo(path, state)
         if (pickOptions != null) {
             viewModel.pickOptions = pickOptions
         }

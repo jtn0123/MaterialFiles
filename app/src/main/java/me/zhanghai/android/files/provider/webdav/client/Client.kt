@@ -99,10 +99,14 @@ class Client(internal val authenticator: Authenticator) {
         LocalWatchService.onEntryCreated(path as Java8Path)
     }
 
+    /**
+     * RFC 4918 says a collection SHOULD be addressed with a trailing slash; nginx returns 409
+     * for a DELETE or MOVE without it, so [isCollection] picks the URL shape.
+     */
     @Throws(DavException::class)
-    fun delete(path: Path) {
+    fun delete(path: Path, isCollection: Boolean = false) {
         try {
-            DavResource(getClient(path.authority), path.url).delete {}
+            DavResource(getClient(path.authority), path.url(isCollection)).delete {}
         } catch (e: IOException) {
             throw e.toDavException()
         }
@@ -111,12 +115,18 @@ class Client(internal val authenticator: Authenticator) {
     }
 
     @Throws(DavException::class)
-    fun move(source: Path, target: Path, overwrite: Boolean = false) {
+    fun move(
+        source: Path,
+        target: Path,
+        overwrite: Boolean = false,
+        isCollection: Boolean = false
+    ) {
         if (source.authority != target.authority) {
             throw IOException("Paths aren't on the same authority")
         }
         try {
-            DavResource(getClient(source.authority), source.url).move(target.url, overwrite) {}
+            DavResource(getClient(source.authority), source.url(isCollection))
+                .move(target.url(isCollection), overwrite) {}
         } catch (e: IOException) {
             throw e.toDavException()
         }
@@ -260,6 +270,9 @@ class Client(internal val authenticator: Authenticator) {
         val url: HttpUrl
         fun resolve(other: String): Path
     }
+
+    private fun Path.url(isCollection: Boolean): HttpUrl =
+        if (isCollection) url.toCollectionUrl() else url
 
     private class OkHttpAuthenticatorInterceptor(
         private val authenticator: Authenticator,

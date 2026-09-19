@@ -11,6 +11,7 @@ import android.content.Intent
 import android.os.Environment
 import androidx.annotation.DrawableRes
 import java8.nio.file.Path
+import kotlin.random.Random
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.getDescriptionCompat
@@ -23,7 +24,6 @@ import me.zhanghai.android.files.provider.document.createDocumentTreeRootPath
 import me.zhanghai.android.files.util.createIntent
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.supportsExternalStorageManager
-import kotlin.random.Random
 
 @Parcelize
 data class DocumentTree(
@@ -44,8 +44,9 @@ data class DocumentTree(
         @SuppressLint("NewApi")
         get() =
             // We are using MANAGE_EXTERNAL_STORAGE to access all storage volumes when supported.
-            if (!Environment::class.supportsExternalStorageManager()
-                && uri.storageVolume.let { it != null && !it.isPrimaryCompat }) {
+            if (!Environment::class.supportsExternalStorageManager() &&
+                uri.storageVolume.let { it != null && !it.isPrimaryCompat }
+            ) {
                 R.drawable.sd_card_icon_white_24dp
             } else {
                 super.iconRes
@@ -64,7 +65,6 @@ data class DocumentTree(
     override val linuxPath: String?
         get() = uri.storageVolume?.pathCompat
 
-    override fun createEditIntent(): Intent =
-        EditDocumentTreeDialogActivity::class.createIntent()
-            .putArgs(EditDocumentTreeDialogFragment.Args(this))
+    override fun createEditIntent(): Intent = EditDocumentTreeDialogActivity::class.createIntent()
+        .putArgs(EditDocumentTreeDialogFragment.Args(this))
 }

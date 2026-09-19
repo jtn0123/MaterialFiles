@@ -22,6 +22,7 @@ object DepthPageTransformer : ViewPager2.PageTransformer {
                     // This page is way off-screen to the left.
                     alpha = 0f
                 }
+
                 position <= 0 -> { // [-1,0]
                     // Use the default slide transition when moving to the left page
                     alpha = 1f
@@ -30,6 +31,7 @@ object DepthPageTransformer : ViewPager2.PageTransformer {
                     scaleX = 1f
                     scaleY = 1f
                 }
+
                 position <= 1 -> { // (0,1]
                     // Fade the page out.
                     alpha = 1 - position
@@ -44,6 +46,7 @@ object DepthPageTransformer : ViewPager2.PageTransformer {
                     scaleX = scaleFactor
                     scaleY = scaleFactor
                 }
+
                 else -> { // (1,+Infinity]
                     // This page is way off-screen to the right.
                     alpha = 0f
@@ -66,6 +69,7 @@ object ZoomOutPageTransformer : ViewPager2.PageTransformer {
                     // This page is way off-screen to the left.
                     alpha = 0f
                 }
+
                 position <= 1 -> { // [-1,1]
                     // Modify the default slide transition to shrink the page as well
                     val scaleFactor = (1 - abs(position)).coerceAtLeast(MIN_SCALE)
@@ -82,9 +86,12 @@ object ZoomOutPageTransformer : ViewPager2.PageTransformer {
                     scaleY = scaleFactor
 
                     // Fade the page relative to its size.
-                    alpha = (MIN_ALPHA +
-                        (((scaleFactor - MIN_SCALE) / (1 - MIN_SCALE)) * (1 - MIN_ALPHA)))
+                    alpha = (
+                        MIN_ALPHA +
+                            (((scaleFactor - MIN_SCALE) / (1 - MIN_SCALE)) * (1 - MIN_ALPHA))
+                        )
                 }
+
                 else -> { // (1,+Infinity]
                     // This page is way off-screen to the right.
                     alpha = 0f

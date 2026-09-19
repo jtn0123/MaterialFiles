@@ -8,6 +8,10 @@ package me.zhanghai.android.files.provider.remote
 import android.os.Bundle
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.IOException
+import java.io.InputStream
+import java.io.InterruptedIOException
+import java.io.Serializable
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
@@ -20,6 +24,9 @@ import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileAttribute
 import java8.nio.file.spi.FileSystemProvider
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.runBlocking
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.provider.common.PathObservable
@@ -28,17 +35,12 @@ import me.zhanghai.android.files.provider.common.Searchable
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.RemoteCallback
 import me.zhanghai.android.files.util.getArgs
-import java.io.IOException
-import java.io.InputStream
-import java.io.InterruptedIOException
-import java.io.Serializable
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 abstract class RemoteFileSystemProvider(
     private val remoteInterface: RemoteInterface<IRemoteFileSystemProvider>
-) : FileSystemProvider(), PathObservableProvider, Searchable {
+) : FileSystemProvider(),
+    PathObservableProvider,
+    Searchable {
     @Throws(IOException::class)
     override fun newInputStream(file: Path, vararg options: OpenOption): InputStream =
         remoteInterface.get().call { exception ->
@@ -50,9 +52,7 @@ abstract class RemoteFileSystemProvider(
         file: Path,
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
-    ): FileChannel {
-        throw UnsupportedOperationException()
-    }
+    ): FileChannel = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun newByteChannel(
@@ -66,7 +66,10 @@ abstract class RemoteFileSystemProvider(
         }
         return remoteInterface.get().call { exception ->
             newByteChannel(
-                file.toParcelable(), options.toParcelable(), attributes.toParcelable(), exception
+                file.toParcelable(),
+                options.toParcelable(),
+                attributes.toParcelable(),
+                exception
             )
         }
     }
@@ -97,7 +100,10 @@ abstract class RemoteFileSystemProvider(
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
         remoteInterface.get().call { exception ->
             createSymbolicLink(
-                link.toParcelable(), target.toParcelable(), attributes.toParcelable(), exception
+                link.toParcelable(),
+                target.toParcelable(),
+                attributes.toParcelable(),
+                exception
             )
         }
     }
@@ -115,10 +121,9 @@ abstract class RemoteFileSystemProvider(
     }
 
     @Throws(IOException::class)
-    override fun readSymbolicLink(link: Path): Path =
-        remoteInterface.get().call { exception ->
-            readSymbolicLink(link.toParcelable(), exception)
-        }.value()
+    override fun readSymbolicLink(link: Path): Path = remoteInterface.get().call { exception ->
+        readSymbolicLink(link.toParcelable(), exception)
+    }.value()
 
     @Throws(IOException::class)
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
@@ -136,7 +141,9 @@ abstract class RemoteFileSystemProvider(
                     }
                     interruptible = remoteInterface.get().call {
                         copy(
-                            source.toParcelable(), target.toParcelable(), options.toParcelable(),
+                            source.toParcelable(),
+                            target.toParcelable(),
+                            options.toParcelable(),
                             callback
                         )
                     }
@@ -164,7 +171,9 @@ abstract class RemoteFileSystemProvider(
                     }
                     interruptible = remoteInterface.get().call {
                         move(
-                            source.toParcelable(), target.toParcelable(), options.toParcelable(),
+                            source.toParcelable(),
+                            target.toParcelable(),
+                            options.toParcelable(),
                             callback
                         )
                     }
@@ -187,10 +196,9 @@ abstract class RemoteFileSystemProvider(
         remoteInterface.get().call { exception -> isHidden(path.toParcelable(), exception) }
 
     @Throws(IOException::class)
-    override fun getFileStore(path: Path): FileStore =
-        remoteInterface.get().call {
-            exception -> getFileStore(path.toParcelable(), exception)
-        }.value()
+    override fun getFileStore(path: Path): FileStore = remoteInterface.get().call { exception ->
+        getFileStore(path.toParcelable(), exception)
+    }.value()
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
@@ -204,21 +212,21 @@ abstract class RemoteFileSystemProvider(
         path: Path,
         type: Class<A>,
         vararg options: LinkOption
-    ): A =
-        remoteInterface.get().call { exception ->
-            readAttributes(
-                path.toParcelable(), type.toParcelable(), options.toParcelable(), exception
-            )
-        }.value()
+    ): A = remoteInterface.get().call { exception ->
+        readAttributes(
+            path.toParcelable(),
+            type.toParcelable(),
+            options.toParcelable(),
+            exception
+        )
+    }.value()
 
     @Throws(IOException::class)
     override fun readAttributes(
         path: Path,
         attributes: String,
         vararg options: LinkOption
-    ): Map<String, Any> {
-        throw UnsupportedOperationException()
-    }
+    ): Map<String, Any> = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun setAttribute(
@@ -226,9 +234,7 @@ abstract class RemoteFileSystemProvider(
         attribute: String,
         value: Any,
         vararg options: LinkOption
-    ) {
-        throw UnsupportedOperationException()
-    }
+    ): Unit = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable =
@@ -257,8 +263,11 @@ abstract class RemoteFileSystemProvider(
                     }
                     interruptible = remoteInterface.get().call {
                         search(
-                            directory.toParcelable(), query, intervalMillis,
-                            listener.toParcelable(), callback
+                            directory.toParcelable(),
+                            query,
+                            intervalMillis,
+                            listener.toParcelable(),
+                            callback
                         )
                     }
                 }
@@ -269,7 +278,8 @@ abstract class RemoteFileSystemProvider(
         }
     }
 
-    private class ParcelableAcceptAllFilter private constructor() : DirectoryStream.Filter<Path>,
+    private class ParcelableAcceptAllFilter private constructor() :
+        DirectoryStream.Filter<Path>,
         Parcelable {
         override fun accept(entry: Path): Boolean = true
 

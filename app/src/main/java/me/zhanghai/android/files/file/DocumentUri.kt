@@ -24,8 +24,7 @@ value class DocumentUri(val value: @WriteWith<StableUriParceler> Uri) : Parcelab
         get() = DocumentsContract.getDocumentId(value)
 }
 
-fun Uri.asDocumentUriOrNull(): DocumentUri? =
-    if (isDocumentUri) DocumentUri(this) else null
+fun Uri.asDocumentUriOrNull(): DocumentUri? = if (isDocumentUri) DocumentUri(this) else null
 
 fun Uri.asDocumentUri(): DocumentUri {
     require(isDocumentUri)
@@ -39,7 +38,11 @@ val DocumentUri.displayName: String?
     get() {
         try {
             contentResolver.query(
-                value, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null
+                value,
+                arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME),
+                null,
+                null,
+                null
             ).use { cursor ->
                 if (cursor != null && cursor.moveToFirst()) {
                     val displayNameIndex = cursor.getColumnIndex(

@@ -7,8 +7,8 @@ package me.zhanghai.android.files.provider.common
 
 import android.os.ParcelFileDescriptor
 import android.system.OsConstants
-import me.zhanghai.android.files.util.hasBits
 import kotlin.reflect.KClass
+import me.zhanghai.android.files.util.hasBits
 
 // @see android.os.FileUtils#translateModePfdToPosix
 fun KClass<ParcelFileDescriptor>.modeToFlags(mode: Int): Int {

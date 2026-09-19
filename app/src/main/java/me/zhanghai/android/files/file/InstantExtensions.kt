@@ -28,7 +28,6 @@ fun Instant.formatShort(context: Context): String {
     return DateUtils.formatDateTime(context, time, flags)
 }
 
-fun Instant.formatLong(): String =
-    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
-        .withZone(ZoneId.systemDefault())
-        .format(this)
+fun Instant.formatLong(): String = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+    .withZone(ZoneId.systemDefault())
+    .format(this)

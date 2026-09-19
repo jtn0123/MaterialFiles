@@ -1,5 +1,6 @@
 package me.zhanghai.android.files.provider.common
 
+import java.net.URI
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
 import java8.nio.file.CopyOption
@@ -13,7 +14,6 @@ import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileAttribute
 import java8.nio.file.attribute.FileAttributeView
 import java8.nio.file.spi.FileSystemProvider
-import java.net.URI
 
 class DelegateSchemeFileSystemProvider(
     private val scheme: String,

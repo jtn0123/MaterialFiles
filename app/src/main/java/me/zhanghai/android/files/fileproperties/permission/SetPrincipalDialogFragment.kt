@@ -87,6 +87,7 @@ abstract class SetPrincipalDialogFragment : AppCompatDialogFragment() {
                 binding.emptyView.fadeOutUnsafe()
                 adapter.clear()
             }
+
             is Failure -> {
                 binding.progress.fadeOutUnsafe()
                 binding.errorText.fadeInUnsafe()
@@ -94,6 +95,7 @@ abstract class SetPrincipalDialogFragment : AppCompatDialogFragment() {
                 binding.emptyView.fadeOutUnsafe()
                 adapter.clear()
             }
+
             is Success -> {
                 binding.progress.fadeOutUnsafe()
                 binding.errorText.fadeOutUnsafe()

@@ -7,6 +7,7 @@ package me.zhanghai.android.files.storage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import java.io.IOException
 import java8.nio.file.Path
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,6 @@ import me.zhanghai.android.files.provider.common.size
 import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.isFinished
 import me.zhanghai.android.files.util.isReady
-import java.io.IOException
 
 class EditSftpServerViewModel : ViewModel() {
     private val _readPrivateKeyFileState =

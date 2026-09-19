@@ -50,6 +50,7 @@ import me.zhanghai.android.files.provider.common.toOpenOptions
 import me.zhanghai.android.files.provider.webdav.client.Authority
 import me.zhanghai.android.files.provider.webdav.client.Client
 import me.zhanghai.android.files.provider.webdav.client.Protocol
+import me.zhanghai.android.files.provider.webdav.client.isDirectory
 import me.zhanghai.android.files.provider.webdav.client.isSymbolicLink
 
 object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
@@ -310,7 +311,10 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
     override fun delete(path: Path) {
         path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
         try {
-            client.delete(path)
+            // A collection must be addressed with a trailing slash (nginx insists), so find out
+            // what this is first; a directory listing that just happened makes this a cache hit.
+            val isCollection = client.findProperties(path, true).isDirectory
+            client.delete(path, isCollection)
         } catch (e: DavException) {
             throw e.toFileSystemException(path.toString())
         }

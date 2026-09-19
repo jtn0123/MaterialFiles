@@ -46,7 +46,9 @@ class FilePropertiesChecksumTabFragment : FilePropertiesTabFragment() {
         val binding = getScrapItemBinding(FilePropertiesChecksumCompareItemBinding::class.java)
             ?.also { addView(it) }
             ?: FilePropertiesChecksumCompareItemBinding.inflate(
-                linearLayout.context.layoutInflater, linearLayout, true
+                linearLayout.context.layoutInflater,
+                linearLayout,
+                true
             )
                 .also { it.root.tag = it }
         binding.compareEdit.doAfterTextChanged { editable ->

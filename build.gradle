@@ -21,6 +21,7 @@ buildscript {
 }
 
 plugins {
+    alias(libs.plugins.sonarqube)
     alias(libs.plugins.ktlint) apply false
 }
 
@@ -33,4 +34,55 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+sonar {
+    properties {
+        property 'sonar.projectKey', 'jtn0123_MaterialFiles'
+        property 'sonar.projectName', 'MaterialFiles'
+        property 'sonar.organization', 'jtn0123ismysonar'
+        property 'sonar.host.url', 'https://sonarcloud.io'
+        // Keep native C analysis when switching away from automatic analysis.
+        property 'sonar.cfamily.compile-commands',
+            "${rootDir}/app/.cxx/tools/debug/arm64-v8a/compile_commands.json"
+        // CI downloads the independently generated unit and device XML reports here.
+        property 'sonar.coverage.jacoco.xmlReportPaths',
+            "${rootDir}/coverage/**/*.xml"
+        // Findings reviewed and accepted, each limited to the rule and the files it was raised in
+        // (as patterns, since paths are relative to the module in a multi-module analysis).
+        def ignoredIssues = [
+            // Browsing external storage is what a file manager is for; these name its standard
+            // folders (the default one, Downloads, Pictures, Screenshots).
+            externalStorage: ['kotlin:S5324', [
+                '**/src/main/java/me/zhanghai/android/files/filelist/FileListPick.kt',
+                '**/src/main/java/me/zhanghai/android/files/navigation/NavigationItems.kt',
+                '**/src/main/java/me/zhanghai/android/files/settings/Settings.kt',
+                '**/src/main/java/me/zhanghai/android/files/viewer/saveas/SaveAsActivity.kt'
+            ]],
+            // WebDAV, CalDAV and CardDAV XML namespace names, which are identifiers and never
+            // fetched.
+            xmlNamespaces: ['kotlin:S5332', [
+                '**/src/main/kotlin/at/bitfire/dav4jvm/XmlUtils.kt',
+                '**/src/main/kotlin/at/bitfire/dav4jvm/property/caldav/namespace.kt'
+            ]],
+            // The Shizuku provider only hands the Shizuku app its binder, and Shizuku requires
+            // this one system permission for it.
+            shizukuProvider: ['xml:S6361', ['**/src/main/AndroidManifest.xml']],
+            // WebView debugging is only turned on when BuildConfig.DEBUG.
+            debugWebView: ['kotlin:S4507', [
+                '**/src/main/java/me/zhanghai/android/files/app/AppInitializers.kt'
+            ]]
+        ]
+        def criteria = ignoredIssues.collectMany { name, ruleAndFiles ->
+            def (rule, files) = ruleAndFiles
+            files.withIndex().collect { file, index ->
+                ["${name}${index}", rule, file]
+            }
+        }
+        property 'sonar.issue.ignore.multicriteria', criteria.collect { it[0] }.join(',')
+        criteria.each { key, rule, file ->
+            property "sonar.issue.ignore.multicriteria.${key}.ruleKey", rule
+            property "sonar.issue.ignore.multicriteria.${key}.resourceKey", file
+        }
+    }
 }

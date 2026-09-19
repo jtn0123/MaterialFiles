@@ -6,182 +6,138 @@
 package me.zhanghai.android.files.provider.ftp
 
 import java.io.IOException
-import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.NoSuchFileException
-import java8.nio.file.StandardCopyOption
+import me.zhanghai.android.files.provider.common.AbstractCopyMove
 import me.zhanghai.android.files.provider.common.CopyOptions
 import me.zhanghai.android.files.provider.common.copyTo
+import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.ftp.client.Client
+import me.zhanghai.android.files.util.logWarning
+import org.apache.commons.net.ftp.FTPFile
 
-internal object FtpCopyMove {
-    @Throws(IOException::class)
-    fun copy(source: FtpPath, target: FtpPath, copyOptions: CopyOptions) {
-        if (copyOptions.atomicMove) {
-            throw UnsupportedOperationException(StandardCopyOption.ATOMIC_MOVE.toString())
-        }
-        val sourceFile = try {
-            client.listFile(source, copyOptions.noFollowLinks)
+internal object FtpCopyMove : AbstractCopyMove<FtpPath, FTPFile>() {
+    override fun readAttributes(path: FtpPath, noFollowLinks: Boolean): FTPFile = try {
+        client.listFile(path, noFollowLinks)
+    } catch (e: IOException) {
+        throw e.toFileSystemExceptionForFtp(path.toString())
+    }
+
+    override fun readAttributesOrNull(path: FtpPath): FTPFile? = try {
+        client.listFileOrNull(path, true)
+    } catch (e: IOException) {
+        throw e.toFileSystemExceptionForFtp(path.toString())
+    }
+
+    override fun isSameFile(
+        source: FtpPath,
+        sourceAttributes: FTPFile,
+        target: FtpPath,
+        targetAttributes: FTPFile
+    ): Boolean = source == target
+
+    override fun getFileType(attributes: FTPFile): FileType = when {
+        attributes.isDirectory -> FileType.DIRECTORY
+        attributes.isSymbolicLink -> FileType.SYMBOLIC_LINK
+        else -> FileType.REGULAR_FILE
+    }
+
+    override fun getSize(attributes: FTPFile): Long = attributes.size
+
+    override fun copyRegularFile(
+        source: FtpPath,
+        sourceAttributes: FTPFile,
+        target: FtpPath,
+        copyOptions: CopyOptions
+    ) {
+        val sourceInputStream = try {
+            client.retrieveFile(source)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(source.toString())
         }
-        val targetFile = try {
-            client.listFileOrNull(target, true)
-        } catch (e: IOException) {
-            throw e.toFileSystemExceptionForFtp(target.toString())
-        }
-        val sourceSize = sourceFile.size
-        if (targetFile != null) {
-            if (source == target) {
-                copyOptions.progressListener?.invoke(sourceSize)
-                return
-            }
-            if (!copyOptions.replaceExisting) {
-                throw FileAlreadyExistsException(source.toString(), target.toString(), null)
-            }
-            try {
-                client.delete(target, targetFile.isDirectory)
+        try {
+            val targetOutputStream = try {
+                client.storeFile(target)
             } catch (e: IOException) {
                 throw e.toFileSystemExceptionForFtp(target.toString())
             }
-        }
-        when {
-            sourceFile.isDirectory -> {
+            try {
+                sourceInputStream.copyTo(
+                    targetOutputStream,
+                    copyOptions.progressIntervalMillis,
+                    copyOptions.progressListener
+                )
+            } finally {
                 try {
-                    client.createDirectory(target)
+                    targetOutputStream.close()
                 } catch (e: IOException) {
                     throw e.toFileSystemExceptionForFtp(target.toString())
                 }
-                copyOptions.progressListener?.invoke(sourceSize)
             }
-
-            sourceFile.isSymbolicLink ->
-                throw UnsupportedOperationException("Cannot copy symbolic links")
-
-            else -> {
-                val sourceInputStream = try {
-                    client.retrieveFile(source)
-                } catch (e: IOException) {
-                    throw e.toFileSystemExceptionForFtp(source.toString())
-                }
-                try {
-                    val targetOutputStream = try {
-                        client.storeFile(target)
-                    } catch (e: IOException) {
-                        throw e.toFileSystemExceptionForFtp(target.toString())
-                    }
-                    var successful = false
-                    try {
-                        sourceInputStream.copyTo(
-                            targetOutputStream,
-                            copyOptions.progressIntervalMillis,
-                            copyOptions.progressListener
-                        )
-                        successful = true
-                    } finally {
-                        try {
-                            targetOutputStream.close()
-                        } catch (e: IOException) {
-                            throw e.toFileSystemExceptionForFtp(target.toString())
-                        } finally {
-                            if (!successful) {
-                                try {
-                                    client.delete(target, sourceFile.isDirectory)
-                                } catch (e: IOException) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        }
-                    }
-                } finally {
-                    try {
-                        sourceInputStream.close()
-                    } catch (e: IOException) {
-                        throw e.toFileSystemExceptionForFtp(source.toString())
-                    }
-                }
-            }
-        }
-        // We don't take error when copying attribute fatal, so errors will only be logged from now
-        // on.
-        if (!sourceFile.isSymbolicLink) {
-            val timestamp = sourceFile.timestamp
-            if (timestamp != null) {
-                try {
-                    client.setLastModifiedTime(target, timestamp.toInstant())
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
+        } finally {
+            try {
+                sourceInputStream.close()
+            } catch (e: IOException) {
+                throw e.toFileSystemExceptionForFtp(source.toString())
             }
         }
     }
 
-    @Throws(IOException::class)
-    fun move(source: FtpPath, target: FtpPath, copyOptions: CopyOptions) {
-        val sourceFile = try {
-            client.listFile(source, copyOptions.noFollowLinks)
-        } catch (e: IOException) {
-            throw e.toFileSystemExceptionForFtp(source.toString())
-        }
-        val targetFile = try {
-            client.listFileOrNull(target, true)
+    override fun createDirectory(
+        target: FtpPath,
+        sourceAttributes: FTPFile,
+        copyOptions: CopyOptions
+    ) {
+        try {
+            client.createDirectory(target)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(target.toString())
         }
-        val sourceSize = sourceFile.size
-        if (targetFile != null) {
-            if (source == target) {
-                copyOptions.progressListener?.invoke(sourceSize)
-                return
-            }
-            if (!copyOptions.replaceExisting) {
-                throw FileAlreadyExistsException(source.toString(), target.toString(), null)
-            }
-            try {
-                client.delete(target, targetFile.isDirectory)
-            } catch (e: IOException) {
-                throw e.toFileSystemExceptionForFtp(target.toString())
+    }
+
+    override fun copySymbolicLink(
+        source: FtpPath,
+        sourceAttributes: FTPFile,
+        target: FtpPath,
+        copyOptions: CopyOptions
+    ): Unit = throw UnsupportedOperationException("Cannot copy symbolic links")
+
+    override fun delete(path: FtpPath) {
+        try {
+            client.delete(path)
+        } catch (e: IOException) {
+            val exception = e.toFileSystemExceptionForFtp(path.toString())
+            if (exception !is NoSuchFileException) {
+                throw exception
             }
         }
-        var renameSuccessful = false
+    }
+
+    override fun replacementSibling(target: FtpPath): FtpPath =
+        target.replacementSibling() as FtpPath
+
+    // Whether RNTO overwrites depends on the server, so a target being replaced goes first.
+    override fun rename(source: FtpPath, target: FtpPath, replaceExisting: Boolean) {
+        if (replaceExisting) {
+            delete(target)
+        }
         try {
             client.renameFile(source, target)
-            renameSuccessful = true
         } catch (e: IOException) {
-            if (copyOptions.atomicMove) {
-                throw e.toFileSystemExceptionForFtp(source.toString(), target.toString())
-            }
-            // Ignored.
+            throw e.toFileSystemExceptionForFtp(source.toString(), target.toString())
         }
-        if (renameSuccessful) {
-            copyOptions.progressListener?.invoke(sourceSize)
-            return
-        }
-        if (copyOptions.atomicMove) {
-            throw AssertionError()
-        }
-        var copyOptions = copyOptions
-        if (!copyOptions.copyAttributes || !copyOptions.noFollowLinks) {
-            copyOptions = CopyOptions(
-                copyOptions.replaceExisting,
-                true,
-                false,
-                true,
-                copyOptions.progressIntervalMillis,
-                copyOptions.progressListener
-            )
-        }
-        copy(source, target, copyOptions)
+    }
+
+    override fun copyAttributes(
+        source: FtpPath,
+        sourceAttributes: FTPFile,
+        target: FtpPath,
+        copyOptions: CopyOptions
+    ) {
+        val timestamp = sourceAttributes.timestamp ?: return
         try {
-            client.delete(source, sourceFile.isDirectory)
+            client.setLastModifiedTime(target, timestamp.toInstant())
         } catch (e: IOException) {
-            if (e.toFileSystemExceptionForFtp(source.toString()) !is NoSuchFileException) {
-                try {
-                    client.delete(target, sourceFile.isDirectory)
-                } catch (e2: IOException) {
-                    e.addSuppressed(e2.toFileSystemExceptionForFtp(target.toString()))
-                }
-            }
-            throw e.toFileSystemExceptionForFtp(source.toString())
+            e.logWarning("FtpCopyMove", "copyAttributes($source)")
         }
     }
 }

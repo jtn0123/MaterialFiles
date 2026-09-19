@@ -51,6 +51,36 @@ internal class FileListNavigation(private val fragment: FileListFragment) {
         navigateToRoot(Settings.FILE_LIST_DEFAULT_DIRECTORY.valueCompat)
     }
 
+    /** The location to reopen on a plain launcher start, if the user wants that. */
+    val lastLocation: FileListLastLocation?
+        get() =
+            if (Settings.FILE_LIST_REMEMBER_LAST_DIRECTORY.valueCompat) {
+                Settings.FILE_LIST_LAST_LOCATION.valueCompat
+            } else {
+                null
+            }
+
+    /** @param withState whether the list currently shows [FileListViewModel.currentPath] */
+    fun createLocation(withState: Boolean): FileListLastLocation {
+        // While searching the list shows search results, whose scroll position is meaningless
+        // for the folder itself.
+        val state = if (withState && !viewModel.searchState.isSearching) {
+            fragment.layoutManager.onSaveInstanceState()
+        } else {
+            null
+        }
+        return FileListLastLocation(viewModel.currentPath, state)
+    }
+
+    fun saveLastLocation(withState: Boolean) {
+        if (!viewModel.remembersLastLocation || !viewModel.hasTrail ||
+            !Settings.FILE_LIST_REMEMBER_LAST_DIRECTORY.valueCompat
+        ) {
+            return
+        }
+        Settings.FILE_LIST_LAST_LOCATION.putValue(createLocation(withState))
+    }
+
     fun closeNavigationDrawer() {
         fragment.binding.drawerLayout?.closeDrawer(GravityCompat.START)
     }

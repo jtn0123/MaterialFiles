@@ -12,6 +12,8 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
+import java.io.File
+import java.io.IOException
 import java8.nio.channels.FileChannel
 import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.app.contentResolver
@@ -19,8 +21,7 @@ import me.zhanghai.android.files.hiddenapi.RestrictedHiddenApi
 import me.zhanghai.android.files.provider.common.DelegateFileChannel
 import me.zhanghai.android.files.provider.root.isRunningAsRoot
 import me.zhanghai.android.files.util.lazyReflectedMethod
-import java.io.File
-import java.io.IOException
+import me.zhanghai.android.files.util.logWarning
 
 /*
  * @see com.android.internal.content.FileSystemProvider
@@ -56,7 +57,7 @@ object MediaScanner {
             try {
                 deleteMediaStoreEntrySync(file)
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.logWarning("MediaScanner", "deleteMediaStoreEntryAsync($file)")
             }
         }
     }
@@ -64,7 +65,9 @@ object MediaScanner {
     @RestrictedHiddenApi
     @get:RequiresApi(Build.VERSION_CODES.Q)
     private val mediaStoreGetVolumeName by lazyReflectedMethod(
-        MediaStore::class.java, "getVolumeName", File::class.java
+        MediaStore::class.java,
+        "getVolumeName",
+        File::class.java
     )
 
     // @see com.android.providers.media.scan.ModernMediaScanner.reconcileAndClean
@@ -79,6 +82,7 @@ object MediaScanner {
             .appendQueryParameter("includePending", "1")
             .appendQueryParameter("deletedata", "false")
             .build()
+
         @Suppress("DEPRECATION")
         val where = "ifnull(format, ${MtpConstants.FORMAT_UNDEFINED}) != ${
             MtpConstants.FORMAT_ABSTRACT_AV_PLAYLIST} AND ${MediaStore.Files.FileColumns.DATA} = ?"

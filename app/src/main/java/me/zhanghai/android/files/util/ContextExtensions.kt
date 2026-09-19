@@ -113,8 +113,7 @@ fun Context.getBooleanByAttr(@AttrRes attr: Int): Boolean =
     obtainStyledAttributesCompat(attrs = intArrayOf(attr)).use { it.getBoolean(0, false) }
 
 @ColorInt
-fun Context.getColorByAttr(@AttrRes attr: Int): Int =
-    getColorStateListByAttr(attr).defaultColor
+fun Context.getColorByAttr(@AttrRes attr: Int): Int = getColorStateListByAttr(attr).defaultColor
 
 @SuppressLint("RestrictedApi")
 fun Context.getColorStateListByAttr(@AttrRes attr: Int): ColorStateList =

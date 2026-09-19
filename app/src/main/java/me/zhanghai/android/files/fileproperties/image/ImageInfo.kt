@@ -8,10 +8,7 @@ package me.zhanghai.android.files.fileproperties.image
 import android.util.Size
 import java.time.Instant
 
-class ImageInfo(
-    val dimensions: Size?,
-    val exifInfo: ExifInfo?
-)
+class ImageInfo(val dimensions: Size?, val exifInfo: ExifInfo?)
 
 // @see com.android.documentsui.inspector.MediaView
 // @see https://github.com/GNOME/nautilus/blob/c73ad94a72f8e9a989b01858018de74182d17f0e/extensions/image-properties/nautilus-image-properties-page.c#L198

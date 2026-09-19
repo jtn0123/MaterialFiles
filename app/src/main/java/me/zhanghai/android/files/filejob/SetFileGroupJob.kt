@@ -16,6 +16,7 @@ import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.common.PosixGroup
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.setGroup
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class SetFileGroupJob(
@@ -90,7 +91,7 @@ private fun FileJob.setGroup(
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("SetFileGroupJob", "setGroup($path)")
             if (actionAllInfo.skipSetGroupError) {
                 recordSkippedError()
                 transferInfo.skipFileIgnoringSize()

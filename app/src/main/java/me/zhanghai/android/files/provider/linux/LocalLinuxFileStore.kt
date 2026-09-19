@@ -9,6 +9,7 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.system.OsConstants
 import android.system.StructStatVfs
+import java.io.IOException
 import java8.nio.file.attribute.FileAttributeView
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.ByteStringBuilder
@@ -22,10 +23,12 @@ import me.zhanghai.android.files.provider.linux.syscall.Syscall
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
 import me.zhanghai.android.files.util.andInv
 import me.zhanghai.android.files.util.hasBits
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.readParcelable
-import java.io.IOException
 
-internal class LocalLinuxFileStore : PosixFileStore, Parcelable {
+internal class LocalLinuxFileStore :
+    PosixFileStore,
+    Parcelable {
     private val path: LinuxPath
     private lateinit var mntent: StructMntent
 
@@ -165,12 +168,11 @@ internal class LocalLinuxFileStore : PosixFileStore, Parcelable {
     }
 
     @Throws(IOException::class)
-    private fun getStatVfs(): StructStatVfs =
-        try {
-            Syscall.statvfs(path.toByteString())
-        } catch (e: SyscallException) {
-            throw e.toFileSystemException(path.toString())
-        }
+    private fun getStatVfs(): StructStatVfs = try {
+        Syscall.statvfs(path.toByteString())
+    } catch (e: SyscallException) {
+        throw e.toFileSystemException(path.toString())
+    }
 
     override fun supportsFileAttributeView(type: Class<out FileAttributeView>): Boolean =
         LinuxFileSystemProvider.supportsFileAttributeView(type)
@@ -197,6 +199,7 @@ internal class LocalLinuxFileStore : PosixFileStore, Parcelable {
 
         private val OPTIONS_DELIMITER = ",".toByteString()
         private val OPTION_RO = "ro".toByteString()
+
         // @see https://android.googlesource.com/platform/system/core/+/master/fs_mgr/fs_mgr_fstab.cpp
         //      kMountFlagsList
         // @see https://github.com/mmalecki/util-linux/blob/master/mount-deprecated/mount.c opt_map
@@ -264,7 +267,7 @@ internal class LocalLinuxFileStore : PosixFileStore, Parcelable {
             val entries = try {
                 getMountEntries()
             } catch (e: SyscallException) {
-                e.printStackTrace()
+                e.logWarning("LocalLinuxFileStore", "getFileStores")
                 return emptyList()
             }
             return entries.map { LocalLinuxFileStore(fileSystem, it) }

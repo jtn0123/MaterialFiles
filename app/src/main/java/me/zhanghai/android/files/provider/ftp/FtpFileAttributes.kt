@@ -22,7 +22,7 @@ internal data class FtpFileAttributes(
     override val creationTime: @WriteWith<FileTimeParceler> FileTime,
     override val type: BasicFileType,
     override val size: Long,
-    override val fileKey: Parcelable,
+    override val fileKey: Parcelable
 ) : AbstractBasicFileAttributes() {
     companion object {
         fun from(file: FTPFile, path: FtpPath): FtpFileAttributes {
@@ -38,7 +38,12 @@ internal data class FtpFileAttributes(
             val size = file.size.let { if (it != -1L) it else 0 }
             val fileKey = path
             return FtpFileAttributes(
-                lastModifiedTime, lastAccessTime, creationTime, type, size, fileKey
+                lastModifiedTime,
+                lastAccessTime,
+                creationTime,
+                type,
+                size,
+                fileKey
             )
         }
     }

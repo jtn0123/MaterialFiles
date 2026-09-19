@@ -29,25 +29,21 @@ sealed class DeviceStorage : Storage() {
 
     abstract override val linuxPath: String
 
-    override fun createEditIntent(): Intent =
-        EditDeviceStorageDialogActivity::class.createIntent()
-            .putArgs(EditDeviceStorageDialogFragment.Args(this))
+    override fun createEditIntent(): Intent = EditDeviceStorageDialogActivity::class.createIntent()
+        .putArgs(EditDeviceStorageDialogFragment.Args(this))
 
     fun copy_(
         customName: String? = this.customName,
         isVisible: Boolean = this.isVisible
-    ): DeviceStorage =
-        when (this) {
-            is FileSystemRoot -> copy(customName, isVisible)
-            is PrimaryStorageVolume -> copy(customName, isVisible)
-        }
+    ): DeviceStorage = when (this) {
+        is FileSystemRoot -> copy(customName, isVisible)
+        is PrimaryStorageVolume -> copy(customName, isVisible)
+    }
 }
 
 @Parcelize
-data class FileSystemRoot(
-    override val customName: String?,
-    override val isVisible: Boolean
-) : DeviceStorage() {
+data class FileSystemRoot(override val customName: String?, override val isVisible: Boolean) :
+    DeviceStorage() {
     override val id: Long
         get() = "FileSystemRoot".hashCode().toLong()
 
@@ -67,10 +63,8 @@ data class FileSystemRoot(
 }
 
 @Parcelize
-data class PrimaryStorageVolume(
-    override val customName: String?,
-    override val isVisible: Boolean
-) : DeviceStorage() {
+data class PrimaryStorageVolume(override val customName: String?, override val isVisible: Boolean) :
+    DeviceStorage() {
     override val id: Long
         get() = "PrimaryStorageVolume".hashCode().toLong()
 

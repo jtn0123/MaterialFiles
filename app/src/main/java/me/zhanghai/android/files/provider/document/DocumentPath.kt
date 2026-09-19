@@ -9,6 +9,8 @@ import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
 import android.provider.DocumentsContract
+import java.io.File
+import java.io.IOException
 import java8.nio.file.FileSystem
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
@@ -20,15 +22,16 @@ import me.zhanghai.android.files.provider.common.ByteStringListPath
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
 import me.zhanghai.android.files.util.readParcelable
-import java.io.File
-import java.io.IOException
 
 /** @see DocumentsContract.Path */
-internal class DocumentPath : ByteStringListPath<DocumentPath>, DocumentResolver.Path {
+internal class DocumentPath :
+    ByteStringListPath<DocumentPath>,
+    DocumentResolver.Path {
     private val fileSystem: DocumentFileSystem
 
     constructor(fileSystem: DocumentFileSystem, path: ByteString) : super(
-        DocumentFileSystem.SEPARATOR, path
+        DocumentFileSystem.SEPARATOR,
+        path
     ) {
         this.fileSystem = fileSystem
     }
@@ -65,22 +68,17 @@ internal class DocumentPath : ByteStringListPath<DocumentPath>, DocumentResolver
     override fun getRoot(): DocumentPath? = if (isAbsolute) fileSystem.rootDirectory else null
 
     @Throws(IOException::class)
-    override fun toRealPath(vararg options: LinkOption): DocumentPath {
+    override fun toRealPath(vararg options: LinkOption): DocumentPath =
         throw UnsupportedOperationException()
-    }
 
-    override fun toFile(): File {
-        throw UnsupportedOperationException()
-    }
+    override fun toFile(): File = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun register(
         watcher: WatchService,
         events: Array<WatchEvent.Kind<*>>,
         vararg modifiers: WatchEvent.Modifier
-    ): WatchKey {
-        throw UnsupportedOperationException()
-    }
+    ): WatchKey = throw UnsupportedOperationException()
 
     override val treeUri: Uri
         get() = fileSystem.treeUri

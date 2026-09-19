@@ -1,11 +1,11 @@
 package me.zhanghai.android.files.provider.ftp.client
 
-import org.apache.commons.net.ftp.FTPClient
-import org.apache.commons.net.ftp.FTPCmd
-import org.apache.commons.net.ftp.FTPFile
 import java.io.File
 import java.io.IOException
 import java.util.Calendar
+import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.FTPCmd
+import org.apache.commons.net.ftp.FTPFile
 
 private val DUMMY_ROOT_FTP_FILE = FTPFile().apply {
     rawListing = "Type=dir;Size=4096;Modify=19700101000000;Perm=cdeflmp; /"

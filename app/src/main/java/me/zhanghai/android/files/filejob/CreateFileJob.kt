@@ -12,6 +12,7 @@ import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.createDirectory
 import me.zhanghai.android.files.provider.common.createFile
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class CreateFileJob(private val path: Path, private val createDirectory: Boolean) : FileJob() {
@@ -35,7 +36,7 @@ private fun FileJob.create(path: Path, createDirectory: Boolean) {
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("CreateFileJob", "create($path)")
             if (e is UserActionRequiredException) {
                 val result = showUserAction(e)
                 if (result) {

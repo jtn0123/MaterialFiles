@@ -7,6 +7,7 @@ package me.zhanghai.android.files.storage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import java.nio.charset.Charset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +17,6 @@ import me.zhanghai.android.files.provider.common.newDirectoryStream
 import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.isFinished
 import me.zhanghai.android.files.util.isReady
-import java.nio.charset.Charset
 
 class EditFtpServerViewModel : ViewModel() {
     val charsets = Charset.availableCharsets().values.toList()

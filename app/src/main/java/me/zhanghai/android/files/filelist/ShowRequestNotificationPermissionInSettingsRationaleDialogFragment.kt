@@ -14,12 +14,13 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.util.show
 
-class ShowRequestNotificationPermissionInSettingsRationaleDialogFragment : AppCompatDialogFragment() {
+class ShowRequestNotificationPermissionInSettingsRationaleDialogFragment :
+    AppCompatDialogFragment() {
     private val listener: Listener
         get() = requireParentFragment() as Listener
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext(), theme)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext(), theme)
             .setMessage(R.string.notification_permission_permanently_denied_message)
             .setPositiveButton(R.string.open_settings) { _, _ ->
                 listener.onShowRequestNotificationPermissionInSettingsRationaleResult(true)
@@ -28,7 +29,6 @@ class ShowRequestNotificationPermissionInSettingsRationaleDialogFragment : AppCo
                 listener.onShowRequestNotificationPermissionInSettingsRationaleResult(false)
             }
             .create()
-    }
 
     override fun onCancel(dialog: DialogInterface) {
         super.onCancel(dialog)

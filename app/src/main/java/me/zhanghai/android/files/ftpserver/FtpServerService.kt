@@ -111,9 +111,10 @@ class FtpServerService : Service() {
             }
         }
         val port = Settings.FTP_SERVER_PORT.valueCompat
+        val passivePorts = Settings.FTP_SERVER_PASSIVE_PORTS.valueCompat
         val homeDirectory = Settings.FTP_SERVER_HOME_DIRECTORY.valueCompat
         val writable = Settings.FTP_SERVER_WRITABLE.valueCompat
-        val server = FtpServer(username, password, port, homeDirectory, writable)
+        val server = FtpServer(username, password, port, passivePorts, homeDirectory, writable)
         this.server = server
         try {
             server.start()

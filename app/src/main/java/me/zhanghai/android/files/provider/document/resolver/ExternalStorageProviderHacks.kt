@@ -22,19 +22,23 @@ object ExternalStorageProviderHacks {
     private const val DOCUMENT_ID_PRIMARY_ANDROID_OBB = "primary:Android/obb"
 
     private val TREE_URI_PRIMARY_ANDROID = DocumentsContract.buildTreeDocumentUri(
-        DocumentsContractCompat.EXTERNAL_STORAGE_PROVIDER_AUTHORITY, DOCUMENT_ID_PRIMARY
+        DocumentsContractCompat.EXTERNAL_STORAGE_PROVIDER_AUTHORITY,
+        DOCUMENT_ID_PRIMARY
     )
     val DOCUMENT_URI_ANDROID_DATA = DocumentsContract.buildDocumentUriUsingTree(
-        TREE_URI_PRIMARY_ANDROID, DOCUMENT_ID_PRIMARY_ANDROID_DATA
+        TREE_URI_PRIMARY_ANDROID,
+        DOCUMENT_ID_PRIMARY_ANDROID_DATA
     )
     val DOCUMENT_URI_ANDROID_OBB = DocumentsContract.buildDocumentUriUsingTree(
-        TREE_URI_PRIMARY_ANDROID, DOCUMENT_ID_PRIMARY_ANDROID_OBB
+        TREE_URI_PRIMARY_ANDROID,
+        DOCUMENT_ID_PRIMARY_ANDROID_OBB
     )
 
     fun transformQueryResult(uri: Uri, cursor: Cursor): Cursor {
-        if (uri.authority == DocumentsContractCompat.EXTERNAL_STORAGE_PROVIDER_AUTHORITY
-            && DocumentsContractCompat.isChildDocumentsUri(uri)
-            && DocumentsContract.getDocumentId(uri) == DOCUMENT_ID_PRIMARY_ANDROID) {
+        if (uri.authority == DocumentsContractCompat.EXTERNAL_STORAGE_PROVIDER_AUTHORITY &&
+            DocumentsContractCompat.isChildDocumentsUri(uri) &&
+            DocumentsContract.getDocumentId(uri) == DOCUMENT_ID_PRIMARY_ANDROID
+        ) {
             var hasDataRow = false
             var hasObbRow = false
             try {
@@ -56,13 +60,15 @@ object ExternalStorageProviderHacks {
             val cursors = mutableListOf(cursor)
             if (!hasDataRow) {
                 val androidDataUri = DocumentsContract.buildDocumentUriUsingTree(
-                    uri, DOCUMENT_ID_PRIMARY_ANDROID_DATA
+                    uri,
+                    DOCUMENT_ID_PRIMARY_ANDROID_DATA
                 )
                 cursors += DocumentResolver.query(androidDataUri, null, null)
             }
             if (!hasObbRow) {
                 val androidObbUri = DocumentsContract.buildDocumentUriUsingTree(
-                    uri, DOCUMENT_ID_PRIMARY_ANDROID_OBB
+                    uri,
+                    DOCUMENT_ID_PRIMARY_ANDROID_OBB
                 )
                 cursors += DocumentResolver.query(androidObbUri, null, null)
             }

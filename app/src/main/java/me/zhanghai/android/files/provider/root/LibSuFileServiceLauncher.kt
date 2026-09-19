@@ -13,6 +13,10 @@ import android.os.IBinder
 import com.topjohnwu.superuser.NoShellException
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ipc.RootService
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
@@ -23,10 +27,6 @@ import me.zhanghai.android.files.provider.remote.IRemoteFileService
 import me.zhanghai.android.files.provider.remote.RemoteFileServiceInterface
 import me.zhanghai.android.files.provider.remote.RemoteFileSystemException
 import me.zhanghai.android.files.util.createIntent
-import java.io.IOException
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 object LibSuFileServiceLauncher {
     private val lock = Any()
@@ -41,8 +41,7 @@ object LibSuFileServiceLauncher {
         )
     }
 
-    fun isSuAvailable(): Boolean =
-        // @see com.topjohnwu.superuser.Shell.rootAccess
+    fun isSuAvailable(): Boolean = // @see com.topjohnwu.superuser.Shell.rootAccess
         try {
             Runtime.getRuntime().exec("su --version")
             true

@@ -8,12 +8,15 @@ package me.zhanghai.android.files.provider.common
 import java.io.Closeable
 import java.io.IOException
 import java.io.InterruptedIOException
+import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import java.nio.channels.ClosedChannelException
 import java.nio.channels.NonReadableChannelException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java8.nio.channels.SeekableByteChannel
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -36,11 +39,16 @@ import me.zhanghai.android.files.util.closeSafe
  * is refused. [position], [size] and [truncate] are bookkept locally; subclasses implement
  * [onSize] and [onTruncate] against the server. All I/O is serialised on one lock, so one channel
  * is safe to share between threads but never concurrent.
+ *
+ * A read that has not completed within [readTimeoutMillis] of being waited for fails with a
+ * [SocketTimeoutException] and is abandoned (cancelled too, if [shouldCancelRead]); a later read
+ * asks again at the same position.
  */
 abstract class AbstractFileByteChannel(
     private val isAppend: Boolean,
     private val shouldCancelRead: Boolean = true,
-    private val joinCancelledRead: Boolean = false
+    private val joinCancelledRead: Boolean = false,
+    private val readTimeoutMillis: Long = READ_TIMEOUT_MILLIS
 ) : ForceableChannel,
     SeekableByteChannel {
     private var position = 0L
@@ -218,6 +226,11 @@ abstract class AbstractFileByteChannel(
         private var pendingRead: Future<ByteBuffer>? = null
         private val pendingReadLock = Any()
 
+        // Many readers only want what is at the start of a file (its type, its metadata, an
+        // embedded thumbnail), so the first read is small and nothing is read ahead until a
+        // second one shows that the file is being read through.
+        private var isFirstRead = true
+
         @Throws(IOException::class)
         fun read(destination: ByteBuffer): Int {
             if (!buffer.hasRemaining()) {
@@ -236,11 +249,18 @@ abstract class AbstractFileByteChannel(
 
         @Throws(IOException::class)
         private fun readIntoBuffer() {
+            val isFirstRead = isFirstRead
             val future = synchronized(pendingReadLock) {
                 pendingRead?.also { pendingRead = null }
-            } ?: readIntoBufferAsync()
+            } ?: readIntoBufferAsync(if (isFirstRead) FIRST_READ_SIZE else BUFFER_SIZE)
             val newBuffer = try {
-                future.get()
+                // Not every protocol's future honours the timeout it was given (SMBJ's async read
+                // bypasses its own), and a connection that died silently never answers.
+                future.get(readTimeoutMillis, TimeUnit.MILLISECONDS)
+            } catch (e: TimeoutException) {
+                abandonRead(future)
+                throw SocketTimeoutException("Read timed out after $readTimeoutMillis ms")
+                    .apply { initCause(e) }
             } catch (e: CancellationException) {
                 throw InterruptedIOException().apply { initCause(e) }
             } catch (e: InterruptedException) {
@@ -253,6 +273,8 @@ abstract class AbstractFileByteChannel(
                     throw IOException(exception)
                 }
             }
+            // Only now, so that a retry after a failed first read is still a small one.
+            this.isFirstRead = false
             buffer.clear()
             buffer.put(newBuffer)
             buffer.flip()
@@ -260,13 +282,16 @@ abstract class AbstractFileByteChannel(
                 return
             }
             bufferedPosition += buffer.remaining()
+            if (isFirstRead) {
+                return
+            }
             synchronized(pendingReadLock) {
-                pendingRead = readIntoBufferAsync()
+                pendingRead = readIntoBufferAsync(BUFFER_SIZE)
             }
         }
 
-        private fun readIntoBufferAsync(): Future<ByteBuffer> =
-            onReadAsync(bufferedPosition, BUFFER_SIZE, TIMEOUT_MILLIS)
+        private fun readIntoBufferAsync(size: Int): Future<ByteBuffer> =
+            onReadAsync(bufferedPosition, size, readTimeoutMillis)
 
         fun reposition(oldPosition: Long, newPosition: Long) {
             if (newPosition == oldPosition) {
@@ -289,17 +314,21 @@ abstract class AbstractFileByteChannel(
         private fun cancelPendingRead() {
             synchronized(pendingReadLock) {
                 pendingRead?.let {
-                    if (shouldCancelRead) {
-                        it.cancel(true)
-                        if (joinCancelledRead) {
-                            try {
-                                it.get()
-                            } catch (e: Exception) {
-                                // Ignored
-                            }
-                        }
-                    }
+                    abandonRead(it)
                     pendingRead = null
+                }
+            }
+        }
+
+        private fun abandonRead(future: Future<ByteBuffer>) {
+            if (shouldCancelRead) {
+                future.cancel(true)
+                if (joinCancelledRead) {
+                    try {
+                        future.get(readTimeoutMillis, TimeUnit.MILLISECONDS)
+                    } catch (e: Exception) {
+                        // Ignored
+                    }
                 }
             }
         }
@@ -307,6 +336,7 @@ abstract class AbstractFileByteChannel(
 
     companion object {
         private const val BUFFER_SIZE = 1024 * 1024
-        private const val TIMEOUT_MILLIS = 15_000L
+        private const val FIRST_READ_SIZE = 128 * 1024
+        private const val READ_TIMEOUT_MILLIS = 15_000L
     }
 }

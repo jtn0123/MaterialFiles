@@ -6,16 +6,17 @@
 package me.zhanghai.android.files.provider.root
 
 import android.os.Parcelable
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.FileAttributeView
 import me.zhanghai.android.files.provider.common.PosixFileStore
-import java.io.IOException
 
 abstract class RootablePosixFileStore(
     private val path: Path,
     private val localFileStore: PosixFileStore,
     rootFileStoreCreator: (PosixFileStore) -> RootPosixFileStore
-) : PosixFileStore(), Parcelable {
+) : PosixFileStore(),
+    Parcelable {
     private val rootFileStore: RootPosixFileStore = rootFileStoreCreator(this)
 
     @Throws(IOException::class)

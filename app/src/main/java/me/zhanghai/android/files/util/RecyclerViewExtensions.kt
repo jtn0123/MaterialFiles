@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 inline fun RecyclerView.addOnScrollListener(
     crossinline onScrollStateChanged: (recyclerView: RecyclerView, newState: Int) -> Unit =
         { _, _ -> },
-    crossinline onScrolled: (recyclerView: RecyclerView, dx: Int, dy: Int) -> Unit = { _, _, _ -> },
+    crossinline onScrolled: (recyclerView: RecyclerView, dx: Int, dy: Int) -> Unit = { _, _, _ -> }
 ): RecyclerView.OnScrollListener {
     val listener = object : RecyclerView.OnScrollListener() {
         override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {

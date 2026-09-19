@@ -6,12 +6,12 @@
 package me.zhanghai.android.files.filelist
 
 import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-import me.zhanghai.android.files.provider.common.ByteStringBuilder
-import me.zhanghai.android.files.provider.common.toByteString
 import java.text.CollationKey
 import java.text.Collator
 import kotlin.math.min
+import kotlinx.parcelize.Parcelize
+import me.zhanghai.android.files.provider.common.ByteStringBuilder
+import me.zhanghai.android.files.provider.common.toByteString
 
 private val COLLATION_SENTINEL = byteArrayOf(1, 1, 1)
 
@@ -33,6 +33,7 @@ fun Collator.getCollationKeyForFileName(source: String): CollationKey {
                 result.append(COLLATION_SENTINEL).append(1)
                 previousIndex = index + 1
             }
+
             source[index].isAsciiDigit() -> {
                 if (previousIndex != index) {
                     val collationKey = getCollationKey(source.substring(previousIndex, index))
@@ -74,6 +75,7 @@ fun Collator.getCollationKeyForFileName(source: String): CollationKey {
                 previousIndex = index
                 --index
             }
+
             else -> {}
         }
         ++index
@@ -93,7 +95,8 @@ private class ByteArrayCollationKey(
     @Suppress("CanBeParameter")
     private val source: String,
     private val bytes: ByteArray
-) : CollationKey(source), Parcelable {
+) : CollationKey(source),
+    Parcelable {
     override fun compareTo(other: CollationKey): Int {
         other as ByteArrayCollationKey
         return bytes.unsignedCompareTo(other.bytes)

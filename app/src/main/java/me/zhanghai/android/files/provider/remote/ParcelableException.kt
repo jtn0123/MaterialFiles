@@ -7,8 +7,8 @@ package me.zhanghai.android.files.provider.remote
 
 import android.os.Parcel
 import android.os.Parcelable
-import me.zhanghai.android.files.compat.readSerializableCompat
 import java.io.IOException
+import me.zhanghai.android.files.compat.readSerializableCompat
 
 class ParcelableException() : Parcelable {
     var value: Exception? = null

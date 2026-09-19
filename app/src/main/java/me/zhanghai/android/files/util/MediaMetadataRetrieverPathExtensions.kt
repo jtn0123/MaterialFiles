@@ -9,15 +9,16 @@ import android.media.MediaDataSource
 import android.media.MediaMetadataRetriever
 import android.os.Build
 import androidx.annotation.RequiresApi
+import java.io.Closeable
+import java.io.IOException
+import java.nio.ByteBuffer
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.Path
 import me.zhanghai.android.files.provider.common.newByteChannel
 import me.zhanghai.android.files.provider.document.isDocumentPath
-import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
+import me.zhanghai.android.files.provider.document.openDocumentParcelFileDescriptor
 import me.zhanghai.android.files.provider.ftp.isFtpPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
-import java.io.IOException
-import java.nio.ByteBuffer
 
 val Path.isMediaMetadataRetrieverCompatible: Boolean
     get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -27,19 +28,33 @@ val Path.isMediaMetadataRetrieverCompatible: Boolean
     }
 
 fun MediaMetadataRetriever.setDataSource(path: Path) {
+    setDataSource(path) {}
+}
+
+/**
+ * @param onChannelOpened receives the channel the retriever reads a non-local file through, before
+ * any blocking read of it. Closing that channel from another thread makes the retriever fail at
+ * its next read, which is the only way to abandon a retriever that is reading from a server: its
+ * reads happen in native code that thread interruption does not reach.
+ */
+fun MediaMetadataRetriever.setDataSource(path: Path, onChannelOpened: (Closeable) -> Unit) {
     when {
         path.isLinuxPath -> setDataSource(path.toFile().path)
+
         path.isDocumentPath ->
-            DocumentResolver.openParcelFileDescriptor(path as DocumentResolver.Path, "r")
+            path.openDocumentParcelFileDescriptor("r")
                 .use { pfd -> setDataSource(pfd.fileDescriptor) }
+
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
             val channel = try {
                 path.newByteChannel()
             } catch (e: IOException) {
                 throw IllegalArgumentException(e)
             }
+            onChannelOpened(channel)
             setDataSource(PathMediaDataSource(channel))
         }
+
         else -> throw IllegalArgumentException(path.toString())
     }
 }
@@ -53,9 +68,7 @@ private class PathMediaDataSource(private val channel: SeekableByteChannel) : Me
     }
 
     @Throws(IOException::class)
-    override fun getSize(): Long {
-        return channel.size()
-    }
+    override fun getSize(): Long = channel.size()
 
     @Throws(IOException::class)
     override fun close() {

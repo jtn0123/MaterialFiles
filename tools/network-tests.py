@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import subprocess
+import sys
 import time
 import uuid
 
@@ -28,7 +29,7 @@ try:
             raise RuntimeError('SMB fixture did not become ready')
         time.sleep(0.5)
     address = subprocess.check_output(['docker', 'port', name, '445/tcp'], text=True).strip()
-    env = dict(os.environ, MATERIAL_SMB_PORT=address.rsplit(':', 1)[1])
-    subprocess.run([str(root / 'gradlew'), ':app:testDebugUnitTest'], cwd=root, env=env, check=True)
+    env = dict(os.environ, MATERIAL_SMB_PORT=address.rsplit(':', 1)[1], MATERIAL_SMB_CONTAINER=name)
+    subprocess.run([str(root / 'gradlew'), ':app:testDebugUnitTest', *sys.argv[1:]], cwd=root, env=env, check=True)
 finally:
     subprocess.run(['docker', 'rm', '-f', name], stdout=subprocess.DEVNULL, check=False)

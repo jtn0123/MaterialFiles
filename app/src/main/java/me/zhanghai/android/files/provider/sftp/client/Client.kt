@@ -6,11 +6,14 @@
 package me.zhanghai.android.files.provider.sftp.client
 
 import java.io.IOException
+import java.io.OutputStream
 import java.util.Collections
 import java.util.WeakHashMap
+import java.util.concurrent.ConcurrentHashMap
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.provider.common.LocalWatchService
+import me.zhanghai.android.files.provider.common.NotifyEntryModifiedOutputStream
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedSeekableByteChannel
 import me.zhanghai.android.files.util.closeSafe
 import net.schmizz.sshj.SSHClient
@@ -30,7 +33,11 @@ import net.schmizz.sshj.userauth.UserAuthException
  * provider; a test constructs its own with fakes.
  */
 class Client(internal val authenticator: Authenticator, internal val hostKeyStore: HostKeyStore) {
-    private val clients = mutableMapOf<Authority, SFTPClient>()
+    private val clients = ConcurrentHashMap<Authority, SFTPClient>()
+
+    // One lock per authority: connecting and authenticating to a host that does not answer
+    // takes until the timeout, and must not hold up the sessions to every other host.
+    private val clientLocks = ConcurrentHashMap<Authority, Any>()
 
     private val directoryFileAttributesCache =
         Collections.synchronizedMap(WeakHashMap<Path, FileAttributes>())
@@ -79,6 +86,23 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
         } catch (e: IOException) {
             throw ClientException(e)
         }
+    }
+
+    /**
+     * A write-only stream that pipelines its writes; use it instead of
+     * [openByteChannel]`.newOutputStream()` when the file is only written from start to end.
+     */
+    @Throws(ClientException::class)
+    fun openOutputStream(
+        path: Path,
+        flags: Set<OpenMode>,
+        attributes: FileAttributes
+    ): OutputStream {
+        val file = open(path, flags, attributes)
+        return NotifyEntryModifiedOutputStream(
+            PipelinedOutputStream(RemoteFileWriteTarget(file)),
+            path as Java8Path
+        )
     }
 
     @Throws(ClientException::class)
@@ -227,7 +251,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
 
     @Throws(ClientException::class)
     private fun getClient(authority: Authority): SFTPClient {
-        synchronized(clients) {
+        synchronized(clientLocks.getOrPut(authority) { Any() }) {
             var client = clients[authority]
             if (client != null) {
                 if (client.sftpEngine.subsystem.isOpen) {
@@ -241,6 +265,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
                 ?: throw ClientException("No authentication found for $authority")
             val hostKeyVerifier =
                 TrustOnFirstUseHostKeyVerifier(authority.host, authority.port, hostKeyStore)
+            SecurityProviderHelper.ensureInitialized()
             val sshClient = SSHClient().apply { addHostKeyVerifier(hostKeyVerifier) }
             try {
                 sshClient.connect(authority.host, authority.port)

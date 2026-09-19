@@ -8,7 +8,9 @@ package me.zhanghai.android.files.provider.common
 import android.os.Parcelable
 import java8.nio.file.attribute.FileTime
 
-abstract class AbstractPosixFileAttributes : Parcelable, PosixFileAttributes {
+abstract class AbstractPosixFileAttributes :
+    Parcelable,
+    PosixFileAttributes {
     protected abstract val lastModifiedTime: FileTime
     protected abstract val lastAccessTime: FileTime
     protected abstract val creationTime: FileTime

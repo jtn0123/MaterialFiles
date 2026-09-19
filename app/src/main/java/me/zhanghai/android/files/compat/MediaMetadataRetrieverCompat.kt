@@ -22,12 +22,11 @@ fun MediaMetadataRetriever.getFrameAtTimeCompat(
     timeUs: Long,
     option: Int,
     params: MediaMetadataRetriever.BitmapParams?
-): Bitmap? =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && params != null) {
-        getFrameAtTime(timeUs, option, params)
-    } else {
-        getFrameAtTime(timeUs, option)
-    }
+): Bitmap? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && params != null) {
+    getFrameAtTime(timeUs, option, params)
+} else {
+    getFrameAtTime(timeUs, option)
+}
 
 @RequiresApi(Build.VERSION_CODES.O_MR1)
 fun MediaMetadataRetriever.getScaledFrameAtTimeCompat(
@@ -36,12 +35,11 @@ fun MediaMetadataRetriever.getScaledFrameAtTimeCompat(
     dstWidth: Int,
     dstHeight: Int,
     params: MediaMetadataRetriever.BitmapParams?
-): Bitmap? =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && params != null) {
-        getScaledFrameAtTime(timeUs, option, dstWidth, dstHeight, params)
-    } else {
-        getScaledFrameAtTime(timeUs, option, dstWidth, dstHeight)
-    }
+): Bitmap? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && params != null) {
+    getScaledFrameAtTime(timeUs, option, dstWidth, dstHeight, params)
+} else {
+    getScaledFrameAtTime(timeUs, option, dstWidth, dstHeight)
+}
 
 @OptIn(ExperimentalContracts::class)
 inline fun <R> MediaMetadataRetriever.use(block: (MediaMetadataRetriever) -> R): R {

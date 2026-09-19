@@ -49,9 +49,8 @@ class AutoMirrorDrawable(drawable: Drawable) : DrawableWrapperCompat(drawable) {
     override fun getConstantState(): ConstantState? =
         drawable!!.constantState?.let { DelegateConstantState(it) }
 
-    private class DelegateConstantState(
-        private val constantState: ConstantState
-    ) : ConstantState() {
+    private class DelegateConstantState(private val constantState: ConstantState) :
+        ConstantState() {
         override fun newDrawable(): Drawable = AutoMirrorDrawable(constantState.newDrawable())
 
         override fun newDrawable(res: Resources?): Drawable =

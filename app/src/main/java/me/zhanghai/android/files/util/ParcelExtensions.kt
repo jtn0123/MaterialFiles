@@ -25,7 +25,8 @@ fun <E : Parcelable?, L : MutableList<E>> Parcel.readParcelableListCompat(list: 
 fun <T : Parcelable?> Parcel.readParcelableListCompat(): List<T> =
     readParcelableListCompat(mutableListOf())
 
-@Suppress("UNCHECKED_CAST") fun <T> Parcel.readValue(): T? = readValue(appClassLoader) as T?
+@Suppress("UNCHECKED_CAST")
+fun <T> Parcel.readValue(): T? = readValue(appClassLoader) as T?
 
 @OptIn(ExperimentalContracts::class)
 inline fun <R> Parcel.use(block: (Parcel) -> R): R {

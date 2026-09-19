@@ -8,3 +8,10 @@
 /signing.properties
 .DS_Store
 *.iml
+gradle/verification-metadata.dryrun.xml
+
+# Downloaded/generated JaCoCo reports consumed by SonarCloud.
+/coverage/
+
+# Python helper bytecode.
+__pycache__/

@@ -56,10 +56,12 @@ class TrailData private constructor(
         get() = trail[currentIndex]
 
     companion object {
-        fun of(path: Path): TrailData {
+        /** @param state the state to restore once [path] has loaded, if any */
+        fun of(path: Path, state: Parcelable? = null): TrailData {
             val trail: List<Path> = createTrail(path)
             val states = MutableList<Parcelable?>(trail.size) { null }
             val index = trail.size - 1
+            states[index] = state
             return TrailData(trail, states, index)
         }
 

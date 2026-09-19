@@ -30,7 +30,8 @@ import me.zhanghai.android.files.util.toBitmapDrawable
 /**
  * @see androidx.preference.PreferenceDialogFragmentCompat
  */
-abstract class MaterialPreferenceDialogFragmentCompat : AppCompatDialogFragment(),
+abstract class MaterialPreferenceDialogFragmentCompat :
+    AppCompatDialogFragment(),
     DialogInterface.OnClickListener {
 
     open val preference: DialogPreference by lazy {
@@ -46,6 +47,7 @@ abstract class MaterialPreferenceDialogFragmentCompat : AppCompatDialogFragment(
     private var positiveButtonText: CharSequence? = null
     private var negativeButtonText: CharSequence? = null
     private var dialogMessage: CharSequence? = null
+
     @LayoutRes
     private var dialogLayoutRes: Int = 0
     private var dialogIcon: BitmapDrawable? = null
@@ -79,7 +81,11 @@ abstract class MaterialPreferenceDialogFragmentCompat : AppCompatDialogFragment(
 
         outState.putState(
             State(
-                dialogTitle, positiveButtonText, negativeButtonText, dialogMessage, dialogLayoutRes,
+                dialogTitle,
+                positiveButtonText,
+                negativeButtonText,
+                dialogMessage,
+                dialogLayoutRes,
                 dialogIcon?.bitmap
             )
         )
@@ -186,7 +192,8 @@ abstract class MaterialPreferenceDialogFragmentCompat : AppCompatDialogFragment(
     abstract fun onDialogClosed(positiveResult: Boolean)
 
     companion object {
-        /*protected */const val ARG_KEY = "key"
+        /*protected */
+        const val ARG_KEY = "key"
     }
 
     @Parcelize

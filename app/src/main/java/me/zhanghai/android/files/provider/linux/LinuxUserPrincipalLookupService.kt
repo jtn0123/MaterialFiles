@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.linux
 
+import java.io.IOException
 import java8.nio.file.attribute.UserPrincipalLookupService
 import java8.nio.file.attribute.UserPrincipalNotFoundException
 import me.zhanghai.android.files.provider.common.ByteString
@@ -13,7 +14,6 @@ import me.zhanghai.android.files.provider.common.PosixUser
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.linux.syscall.Syscall
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
-import java.io.IOException
 
 internal object LinuxUserPrincipalLookupService : UserPrincipalLookupService() {
     @Throws(IOException::class)
@@ -31,12 +31,11 @@ internal object LinuxUserPrincipalLookupService : UserPrincipalLookupService() {
     }
 
     @Throws(IOException::class)
-    fun lookupPrincipalById(id: Int): PosixUser =
-        try {
-            getUserById(id)
-        } catch (e: SyscallException) {
-            throw e.toFileSystemException(null)
-        }
+    fun lookupPrincipalById(id: Int): PosixUser = try {
+        getUserById(id)
+    } catch (e: SyscallException) {
+        throw e.toFileSystemException(null)
+    }
 
     @Throws(SyscallException::class)
     fun getUserById(uid: Int): PosixUser {
@@ -59,12 +58,11 @@ internal object LinuxUserPrincipalLookupService : UserPrincipalLookupService() {
     }
 
     @Throws(IOException::class)
-    fun lookupPrincipalByGroupId(groupId: Int): PosixGroup =
-        try {
-            getGroupById(groupId)
-        } catch (e: SyscallException) {
-            throw e.toFileSystemException(null)
-        }
+    fun lookupPrincipalByGroupId(groupId: Int): PosixGroup = try {
+        getGroupById(groupId)
+    } catch (e: SyscallException) {
+        throw e.toFileSystemException(null)
+    }
 
     @Throws(SyscallException::class)
     fun getGroupById(gid: Int): PosixGroup {

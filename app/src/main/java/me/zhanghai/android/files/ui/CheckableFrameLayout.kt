@@ -12,8 +12,10 @@ import android.widget.FrameLayout
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
 
-class CheckableFrameLayout : FrameLayout, Checkable {
-    private var _isChecked = false
+class CheckableFrameLayout :
+    FrameLayout,
+    Checkable {
+    private var checkedState = false
         set(value) {
             if (field == value) {
                 return
@@ -27,7 +29,9 @@ class CheckableFrameLayout : FrameLayout, Checkable {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(
@@ -37,21 +41,21 @@ class CheckableFrameLayout : FrameLayout, Checkable {
         @StyleRes defStyleRes: Int
     ) : super(context, attrs, defStyleAttr, defStyleRes)
 
-    override fun isChecked(): Boolean = _isChecked
+    override fun isChecked(): Boolean = checkedState
 
     override fun setChecked(checked: Boolean) {
-        _isChecked = checked
+        checkedState = checked
         refreshDrawableState()
     }
 
     override fun toggle() {
-        _isChecked = !_isChecked
+        checkedState = !checkedState
         refreshDrawableState()
     }
 
     override fun onCreateDrawableState(extraSpace: Int): IntArray =
         super.onCreateDrawableState(extraSpace + 1).apply {
-            if (_isChecked) {
+            if (checkedState) {
                 mergeDrawableStates(this, CHECKED_STATE_SET)
             }
         }

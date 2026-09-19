@@ -5,11 +5,11 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.WatchEvent
 import java8.nio.file.WatchKey
 import java8.nio.file.WatchService
-import java.io.IOException
 
 abstract class AbstractPath<T : AbstractPath<T>> : CovariantPath<T> {
     override fun getFileName(): T? {
@@ -24,8 +24,7 @@ abstract class AbstractPath<T : AbstractPath<T>> : CovariantPath<T> {
     override fun resolve(other: String): T = resolve(fileSystem.getPath(other))
 
     @Suppress("UNCHECKED_CAST")
-    override fun resolveSibling(other: Path): T =
-        parent?.resolve(other) ?: other as T
+    override fun resolveSibling(other: Path): T = parent?.resolve(other) ?: other as T
 
     override fun resolveSibling(other: String): T = resolveSibling(fileSystem.getPath(other))
 

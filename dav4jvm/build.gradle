@@ -1,0 +1,42 @@
+/*
+ * The vendored dav4jvm library; see README.md in this directory.
+ */
+
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'jacoco'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+    }
+}
+
+dependencies {
+    api libs.okhttp
+    // The XmlPull API is part of the Android platform; only the JVM build and tests need the jar.
+    compileOnly libs.xpp3
+    testImplementation libs.xpp3
+    testImplementation libs.junit
+    testImplementation libs.okhttp.mockwebserver
+}
+
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+tasks.named('test') {
+    jacoco.enabled = providers.gradleProperty('coverage').orNull == 'true'
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn tasks.named('test')
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}

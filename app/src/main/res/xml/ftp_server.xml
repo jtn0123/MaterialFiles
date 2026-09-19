@@ -51,6 +51,13 @@
             android:defaultValue="@integer/pref_default_value_ftp_server_port"
             app:useSimpleSummaryProvider="true" />
 
+        <me.zhanghai.android.files.ftpserver.FtpServerPassivePortsPreference
+            android:key="@string/pref_key_ftp_server_passive_ports"
+            android:title="@string/ftp_server_passive_ports_title"
+            android:defaultValue="@string/pref_default_value_ftp_server_passive_ports"
+            android:dialogMessage="@string/ftp_server_passive_ports_dialog_message"
+            android:inputType="text" />
+
         <me.zhanghai.android.files.ftpserver.FtpServerHomeDirectoryPreference
             android:key="@string/pref_key_ftp_server_home_directory"
             android:title="@string/ftp_server_home_directory_title"

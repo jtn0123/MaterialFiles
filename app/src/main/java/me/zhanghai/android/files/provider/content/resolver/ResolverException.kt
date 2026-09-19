@@ -5,10 +5,10 @@
 
 package me.zhanghai.android.files.provider.content.resolver
 
+import java.io.FileNotFoundException
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
-import java.io.FileNotFoundException
 
 class ResolverException : Exception {
     constructor(message: String?) : super(message)

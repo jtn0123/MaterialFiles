@@ -59,9 +59,11 @@ class FilePropertiesVideoTabFragment : FilePropertiesTabFragment() {
             }
             if (videoInfo.dimensions != null) {
                 addItemView(
-                    R.string.file_properties_media_dimensions, getString(
+                    R.string.file_properties_media_dimensions,
+                    getString(
                         R.string.file_properties_media_dimensions_format,
-                        videoInfo.dimensions.width, videoInfo.dimensions.height
+                        videoInfo.dimensions.width,
+                        videoInfo.dimensions.height
                     )
                 )
             }
@@ -73,27 +75,33 @@ class FilePropertiesVideoTabFragment : FilePropertiesTabFragment() {
             }
             if (videoInfo.location != null) {
                 addItemView(
-                    R.string.file_properties_media_coordinates, getString(
-                        R.string.file_properties_media_coordinates_format, videoInfo.location.first,
+                    R.string.file_properties_media_coordinates,
+                    getString(
+                        R.string.file_properties_media_coordinates_format,
+                        videoInfo.location.first,
                         videoInfo.location.second
                     )
                 ) {
                     startActivitySafe(
                         Intent::class.createViewLocation(
-                            videoInfo.location.first, videoInfo.location.second, args.path.name
+                            videoInfo.location.first,
+                            videoInfo.location.second,
+                            args.path.name
                         )
                     )
                 }
                 if (isGeocoderPresent) {
                     val textView = addItemView(
-                        R.string.file_properties_media_address, getString(R.string.loading)
+                        R.string.file_properties_media_address,
+                        getString(R.string.loading)
                     )
                     val geocoder = Geocoder(requireContext())
                     addressJob = viewLifecycleOwner.lifecycleScope.launch {
                         val address = try {
                             geocoder.awaitGetFromLocation(
                                 videoInfo.location.first.toDouble(),
-                                videoInfo.location.second.toDouble(), 1
+                                videoInfo.location.second.toDouble(),
+                                1
                             ).first()
                         } catch (e: Exception) {
                             null
@@ -107,8 +115,10 @@ class FilePropertiesVideoTabFragment : FilePropertiesTabFragment() {
             }
             if (videoInfo.bitRate != null) {
                 addItemView(
-                    R.string.file_properties_media_bit_rate, getString(
-                        R.string.file_properties_media_bit_rate_format, videoInfo.bitRate / 1000
+                    R.string.file_properties_media_bit_rate,
+                    getString(
+                        R.string.file_properties_media_bit_rate_format,
+                        videoInfo.bitRate / 1000
                     )
                 )
             }

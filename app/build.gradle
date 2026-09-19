@@ -18,8 +18,8 @@ android {
         applicationId 'me.zhanghai.android.files'
         minSdk 35
         targetSdk 36
-        versionCode 41
-        versionName '1.7.6'
+        versionCode 42
+        versionName '1.7.7'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         resValue 'string', 'app_version', versionName + ' (' + versionCode + ')'
         buildConfigField 'String', 'FILE_PROVIDIER_AUTHORITY', 'APPLICATION_ID + ".file_provider"'
@@ -61,12 +61,21 @@ android {
         warning 'InvalidPackage', 'MissingTranslation'
     }
     buildTypes {
+        debug {
+            // Opt in for coverage jobs; ordinary debug builds keep their normal runtime.
+            def coverage = providers.gradleProperty('coverage').orNull == 'true'
+            enableUnitTestCoverage = coverage
+            enableAndroidTestCoverage = coverage
+        }
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
+    }
+    testCoverage {
+        jacocoVersion = libs.versions.jacoco.get()
     }
     packagingOptions {
         jniLibs {
@@ -115,9 +124,6 @@ tasks.named('check') { dependsOn 'checkSourceFileLength' }
 ktlint {
     version = '1.8.0'
     android = true
-    // Existing violations are recorded in the baseline; new code is checked in full.
-    baseline = file('ktlint-baseline.xml')
-
 }
 
 repositories {
@@ -127,9 +133,8 @@ repositories {
 }
 dependencies {
     // See the pin comment in gradle/libs.versions.toml.
-    implementation(libs.dav4jvm) {
-        exclude group: 'org.ogce', module: 'xpp3'
-    }
+    implementation project(':dav4jvm')
+    implementation libs.okhttp
     implementation libs.photoview
     implementation libs.libsu.service
 }
@@ -177,9 +182,10 @@ dependencies {
     // The SMBJ version is pinned; see gradle/libs.versions.toml.
     //noinspection NewerVersionAvailable
     implementation(libs.smbj) {
-        // org.bouncycastle:bcprov-jdk15on uses bytecode version unsupported by Jetifier, so use
-        // org.bouncycastle:bcprov-jdk15to18 instead.
+        // Bouncy Castle comes from the jdk15to18 artifacts below; SMBJ 0.14 pulls the jdk18on
+        // flavor, which duplicates every class.
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
     }
     implementation libs.bouncycastle.bcprov
     implementation(libs.sshj) {
@@ -202,13 +208,13 @@ dependencies {
     implementation libs.guava
     // Guava conflicts with com.google.guava:listenablefuture:1.0 pulled in by AndroidX Core
     implementation libs.guava.listenablefuture
-    implementation libs.preferencex
     implementation libs.commons.net
     // The LicensesDialog version is pinned; see gradle/libs.versions.toml.
     //noinspection NewerVersionAvailable
     implementation libs.licensesdialog
     implementation libs.simplemenu.preference
     implementation libs.shizuku.api
+    implementation libs.shizuku.provider
     implementation(libs.jcifs.ng) {
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
     }
@@ -242,6 +248,10 @@ tasks.withType(Test).configureEach {
     def smbPort = providers.environmentVariable('MATERIAL_SMB_PORT').orNull
     if (smbPort != null) {
         systemProperty 'material.smb.port', smbPort
+    }
+    def smbContainer = providers.environmentVariable('MATERIAL_SMB_CONTAINER').orNull
+    if (smbContainer != null) {
+        systemProperty 'material.smb.container', smbContainer
     }
 }
 

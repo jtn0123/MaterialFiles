@@ -66,18 +66,24 @@ var Intent.extraPath: Path?
         markPathExtrasTrusted()
     }
 
-val Intent.saveAsPath: Path?
-    get() {
-        val uri =
-            when (action) {
-                Intent.ACTION_VIEW -> data
-                Intent.ACTION_SEND -> getParcelableExtraSafe(Intent.EXTRA_STREAM) as? Uri
-                else -> null
-            }
-        return uri?.toPathOrNull()
+/** The URIs an ACTION_VIEW, ACTION_SEND or ACTION_SEND_MULTIPLE intent asks to save. */
+val Intent.saveAsUris: List<Uri>
+    get() = when (action) {
+        Intent.ACTION_VIEW -> listOfNotNull(data)
+
+        Intent.ACTION_SEND -> listOfNotNull(getParcelableExtraSafe(Intent.EXTRA_STREAM) as? Uri)
+
+        Intent.ACTION_SEND_MULTIPLE ->
+            getParcelableArrayListExtraSafe<Uri>(Intent.EXTRA_STREAM).orEmpty().filterNotNull()
+
+        else -> emptyList()
     }
 
-private fun Uri.toPathOrNull(): Path? = when (scheme) {
+/** [saveAsUris] as paths, dropping any URI this app cannot open as a file. */
+val Intent.saveAsPaths: List<Path>
+    get() = saveAsUris.mapNotNull { it.toPathOrNull() }
+
+fun Uri.toPathOrNull(): Path? = when (scheme) {
     ContentResolver.SCHEME_FILE, null -> path?.takeIfNotEmpty()?.let { Paths.get(it) }
 
     ContentResolver.SCHEME_CONTENT -> {

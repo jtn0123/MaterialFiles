@@ -37,8 +37,9 @@ fun PackageManager.getPackageArchiveInfoCompat(archiveFilePath: String, flags: I
                     if (flags.hasBits(PackageManager.GET_SIGNATURES)) {
                         signatures = emptyArray()
                     }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-                        && flags.hasBits(PackageManager.GET_SIGNING_CERTIFICATES)) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+                        flags.hasBits(PackageManager.GET_SIGNING_CERTIFICATES)
+                    ) {
                         signingInfo = SigningInfo()
                     }
                 }

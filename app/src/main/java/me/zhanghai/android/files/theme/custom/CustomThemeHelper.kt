@@ -50,8 +50,9 @@ object CustomThemeHelper {
             val customThemeRes = getCustomThemeRes(baseThemeRes, activity)
             if (currentThemeRes != customThemeRes) {
                 // Ignore ".Black" theme changes when not in night mode.
-                if (!NightModeHelper.isInNightMode(activity as AppCompatActivity)
-                    && isBlackThemeChange(currentThemeRes, customThemeRes, activity)) {
+                if (!NightModeHelper.isInNightMode(activity as AppCompatActivity) &&
+                    isBlackThemeChange(currentThemeRes, customThemeRes, activity)
+                ) {
                     continue
                 }
                 if (activity is OnThemeChangedListener) {

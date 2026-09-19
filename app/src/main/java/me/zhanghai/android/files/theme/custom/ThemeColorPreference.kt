@@ -11,10 +11,10 @@ import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
 import androidx.annotation.StyleRes
-import com.takisoft.preferencex.PreferenceFragmentCompat
 import me.zhanghai.android.files.colorpicker.BaseColorPreference
 import me.zhanghai.android.files.colorpicker.ColorPreferenceDialogFragment
 import me.zhanghai.android.files.compat.getColorCompat
+import me.zhanghai.android.files.ui.PreferenceFragmentCompat
 
 class ThemeColorPreference : BaseColorPreference {
     private lateinit var _stringValue: String
@@ -58,7 +58,9 @@ class ThemeColorPreference : BaseColorPreference {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(
@@ -83,7 +85,8 @@ class ThemeColorPreference : BaseColorPreference {
     companion object {
         init {
             PreferenceFragmentCompat.registerPreferenceFragment(
-                ThemeColorPreference::class.java, ColorPreferenceDialogFragment::class.java
+                ThemeColorPreference::class.java,
+                ColorPreferenceDialogFragment::class.java
             )
         }
     }

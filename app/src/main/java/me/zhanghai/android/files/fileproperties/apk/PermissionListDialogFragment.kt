@@ -45,7 +45,8 @@ class PermissionListDialogFragment : AppCompatDialogFragment() {
                 setTitle(
                     getQuantityString(
                         R.plurals.file_properties_apk_requested_permissions_positive_format,
-                        permissionsSize, permissionsSize
+                        permissionsSize,
+                        permissionsSize
                     )
                 )
 
@@ -70,6 +71,7 @@ class PermissionListDialogFragment : AppCompatDialogFragment() {
                 binding.emptyView.fadeOutUnsafe()
                 adapter.clear()
             }
+
             is Failure -> {
                 binding.progress.fadeOutUnsafe()
                 binding.errorText.fadeInUnsafe()
@@ -77,6 +79,7 @@ class PermissionListDialogFragment : AppCompatDialogFragment() {
                 binding.emptyView.fadeOutUnsafe()
                 adapter.clear()
             }
+
             is Success -> {
                 binding.progress.fadeOutUnsafe()
                 binding.errorText.fadeOutUnsafe()

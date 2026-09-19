@@ -46,8 +46,10 @@ object StableUriParceler : Parceler<Uri?> {
     private fun readUri(parcel: Parcel): Uri? {
         val uriString = when (val typeId = parcel.readInt()) {
             NULL_TYPE_ID -> return null
+
             // Uri.StringUri.readFrom()
             STRING_URI_TYPE_ID -> parcel.readUriString()
+
             OPAQUE_URI_TYPE_ID -> {
                 // Uri.OpaqueUri.readFrom()
                 val scheme = parcel.readUriString()!!
@@ -69,6 +71,7 @@ object StableUriParceler : Parceler<Uri?> {
                     }
                 }
             }
+
             HIERARCHICAL_URI_TYPE_ID -> {
                 // Uri.HierarchicalUri.readFrom()
                 // Scheme can be null for HierarchicalUri.
@@ -107,6 +110,7 @@ object StableUriParceler : Parceler<Uri?> {
                     }
                 }
             }
+
             else -> error("Unknown type ID $typeId")
         }
         return Uri.parse(uriString)
@@ -141,7 +145,7 @@ object StableUriParceler : Parceler<Uri?> {
         if (encodedPathPart.isNullOrEmpty() || encodedPathPart.startsWith("/")) {
             encodedPathPart
         } else {
-            "/${encodedPathPart}"
+            "/$encodedPathPart"
         }
 
     private fun Parcel.readUriString(): String? =

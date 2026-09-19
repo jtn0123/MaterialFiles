@@ -18,6 +18,7 @@ import me.zhanghai.android.files.provider.archive.archiver.ArchiveWriter
 import me.zhanghai.android.files.provider.common.deleteIfExists
 import me.zhanghai.android.files.provider.common.newByteChannel
 import me.zhanghai.android.files.provider.common.resolveForeign
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class ArchiveFileJob(
@@ -52,9 +53,9 @@ class ArchiveFileJob(
                 try {
                     archiveFile.deleteIfExists()
                 } catch (e: IOException) {
-                    e.printStackTrace()
+                    e.logWarning("ArchiveFileJob", "run")
                 } catch (e: UnsupportedOperationException) {
-                    e.printStackTrace()
+                    e.logWarning("ArchiveFileJob", "run")
                 }
             }
         }
@@ -121,7 +122,7 @@ private fun FileJob.archive(
     } catch (e: InterruptedIOException) {
         throw e
     } catch (e: IOException) {
-        e.printStackTrace()
+        e.logWarning("ArchiveFileJob", "archive($file)")
         val result = showErrorDialog(
             getString(R.string.file_job_archive_error_title_format, getFileName(file)),
             getString(

@@ -9,7 +9,9 @@ import android.os.Parcel
 import android.os.Parcelable
 import java8.nio.file.attribute.GroupPrincipal
 
-class PosixGroup : PosixPrincipal, GroupPrincipal {
+class PosixGroup :
+    PosixPrincipal,
+    GroupPrincipal {
     constructor(id: Int, name: ByteString?) : super(id, name)
 
     private constructor(source: Parcel) : super(source)

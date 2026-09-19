@@ -13,15 +13,14 @@ import com.hierynomus.mssmb2.SMB2ShareAccess
 import me.zhanghai.android.files.provider.common.OpenOptions
 import me.zhanghai.android.files.util.enumSetOf
 
-internal fun OpenOptions.toSmbDesiredAccess(): Set<AccessMask> =
-    enumSetOf<AccessMask>().apply {
-        if (read) {
-            this += AccessMask.GENERIC_READ
-        }
-        if (write) {
-            this += AccessMask.GENERIC_WRITE
-        }
+internal fun OpenOptions.toSmbDesiredAccess(): Set<AccessMask> = enumSetOf<AccessMask>().apply {
+    if (read) {
+        this += AccessMask.GENERIC_READ
     }
+    if (write) {
+        this += AccessMask.GENERIC_WRITE
+    }
+}
 
 internal fun OpenOptions.toSmbFileAttributes(): Set<FileAttributes> =
     enumSetOf<FileAttributes>().apply {
@@ -32,14 +31,13 @@ internal fun OpenOptions.toSmbFileAttributes(): Set<FileAttributes> =
 
 internal fun OpenOptions.toSmbShareAccess(): Set<SMB2ShareAccess> = SMB2ShareAccess.ALL
 
-internal fun OpenOptions.toSmbCreateDisposition(): SMB2CreateDisposition =
-    when {
-        createNew -> SMB2CreateDisposition.FILE_CREATE
-        create && truncateExisting -> SMB2CreateDisposition.FILE_OVERWRITE_IF
-        create -> SMB2CreateDisposition.FILE_OPEN_IF
-        truncateExisting -> SMB2CreateDisposition.FILE_OVERWRITE
-        else -> SMB2CreateDisposition.FILE_OPEN
-    }
+internal fun OpenOptions.toSmbCreateDisposition(): SMB2CreateDisposition = when {
+    createNew -> SMB2CreateDisposition.FILE_CREATE
+    create && truncateExisting -> SMB2CreateDisposition.FILE_OVERWRITE_IF
+    create -> SMB2CreateDisposition.FILE_OPEN_IF
+    truncateExisting -> SMB2CreateDisposition.FILE_OVERWRITE
+    else -> SMB2CreateDisposition.FILE_OPEN
+}
 
 internal fun OpenOptions.toSmbCreateOptions(): Set<SMB2CreateOptions> =
     enumSetOf<SMB2CreateOptions>().apply {

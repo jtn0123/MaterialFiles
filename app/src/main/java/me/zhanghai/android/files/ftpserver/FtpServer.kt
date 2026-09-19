@@ -7,6 +7,7 @@ package me.zhanghai.android.files.ftpserver
 
 import java8.nio.file.Path
 import org.apache.ftpserver.ConnectionConfigFactory
+import org.apache.ftpserver.DataConnectionConfigurationFactory
 import org.apache.ftpserver.FtpServer
 import org.apache.ftpserver.FtpServerFactory
 import org.apache.ftpserver.ftplet.FtpException
@@ -18,6 +19,8 @@ class FtpServer(
     private val username: String,
     private val password: String?,
     private val port: Int,
+    /** [FtpPassivePorts] syntax; empty for any free port. */
+    private val passivePorts: String,
     private val homeDirectory: Path,
     private val writable: Boolean
 ) {
@@ -28,7 +31,14 @@ class FtpServer(
         server = FtpServerFactory()
             .apply {
                 val listener = ListenerFactory()
-                    .apply { port = this@FtpServer.port }
+                    .apply {
+                        port = this@FtpServer.port
+                        if (passivePorts.isNotEmpty()) {
+                            dataConnectionConfiguration = DataConnectionConfigurationFactory()
+                                .apply { this.passivePorts = this@FtpServer.passivePorts }
+                                .createDataConnectionConfiguration()
+                        }
+                    }
                     .createListener()
                 addListener("default", listener)
                 val user = BaseUser().apply {

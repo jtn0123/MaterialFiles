@@ -7,13 +7,13 @@ package me.zhanghai.android.files.provider.remote
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.Serializable
 import java8.nio.file.attribute.FileAttribute
 import me.zhanghai.android.files.compat.readSerializableCompat
 import me.zhanghai.android.files.provider.common.PosixFileMode
 import me.zhanghai.android.files.provider.common.PosixFileModeBit
 import me.zhanghai.android.files.provider.common.toAttribute
 import me.zhanghai.android.files.util.toEnumSet
-import java.io.Serializable
 
 class ParcelableFileAttributes(val value: Array<out FileAttribute<*>>) : Parcelable {
     private constructor(source: Parcel) : this(

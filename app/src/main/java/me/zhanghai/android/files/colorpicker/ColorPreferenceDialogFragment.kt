@@ -101,9 +101,6 @@ class ColorPreferenceDialogFragment : MaterialPreferenceDialogFragmentCompat() {
     }
 
     @Parcelize
-    private class State(
-        val colors: IntArray,
-        val checkedColor: Int,
-        val defaultColor: Int
-    ) : ParcelableState
+    private class State(val colors: IntArray, val checkedColor: Int, val defaultColor: Int) :
+        ParcelableState
 }
