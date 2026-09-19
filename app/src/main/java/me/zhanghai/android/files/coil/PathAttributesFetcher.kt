@@ -140,7 +140,12 @@ class PathAttributesFetcher(
             result.source.closeSafe()
             return null
         }
-        return decoder.decode()?.drawable
+        // Coil closes the source of a result it is given, but it never sees this one.
+        return try {
+            decoder.decode()?.drawable
+        } finally {
+            result.source.closeSafe()
+        }
     }
 
     /** @param remoteThumbnailSize the size in pixels, when fetching a thumbnail of a remote file */
@@ -151,6 +156,8 @@ class PathAttributesFetcher(
             mimeType.isApk && path.isGetPackageArchiveInfoCompatible -> {
                 try {
                     return appIconFetcherFactory.create(path, options, imageLoader).fetch()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -198,6 +205,8 @@ class PathAttributesFetcher(
             mimeType.isPdf && (path.isLinuxPath || path.isDocumentPath) -> {
                 try {
                     return pdfPageFetcherFactory.create(path, options, imageLoader).fetch()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

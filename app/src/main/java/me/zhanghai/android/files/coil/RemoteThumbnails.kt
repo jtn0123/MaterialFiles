@@ -17,6 +17,7 @@ import coil.decode.ImageSource
 import coil.disk.DiskCache
 import coil.fetch.SourceResult
 import java.io.Closeable
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import kotlinx.coroutines.CoroutineStart
@@ -93,11 +94,15 @@ internal object RemoteThumbnails {
                     } else {
                         bitmap
                     }
-                    softwareBitmap.compress(
+                    val isCompressed = softwareBitmap.compress(
                         Bitmap.CompressFormat.WEBP_LOSSY,
                         CACHE_QUALITY,
                         sink.outputStream()
                     )
+                    // An empty entry would be served, and fail to decode, forever.
+                    if (!isCompressed) {
+                        throw IOException("Cannot compress the thumbnail for $key")
+                    }
                 }
                 editor.commit()
             } catch (e: Exception) {
