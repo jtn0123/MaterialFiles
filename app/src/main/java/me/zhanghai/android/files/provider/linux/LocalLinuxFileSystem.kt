@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.linux
 
+import java.io.IOException
 import java8.nio.file.FileStore
 import java8.nio.file.FileSystem
 import java8.nio.file.Path
@@ -16,12 +17,12 @@ import me.zhanghai.android.files.provider.common.ByteStringBuilder
 import me.zhanghai.android.files.provider.common.ByteStringListPathCreator
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.util.takeIfNotEmpty
-import java.io.IOException
 
 internal class LocalLinuxFileSystem(
     private val fileSystem: LinuxFileSystem,
     private val provider: LinuxFileSystemProvider
-) : FileSystem(), ByteStringListPathCreator {
+) : FileSystem(),
+    ByteStringListPathCreator {
     val rootDirectory = LinuxPath(fileSystem, SEPARATOR_BYTE_STRING)
 
     init {
@@ -46,9 +47,7 @@ internal class LocalLinuxFileSystem(
 
     override fun provider(): FileSystemProvider = provider
 
-    override fun close() {
-        throw UnsupportedOperationException()
-    }
+    override fun close(): Unit = throw UnsupportedOperationException()
 
     override fun isOpen(): Boolean = true
 
@@ -76,9 +75,8 @@ internal class LocalLinuxFileSystem(
         return LinuxPath(fileSystem, path)
     }
 
-    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher {
+    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher =
         throw UnsupportedOperationException()
-    }
 
     override fun getUserPrincipalLookupService(): LinuxUserPrincipalLookupService =
         LinuxUserPrincipalLookupService

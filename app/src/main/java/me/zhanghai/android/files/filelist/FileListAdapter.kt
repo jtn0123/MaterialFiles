@@ -123,6 +123,19 @@ class FileListAdapter(private val listener: Listener) :
         listener.selectFiles(files, true)
     }
 
+    /** Selects everything between the first and the last selected file. */
+    fun selectFileRange() {
+        val range = selectionRange(itemCount) { getItem(it) in selectedFiles } ?: return
+        val files = fileItemSetOf()
+        for (index in range) {
+            val file = getItem(index)
+            if (isFileSelectable(file)) {
+                files.add(file)
+            }
+        }
+        listener.selectFiles(files, true)
+    }
+
     private fun isFileSelectable(file: FileItem): Boolean {
         val pickOptions = pickOptions ?: return true
         return when (pickOptions.mode) {
@@ -248,69 +261,8 @@ class FileListAdapter(private val listener: Listener) :
             }
         }
         holder.iconLayout.setOnClickListener { selectFile(file) }
-        val iconRes = file.mimeType.iconRes
-        holder.iconImage.apply {
-            isVisible = true
-            setImageResource(iconRes)
-        }
-        holder.directoryThumbnailImage?.isVisible = isDirectory
-        holder.thumbnailOutlineView?.isVisible = !isDirectory
-        val supportsThumbnail = file.supportsThumbnail
-        val shouldLoadThumbnailIcon = supportsThumbnail && holder.thumbnailIconImage != null &&
-            file.mimeType.isApk
+        holder.bindIcons(file)
         val attributes = file.attributes
-        holder.thumbnailIconImage?.apply {
-            dispose()
-            isVisible = !isDirectory
-            setImageResource(iconRes)
-            if (shouldLoadThumbnailIcon) {
-                load(path to attributes)
-            }
-        }
-        holder.thumbnailImage.apply {
-            dispose()
-            setImageDrawable(null)
-            val shouldLoadThumbnail = supportsThumbnail && !shouldLoadThumbnailIcon
-            isVisible = shouldLoadThumbnail
-            if (shouldLoadThumbnail) {
-                load(path to attributes) {
-                    listener { _, _ ->
-                        val iconImage = holder.thumbnailIconImage ?: holder.iconImage
-                        iconImage.isVisible = false
-                    }
-                }
-            }
-        }
-        holder.appIconBadgeImage.apply {
-            dispose()
-            setImageDrawable(null)
-            val appDirectoryPackageName = file.appDirectoryPackageName
-            val hasAppIconBadge = appDirectoryPackageName != null
-            isVisible = hasAppIconBadge
-            if (hasAppIconBadge) {
-                load(AppIconPackageName(appDirectoryPackageName))
-            }
-        }
-        holder.badgeImage.apply {
-            val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
-                if (file.isSymbolicLinkBroken) {
-                    R.drawable.error_badge_icon_18dp
-                } else {
-                    R.drawable.symbolic_link_badge_icon_18dp
-                }
-            } else if (file.attributesNoFollowLinks.isEncrypted()) {
-                R.drawable.encrypted_badge_icon_18dp
-            } else {
-                null
-            }
-            val hasBadge = badgeIconRes != null
-            isVisible = hasBadge
-            if (hasBadge) {
-                setImageResource(badgeIconRes)
-            } else {
-                setImageDrawable(null)
-            }
-        }
         holder.nameText.text = file.name
         holder.descriptionText?.text = if (isDirectory) {
             null

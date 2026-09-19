@@ -5,11 +5,11 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.Closeable
+import java.io.IOException
 import java8.nio.file.DirectoryIteratorException
 import java8.nio.file.DirectoryStream
 import java8.nio.file.Path
-import java.io.Closeable
-import java.io.IOException
 
 open class PathIteratorDirectoryStream(
     private val iterator: Iterator<Path>,
@@ -39,9 +39,7 @@ open class PathIteratorDirectoryStream(
 
                 override fun next(): Path = synchronized(lock) { filteredIterator.next() }
 
-                override fun remove() {
-                    throw UnsupportedOperationException()
-                }
+                override fun remove(): Unit = throw UnsupportedOperationException()
             }
         }
     }

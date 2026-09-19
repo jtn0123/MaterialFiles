@@ -21,8 +21,7 @@ class FtpServerReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_STOP = "stop"
 
-        fun createIntent(): Intent =
-            Intent(application, FtpServerReceiver::class.java)
-                .setAction(ACTION_STOP)
+        fun createIntent(): Intent = Intent(application, FtpServerReceiver::class.java)
+            .setAction(ACTION_STOP)
     }
 }

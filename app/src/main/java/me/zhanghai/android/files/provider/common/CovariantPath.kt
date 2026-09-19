@@ -5,9 +5,9 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
-import java.io.IOException
 
 interface CovariantPath<T : CovariantPath<T>> : Path {
     override fun getRoot(): T?
@@ -37,9 +37,7 @@ interface CovariantPath<T : CovariantPath<T>> : Path {
     @Throws(IOException::class)
     override fun toRealPath(vararg options: LinkOption): T
 
-    override fun iterator(): MutableIterator<Path> {
-        throw UnsupportedOperationException()
-    }
+    override fun iterator(): MutableIterator<Path> = throw UnsupportedOperationException()
 
     val names: Iterable<T>
 }

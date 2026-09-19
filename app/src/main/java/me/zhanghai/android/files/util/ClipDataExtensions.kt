@@ -14,6 +14,5 @@ fun KClass<ClipData>.create(
     label: CharSequence?,
     mimeTypes: List<String>,
     items: List<ClipData.Item>
-): ClipData =
-    ClipData(label, mimeTypes.toTypedArray(), items[0])
-        .apply { items.asSequence().drop(1).forEach { addItem(it) } }
+): ClipData = ClipData(label, mimeTypes.toTypedArray(), items[0])
+    .apply { items.asSequence().drop(1).forEach { addItem(it) } }

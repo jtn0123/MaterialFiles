@@ -110,7 +110,7 @@ class NetworkProtocolIntegrationTest {
                 assertEquals("SMB round trip", String(read))
             }
         } finally {
-            client.client.close()
+            client.clientFor(authority).close()
         }
     }
 

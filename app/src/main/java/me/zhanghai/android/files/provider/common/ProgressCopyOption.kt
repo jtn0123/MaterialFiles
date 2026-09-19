@@ -16,10 +16,9 @@ import me.zhanghai.android.files.util.getArgs
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.readParcelable
 
-class ProgressCopyOption(
-    val intervalMillis: Long,
-    val listener: (Long) -> Unit
-) : CopyOption, Parcelable {
+class ProgressCopyOption(val intervalMillis: Long, val listener: (Long) -> Unit) :
+    CopyOption,
+    Parcelable {
     private constructor(source: Parcel) : this(
         source.readLong(),
         source.readParcelable<RemoteCallback>()!!.let {
@@ -32,7 +31,8 @@ class ProgressCopyOption(
     override fun writeToParcel(dest: Parcel, flags: Int) {
         dest.writeLong(intervalMillis)
         dest.writeParcelable(
-            RemoteCallback { listener(it.getArgs<ListenerArgs>().copiedSize) }, flags
+            RemoteCallback { listener(it.getArgs<ListenerArgs>().copiedSize) },
+            flags
         )
     }
 

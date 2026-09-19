@@ -51,6 +51,7 @@
     <string name="search">Search</string>
     <string name="select">Select</string>
     <string name="select_all">Select all</string>
+    <string name="select_range">Select range</string>
     <string name="share">Share</string>
     <string name="show">Show</string>
     <string name="skip">Skip</string>
@@ -661,6 +662,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Enter a username</string>
     <string name="storage_edit_smb_server_password">Password</string>
     <string name="storage_edit_smb_server_domain">Domain</string>
+    <string name="storage_edit_smb_server_encrypt">Encrypt connection</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Ask for SMB3 encryption. Needed for shares that require it; ignored by servers without it.</string>
     <string name="storage_edit_smb_server_connect_and_add">Connect and add</string>
     <string name="storage_edit_smb_server_add">Add</string>
     <string name="storage_edit_webdav_server_title_edit">Edit WebDAV server</string>
@@ -733,6 +736,10 @@
     <string name="save_as_title">Save as</string>
     <string name="save_as_error">Error while saving file</string>
     <string name="save_as_success_format">“%1$s” has been saved to “%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d file has been saved to “%2$s”</item>
+        <item quantity="other">%1$d files have been saved to “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">Text editor</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -761,6 +768,10 @@
     <string name="ftp_server_username_title">Username</string>
     <string name="ftp_server_password_title">Password</string>
     <string name="ftp_server_port_title">Port</string>
+    <string name="ftp_server_passive_ports_title">Passive data ports</string>
+    <string name="ftp_server_passive_ports_summary_any">Any free port</string>
+    <string name="ftp_server_passive_ports_dialog_message">Ports or ranges for data connections, e.g. 2300-2400 or 2300, 2301. Leave empty to use any free port. Set this when the server is reached through a port forward or a tunnel.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Enter ports between 1 and 65535, as numbers or ranges separated by commas</string>
     <string name="ftp_server_home_directory_title">Root folder</string>
     <string name="ftp_server_writable_title">Allow writing</string>
     <string name="ftp_server_notification_title" translatable="false">@string/ftp_server_title</string>

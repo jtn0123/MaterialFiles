@@ -5,14 +5,14 @@
 
 package me.zhanghai.android.files.provider.ftp.client
 
+import java.io.IOException
+import java.io.InputStream
+import java.nio.ByteBuffer
 import me.zhanghai.android.files.compat.nullInputStream
 import me.zhanghai.android.files.provider.common.AbstractFileByteChannel
 import me.zhanghai.android.files.provider.common.ByteBufferInputStream
 import me.zhanghai.android.files.provider.common.readFully
 import org.apache.commons.net.ftp.FTPClient
-import java.io.IOException
-import java.io.InputStream
-import java.nio.ByteBuffer
 
 class FileByteChannel(
     private val client: FTPClient,

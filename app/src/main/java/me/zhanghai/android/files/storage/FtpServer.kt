@@ -9,13 +9,13 @@ import android.content.Context
 import android.content.Intent
 import androidx.annotation.DrawableRes
 import java8.nio.file.Path
+import kotlin.random.Random
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.ftp.client.Authority
 import me.zhanghai.android.files.provider.ftp.createFtpRootPath
 import me.zhanghai.android.files.util.createIntent
 import me.zhanghai.android.files.util.putArgs
-import kotlin.random.Random
 
 @Parcelize
 class FtpServer(

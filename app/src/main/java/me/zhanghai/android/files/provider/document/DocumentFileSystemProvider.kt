@@ -9,6 +9,10 @@ import android.net.Uri
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessDeniedException
@@ -46,10 +50,6 @@ import me.zhanghai.android.files.provider.common.toOpenOptions
 import me.zhanghai.android.files.provider.content.resolver.Resolver
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.URI
 
 object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
     private const val SCHEME = "document"

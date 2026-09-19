@@ -66,7 +66,10 @@ object BackgroundActivityStarter {
             pendingIntentFlags = pendingIntentFlags or PendingIntent.FLAG_IMMUTABLE
         }
         val pendingIntent = PendingIntent.getActivity(
-            context, intent.hashCode(), intent, pendingIntentFlags
+            context,
+            intent.hashCode(),
+            intent,
+            pendingIntentFlags
         )
         val notification = backgroundActivityStartNotificationTemplate.createBuilder(context)
             .setContentTitle(title)

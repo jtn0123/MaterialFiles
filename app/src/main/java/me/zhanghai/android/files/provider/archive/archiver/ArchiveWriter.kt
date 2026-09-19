@@ -5,6 +5,8 @@
 
 package me.zhanghai.android.files.provider.archive.archiver
 
+import java.io.Closeable
+import java.io.IOException
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
@@ -18,10 +20,10 @@ import me.zhanghai.android.files.provider.common.newInputStream
 import me.zhanghai.android.files.provider.common.readAttributes
 import me.zhanghai.android.files.provider.common.readSymbolicLinkByteString
 import me.zhanghai.android.files.provider.common.size
-import java.io.Closeable
-import java.io.IOException
 
-class ArchiveWriter @Throws(IOException::class) constructor(
+class ArchiveWriter
+@Throws(IOException::class)
+constructor(
     channel: SeekableByteChannel,
     format: Int,
     filter: Int,
@@ -36,7 +38,8 @@ class ArchiveWriter @Throws(IOException::class) constructor(
         val lastAccessTime = null
         val creationTime = null
         val attributes = file.readAttributes(
-            BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS
+            BasicFileAttributes::class.java,
+            LinkOption.NOFOLLOW_LINKS
         )
         val type = when {
             attributes is PosixFileAttributes -> attributes.type()

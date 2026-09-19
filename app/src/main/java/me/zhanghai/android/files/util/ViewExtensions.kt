@@ -27,7 +27,8 @@ fun View.doOnGlobalLayout(block: () -> Unit): OneShotGlobalLayoutListener =
 class OneShotGlobalLayoutListener private constructor(
     private val view: View,
     private val block: () -> Unit
-) : ViewTreeObserver.OnPreDrawListener, View.OnAttachStateChangeListener {
+) : ViewTreeObserver.OnPreDrawListener,
+    View.OnAttachStateChangeListener {
     private var viewTreeObserver = view.viewTreeObserver
 
     override fun onPreDraw(): Boolean {

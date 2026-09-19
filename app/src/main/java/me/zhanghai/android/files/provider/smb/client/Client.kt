@@ -17,25 +17,38 @@ import com.hierynomus.mssmb2.SMB2ShareAccess
 import com.hierynomus.mssmb2.SMBApiException
 import com.hierynomus.mssmb2.messages.SMB2ChangeNotifyResponse
 import com.hierynomus.smbj.SMBClient
+import com.hierynomus.smbj.SmbConfig
 import com.hierynomus.smbj.common.SMBRuntimeException
 import com.hierynomus.smbj.session.Session
 import com.hierynomus.smbj.share.Directory
 import java.util.Collections
 import java.util.WeakHashMap
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java8.nio.channels.SeekableByteChannel
 import me.zhanghai.android.files.provider.common.CloseableIterator
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.hasBits
+import me.zhanghai.android.files.util.logWarning
 
 /**
  * The connections of this provider, one pool per authority, created on demand with credentials
  * from [authenticator]. Owned by the file system provider; a test constructs its own with a fake.
  */
 class Client(internal val authenticator: Authenticator) {
-    internal val client = SMBClient()
+    private val client = SMBClient()
 
-    internal val sessions = mutableMapOf<Authority, Session>()
+    /** SMBJ only negotiates SMB3 encryption when asked to at construction, hence two clients. */
+    private val encryptingClient = SMBClient(SmbConfig.builder().withEncryptData(true).build())
+
+    internal fun clientFor(authority: Authority): SMBClient =
+        if (authority.encrypt) encryptingClient else client
+
+    internal val sessions = ConcurrentHashMap<Authority, Session>()
+
+    // One lock per authority: connecting and authenticating to a host that does not answer
+    // takes until the timeout, and must not hold up the sessions to every other host.
+    internal val sessionLocks = ConcurrentHashMap<Authority, Any>()
 
     internal val directoryFileInformationCache =
         Collections.synchronizedMap(WeakHashMap<Path, FileInformation>())
@@ -156,7 +169,7 @@ class Client(internal val authenticator: Authenticator) {
                         try {
                             it.deleteOnClose()
                         } catch (e: SMBRuntimeException) {
-                            e.printStackTrace()
+                            e.logWarning("SmbClient", "createSymbolicLink($path)")
                         }
                     }
                 }

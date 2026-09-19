@@ -18,8 +18,8 @@ class ShowRequestNotificationPermissionRationaleDialogFragment : AppCompatDialog
     private val listener: Listener
         get() = requireParentFragment() as Listener
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext(), theme)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext(), theme)
             .setMessage(R.string.notification_permission_rationale_message)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 listener.onShowRequestNotificationPermissionRationaleResult(true)
@@ -28,7 +28,6 @@ class ShowRequestNotificationPermissionRationaleDialogFragment : AppCompatDialog
                 listener.onShowRequestNotificationPermissionRationaleResult(false)
             }
             .create()
-    }
 
     override fun onCancel(dialog: DialogInterface) {
         super.onCancel(dialog)

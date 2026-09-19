@@ -13,7 +13,9 @@ import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.util.LinkedMapSet
 import me.zhanghai.android.files.util.readParcelableListCompat
 
-class FileItemSet() : LinkedMapSet<Path, FileItem>(FileItem::path), Parcelable {
+class FileItemSet() :
+    LinkedMapSet<Path, FileItem>(FileItem::path),
+    Parcelable {
     constructor(parcel: Parcel) : this() {
         addAll(parcel.readParcelableListCompat())
     }

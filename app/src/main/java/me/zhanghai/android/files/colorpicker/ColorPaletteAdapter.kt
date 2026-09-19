@@ -23,7 +23,8 @@ class ColorPaletteAdapter(private val colors: IntArray) : BaseAdapter() {
         val swatchView = convertView as ColorSwatchView?
             ?: ColorSwatchView(parent.context).apply {
                 layoutParams = AbsListView.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
                 )
             }
         return swatchView.apply {

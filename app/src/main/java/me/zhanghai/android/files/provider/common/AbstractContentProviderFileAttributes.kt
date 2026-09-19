@@ -8,7 +8,9 @@ package me.zhanghai.android.files.provider.common
 import android.os.Parcelable
 import java8.nio.file.attribute.FileTime
 
-abstract class AbstractContentProviderFileAttributes : ContentProviderFileAttributes, Parcelable {
+abstract class AbstractContentProviderFileAttributes :
+    ContentProviderFileAttributes,
+    Parcelable {
     protected abstract val lastModifiedTime: FileTime
     protected abstract val mimeType: String?
     protected abstract val size: Long

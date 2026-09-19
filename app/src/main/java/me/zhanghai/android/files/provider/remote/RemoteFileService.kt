@@ -25,8 +25,7 @@ abstract class RemoteFileService(private val remoteInterface: RemoteInterface<IR
     @Throws(RemoteFileSystemException::class)
     fun getRemotePosixFileAttributeViewInterface(
         attributeView: PosixFileAttributeView
-    ): IRemotePosixFileAttributeView =
-        remoteInterface.get().call {
-            getRemotePosixFileAttributeViewInterface(attributeView.toParcelable())
-        }
+    ): IRemotePosixFileAttributeView = remoteInterface.get().call {
+        getRemotePosixFileAttributeViewInterface(attributeView.toParcelable())
+    }
 }

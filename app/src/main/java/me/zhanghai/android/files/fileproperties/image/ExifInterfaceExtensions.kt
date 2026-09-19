@@ -14,8 +14,7 @@ import java.time.ZoneOffset
 import kotlin.math.roundToLong
 import me.zhanghai.android.files.util.takeIfNotBlank
 
-fun ExifInterface.getAttributeNotBlank(tag: String): String? =
-    getAttribute(tag)?.takeIfNotBlank()
+fun ExifInterface.getAttributeNotBlank(tag: String): String? = getAttribute(tag)?.takeIfNotBlank()
 
 fun ExifInterface.getAttributeDoubleOrNull(tag: String): Double? =
     getAttributeDouble(tag, Double.NaN).takeIf { !it.isNaN() }

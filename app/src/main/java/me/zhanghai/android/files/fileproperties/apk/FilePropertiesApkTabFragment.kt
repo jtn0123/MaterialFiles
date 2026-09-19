@@ -44,8 +44,10 @@ class FilePropertiesApkTabFragment : FilePropertiesTabFragment() {
             val packageInfo = apkInfo.packageInfo
             addItemView(R.string.file_properties_apk_package_name, packageInfo.packageName)
             addItemView(
-                R.string.file_properties_apk_version, getString(
-                    R.string.file_properties_apk_version_format, packageInfo.versionName,
+                R.string.file_properties_apk_version,
+                getString(
+                    R.string.file_properties_apk_version_format,
+                    packageInfo.versionName,
                     packageInfo.longVersionCodeCompat
                 )
             )
@@ -70,14 +72,17 @@ class FilePropertiesApkTabFragment : FilePropertiesTabFragment() {
                 } else {
                     getQuantityString(
                         R.plurals.file_properties_apk_requested_permissions_positive_format,
-                        requestedPermissionsSize, requestedPermissionsSize
+                        requestedPermissionsSize,
+                        requestedPermissionsSize
                     )
-                }, if (requestedPermissionsSize == 0) {
+                },
+                if (requestedPermissionsSize == 0) {
                     null
                 } else {
                     {
                         PermissionListDialogFragment.show(
-                            packageInfo.requestedPermissions!!, this@FilePropertiesApkTabFragment
+                            packageInfo.requestedPermissions!!,
+                            this@FilePropertiesApkTabFragment
                         )
                     }
                 }
@@ -105,7 +110,8 @@ class FilePropertiesApkTabFragment : FilePropertiesTabFragment() {
         return getString(
             R.string.file_properites_apk_sdk_version_format,
             names[sdkVersion.coerceIn(names.indices)],
-            codeNames[sdkVersion.coerceIn(codeNames.indices)], sdkVersion
+            codeNames[sdkVersion.coerceIn(codeNames.indices)],
+            sdkVersion
         )
     }
 

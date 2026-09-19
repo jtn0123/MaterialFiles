@@ -55,15 +55,13 @@ fun DocumentTreeUri.buildDocumentUri(documentId: String): DocumentUri =
 val DocumentTreeUri.displayName: String?
     get() = buildDocumentUri(documentId).displayName
 
-fun DocumentTreeUri.takePersistablePermission(): Boolean =
-    value.takePersistablePermission(
-        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-    ) || value.takePersistablePermission(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+fun DocumentTreeUri.takePersistablePermission(): Boolean = value.takePersistablePermission(
+    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+) || value.takePersistablePermission(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-fun DocumentTreeUri.releasePersistablePermission(): Boolean =
-    value.releasePersistablePermission(
-        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-    )
+fun DocumentTreeUri.releasePersistablePermission(): Boolean = value.releasePersistablePermission(
+    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+)
 
 val StorageVolume.documentTreeUri: DocumentTreeUri
     get() {
@@ -74,7 +72,8 @@ val StorageVolume.documentTreeUri: DocumentTreeUri
         // @see com.android.externalstorage.ExternalStorageProvider#getDocIdForFile(File)
         // @see com.android.documentsui.picker.ConfirmFragment#onCreateDialog(Bundle)
         return DocumentsContract.buildTreeDocumentUri(
-            rootUri.authority, "${DocumentsContract.getRootId(rootUri)}:"
+            rootUri.authority,
+            "${DocumentsContract.getRootId(rootUri)}:"
         ).asDocumentTreeUri()
     }
 

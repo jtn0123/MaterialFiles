@@ -6,6 +6,8 @@
 package me.zhanghai.android.files.provider.linux
 
 import android.system.OsConstants
+import java.io.IOException
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessDeniedException
@@ -42,11 +44,12 @@ import me.zhanghai.android.files.provider.linux.media.MediaScanner
 import me.zhanghai.android.files.provider.linux.syscall.Syscall
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
 import me.zhanghai.android.files.util.hasBits
-import java.io.IOException
-import java.net.URI
+import me.zhanghai.android.files.util.logWarning
 
-class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) : FileSystemProvider(),
-    PathObservableProvider, Searchable {
+class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
+    FileSystemProvider(),
+    PathObservableProvider,
+    Searchable {
     internal val fileSystem: LinuxFileSystem = LinuxFileSystem(provider)
 
     override fun getScheme(): String = SCHEME
@@ -98,7 +101,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) : FileSyst
             try {
                 Syscall.remove(fileBytes)
             } catch (e: SyscallException) {
-                e.printStackTrace()
+                e.logWarning("LocalLinuxFileSystemProvider", "newFileChannel($file)")
             }
         }
         val javaFile = file.toFile()
@@ -132,8 +135,10 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) : FileSyst
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
         directory as? LinuxPath ?: throw ProviderMismatchException(directory.toString())
         val directoryBytes = directory.toByteString()
-        val mode = (PosixFileMode.fromAttributes(attributes)
-            ?: PosixFileMode.CREATE_DIRECTORY_DEFAULT).toInt()
+        val mode = (
+            PosixFileMode.fromAttributes(attributes)
+                ?: PosixFileMode.CREATE_DIRECTORY_DEFAULT
+            ).toInt()
         try {
             Syscall.mkdir(directoryBytes, mode)
         } catch (e: SyscallException) {

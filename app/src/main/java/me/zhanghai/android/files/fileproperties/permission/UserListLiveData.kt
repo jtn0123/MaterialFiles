@@ -19,7 +19,10 @@ class UserListLiveData : PrincipalListLiveData() {
                 while (true) {
                     val passwd = getpwent() ?: break
                     val user = PrincipalItem(
-                        passwd.pw_uid, passwd.pw_name?.toString(), emptyList(), emptyList()
+                        passwd.pw_uid,
+                        passwd.pw_name?.toString(),
+                        emptyList(),
+                        emptyList()
                     )
                     users.add(user)
                 }

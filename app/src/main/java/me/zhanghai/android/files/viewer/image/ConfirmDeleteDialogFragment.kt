@@ -26,13 +26,12 @@ class ConfirmDeleteDialogFragment : AppCompatDialogFragment() {
     private val listener: Listener
         get() = requireParentFragment() as Listener
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext(), theme)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext(), theme)
             .setMessage(getString(R.string.image_viewer_delete_message_format, args.path.fileName))
             .setPositiveButton(android.R.string.ok) { _, _ -> listener.delete(args.path) }
             .setNegativeButton(android.R.string.cancel, null)
             .create()
-    }
 
     companion object {
         fun show(path: Path, fragment: Fragment) {

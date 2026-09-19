@@ -12,19 +12,20 @@ import android.os.Environment
 import android.provider.Settings
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.RequiresApi
+import kotlin.reflect.KClass
 import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.app.packageManager
-import kotlin.reflect.KClass
 
 // TvSettings didn't have "All files access" page until Android 13.
 @ChecksSdkIntAtLeast(Build.VERSION_CODES.R)
-fun KClass<Environment>.supportsExternalStorageManager(): Boolean =
-    when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> true
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
-            isManageAppAllFilesAccessPermissionIntentResolved
-        else -> false
-    }
+fun KClass<Environment>.supportsExternalStorageManager(): Boolean = when {
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> true
+
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
+        isManageAppAllFilesAccessPermissionIntentResolved
+
+    else -> false
+}
 
 @RequiresApi(Build.VERSION_CODES.R)
 fun KClass<Environment>.createManageAppAllFilesAccessPermissionIntent(packageName: String): Intent =

@@ -7,12 +7,23 @@ package me.zhanghai.android.files.provider.linux
 
 import android.system.OsConstants
 import android.system.StructPollfd
+import java.io.Closeable
+import java.io.FileDescriptor
+import java.io.IOException
+import java.io.InterruptedIOException
+import java.util.LinkedList
+import java.util.Queue
+import java.util.concurrent.atomic.AtomicInteger
 import java8.nio.file.ClosedWatchServiceException
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
 import java8.nio.file.StandardWatchEventKinds
 import java8.nio.file.WatchEvent
 import java8.nio.file.attribute.BasicFileAttributes
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.runBlocking
 import me.zhanghai.android.files.provider.FileSystemProviders
 import me.zhanghai.android.files.provider.common.AbstractWatchService
@@ -21,17 +32,7 @@ import me.zhanghai.android.files.provider.linux.syscall.Constants
 import me.zhanghai.android.files.provider.linux.syscall.Syscall
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
 import me.zhanghai.android.files.util.hasBits
-import java.io.Closeable
-import java.io.FileDescriptor
-import java.io.IOException
-import java.io.InterruptedIOException
-import java.util.LinkedList
-import java.util.Queue
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
+import me.zhanghai.android.files.util.logWarning
 
 internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>() {
     private val poller = Poller(this)
@@ -51,8 +52,10 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
             when (kind) {
                 StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
                 StandardWatchEventKinds.ENTRY_MODIFY -> kindSet += kind
+
                 // Ignored.
                 StandardWatchEventKinds.OVERFLOW -> {}
+
                 else -> throw UnsupportedOperationException(kind.name())
             }
         }
@@ -71,9 +74,9 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
         poller.close()
     }
 
-    private class Poller(
-        private val watchService: LocalLinuxWatchService
-    ) : Thread("LocalLinuxWatchService.Poller-${id.getAndIncrement()}"), Closeable {
+    private class Poller(private val watchService: LocalLinuxWatchService) :
+        Thread("LocalLinuxWatchService.Poller-${id.getAndIncrement()}"),
+        Closeable {
         private val socketFds: Array<FileDescriptor>
 
         private var inotifyFd: FileDescriptor
@@ -95,7 +98,9 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
                 val flags = Syscall.fcntl(socketFds[0], OsConstants.F_GETFL)
                 if (!flags.hasBits(OsConstants.O_NONBLOCK)) {
                     Syscall.fcntl(
-                        socketFds[0], OsConstants.F_SETFL, flags or OsConstants.O_NONBLOCK
+                        socketFds[0],
+                        OsConstants.F_SETFL,
+                        flags or OsConstants.O_NONBLOCK
                     )
                 }
                 inotifyFd = Syscall.inotify_init1(OsConstants.O_NONBLOCK)
@@ -105,35 +110,34 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
         }
 
         @Throws(IOException::class)
-        fun register(path: LinuxPath, kinds: Set<WatchEvent.Kind<*>>): LocalLinuxWatchKey =
-            try {
-                runBlocking<LocalLinuxWatchKey> {
-                    suspendCoroutine { continuation ->
-                        post(true, continuation) {
-                            try {
-                                val pathBytes = path.toByteString()
-                                var mask = eventKindsToMask(kinds)
-                                mask = maybeAddDontFollowMask(path, mask)
-                                val wd = try {
-                                    Syscall.inotify_add_watch(inotifyFd, pathBytes, mask)
-                                } catch (e: SyscallException) {
-                                    continuation.resumeWithException(
-                                        e.toFileSystemException(pathBytes.toString())
-                                    )
-                                    return@post
-                                }
-                                val key = LocalLinuxWatchKey(watchService, path, wd)
-                                keys[wd] = key
-                                continuation.resume(key)
-                            } catch (e: RuntimeException) {
-                                continuation.resumeWithException(e)
+        fun register(path: LinuxPath, kinds: Set<WatchEvent.Kind<*>>): LocalLinuxWatchKey = try {
+            runBlocking<LocalLinuxWatchKey> {
+                suspendCoroutine { continuation ->
+                    post(true, continuation) {
+                        try {
+                            val pathBytes = path.toByteString()
+                            var mask = eventKindsToMask(kinds)
+                            mask = maybeAddDontFollowMask(path, mask)
+                            val wd = try {
+                                Syscall.inotify_add_watch(inotifyFd, pathBytes, mask)
+                            } catch (e: SyscallException) {
+                                continuation.resumeWithException(
+                                    e.toFileSystemException(pathBytes.toString())
+                                )
+                                return@post
                             }
+                            val key = LocalLinuxWatchKey(watchService, path, wd)
+                            keys[wd] = key
+                            continuation.resume(key)
+                        } catch (e: RuntimeException) {
+                            continuation.resumeWithException(e)
                         }
                     }
                 }
-            } catch (e: InterruptedException) {
-                throw InterruptedIOException().apply { initCause(e) }
             }
+        } catch (e: InterruptedException) {
+            throw InterruptedIOException().apply { initCause(e) }
+        }
 
         private fun maybeAddDontFollowMask(path: Path, mask: Int): Int {
             val attributes = try {
@@ -164,7 +168,7 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
                                         Syscall.inotify_rm_watch(inotifyFd, wd)
                                     } catch (e: SyscallException) {
                                         e.toFileSystemException(key.watchable().toString())
-                                            .printStackTrace()
+                                            .logWarning("LocalLinuxWatchService", "poll")
                                     }
                                     key.setInvalid()
                                     keys.remove(wd)
@@ -177,7 +181,7 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.logWarning("LocalLinuxWatchService", "cancel")
             }
         }
 
@@ -206,7 +210,7 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
                                     Syscall.close(socketFds[1])
                                     Syscall.close(socketFds[0])
                                 } catch (e: SyscallException) {
-                                    e.printStackTrace()
+                                    e.logWarning("LocalLinuxWatchService", "close")
                                 }
                                 isClosed = true
                                 continuation.resume(Unit)
@@ -310,17 +314,16 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
                     }
                 }
             } catch (e: InterruptedIOException) {
-                e.printStackTrace()
+                e.logWarning("LocalLinuxWatchService", "run")
             } catch (e: SyscallException) {
-                e.printStackTrace()
+                e.logWarning("LocalLinuxWatchService", "run")
             }
         }
 
-        private fun createStructPollFd(fd: FileDescriptor): StructPollfd =
-            StructPollfd().apply {
-                this.fd = fd
-                events = OsConstants.POLLIN.toShort()
-            }
+        private fun createStructPollFd(fd: FileDescriptor): StructPollfd = StructPollfd().apply {
+            this.fd = fd
+            events = OsConstants.POLLIN.toShort()
+        }
 
         private fun eventKindsToMask(kinds: Set<WatchEvent.Kind<*>>): Int {
             var mask = 0
@@ -328,28 +331,36 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
                 when (kind) {
                     StandardWatchEventKinds.ENTRY_CREATE ->
                         mask = mask or (Constants.IN_CREATE or Constants.IN_MOVED_TO)
+
                     StandardWatchEventKinds.ENTRY_DELETE ->
-                        mask = mask or (Constants.IN_DELETE_SELF or Constants.IN_DELETE
-                            or Constants.IN_MOVED_FROM)
+                        mask = mask or (
+                            Constants.IN_DELETE_SELF or Constants.IN_DELETE
+                                or Constants.IN_MOVED_FROM
+                            )
+
                     StandardWatchEventKinds.ENTRY_MODIFY ->
-                        mask = mask or (Constants.IN_MOVE_SELF or Constants.IN_MODIFY
-                            or Constants.IN_ATTRIB)
+                        mask = mask or (
+                            Constants.IN_MOVE_SELF or Constants.IN_MODIFY
+                                or Constants.IN_ATTRIB
+                            )
                 }
             }
             return mask
         }
 
-        private fun maskToEventKind(mask: Int): WatchEvent.Kind<Path> =
-            when {
-                mask.hasBits(Constants.IN_CREATE) || mask.hasBits(Constants.IN_MOVED_TO) ->
-                    StandardWatchEventKinds.ENTRY_CREATE
-                mask.hasBits(Constants.IN_DELETE_SELF) || mask.hasBits(Constants.IN_DELETE)
-                    || mask.hasBits(Constants.IN_MOVED_FROM) ->
-                    StandardWatchEventKinds.ENTRY_DELETE
-                mask.hasBits(Constants.IN_MOVE_SELF) || mask.hasBits(Constants.IN_MODIFY)
-                    || mask.hasBits(Constants.IN_ATTRIB) -> StandardWatchEventKinds.ENTRY_MODIFY
-                else -> throw AssertionError(mask)
-            }
+        private fun maskToEventKind(mask: Int): WatchEvent.Kind<Path> = when {
+            mask.hasBits(Constants.IN_CREATE) || mask.hasBits(Constants.IN_MOVED_TO) ->
+                StandardWatchEventKinds.ENTRY_CREATE
+
+            mask.hasBits(Constants.IN_DELETE_SELF) || mask.hasBits(Constants.IN_DELETE) ||
+                mask.hasBits(Constants.IN_MOVED_FROM) ->
+                StandardWatchEventKinds.ENTRY_DELETE
+
+            mask.hasBits(Constants.IN_MOVE_SELF) || mask.hasBits(Constants.IN_MODIFY) ||
+                mask.hasBits(Constants.IN_ATTRIB) -> StandardWatchEventKinds.ENTRY_MODIFY
+
+            else -> throw AssertionError(mask)
+        }
 
         companion object {
             private val ONE_BYTE = ByteArray(1)

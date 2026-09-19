@@ -30,10 +30,9 @@ inline fun Size.widthPx(scale: Scale, original: () -> Int): Int =
 inline fun Size.heightPx(scale: Scale, original: () -> Int): Int =
     if (isOriginal) original() else height.toPx(scale)
 
-fun Dimension.toPx(scale: Scale) =
-    pxOrElse {
-        when (scale) {
-            Scale.FILL -> Int.MIN_VALUE
-            Scale.FIT -> Int.MAX_VALUE
-        }
+fun Dimension.toPx(scale: Scale) = pxOrElse {
+    when (scale) {
+        Scale.FILL -> Int.MIN_VALUE
+        Scale.FIT -> Int.MAX_VALUE
     }
+}

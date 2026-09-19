@@ -54,9 +54,10 @@ abstract class SetPrincipalViewModel(
             value = principalListStateful
         }
 
-        private fun PrincipalItem.applyFilter(filter: String): Boolean =
-            (filter in id.toString() || (name != null && filter in name)
-                || applicationInfos.any { filter in it.packageName }
-                || applicationLabels.any { filter in it })
+        private fun PrincipalItem.applyFilter(filter: String): Boolean = (
+            filter in id.toString() || (name != null && filter in name) ||
+                applicationInfos.any { filter in it.packageName } ||
+                applicationLabels.any { filter in it }
+            )
     }
 }

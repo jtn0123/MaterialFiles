@@ -7,6 +7,7 @@ package me.zhanghai.android.files.provider.ftp
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.IOException
 import java8.nio.file.FileStore
 import java8.nio.file.FileSystem
 import java8.nio.file.Path
@@ -21,12 +22,13 @@ import me.zhanghai.android.files.provider.common.LocalWatchService
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.ftp.client.Authority
 import me.zhanghai.android.files.util.readParcelable
-import java.io.IOException
 
 internal class FtpFileSystem(
     private val provider: FtpFileSystemProvider,
     val authority: Authority
-) : FileSystem(), ByteStringListPathCreator, Parcelable {
+) : FileSystem(),
+    ByteStringListPathCreator,
+    Parcelable {
     val rootDirectory = FtpPath(this, SEPARATOR_BYTE_STRING)
 
     init {
@@ -70,8 +72,7 @@ internal class FtpFileSystem(
         throw UnsupportedOperationException()
     }
 
-    override fun supportedFileAttributeViews(): Set<String> =
-        FtpFileAttributeView.SUPPORTED_NAMES
+    override fun supportedFileAttributeViews(): Set<String> = FtpFileAttributeView.SUPPORTED_NAMES
 
     override fun getPath(first: String, vararg more: String): FtpPath {
         val path = ByteStringBuilder(first.toByteString())
@@ -87,13 +88,11 @@ internal class FtpFileSystem(
         return FtpPath(this, path)
     }
 
-    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher {
+    override fun getPathMatcher(syntaxAndPattern: String): PathMatcher =
         throw UnsupportedOperationException()
-    }
 
-    override fun getUserPrincipalLookupService(): UserPrincipalLookupService {
+    override fun getUserPrincipalLookupService(): UserPrincipalLookupService =
         throw UnsupportedOperationException()
-    }
 
     @Throws(IOException::class)
     override fun newWatchService(): WatchService = LocalWatchService()

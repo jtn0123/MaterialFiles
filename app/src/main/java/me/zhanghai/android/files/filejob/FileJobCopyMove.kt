@@ -20,6 +20,7 @@ import me.zhanghai.android.files.provider.common.ProgressCopyOption
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.common.moveTo
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 enum class CopyMoveType {
@@ -273,17 +274,10 @@ internal fun FileJob.copyOrMove(
 
                 CopyConflictDecision.CANCEL -> throw InterruptedIOException()
             }
-        } catch (e: InvalidFileNameException) {
-            // TODO: Prompt invalid name.
-            if (false) {
-                retry = true
-                continue
-            }
-            throw e
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("FileJobCopyMove", "copyOrMove($source)")
             if (actionAllInfo.skipCopyMoveError) {
                 recordSkippedError()
                 transferInfo.skipFile(source)
@@ -317,7 +311,8 @@ internal fun FileJob.copyOrMove(
                 ),
                 getReadOnlyFileStore(target, e),
                 true,
-                getString(R.string.retry),
+                // The same name fails again, so an invalid name offers skip and cancel only.
+                if (e is InvalidFileNameException) null else getString(R.string.retry),
                 getString(R.string.skip),
                 getString(android.R.string.cancel)
             )

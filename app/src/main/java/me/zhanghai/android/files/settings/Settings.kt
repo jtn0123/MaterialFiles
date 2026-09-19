@@ -108,6 +108,10 @@ object Settings {
             R.string.pref_default_value_ftp_server_username
         )
 
+    /**
+     * Encrypted like the stored servers' credentials; the FTP server preference screen reads
+     * and writes it through this setting rather than through its own preferences file.
+     */
     val FTP_SERVER_PASSWORD: SettingLiveData<String> =
         EncryptedStringSettingLiveData(
             NAME_SUFFIX_NO_BACKUP,
@@ -122,6 +126,15 @@ object Settings {
             R.string.pref_key_ftp_server_port,
             null,
             R.integer.pref_default_value_ftp_server_port
+        )
+
+    /** Passive-mode data ports in Apache FtpServer's syntax, or empty for any free port. */
+    val FTP_SERVER_PASSIVE_PORTS: SettingLiveData<String> =
+        StringSettingLiveData(
+            NAME_SUFFIX_NO_BACKUP,
+            R.string.pref_key_ftp_server_passive_ports,
+            null,
+            R.string.pref_default_value_ftp_server_passive_ports
         )
 
     val FTP_SERVER_HOME_DIRECTORY: SettingLiveData<Path> =

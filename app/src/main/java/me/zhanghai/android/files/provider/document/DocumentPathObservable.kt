@@ -14,10 +14,8 @@ import me.zhanghai.android.files.provider.common.AbstractPathObservable
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
 
-internal class DocumentPathObservable(
-    path: DocumentPath,
-    intervalMillis: Long
-) : AbstractPathObservable(intervalMillis) {
+internal class DocumentPathObservable(path: DocumentPath, intervalMillis: Long) :
+    AbstractPathObservable(intervalMillis) {
     private val cursor: Cursor
 
     private val contentObserver = object : ContentObserver(handler) {

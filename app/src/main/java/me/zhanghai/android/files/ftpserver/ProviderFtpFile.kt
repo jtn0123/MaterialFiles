@@ -5,6 +5,10 @@
 
 package me.zhanghai.android.files.ftpserver
 
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.nio.ByteBuffer
 import java8.nio.file.Path
 import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.FileTime
@@ -29,16 +33,13 @@ import me.zhanghai.android.files.provider.common.size
 import org.apache.ftpserver.ftplet.FtpFile
 import org.apache.ftpserver.ftplet.User
 import org.apache.ftpserver.usermanager.impl.WriteRequest
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.nio.ByteBuffer
 
 class ProviderFtpFile(
     private val path: Path,
     private val relativePath: Path,
     private val user: User
-) : Comparable<ProviderFtpFile>, FtpFile {
+) : Comparable<ProviderFtpFile>,
+    FtpFile {
     override fun getAbsolutePath(): String {
         val path = relativePath.toString()
         return "/$path"
@@ -76,15 +77,14 @@ class ProviderFtpFile(
         return path.parent.isWritable
     }
 
-    override fun getOwnerName(): String =
-        try {
-            path.getOwner().name
-        } catch (ignored: UnsupportedOperationException) {
-            null
-        } catch (e: IOException) {
-            e.printStackTrace()
-            null
-        } ?: "user"
+    override fun getOwnerName(): String = try {
+        path.getOwner().name
+    } catch (ignored: UnsupportedOperationException) {
+        null
+    } catch (e: IOException) {
+        e.printStackTrace()
+        null
+    } ?: "user"
 
     override fun getGroupName(): String {
         val attributeView = path.getFileAttributeView(PosixFileAttributeView::class.java)
@@ -102,62 +102,57 @@ class ProviderFtpFile(
 
     override fun getLinkCount(): Int = if (isDirectory) 3 else 1
 
-    override fun getLastModified(): Long =
+    override fun getLastModified(): Long = try {
+        path.getLastModifiedTime().toMillis()
+    } catch (e: IOException) {
+        e.printStackTrace()
+        0
+    }
+
+    override fun setLastModified(time: Long): Boolean = if (!isWritable) {
+        false
+    } else {
         try {
-            path.getLastModifiedTime().toMillis()
+            path.setLastModifiedTime(FileTime.fromMillis(time))
+            true
         } catch (e: IOException) {
             e.printStackTrace()
-            0
-        }
-
-    override fun setLastModified(time: Long): Boolean =
-        if (!isWritable) {
             false
-        } else {
-            try {
-                path.setLastModifiedTime(FileTime.fromMillis(time))
-                true
-            } catch (e: IOException) {
-                e.printStackTrace()
-                false
-            }
         }
+    }
 
-    override fun getSize(): Long =
-        try {
-            path.size()
-        } catch (e: IOException) {
-            e.printStackTrace()
-            0
-        }
+    override fun getSize(): Long = try {
+        path.size()
+    } catch (e: IOException) {
+        e.printStackTrace()
+        0
+    }
 
     override fun getPhysicalFile(): Path = path
 
-    override fun mkdir(): Boolean =
-        if (!isWritable) {
+    override fun mkdir(): Boolean = if (!isWritable) {
+        false
+    } else {
+        try {
+            path.createDirectory()
+            true
+        } catch (e: IOException) {
+            e.printStackTrace()
             false
-        } else {
-            try {
-                path.createDirectory()
-                true
-            } catch (e: IOException) {
-                e.printStackTrace()
-                false
-            }
         }
+    }
 
-    override fun delete(): Boolean =
-        if (!isRemovable) {
+    override fun delete(): Boolean = if (!isRemovable) {
+        false
+    } else {
+        try {
+            path.delete()
+            true
+        } catch (e: IOException) {
+            e.printStackTrace()
             false
-        } else {
-            try {
-                path.delete()
-                true
-            } catch (e: IOException) {
-                e.printStackTrace()
-                false
-            }
         }
+    }
 
     override fun move(destination: FtpFile): Boolean {
         if (!(isRemovable && destination.isWritable)) {
@@ -218,21 +213,19 @@ class ProviderFtpFile(
     }
 
     @Throws(IOException::class)
-    override fun createInputStream(offset: Long): InputStream {
-        return if (offset == 0L) {
-            path.newInputStream()
-        } else {
-            val channel = path.newByteChannel()
-            var successful = false
-            try {
-                channel.position(offset)
-                val inputStream = channel.newInputStream()
-                successful = true
-                inputStream
-            } finally {
-                if (!successful) {
-                    channel.close()
-                }
+    override fun createInputStream(offset: Long): InputStream = if (offset == 0L) {
+        path.newInputStream()
+    } else {
+        val channel = path.newByteChannel()
+        var successful = false
+        try {
+            channel.position(offset)
+            val inputStream = channel.newInputStream()
+            successful = true
+            inputStream
+        } finally {
+            if (!successful) {
+                channel.close()
             }
         }
     }

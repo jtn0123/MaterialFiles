@@ -7,9 +7,9 @@ package me.zhanghai.android.files.provider.common
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.Serializable
 import me.zhanghai.android.files.compat.readSerializableCompat
 import me.zhanghai.android.files.util.toEnumSet
-import java.io.Serializable
 
 class ParcelablePosixFileMode(val value: Set<PosixFileModeBit>) : Parcelable {
     private constructor(source: Parcel) : this(

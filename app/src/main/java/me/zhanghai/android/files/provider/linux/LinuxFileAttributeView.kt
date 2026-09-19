@@ -17,11 +17,13 @@ internal class LinuxFileAttributeView constructor(
     private val path: LinuxPath,
     private val noFollowLinks: Boolean
 ) : RootablePosixFileAttributeView(
-    path, LocalLinuxFileAttributeView(path.toByteString(), noFollowLinks),
+    path,
+    LocalLinuxFileAttributeView(path.toByteString(), noFollowLinks),
     { RootPosixFileAttributeView(it) }
 ) {
     private constructor(source: Parcel) : this(
-        source.readParcelable()!!, source.readBooleanCompat()
+        source.readParcelable()!!,
+        source.readBooleanCompat()
     )
 
     override fun describeContents(): Int = 0

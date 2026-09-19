@@ -10,6 +10,7 @@ import java.io.InterruptedIOException
 import java8.nio.file.Path
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class RenameFileJob(private val path: Path, private val newName: String) : FileJob() {
@@ -30,7 +31,7 @@ private fun FileJob.rename(path: Path, newPath: Path) {
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("RenameFileJob", "rename($path)")
             if (e is UserActionRequiredException) {
                 val result = showUserAction(e)
                 if (result) {

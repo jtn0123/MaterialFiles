@@ -12,9 +12,12 @@ import me.zhanghai.android.files.provider.common.ByteStringListPathCreator
 import me.zhanghai.android.files.provider.root.RootFileSystem
 import me.zhanghai.android.files.provider.root.RootableFileSystem
 
-internal class LinuxFileSystem(provider: LinuxFileSystemProvider) : RootableFileSystem(
-    { LocalLinuxFileSystem(it as LinuxFileSystem, provider) }, { RootFileSystem(it) }
-), ByteStringListPathCreator {
+internal class LinuxFileSystem(provider: LinuxFileSystemProvider) :
+    RootableFileSystem(
+        { LocalLinuxFileSystem(it as LinuxFileSystem, provider) },
+        { RootFileSystem(it) }
+    ),
+    ByteStringListPathCreator {
     override val localFileSystem: LocalLinuxFileSystem
         get() = super.localFileSystem as LocalLinuxFileSystem
 
@@ -27,9 +30,7 @@ internal class LinuxFileSystem(provider: LinuxFileSystemProvider) : RootableFile
     override fun getPath(first: ByteString, vararg more: ByteString): LinuxPath =
         localFileSystem.getPath(first, *more)
 
-    override fun close() {
-        throw UnsupportedOperationException()
-    }
+    override fun close(): Unit = throw UnsupportedOperationException()
 
     override fun describeContents(): Int = 0
 

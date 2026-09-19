@@ -53,7 +53,9 @@ class ThemedSpeedDialView : SpeedDialView {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     init {
@@ -113,24 +115,27 @@ class ThemedSpeedDialView : SpeedDialView {
         this.onChangeListener = onChangeListener
     }
 
-    private fun createMainFabAnimator(isOpen: Boolean): Animator =
-        AnimatorSet().apply {
-            playTogether(
-                ObjectAnimator.ofArgb(
-                    mainFab, VIEW_PROPERTY_BACKGROUND_TINT,
-                    if (isOpen) mainFabOpenedBackgroundColor else mainFabClosedBackgroundColor
-                ),
-                ObjectAnimator.ofArgb(
-                    mainFab, IMAGE_VIEW_PROPERTY_IMAGE_TINT,
-                    if (isOpen) mainFabOpenedIconColor else mainFabClosedIconColor
-                ),
-                ObjectAnimator.ofInt(
-                    mainFab.drawable, DRAWABLE_PROPERTY_LEVEL, if (isOpen) 10000 else 0
-                )
+    private fun createMainFabAnimator(isOpen: Boolean): Animator = AnimatorSet().apply {
+        playTogether(
+            ObjectAnimator.ofArgb(
+                mainFab,
+                VIEW_PROPERTY_BACKGROUND_TINT,
+                if (isOpen) mainFabOpenedBackgroundColor else mainFabClosedBackgroundColor
+            ),
+            ObjectAnimator.ofArgb(
+                mainFab,
+                IMAGE_VIEW_PROPERTY_IMAGE_TINT,
+                if (isOpen) mainFabOpenedIconColor else mainFabClosedIconColor
+            ),
+            ObjectAnimator.ofInt(
+                mainFab.drawable,
+                DRAWABLE_PROPERTY_LEVEL,
+                if (isOpen) 10000 else 0
             )
-            duration = context.shortAnimTime.toLong()
-            interpolator = FastOutSlowInInterpolator()
-        }
+        )
+        duration = context.shortAnimTime.toLong()
+        interpolator = FastOutSlowInInterpolator()
+    }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()

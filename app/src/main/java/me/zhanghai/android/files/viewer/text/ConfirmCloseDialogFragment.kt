@@ -17,13 +17,12 @@ class ConfirmCloseDialogFragment : AppCompatDialogFragment() {
     private val listener: Listener
         get() = requireParentFragment() as Listener
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext(), theme)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext(), theme)
             .setMessage(R.string.text_editor_close_message)
             .setPositiveButton(R.string.keep_editing, null)
             .setNegativeButton(R.string.discard) { _, _ -> listener.finish() }
             .create()
-    }
 
     companion object {
         fun show(fragment: Fragment) {

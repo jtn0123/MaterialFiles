@@ -7,9 +7,9 @@ package me.zhanghai.android.files.util
 
 import android.location.Address
 import android.location.Geocoder
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.IOException
 
 val isGeocoderPresent by lazy { Geocoder.isPresent() }
 
@@ -18,8 +18,7 @@ suspend fun Geocoder.awaitGetFromLocation(
     latitude: Double,
     longitude: Double,
     maxResults: Int
-): List<Address> =
-    withContext(Dispatchers.IO) {
-        getFromLocation(latitude, longitude, maxResults)
-            ?: throw IOException(NullPointerException())
-    }
+): List<Address> = withContext(Dispatchers.IO) {
+    getFromLocation(latitude, longitude, maxResults)
+        ?: throw IOException(NullPointerException())
+}

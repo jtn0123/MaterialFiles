@@ -21,6 +21,14 @@ public class RemoteFileAccessor {
     }
 
     @NonNull
+    public static Promise<Response, SFTPException> asyncWrite(@NonNull RemoteFile file,
+                                                              long fileOffset,
+                                                              @NonNull byte[] data, int offset,
+                                                              int length) throws IOException {
+        return file.asyncWrite(fileOffset, data, offset, length);
+    }
+
+    @NonNull
     public static SFTPEngine getRequester(@NonNull RemoteFile file) {
         return file.requester;
     }

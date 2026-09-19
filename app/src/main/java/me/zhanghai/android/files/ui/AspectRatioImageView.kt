@@ -10,10 +10,10 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import com.google.android.material.imageview.ShapeableImageView
+import kotlin.math.roundToInt
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.obtainStyledAttributesCompat
 import me.zhanghai.android.files.compat.use
-import kotlin.math.roundToInt
 
 open class AspectRatioImageView @JvmOverloads constructor(
     context: Context,
@@ -22,7 +22,9 @@ open class AspectRatioImageView @JvmOverloads constructor(
 ) : ShapeableImageView(context, attrs, defStyleAttr) {
     @SuppressLint("RestrictedApi")
     var ratio: Float = context.obtainStyledAttributesCompat(
-        attrs, R.styleable.AspectRatioFrameLayout, defStyleAttr
+        attrs,
+        R.styleable.AspectRatioFrameLayout,
+        defStyleAttr
     ).use { it.getFloat(R.styleable.AspectRatioFrameLayout_aspectRatio, 0f) }
         set(value) {
             if (field == value) {

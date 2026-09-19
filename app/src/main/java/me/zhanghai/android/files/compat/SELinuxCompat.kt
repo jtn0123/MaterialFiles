@@ -7,11 +7,11 @@ package me.zhanghai.android.files.compat
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import java.io.File
+import java.io.FileDescriptor
 import me.zhanghai.android.files.hiddenapi.RestrictedHiddenApi
 import me.zhanghai.android.files.util.lazyReflectedClass
 import me.zhanghai.android.files.util.lazyReflectedMethod
-import java.io.File
-import java.io.FileDescriptor
 
 /*
  * @see android.os.SELinux
@@ -24,48 +24,81 @@ object SELinuxCompat {
     private val seLinuxClass by lazyReflectedClass("android.os.SELinux")
     private val isSELinuxEnabledMethod by lazyReflectedMethod(seLinuxClass, "isSELinuxEnabled")
     private val isSELinuxEnforcedMethod by lazyReflectedMethod(seLinuxClass, "isSELinuxEnforced")
+
     @RestrictedHiddenApi
     private val setFSCreateContextMethod by lazyReflectedMethod(
-        seLinuxClass, "setFSCreateContext", String::class.java
+        seLinuxClass,
+        "setFSCreateContext",
+        String::class.java
     )
+
     @RestrictedHiddenApi
     private val setFileContextMethod by lazyReflectedMethod(
-        seLinuxClass, "setFileContext", String::class.java, String::class.java
+        seLinuxClass,
+        "setFileContext",
+        String::class.java,
+        String::class.java
     )
     private val getFileContextStringMethod by lazyReflectedMethod(
-        seLinuxClass, "getFileContext", String::class.java
+        seLinuxClass,
+        "getFileContext",
+        String::class.java
     )
+
     @RestrictedHiddenApi
     private val getPeerContextMethod by lazyReflectedMethod(
-        seLinuxClass, "getPeerContext", FileDescriptor::class.java
+        seLinuxClass,
+        "getPeerContext",
+        FileDescriptor::class.java
     )
+
     @get:RequiresApi(Build.VERSION_CODES.Q)
     @RestrictedHiddenApi
     private val getFileContextFileDescriptorMethod by lazyReflectedMethod(
-        seLinuxClass, "getFileContext", FileDescriptor::class.java
+        seLinuxClass,
+        "getFileContext",
+        FileDescriptor::class.java
     )
     private val getContextMethod by lazyReflectedMethod(seLinuxClass, "getContext")
     private val getPidContextMethod by lazyReflectedMethod(
-        seLinuxClass, "getPidContext", Int::class.java
+        seLinuxClass,
+        "getPidContext",
+        Int::class.java
     )
     private val checkSELinuxAccessMethod by lazyReflectedMethod(
-        seLinuxClass, "checkSELinuxAccess", String::class.java, String::class.java,
-        String::class.java, String::class.java
+        seLinuxClass,
+        "checkSELinuxAccess",
+        String::class.java,
+        String::class.java,
+        String::class.java,
+        String::class.java
     )
+
     @RestrictedHiddenApi
     private val nativeRestoreconMethod by lazyReflectedMethod(
-        seLinuxClass, "native_restorecon", String::class.java, Int::class.java
+        seLinuxClass,
+        "native_restorecon",
+        String::class.java,
+        Int::class.java
     )
+
     @RestrictedHiddenApi
     private val restoreconStringMethod by lazyReflectedMethod(
-        seLinuxClass, "restorecon", String::class.java
+        seLinuxClass,
+        "restorecon",
+        String::class.java
     )
+
     @RestrictedHiddenApi
     private val restoreconFileMethod by lazyReflectedMethod(
-        seLinuxClass, "restorecon", File::class.java
+        seLinuxClass,
+        "restorecon",
+        File::class.java
     )
     private val restoreconRecursiveMethod by lazyReflectedMethod(
-        seLinuxClass, "restoreconRecursive", File::class.java
+        seLinuxClass,
+        "restoreconRecursive",
+        File::class.java
     )
 
     val isSELinuxEnabled: Boolean

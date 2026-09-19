@@ -14,6 +14,7 @@ import me.zhanghai.android.files.app.mainExecutor
 import me.zhanghai.android.files.file.asFileSize
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.copyTo
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class WriteFileJob(
@@ -56,7 +57,7 @@ private fun FileJob.write(file: Path, content: ByteArray): Boolean {
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("WriteFileJob", "write($file)")
             if (e is UserActionRequiredException) {
                 val result = showUserAction(e)
                 if (result) {

@@ -11,7 +11,7 @@ import me.zhanghai.android.files.file.isSupportedArchive
 import me.zhanghai.android.files.provider.archive.archiveFile
 import me.zhanghai.android.files.provider.archive.isArchivePath
 import me.zhanghai.android.files.provider.document.isDocumentPath
-import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
+import me.zhanghai.android.files.provider.document.isLocalDocument
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 
 val Path.name: String
@@ -23,7 +23,7 @@ fun Path.isArchiveFile(mimeType: MimeType): Boolean = !isArchivePath && mimeType
 
 val Path.isLocalPath: Boolean
     get() =
-        isLinuxPath || (isDocumentPath && DocumentResolver.isLocal(this as DocumentResolver.Path))
+        isLinuxPath || (isDocumentPath && isLocalDocument)
 
 val Path.isRemotePath: Boolean
     get() = !isLocalPath

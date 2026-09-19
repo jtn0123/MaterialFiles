@@ -5,26 +5,27 @@
 
 package me.zhanghai.android.files.provider.sftp.client
 
-import android.os.Build
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 // @see https://android-developers.googleblog.com/2018/03/cryptography-changes-in-android-p.html
 // @see net.schmizz.sshj.common.SecurityUtils
 // @see net.schmizz.sshj.DefaultConfig.DefaultConfig
-// SSHJ requires BouncyCastle to be registered before enabling most functionality by default, so we
-// better keep BouncyCastle registered.
+/**
+ * SSHJ requires the full Bouncy Castle to be registered as a security provider before most of
+ * its functionality works, so it replaces the platform's stripped-down one. Constructing and
+ * registering the provider costs most of a second on the main thread, so it is done once, on
+ * demand, by [ensureInitialized]: the file system provider kicks it off on a worker at startup
+ * and the client makes sure of it before its first connection.
+ */
 object SecurityProviderHelper {
-    fun init() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP_MR1) {
-            // On older Android versions, JarURLConnectionImpl.getInputStream() throws a
-            // "SecurityException: Incorrect signature" when it's called by Apache FTPServer if we
-            // replace Bouncy Castle. We are only required to replace Bouncy Castle on P and above
-            // anyway, so don't do that before Lollipop MR1.
-            return
-        }
+    private val initialization = lazy {
         val bouncyCastleProvider = BouncyCastleProvider()
         Security.removeProvider(bouncyCastleProvider.name)
         Security.addProvider(bouncyCastleProvider)
+    }
+
+    fun ensureInitialized() {
+        initialization.value
     }
 }

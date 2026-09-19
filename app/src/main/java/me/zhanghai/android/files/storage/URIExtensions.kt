@@ -8,13 +8,12 @@ import kotlin.reflect.KClass
 fun KClass<URI>.canonicalizeHost(host: String): String =
     if (host.contains(':') && !host.startsWith('[') && !host.endsWith(']')) "[$host]" else host
 
-fun KClass<URI>.createOrLog(uri: String): URI? =
-    try {
-        URI(uri)
-    } catch (e: URISyntaxException) {
-        e.printStackTrace()
-        null
-    }
+fun KClass<URI>.createOrLog(uri: String): URI? = try {
+    URI(uri)
+} catch (e: URISyntaxException) {
+    e.printStackTrace()
+    null
+}
 
 fun KClass<URI>.createOrLog(
     scheme: String?,
@@ -24,18 +23,16 @@ fun KClass<URI>.createOrLog(
     path: String?,
     query: String?,
     fragment: String?
-): URI? =
-    try {
-        URI(scheme, userInfo, host, port, path, query, fragment)
-    } catch (e: URISyntaxException) {
-        e.printStackTrace()
-        null
-    }
+): URI? = try {
+    URI(scheme, userInfo, host, port, path, query, fragment)
+} catch (e: URISyntaxException) {
+    e.printStackTrace()
+    null
+}
 
-fun KClass<URI>.isValidHost(host: String): Boolean =
-    try {
-        URI(null, null, host, -1, null, null, null)
-        true
-    } catch (e: URISyntaxException) {
-        false
-    }
+fun KClass<URI>.isValidHost(host: String): Boolean = try {
+    URI(null, null, host, -1, null, null, null)
+    true
+} catch (e: URISyntaxException) {
+    false
+}

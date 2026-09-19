@@ -12,8 +12,8 @@ import android.os.Build
 import android.os.Environment
 import android.os.storage.StorageVolume
 import android.provider.DocumentsContract
-import me.zhanghai.android.files.util.lazyReflectedMethod
 import java.io.File
+import me.zhanghai.android.files.util.lazyReflectedMethod
 
 // Work around @SuppressLint not applicable to top level property with delegate.
 @SuppressLint("NewApi")
@@ -74,7 +74,8 @@ fun StorageVolume.createOpenDocumentTreeIntentCompat(): Intent =
                 uuidCompat
             }
             val rootUri = DocumentsContract.buildRootUri(
-                DocumentsContractCompat.EXTERNAL_STORAGE_PROVIDER_AUTHORITY, rootId
+                DocumentsContractCompat.EXTERNAL_STORAGE_PROVIDER_AUTHORITY,
+                rootId
             )
             putExtra(DocumentsContractCompat.EXTRA_INITIAL_URI, rootUri)
             putExtra(DocumentsContractCompat.EXTRA_SHOW_ADVANCED, true)

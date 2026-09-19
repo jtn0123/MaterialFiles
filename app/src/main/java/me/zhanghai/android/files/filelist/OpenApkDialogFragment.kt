@@ -24,15 +24,14 @@ class OpenApkDialogFragment : AppCompatDialogFragment() {
     private val listener: Listener
         get() = requireParentFragment() as Listener
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext(), theme)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext(), theme)
             .setMessage(R.string.file_open_apk_message)
             .setPositiveButton(R.string.install) { _, _ -> listener.installApk(args.file) }
             // While semantically incorrect, this places the two most expected actions side by side.
             .setNegativeButton(R.string.view) { _, _ -> listener.viewApk(args.file) }
             .setNeutralButton(android.R.string.cancel, null)
             .create()
-    }
 
     companion object {
         fun show(file: FileItem, fragment: Fragment) {

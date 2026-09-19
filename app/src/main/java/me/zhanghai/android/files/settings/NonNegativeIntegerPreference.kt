@@ -12,9 +12,9 @@ import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
 import androidx.preference.EditTextPreference.OnBindEditTextListener
-import com.takisoft.preferencex.EditTextPreference
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.compat.DigitsKeyListenerCompat
+import me.zhanghai.android.files.ui.EditTextPreference
 import me.zhanghai.android.files.util.ParcelableState
 
 class NonNegativeIntegerPreference : EditTextPreference {
@@ -40,7 +40,9 @@ class NonNegativeIntegerPreference : EditTextPreference {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(
@@ -51,7 +53,7 @@ class NonNegativeIntegerPreference : EditTextPreference {
     ) : super(context, attrs, defStyleAttr, defStyleRes)
 
     init {
-        onBindEditTextListener = OnBindEditTextListener {
+        setOnBindEditTextListener {
             it.keyListener = DigitsKeyListenerCompat.getInstance(null, false, false)
         }
     }

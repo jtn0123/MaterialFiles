@@ -13,12 +13,12 @@ import android.system.OsConstants
 import android.system.StructPollfd
 import android.system.StructStatVfs
 import androidx.annotation.Size
+import java.io.FileDescriptor
+import java.io.InterruptedIOException
 import me.zhanghai.android.files.compat.SELinuxCompat
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.moveToByteString
 import me.zhanghai.android.libselinux.SeLinux
-import java.io.FileDescriptor
-import java.io.InterruptedIOException
 
 object Syscall {
     init {
@@ -72,12 +72,11 @@ object Syscall {
     private external fun fcntl_void(fd: FileDescriptor, cmd: Int): Int
 
     @Throws(SyscallException::class)
-    fun getfilecon(path: ByteString): ByteString =
-        try {
-            SeLinux.getfilecon(path.borrowBytes()).moveToByteString()
-        } catch (e: ErrnoException) {
-            throw SyscallException(e)
-        }
+    fun getfilecon(path: ByteString): ByteString = try {
+        SeLinux.getfilecon(path.borrowBytes()).moveToByteString()
+    } catch (e: ErrnoException) {
+        throw SyscallException(e)
+    }
 
     @kotlin.jvm.JvmStatic
     @Throws(SyscallException::class)
@@ -129,12 +128,11 @@ object Syscall {
     external fun lchown(path: ByteString, uid: Int, gid: Int)
 
     @Throws(SyscallException::class)
-    fun lgetfilecon(path: ByteString): ByteString =
-        try {
-            SeLinux.lgetfilecon(path.borrowBytes()).moveToByteString()
-        } catch (e: ErrnoException) {
-            throw SyscallException(e)
-        }
+    fun lgetfilecon(path: ByteString): ByteString = try {
+        SeLinux.lgetfilecon(path.borrowBytes()).moveToByteString()
+    } catch (e: ErrnoException) {
+        throw SyscallException(e)
+    }
 
     @Throws(SyscallException::class)
     fun lsetfilecon(path: ByteString, context: ByteString) {
@@ -182,12 +180,11 @@ object Syscall {
     external fun opendir(path: ByteString): Long
 
     @Throws(SyscallException::class)
-    fun poll(fds: Array<StructPollfd>, timeout: Int): Int =
-        try {
-            Os_poll(fds, timeout)
-        } catch (e: ErrnoException) {
-            throw SyscallException(e)
-        }
+    fun poll(fds: Array<StructPollfd>, timeout: Int): Int = try {
+        Os_poll(fds, timeout)
+    } catch (e: ErrnoException) {
+        throw SyscallException(e)
+    }
 
     @Throws(ErrnoException::class)
     private fun Os_poll(fds: Array<StructPollfd>, timeout: Int): Int {
@@ -220,12 +217,11 @@ object Syscall {
         buffer: ByteArray,
         offset: Int = 0,
         length: Int = buffer.size
-    ): Int =
-        try {
-            Os.read(fd, buffer, offset, length)
-        } catch (e: ErrnoException) {
-            throw SyscallException(e)
-        }
+    ): Int = try {
+        Os.read(fd, buffer, offset, length)
+    } catch (e: ErrnoException) {
+        throw SyscallException(e)
+    }
 
     @Throws(SyscallException::class)
     external fun readdir(dir: Long): StructDirent?
@@ -243,12 +239,11 @@ object Syscall {
     external fun rename(oldPath: ByteString, newPath: ByteString)
 
     @Throws(SyscallException::class)
-    fun security_getenforce(): Boolean =
-        try {
-            SeLinux.security_getenforce()
-        } catch (e: ErrnoException) {
-            throw SyscallException(e)
-        }
+    fun security_getenforce(): Boolean = try {
+        SeLinux.security_getenforce()
+    } catch (e: ErrnoException) {
+        throw SyscallException(e)
+    }
 
     @Throws(SyscallException::class)
     fun selinux_android_restorecon(path: ByteString, flags: Int) {
@@ -324,10 +319,9 @@ object Syscall {
         buffer: ByteArray,
         offset: Int = 0,
         length: Int = buffer.size
-    ): Int =
-        try {
-            Os.write(fd, buffer, offset, length)
-        } catch (e: ErrnoException) {
-            throw SyscallException(e)
-        }
+    ): Int = try {
+        Os.write(fd, buffer, offset, length)
+    } catch (e: ErrnoException) {
+        throw SyscallException(e)
+    }
 }

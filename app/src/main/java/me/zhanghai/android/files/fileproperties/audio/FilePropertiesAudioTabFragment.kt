@@ -69,15 +69,19 @@ class FilePropertiesAudioTabFragment : FilePropertiesTabFragment() {
             }
             if (audioInfo.bitRate != null) {
                 addItemView(
-                    R.string.file_properties_media_bit_rate, getString(
-                        R.string.file_properties_media_bit_rate_format, audioInfo.bitRate / 1000
+                    R.string.file_properties_media_bit_rate,
+                    getString(
+                        R.string.file_properties_media_bit_rate_format,
+                        audioInfo.bitRate / 1000
                     )
                 )
             }
             if (audioInfo.sampleRate != null) {
                 addItemView(
-                    R.string.file_properties_audio_sample_rate, getString(
-                        R.string.file_properties_audio_sample_rate_format, audioInfo.sampleRate
+                    R.string.file_properties_audio_sample_rate,
+                    getString(
+                        R.string.file_properties_audio_sample_rate_format,
+                        audioInfo.sampleRate
                     )
                 )
             }

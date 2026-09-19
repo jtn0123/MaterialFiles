@@ -5,12 +5,12 @@
 
 package me.zhanghai.android.files.util
 
-import me.zhanghai.android.files.app.wifiManager
 import java.net.InetAddress
 import java.net.NetworkInterface
 import java.net.SocketException
 import java.net.UnknownHostException
 import kotlin.reflect.KClass
+import me.zhanghai.android.files.app.wifiManager
 
 fun KClass<InetAddress>.getLocalAddress(): InetAddress? {
     val wifiInfo = wifiManager.connectionInfo

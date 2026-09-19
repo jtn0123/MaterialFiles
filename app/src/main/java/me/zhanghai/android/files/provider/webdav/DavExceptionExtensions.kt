@@ -11,17 +11,18 @@ import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
 import me.zhanghai.android.files.provider.webdav.client.DavIOException
 
-fun DavException.toFileSystemException(
-    file: String?,
-    other: String? = null
-): FileSystemException {
+fun DavException.toFileSystemException(file: String?, other: String? = null): FileSystemException {
     return when (this) {
         is DavIOException ->
             return FileSystemException(file, other, message).apply { initCause(cause) }
+
         is UnauthorizedException, is ForbiddenException ->
             AccessDeniedException(file, other, message)
+
         is NotFoundException -> NoSuchFileException(file, other, message)
+
         is ConflictException -> FileAlreadyExistsException(file, other, message)
+
         else -> FileSystemException(file, other, message)
     }.apply { initCause(this@toFileSystemException) }
 }

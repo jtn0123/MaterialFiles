@@ -23,6 +23,7 @@ import me.zhanghai.android.files.provider.common.AbstractWatchService
 import me.zhanghai.android.files.provider.smb.client.Client
 import me.zhanghai.android.files.provider.smb.client.ClientException
 import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.logWarning
 
 // @see https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/05869c32-39f0-4726-afc9-671b76ae5ca7
 internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
@@ -72,7 +73,7 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
         try {
             notifier.join()
         } catch (e: InterruptedException) {
-            e.printStackTrace()
+            e.logWarning("SmbWatchService", "cancel")
         }
     }
 
@@ -157,7 +158,7 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
                     future = client.requestDirectoryChangeNotification(directory, COMPLETION_FILTER)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.logWarning("SmbWatchService", "run")
                 key.setInvalid()
                 if (!(e is InterruptedException || e is InterruptedIOException)) {
                     key.signal()

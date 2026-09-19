@@ -3,11 +3,7 @@ package me.zhanghai.android.files.provider.common
 import java.net.URI
 import java.net.URISyntaxException
 
-data class UriAuthority(
-    val userInfo: String?,
-    val host: String,
-    val port: Int?
-) {
+data class UriAuthority(val userInfo: String?, val host: String, val port: Int?) {
     fun encode(): String {
         val uri = try {
             // HACK: An empty host/authority requires a path, so use "/" as path here.

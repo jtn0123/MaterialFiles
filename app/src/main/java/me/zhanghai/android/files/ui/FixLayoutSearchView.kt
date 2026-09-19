@@ -22,7 +22,9 @@ open class FixLayoutSearchView : SearchView {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     init {
@@ -39,7 +41,8 @@ open class FixLayoutSearchView : SearchView {
         val searchCloseBtn = requireViewByIdCompat<View>(androidx.appcompat.R.id.search_close_btn)
         val searchCloseBtnPaddingHorizontal = searchCloseBtn.context.dpToDimensionPixelSize(12)
         searchCloseBtn.updatePaddingRelative(
-            start = searchCloseBtnPaddingHorizontal, end = searchCloseBtnPaddingHorizontal
+            start = searchCloseBtnPaddingHorizontal,
+            end = searchCloseBtnPaddingHorizontal
         )
         searchCloseBtn.background = searchCloseBtn.context
             .getDrawableByAttr(androidx.appcompat.R.attr.actionBarItemBackground)

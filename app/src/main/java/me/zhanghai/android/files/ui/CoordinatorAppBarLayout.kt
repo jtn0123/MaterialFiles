@@ -38,8 +38,9 @@ class CoordinatorAppBarLayout : FitsSystemWindowsAppBarLayout {
         if (defaultBackgroundColor != null) {
             val window = context.activity!!.window
             val statusBarColor = window.statusBarColor
-            if (defaultBackgroundColor == statusBarColor
-                || defaultBackgroundColor == ColorUtils.setAlphaComponent(statusBarColor, 0xFF)) {
+            if (defaultBackgroundColor == statusBarColor ||
+                defaultBackgroundColor == ColorUtils.setAlphaComponent(statusBarColor, 0xFF)
+            ) {
                 window.statusBarColor = Color.TRANSPARENT
             }
         }

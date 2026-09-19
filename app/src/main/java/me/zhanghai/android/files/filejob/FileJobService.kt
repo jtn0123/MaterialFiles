@@ -13,9 +13,14 @@ import android.os.IBinder
 import android.widget.Toast
 import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import java8.nio.file.Path
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.removeFirstCompat
 import me.zhanghai.android.files.file.MimeType
@@ -33,9 +38,11 @@ class FileJobService : Service() {
     internal lateinit var notificationManager: ForegroundNotificationManager
         private set
 
-    private val executorService = Executors.newCachedThreadPool()
+    // One supervisor for every job: a failing job never takes the others down, and destroying
+    // the service cancels whatever is still running.
+    private val jobScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val runningJobs = mutableMapOf<FileJob, Future<*>>()
+    private val runningJobs = mutableMapOf<FileJob, Job>()
 
     // Guarded by runningJobs.
     private val jobsWaitingForUser = mutableSetOf<FileJob>()
@@ -65,13 +72,7 @@ class FileJobService : Service() {
         super.onTimeout(startId, fgsType)
 
         val hadJobs = jobCount > 0
-        synchronized(runningJobs) {
-            while (runningJobs.isNotEmpty()) {
-                runningJobs.removeFirst().value.cancel(true)
-            }
-            jobsWaitingForUser.clear()
-            updateWakeWifiLockLocked()
-        }
+        cancelAllJobs()
         if (hadJobs) {
             showToast(R.string.file_job_timeout_message, Toast.LENGTH_LONG)
         }
@@ -84,7 +85,7 @@ class FileJobService : Service() {
     private fun startJob(job: FileJob) {
         // Synchronize on runningJobs to prevent a job from removing itself before being added.
         synchronized(runningJobs) {
-            val future = CompletingFutureTask({ job.runOn(this) }) {
+            val coroutine = jobScope.launchCompleting({ job.runOn(this@FileJobService) }) {
                 try {
                     job.onFinished()
                 } finally {
@@ -95,18 +96,28 @@ class FileJobService : Service() {
                     }
                 }
             }
-            runningJobs[job] = future
+            runningJobs[job] = coroutine
             updateWakeWifiLockLocked()
-            executorService.execute(future)
+            coroutine.start()
         }
     }
 
     private fun cancelJob(id: Int) {
         synchronized(runningJobs) {
-            runningJobs.removeFirst { it.key.id == id }?.let { (job, future) ->
+            runningJobs.removeFirst { it.key.id == id }?.let { (job, coroutine) ->
                 jobsWaitingForUser.remove(job)
-                future.cancel(true)
+                coroutine.cancel()
             }
+            updateWakeWifiLockLocked()
+        }
+    }
+
+    private fun cancelAllJobs() {
+        synchronized(runningJobs) {
+            while (runningJobs.isNotEmpty()) {
+                runningJobs.removeFirst().value.cancel()
+            }
+            jobsWaitingForUser.clear()
             updateWakeWifiLockLocked()
         }
     }
@@ -116,13 +127,8 @@ class FileJobService : Service() {
 
         instance = null
 
-        synchronized(runningJobs) {
-            while (runningJobs.isNotEmpty()) {
-                runningJobs.removeFirst().value.cancel(true)
-            }
-            jobsWaitingForUser.clear()
-            updateWakeWifiLockLocked()
-        }
+        cancelAllJobs()
+        jobScope.cancel()
     }
 
     /**
@@ -215,6 +221,15 @@ class FileJobService : Service() {
 
         fun save(source: Path, target: Path, context: Context) {
             startJob(SaveFileJob(source, target), context)
+        }
+
+        fun saveAll(
+            sources: List<Path>,
+            targetDirectory: Path,
+            names: List<String>,
+            context: Context
+        ) {
+            startJob(SaveFilesJob(sources, targetDirectory, names), context)
         }
 
         fun setGroup(path: Path, group: PosixGroup, recursive: Boolean, context: Context) {

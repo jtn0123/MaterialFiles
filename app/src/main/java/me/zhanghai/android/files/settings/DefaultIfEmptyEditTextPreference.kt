@@ -10,7 +10,7 @@ import android.content.res.TypedArray
 import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
-import com.takisoft.preferencex.EditTextPreference
+import me.zhanghai.android.files.ui.EditTextPreference
 
 class DefaultIfEmptyEditTextPreference : EditTextPreference {
     private var defaultValue: String? = null
@@ -20,7 +20,9 @@ class DefaultIfEmptyEditTextPreference : EditTextPreference {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
+        context,
+        attrs,
+        defStyleAttr
     )
 
     constructor(

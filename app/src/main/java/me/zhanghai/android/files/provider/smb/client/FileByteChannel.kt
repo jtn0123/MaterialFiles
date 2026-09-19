@@ -12,11 +12,6 @@ import com.hierynomus.smbj.common.SMBRuntimeException
 import com.hierynomus.smbj.io.ByteChunkProvider
 import com.hierynomus.smbj.share.File
 import com.hierynomus.smbj.share.FileAccessor
-import me.zhanghai.android.files.provider.common.AbstractFileByteChannel
-import me.zhanghai.android.files.provider.common.EMPTY
-import me.zhanghai.android.files.provider.common.map
-import me.zhanghai.android.files.util.closeSafe
-import me.zhanghai.android.files.util.findCauseByClass
 import java.io.IOException
 import java.io.InterruptedIOException
 import java.nio.ByteBuffer
@@ -24,6 +19,11 @@ import java.nio.channels.AsynchronousCloseException
 import java.nio.channels.ClosedByInterruptException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
+import me.zhanghai.android.files.provider.common.AbstractFileByteChannel
+import me.zhanghai.android.files.provider.common.EMPTY
+import me.zhanghai.android.files.provider.common.map
+import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.findCauseByClass
 
 class FileByteChannel(
     private val file: File,
@@ -43,7 +43,9 @@ class FileByteChannel(
                         NtStatus.STATUS_END_OF_FILE.value -> {
                             return@map ByteBuffer::class.EMPTY
                         }
+
                         NtStatus.STATUS_SUCCESS.value -> {}
+
                         else -> throw SMBApiException(response.header, "Read failed for $this")
                             .toIOException()
                     }
@@ -53,7 +55,8 @@ class FileByteChannel(
                     }
                     val length = data.size.coerceAtMost(size)
                     ByteBuffer.wrap(data, 0, length)
-                }, { e ->
+                },
+                { e ->
                     ExecutionException(SMBRuntimeException(e).toIOException())
                 }
             )
@@ -66,7 +69,7 @@ class FileByteChannel(
         } catch (e: SMBRuntimeException) {
             throw e.toIOException()
         }
-        source.position(sourcePosition + bytesWritten)
+        source.position(sourcePosition + bytesWritten.toInt())
     }
 
     @Throws(IOException::class)
@@ -79,12 +82,11 @@ class FileByteChannel(
     }
 
     @Throws(IOException::class)
-    override fun onSize(): Long =
-        try {
-            file.getFileInformation(FileStandardInformation::class.java).endOfFile
-        } catch (e: SMBRuntimeException) {
-            throw e.toIOException()
-        }
+    override fun onSize(): Long = try {
+        file.getFileInformation(FileStandardInformation::class.java).endOfFile
+    } catch (e: SMBRuntimeException) {
+        throw e.toIOException()
+    }
 
     @Throws(IOException::class)
     override fun onForce(metaData: Boolean) {
@@ -95,19 +97,20 @@ class FileByteChannel(
         }
     }
 
-    private fun SMBRuntimeException.toIOException(): IOException =
-        when {
-            findCauseByClass<SMBApiException>()
-                .let { it != null && it.status == NtStatus.STATUS_FILE_CLOSED } -> {
-                setClosed()
-                AsynchronousCloseException().apply { initCause(this@toIOException) }
-            }
-            findCauseByClass<InterruptedException>() != null -> {
-                closeSafe()
-                ClosedByInterruptException().apply { initCause(this@toIOException) }
-            }
-            else -> IOException(this)
+    private fun SMBRuntimeException.toIOException(): IOException = when {
+        findCauseByClass<SMBApiException>()
+            .let { it != null && it.status == NtStatus.STATUS_FILE_CLOSED } -> {
+            setClosed()
+            AsynchronousCloseException().apply { initCause(this@toIOException) }
         }
+
+        findCauseByClass<InterruptedException>() != null -> {
+            closeSafe()
+            ClosedByInterruptException().apply { initCause(this@toIOException) }
+        }
+
+        else -> IOException(this)
+    }
 
     @Throws(IOException::class)
     override fun onClose() {
@@ -117,15 +120,14 @@ class FileByteChannel(
             throw when {
                 e.findCauseByClass<InterruptedException>() != null ->
                     InterruptedIOException().apply { initCause(e) }
+
                 else -> IOException(e)
             }
         }
     }
 
-    private class ByteBufferChunkProvider(
-        private val buffer: ByteBuffer,
-        offset: Long
-    ) : ByteChunkProvider() {
+    private class ByteBufferChunkProvider(private val buffer: ByteBuffer, offset: Long) :
+        ByteChunkProvider() {
         init {
             this.offset = offset
         }

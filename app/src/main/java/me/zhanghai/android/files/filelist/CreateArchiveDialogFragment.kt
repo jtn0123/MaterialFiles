@@ -124,8 +124,12 @@ class CreateArchiveDialogFragment : FileNameDialogFragment() {
                 val bindingRoot = binding.root
                 val nameBinding = NameDialogNameIncludeBinding.bind(bindingRoot)
                 return Binding(
-                    bindingRoot, nameBinding.nameLayout, nameBinding.nameEdit, binding.typeGroup,
-                    binding.passwordLayout, binding.passwordEdit
+                    bindingRoot,
+                    nameBinding.nameLayout,
+                    nameBinding.nameEdit,
+                    binding.typeGroup,
+                    binding.passwordLayout,
+                    binding.passwordEdit
                 )
             }
         }

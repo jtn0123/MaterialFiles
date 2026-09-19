@@ -43,6 +43,9 @@ import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.readParcelable
 import me.zhanghai.android.files.util.setOnEditorConfirmActionListener
 
+/** Called with whether a password was entered. */
+typealias ArchivePasswordListener = (Boolean) -> Unit
+
 class ArchivePasswordDialogFragment : AppCompatDialogFragment() {
     private val args by args<Args>()
 
@@ -133,17 +136,16 @@ class ArchivePasswordDialogFragment : AppCompatDialogFragment() {
         fun getTitle(context: Context): String =
             context.getString(R.string.file_action_archive_password_title)
 
-        fun getMessage(archiveFile: Path, context: Context): String =
-            context.getString(
-                R.string.file_action_archive_password_message_format, archiveFile.fileName
-            )
+        fun getMessage(archiveFile: Path, context: Context): String = context.getString(
+            R.string.file_action_archive_password_message_format,
+            archiveFile.fileName
+        )
     }
 
     @Parcelize
     class Args(
         val path: @WriteWith<ParcelableParceler> Path,
-        val listener: @WriteWith<ListenerParceler>()
-        (Boolean) -> Unit
+        val listener: @WriteWith<ListenerParceler> ArchivePasswordListener
     ) : ParcelableArgs {
         object ListenerParceler : Parceler<(Boolean) -> Unit> {
             override fun create(parcel: Parcel): (Boolean) -> Unit =
@@ -158,19 +160,16 @@ class ArchivePasswordDialogFragment : AppCompatDialogFragment() {
                     RemoteCallback {
                         val args = it.getArgs<ListenerArgs>()
                         this(args.successful)
-                    }, flags
+                    },
+                    flags
                 )
             }
 
             @Parcelize
-            private class ListenerArgs(
-                val successful: Boolean
-            ) : ParcelableArgs
+            private class ListenerArgs(val successful: Boolean) : ParcelableArgs
         }
     }
 
     @Parcelize
-    private class State(
-        val hierarchyState: SparseArray<Parcelable>
-    ) : ParcelableState
+    private class State(val hierarchyState: SparseArray<Parcelable>) : ParcelableState
 }

@@ -34,4 +34,6 @@ val ActionState<*, *>.isRunning: Boolean
     get() = this is ActionState.Running
 
 val ActionState<*, *>.isFinished: Boolean
-    get() = when (this) { is ActionState.Success, is ActionState.Error -> true else -> false }
+    get() = when (this) {
+        is ActionState.Success, is ActionState.Error -> true else -> false
+    }

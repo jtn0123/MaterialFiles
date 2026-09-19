@@ -15,6 +15,7 @@ import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.delete
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class DeleteFileJob(private val paths: List<Path>) : FileJob() {
@@ -86,7 +87,7 @@ internal fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllIn
         } catch (e: InterruptedIOException) {
             throw e
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("DeleteFileJob", "delete($path)")
             if (actionAllInfo.skipDeleteError) {
                 recordSkippedError()
                 if (transferInfo != null) {

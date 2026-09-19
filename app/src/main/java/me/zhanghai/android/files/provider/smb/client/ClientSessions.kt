@@ -18,7 +18,7 @@ import me.zhanghai.android.files.util.closeSafe
 
 @Throws(ClientException::class)
 internal fun Client.getSession(authority: Authority): Session {
-    synchronized(sessions) {
+    synchronized(sessionLocks.getOrPut(authority) { Any() }) {
         var session = sessions[authority]
         if (session != null) {
             val connection = session.connection
@@ -34,7 +34,7 @@ internal fun Client.getSession(authority: Authority): Session {
             ?: throw ClientException("No password found for $authority")
         val hostAddress = resolveHostName(authority.host)
         val connection = try {
-            client.connect(hostAddress, authority.port)
+            clientFor(authority).connect(hostAddress, authority.port)
         } catch (e: IOException) {
             throw ClientException(e)
         }

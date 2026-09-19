@@ -58,9 +58,8 @@ class RemoteInterface<T : IInterface>(
     }
 
     // Avoid a strong reference to the BinderProxy so that it can be garbage collected.
-    private class WeakDeathRecipient<T : IInterface>(
-        remoteInterface: RemoteInterface<T>
-    ) : DeathRecipient {
+    private class WeakDeathRecipient<T : IInterface>(remoteInterface: RemoteInterface<T>) :
+        DeathRecipient {
         private val weakRemoteInterface = WeakReference(remoteInterface)
 
         override fun binderDied() {

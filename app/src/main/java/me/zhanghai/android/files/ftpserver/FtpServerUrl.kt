@@ -10,11 +10,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import java.net.InetAddress
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.RuntimeBroadcastReceiver
 import me.zhanghai.android.files.util.getLocalAddress
 import me.zhanghai.android.files.util.valueCompat
-import java.net.InetAddress
 
 object FtpServerUrl {
     fun getUrl(): String? {
@@ -31,10 +31,12 @@ object FtpServerUrl {
 
     fun createChangeReceiver(context: Context, onChange: () -> Unit): RuntimeBroadcastReceiver =
         RuntimeBroadcastReceiver(
-            IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION), object : BroadcastReceiver() {
+            IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION),
+            object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     onChange()
                 }
-            }, context
+            },
+            context
         )
 }

@@ -6,10 +6,10 @@
 package me.zhanghai.android.files.provider.ftp.client
 
 import android.os.Parcelable
+import java.nio.charset.StandardCharsets
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.provider.common.UriAuthority
 import me.zhanghai.android.files.util.takeIfNotEmpty
-import java.nio.charset.StandardCharsets
 
 @Parcelize
 data class Authority(

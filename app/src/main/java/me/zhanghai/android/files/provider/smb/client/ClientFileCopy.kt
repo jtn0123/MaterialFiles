@@ -23,6 +23,7 @@ import me.zhanghai.android.files.provider.common.newInputStream
 import me.zhanghai.android.files.provider.common.newOutputStream
 import me.zhanghai.android.files.provider.smb.client.Client.Path
 import me.zhanghai.android.files.util.enumSetOf
+import me.zhanghai.android.files.util.logWarning
 
 @Throws(ClientException::class)
 internal fun copyOpenedFile(
@@ -96,7 +97,7 @@ internal fun copyOpenedFile(
                 try {
                     targetFile.deleteOnClose()
                 } catch (e: SMBRuntimeException) {
-                    e.printStackTrace()
+                    e.logWarning("ClientFileCopy", "copyOpenedFile")
                 }
             }
         }

@@ -150,6 +150,7 @@ class EditSmbServerFragment : Fragment() {
                         binding.passwordEdit.setText(server.password)
                     }
                 }
+                binding.encryptCheck.isChecked = authority.encrypt
                 binding.pathEdit.setText(server.relativePath)
                 binding.nameEdit.setText(server.customName)
             } else {
@@ -189,7 +190,8 @@ class EditSmbServerFragment : Fragment() {
             }
         }
         binding.nameLayout.placeholderText = if (host != null) {
-            val authority = Authority(host, port, username, domain)
+            val authority =
+                Authority(host, port, username, domain, binding.encryptCheck.isChecked)
             if (path.isNotEmpty()) "$authority/$path" else authority.toString()
         } else {
             getString(R.string.storage_edit_smb_server_name_placeholder)
@@ -326,7 +328,8 @@ class EditSmbServerFragment : Fragment() {
             errorEdit.requestFocus()
             return null
         }
-        val authority = Authority(host!!, port!!, username!!, domain)
+        val authority =
+            Authority(host!!, port!!, username!!, domain, binding.encryptCheck.isChecked)
         return SmbServer(args.server?.id, name, authority, password, path)
     }
 

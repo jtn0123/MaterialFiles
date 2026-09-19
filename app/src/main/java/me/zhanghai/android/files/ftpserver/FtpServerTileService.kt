@@ -33,7 +33,9 @@ class FtpServerTileService : TileService() {
         when (state) {
             FtpServerService.State.STARTING,
             FtpServerService.State.RUNNING -> tile.state = Tile.STATE_ACTIVE
+
             FtpServerService.State.STOPPING -> tile.state = Tile.STATE_UNAVAILABLE
+
             FtpServerService.State.STOPPED -> tile.state = Tile.STATE_INACTIVE
         }
         tile.updateTile()

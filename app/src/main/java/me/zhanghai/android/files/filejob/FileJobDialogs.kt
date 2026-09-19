@@ -22,6 +22,7 @@ import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.getFileStore
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.util.createIntent
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.showToast
 
@@ -39,7 +40,8 @@ internal fun FileJob.showToast(text: CharSequence, duration: Int = Toast.LENGTH_
 
 /**
  * Blocks until the user has answered, without keeping the device awake while they take their
- * time.
+ * time. A job runs its blocking body under `runInterruptible` (see [FileJob]), so cancelling
+ * the job interrupts this wait, which the callers turn into an [InterruptedIOException].
  */
 @Throws(InterruptedException::class)
 private fun <T> FileJob.waitingForUser(block: suspend CoroutineScope.() -> T): T {
@@ -112,7 +114,7 @@ internal fun FileJob.getReadOnlyFileStore(path: Path, exception: IOException): P
     val fileStore = try {
         path.getFileStore() as PosixFileStore
     } catch (e: IOException) {
-        e.printStackTrace()
+        e.logWarning("FileJobDialogs", "getReadOnlyFileStore($path)")
         return null
     }
     return if (fileStore.isReadOnly) fileStore else null
