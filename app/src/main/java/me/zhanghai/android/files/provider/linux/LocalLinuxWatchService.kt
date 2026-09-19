@@ -298,7 +298,8 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
                                     }
                                     break
                                 }
-                                val key = keys[event.wd]!!
+                                // An event can still arrive for a watch that was just removed.
+                                val key = keys[event.wd] ?: continue
                                 if (event.mask.hasBits(Constants.IN_IGNORED)) {
                                     key.setInvalid()
                                     key.signal()

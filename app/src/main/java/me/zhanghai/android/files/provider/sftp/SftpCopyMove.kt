@@ -18,6 +18,7 @@ import me.zhanghai.android.files.provider.sftp.client.Client
 import me.zhanghai.android.files.provider.sftp.client.ClientException
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.logWarning
+import me.zhanghai.android.files.util.useMappingCloseFailure
 import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.FileMode
 import net.schmizz.sshj.sftp.OpenMode
@@ -77,7 +78,7 @@ internal object SftpCopyMove : AbstractCopyMove<SftpPath, FileAttributes>() {
         } catch (e: ClientException) {
             throw e.toFileSystemException(source.toString())
         }.newInputStream()
-        try {
+        sourceInputStream.useMappingCloseFailure({ it.toCloseFailure(source) }) {
             val targetFlags =
                 enumSetOf(OpenMode.WRITE, OpenMode.TRUNC, OpenMode.CREAT, OpenMode.EXCL)
             val targetOutputStream = try {
@@ -85,26 +86,22 @@ internal object SftpCopyMove : AbstractCopyMove<SftpPath, FileAttributes>() {
             } catch (e: ClientException) {
                 throw e.toFileSystemException(target.toString())
             }
-            try {
+            targetOutputStream.useMappingCloseFailure({ it.toCloseFailure(target) }) {
                 sourceInputStream.copyTo(
                     targetOutputStream,
                     copyOptions.progressIntervalMillis,
                     copyOptions.progressListener
                 )
-            } finally {
-                try {
-                    targetOutputStream.close()
-                } catch (e: IOException) {
-                    throw ClientException(e).toFileSystemException(target.toString())
-                }
-            }
-        } finally {
-            try {
-                sourceInputStream.close()
-            } catch (e: IOException) {
-                throw ClientException(e).toFileSystemException(source.toString())
             }
         }
+    }
+
+    private fun Exception.toCloseFailure(path: SftpPath): Exception = if (this is IOException) {
+        ClientException(
+            this
+        ).toFileSystemException(path.toString())
+    } else {
+        this
     }
 
     override fun createDirectory(

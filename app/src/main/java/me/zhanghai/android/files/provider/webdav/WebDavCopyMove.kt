@@ -18,6 +18,7 @@ import me.zhanghai.android.files.provider.webdav.client.isSymbolicLink
 import me.zhanghai.android.files.provider.webdav.client.lastModifiedTime
 import me.zhanghai.android.files.provider.webdav.client.size
 import me.zhanghai.android.files.util.logWarning
+import me.zhanghai.android.files.util.useMappingCloseFailure
 
 internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
     override fun readAttributes(path: WebDavPath, noFollowLinks: Boolean): Response = try {
@@ -58,33 +59,24 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
         } catch (e: DavException) {
             throw e.toFileSystemException(source.toString())
         }
-        try {
+        sourceInputStream.useMappingCloseFailure({ it.toCloseFailure(source) }) {
             val targetOutputStream = try {
                 client.put(target)
             } catch (e: DavException) {
                 throw e.toFileSystemException(target.toString())
             }
-            try {
+            targetOutputStream.useMappingCloseFailure({ it.toCloseFailure(target) }) {
                 sourceInputStream.copyTo(
                     targetOutputStream,
                     copyOptions.progressIntervalMillis,
                     copyOptions.progressListener
                 )
-            } finally {
-                try {
-                    targetOutputStream.close()
-                } catch (e: DavException) {
-                    throw e.toFileSystemException(target.toString())
-                }
-            }
-        } finally {
-            try {
-                sourceInputStream.close()
-            } catch (e: DavException) {
-                throw e.toFileSystemException(source.toString())
             }
         }
     }
+
+    private fun Exception.toCloseFailure(path: WebDavPath): Exception =
+        if (this is DavException) toFileSystemException(path.toString()) else this
 
     override fun createDirectory(
         target: WebDavPath,
