@@ -43,55 +43,8 @@
     <file name="src/main/java/me/zhanghai/android/files/coil/CoilUtils.kt">
         <error line="33" column="35" source="standard:function-signature" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/coil/PathAttributesFetcher.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="77" column="13" source="standard:chain-wrapping" />
-        <error line="85" column="60" source="standard:argument-list-wrapping" />
-        <error line="85" column="70" source="standard:argument-list-wrapping" />
-        <error line="85" column="81" source="standard:argument-list-wrapping" />
-        <error line="94" column="74" source="standard:argument-list-wrapping" />
-        <error line="94" column="80" source="standard:argument-list-wrapping" />
-        <error line="101" column="21" source="standard:chain-wrapping" />
-        <error line="116" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="120" column="81" source="standard:argument-list-wrapping" />
-        <error line="123" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="136" column="78" source="standard:argument-list-wrapping" />
-        <error line="137" column="27" source="standard:wrapping" />
-        <error line="137" column="28" source="standard:argument-list-wrapping" />
-        <error line="137" column="34" source="standard:argument-list-wrapping" />
-        <error line="148" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="162" column="69" source="standard:argument-list-wrapping" />
-        <error line="183" column="86" source="standard:function-signature" />
-        <error line="186" column="51" source="standard:argument-list-wrapping" />
-        <error line="186" column="66" source="standard:argument-list-wrapping" />
-        <error line="186" column="101" source="standard:argument-list-wrapping" />
-        <error line="186" column="101" source="standard:max-line-length" />
-        <error line="187" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="188" column="67" source="standard:argument-list-wrapping" />
-        <error line="188" column="98" source="standard:argument-list-wrapping" />
-        <error line="188" column="101" source="standard:argument-list-wrapping" />
-        <error line="188" column="101" source="standard:max-line-length" />
-        <error line="189" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="197" column="21" source="standard:function-signature" />
-        <error line="199" column="23" source="standard:argument-list-wrapping" />
-        <error line="199" column="32" source="standard:argument-list-wrapping" />
-        <error line="199" column="45" source="standard:argument-list-wrapping" />
-        <error line="199" column="68" source="standard:argument-list-wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/coil/PdfPageFetcher.kt">
         <error line="44" column="48" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/coil/VideoFrameFetcher.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="34" column="48" source="standard:function-signature" />
-        <error line="51" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="67" column="64" source="standard:argument-list-wrapping" />
-        <error line="77" column="17" source="standard:chain-wrapping" />
-        <error line="77" column="48" source="standard:wrapping" />
-        <error line="95" column="34" source="standard:argument-list-wrapping" />
-        <error line="95" column="47" source="standard:argument-list-wrapping" />
-        <error line="95" column="54" source="standard:argument-list-wrapping" />
-        <error line="95" column="62" source="standard:argument-list-wrapping" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/colorpicker/BaseColorPreference.kt">
         <error line="8" column="1" source="standard:import-ordering" />
@@ -295,15 +248,6 @@
     <file name="src/main/java/me/zhanghai/android/files/file/InstantExtensions.kt">
         <error line="31" column="35" source="standard:function-signature" />
     </file>
-    <file name="src/main/java/me/zhanghai/android/files/file/MimeType.kt">
-        <error line="23" column="35" source="standard:argument-list-wrapping" />
-        <error line="38" column="34" source="standard:argument-list-wrapping" />
-        <error line="48" column="45" source="standard:function-signature" />
-        <error line="50" column="13" source="standard:chain-wrapping" />
-        <error line="51" column="13" source="standard:chain-wrapping" />
-        <error line="90" column="52" source="standard:range-spacing" />
-        <error line="91" column="76" source="standard:wrapping" />
-    </file>
     <file name="src/main/java/me/zhanghai/android/files/file/MimeTypeConversionExtensions.kt">
         <error line="68" column="1" source="standard:spacing-between-declarations-with-comments" />
     </file>
@@ -450,13 +394,6 @@
     <file name="src/main/java/me/zhanghai/android/files/filelist/FileListActivity.kt">
         <error line="47" column="51" source="standard:function-signature" />
         <error line="69" column="20" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/filelist/FileListViewModel.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="89" column="17" source="standard:backing-property-naming" />
-        <error line="222" column="17" source="standard:backing-property-naming" />
-        <error line="229" column="17" source="standard:backing-property-naming" />
-        <error line="247" column="55" source="standard:class-signature" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/filelist/FileSortOptions.kt">
         <error line="15" column="5" source="standard:class-signature" />
@@ -2706,13 +2643,6 @@
         <error line="41" column="48" source="standard:argument-list-wrapping" />
         <error line="65" column="48" source="standard:argument-list-wrapping" />
         <error line="65" column="60" source="standard:argument-list-wrapping" />
-    </file>
-    <file name="src/main/java/me/zhanghai/android/files/util/MediaMetadataRetrieverPathExtensions.kt">
-        <error line="8" column="1" source="standard:import-ordering" />
-        <error line="32" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="35" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="43" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="56" column="34" source="standard:function-expression-body" />
     </file>
     <file name="src/main/java/me/zhanghai/android/files/util/PackageManagerPathExtensions.kt">
         <error line="8" column="1" source="standard:import-ordering" />

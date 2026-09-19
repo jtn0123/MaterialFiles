@@ -7,6 +7,7 @@ package me.zhanghai.android.files.coil
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.graphics.drawable.Drawable
 import android.media.MediaMetadataRetriever
 import android.os.ParcelFileDescriptor
 import androidx.core.graphics.drawable.toDrawable
@@ -19,8 +20,14 @@ import coil.fetch.SourceResult
 import coil.key.Keyer
 import coil.request.Options
 import coil.size.Dimension
+import java.io.Closeable
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.runInterruptible
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.use
 import me.zhanghai.android.files.file.MimeType
@@ -41,6 +48,7 @@ import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
 import me.zhanghai.android.files.provider.ftp.isFtpPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.settings.Settings
+import me.zhanghai.android.files.util.closeSafe
 import me.zhanghai.android.files.util.getDimensionPixelSize
 import me.zhanghai.android.files.util.getPackageArchiveInfoCompat
 import me.zhanghai.android.files.util.isGetPackageArchiveInfoCompatible
@@ -50,9 +58,6 @@ import me.zhanghai.android.files.util.setDataSource
 import me.zhanghai.android.files.util.valueCompat
 import okio.buffer
 import okio.source
-import java.io.Closeable
-import java.io.IOException
-import me.zhanghai.android.files.util.setDataSource as appSetDataSource
 
 class PathAttributesKeyer : Keyer<Pair<Path, BasicFileAttributes>> {
     override fun key(data: Pair<Path, BasicFileAttributes>, options: Options): String {
@@ -66,15 +71,14 @@ class PathAttributesFetcher(
     private val options: Options,
     private val imageLoader: ImageLoader,
     private val appIconFetcherFactory: AppIconFetcher.Factory<Path>,
-    private val videoFrameFetcherFactory: VideoFrameFetcher.Factory<Path>,
     private val pdfPageFetcherFactory: PdfPageFetcher.Factory<Path>
 ) : Fetcher {
     override suspend fun fetch(): FetchResult? {
         val (path, attributes) = data
         val (width, height) = options.size
         // @see android.provider.MediaStore.ThumbnailConstants.MINI_SIZE
-        val isThumbnail = width is Dimension.Pixels && width.px <= 512
-            && height is Dimension.Pixels && height.px <= 384
+        val isThumbnail = width is Dimension.Pixels && width.px <= 512 &&
+            height is Dimension.Pixels && height.px <= 384
         if (isThumbnail) {
             width as Dimension.Pixels
             height as Dimension.Pixels
@@ -82,7 +86,10 @@ class PathAttributesFetcher(
                 val thumbnail = runWithCancellationSignal { signal ->
                     try {
                         DocumentResolver.getThumbnail(
-                            path as DocumentResolver.Path, width.px, height.px, signal
+                            path as DocumentResolver.Path,
+                            width.px,
+                            height.px,
+                            signal
                         )
                     } catch (e: ResolverException) {
                         e.printStackTrace()
@@ -91,19 +98,58 @@ class PathAttributesFetcher(
                 }
                 if (thumbnail != null) {
                     return DrawableResult(
-                        thumbnail.toDrawable(options.context.resources), true, path.dataSource
+                        thumbnail.toDrawable(options.context.resources),
+                        true,
+                        path.dataSource
                     )
                 }
             }
             if (path.isRemotePath) {
                 // FTP doesn't support random access and requires one connection per parallel read.
-                val shouldReadRemotePath = !path.isFtpPath
-                    && Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
+                val shouldReadRemotePath = !path.isFtpPath &&
+                    Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
                 if (!shouldReadRemotePath) {
                     error("Cannot read $path for thumbnail")
                 }
             }
         }
+        val isRemoteThumbnail = path.isRemotePath &&
+            width is Dimension.Pixels && width.px <= RemoteThumbnails.MAX_SIZE_PX &&
+            height is Dimension.Pixels && height.px <= RemoteThumbnails.MAX_SIZE_PX
+        if (!isRemoteThumbnail) {
+            return fetchFile(null)
+        }
+        width as Dimension.Pixels
+        height as Dimension.Pixels
+        val key = RemoteThumbnails.createKey(path, attributes, width.px, height.px)
+        RemoteThumbnails.get(key)?.let { return it }
+        return RemoteThumbnails.withReadPermit {
+            val drawable = when (val result = fetchFile(width.px to height.px)) {
+                is DrawableResult -> result.drawable
+                is SourceResult -> decode(result)
+                null -> null
+            } ?: return@withReadPermit null
+            RemoteThumbnails.put(key, drawable)
+            DrawableResult(drawable, true, path.dataSource)
+        }
+    }
+
+    /**
+     * Decodes right away what would otherwise be decoded after this fetcher has returned, because
+     * only the decoded thumbnail is worth keeping on disk.
+     */
+    private suspend fun decode(result: SourceResult): Drawable? {
+        val decoder = imageLoader.components.newDecoder(result, options, imageLoader)?.first
+        if (decoder == null) {
+            result.source.closeSafe()
+            return null
+        }
+        return decoder.decode()?.drawable
+    }
+
+    /** @param remoteThumbnailSize the size in pixels, when fetching a thumbnail of a remote file */
+    private suspend fun fetchFile(remoteThumbnailSize: Pair<Int, Int>?): FetchResult? {
+        val path = data.first
         val mimeType = AndroidFileTypeDetector.getMimeType(data.first, data.second).asMimeType()
         when {
             mimeType.isApk && path.isGetPackageArchiveInfoCompatible -> {
@@ -113,38 +159,46 @@ class PathAttributesFetcher(
                     e.printStackTrace()
                 }
             }
+
             mimeType.isImage || mimeType == MimeType.GENERIC -> {
+                if (remoteThumbnailSize != null && mimeType == MimeType.IMAGE_JPEG) {
+                    val (width, height) = remoteThumbnailSize
+                    val thumbnail = try {
+                        runInterruptible { path.readExifThumbnail(width, height) }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                    currentCoroutineContext().ensureActive()
+                    if (thumbnail != null) {
+                        return DrawableResult(
+                            thumbnail.toDrawable(options.context.resources),
+                            true,
+                            path.dataSource
+                        )
+                    }
+                }
                 val inputStream = path.newInputStream()
                 return SourceResult(
                     ImageSource(inputStream.source().buffer(), options.context),
-                    if (mimeType != MimeType.GENERIC) mimeType.value else null, path.dataSource
+                    if (mimeType != MimeType.GENERIC) mimeType.value else null,
+                    path.dataSource
                 )
             }
+
             mimeType.isMedia && path.isMediaMetadataRetrieverCompatible -> {
-                val embeddedPicture = try {
-                    MediaMetadataRetriever().use { retriever ->
-                        retriever.setDataSource(path)
-                        retriever.embeddedPicture
-                    }
+                try {
+                    return fetchMedia(path, mimeType.isVideo)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    null
                 }
-                if (embeddedPicture != null) {
-                    return SourceResult(
-                        ImageSource(
-                            embeddedPicture.inputStream().source().buffer(), options.context
-                        ), null, path.dataSource
-                    )
-                }
-                if (mimeType.isVideo) {
-                    try {
-                        return videoFrameFetcherFactory.create(path, options, imageLoader).fetch()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
+                currentCoroutineContext().ensureActive()
             }
+
             mimeType.isPdf && (path.isLinuxPath || path.isDocumentPath) -> {
                 try {
                     return pdfPageFetcherFactory.create(path, options, imageLoader).fetch()
@@ -156,10 +210,38 @@ class PathAttributesFetcher(
         return null
     }
 
+    /**
+     * Asks one retriever for the embedded picture and then for a video frame, so that a file on a
+     * server is opened and its header parsed only once.
+     */
+    private suspend fun fetchMedia(path: Path, isVideo: Boolean): FetchResult? =
+        runAbortable { abortHandle ->
+            MediaMetadataRetriever().use { retriever ->
+                retriever.setDataSource(path) { abortHandle.set(it) }
+                val embeddedPicture = retriever.embeddedPicture
+                when {
+                    embeddedPicture != null ->
+                        SourceResult(
+                            ImageSource(
+                                embeddedPicture.inputStream().source().buffer(),
+                                options.context
+                            ),
+                            null,
+                            path.dataSource
+                        )
+
+                    isVideo -> retriever.decodeVideoFrame(options)
+
+                    else -> null
+                }
+            }
+        }
+
     class Factory(private val context: Context) : Fetcher.Factory<Pair<Path, BasicFileAttributes>> {
         private val appIconFetcherFactory = object : AppIconFetcher.Factory<Path>(
             // This is used by FileListAdapter.
-            context.getDimensionPixelSize(R.dimen.large_icon_size), context
+            context.getDimensionPixelSize(R.dimen.large_icon_size),
+            context
         ) {
             override fun getApplicationInfo(data: Path): Pair<ApplicationInfo, Closeable?> {
                 val (packageInfo, closeable) =
@@ -173,31 +255,34 @@ class PathAttributesFetcher(
             }
         }
 
-        private val videoFrameFetcherFactory = object : VideoFrameFetcher.Factory<Path>() {
-            override fun MediaMetadataRetriever.setDataSource(data: Path) {
-                appSetDataSource(data)
-            }
-        }
-
         private val pdfPageFetcherFactory = object : PdfPageFetcher.Factory<Path>() {
-            override fun openParcelFileDescriptor(data: Path): ParcelFileDescriptor =
-                when {
-                    data.isLinuxPath ->
-                        ParcelFileDescriptor.open(data.toFile(), ParcelFileDescriptor.MODE_READ_ONLY)
-                    data.isDocumentPath ->
-                        DocumentResolver.openParcelFileDescriptor(data as DocumentResolver.Path, "r")
-                    else -> throw IllegalArgumentException(data.toString())
-                }
+            override fun openParcelFileDescriptor(data: Path): ParcelFileDescriptor = when {
+                data.isLinuxPath ->
+                    ParcelFileDescriptor.open(
+                        data.toFile(),
+                        ParcelFileDescriptor.MODE_READ_ONLY
+                    )
+
+                data.isDocumentPath ->
+                    DocumentResolver.openParcelFileDescriptor(
+                        data as DocumentResolver.Path,
+                        "r"
+                    )
+
+                else -> throw IllegalArgumentException(data.toString())
+            }
         }
 
         override fun create(
             data: Pair<Path, BasicFileAttributes>,
             options: Options,
             imageLoader: ImageLoader
-        ): Fetcher =
-            PathAttributesFetcher(
-                data, options, imageLoader, appIconFetcherFactory, videoFrameFetcherFactory,
-                pdfPageFetcherFactory
-            )
+        ): Fetcher = PathAttributesFetcher(
+            data,
+            options,
+            imageLoader,
+            appIconFetcherFactory,
+            pdfPageFetcherFactory
+        )
     }
 }
