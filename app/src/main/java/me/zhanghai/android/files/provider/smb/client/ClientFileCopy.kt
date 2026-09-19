@@ -92,6 +92,10 @@ internal fun copyOpenedFile(
                 sourceInputStream.copyTo(targetOutputStream, intervalMillis, listener)
             }
             successful = true
+        } catch (e: ClientException) {
+            // The target exists now and may not get deleted, so starting over with a fresh
+            // session (see withSession) would only fail on it; a plain failure it is.
+            throw if (e.isSessionGone) ClientException(e.message, e) else e
         } finally {
             if (!successful) {
                 try {

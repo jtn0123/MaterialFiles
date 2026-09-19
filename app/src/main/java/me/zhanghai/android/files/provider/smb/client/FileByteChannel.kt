@@ -19,6 +19,7 @@ import java.nio.channels.AsynchronousCloseException
 import java.nio.channels.ClosedByInterruptException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
+import java.util.concurrent.TimeoutException
 import me.zhanghai.android.files.provider.common.AbstractFileByteChannel
 import me.zhanghai.android.files.provider.common.EMPTY
 import me.zhanghai.android.files.provider.common.map
@@ -30,6 +31,8 @@ class FileByteChannel(
     isAppend: Boolean
 // Cancelling reads leads to TransportException: Received response with unknown sequence number
 ) : AbstractFileByteChannel(isAppend, shouldCancelRead = false) {
+    // SMBJ's async read takes no timeout and bypasses its transact timeout, so timeoutMillis is
+    // enforced by the timed wait in AbstractFileByteChannel, which then abandons the future.
     @Throws(IOException::class)
     override fun onReadAsync(position: Long, size: Int, timeoutMillis: Long): Future<ByteBuffer> =
         try {
@@ -57,7 +60,12 @@ class FileByteChannel(
                     ByteBuffer.wrap(data, 0, length)
                 },
                 { e ->
-                    ExecutionException(SMBRuntimeException(e).toIOException())
+                    // SMBJ wraps a timed-out wait twice; unwrap it for the channel to recognise.
+                    if (e.findCauseByClass<TimeoutException>() != null) {
+                        TimeoutException().apply { initCause(e) }
+                    } else {
+                        ExecutionException(SMBRuntimeException(e).toIOException())
+                    }
                 }
             )
 

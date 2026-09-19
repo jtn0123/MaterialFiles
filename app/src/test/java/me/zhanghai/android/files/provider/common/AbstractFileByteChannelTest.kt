@@ -5,23 +5,37 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AbstractFileByteChannelTest {
-    private class Channel(private val content: ByteArray) : AbstractFileByteChannel(false) {
+    private class Channel(
+        private val content: ByteArray,
+        private val stalledReads: Int = 0,
+        readTimeoutMillis: Long = 15_000
+    ) : AbstractFileByteChannel(false, readTimeoutMillis = readTimeoutMillis) {
         val requests = mutableListOf<Pair<Long, Int>>()
+        val stalledFutures = mutableListOf<Future<ByteBuffer>>()
 
         override fun onReadAsync(
             position: Long,
             size: Int,
             timeoutMillis: Long
         ): Future<ByteBuffer> {
-            synchronized(requests) { requests += position to size }
+            synchronized(requests) {
+                requests += position to size
+                if (stalledFutures.size < stalledReads) {
+                    // A server that never answers.
+                    return CompletableFuture<ByteBuffer>().also { stalledFutures += it }
+                }
+            }
             val start = position.coerceAtMost(content.size.toLong()).toInt()
             val end = (start + size).coerceAtMost(content.size)
             return CompletableFuture.completedFuture(ByteBuffer.wrap(content, start, end - start))
@@ -69,5 +83,27 @@ class AbstractFileByteChannelTest {
             channel.read(destination)
         }
         assertArrayEquals(content.copyOfRange(2_000_000, 2_001_000), destination.array())
+    }
+
+    @Test
+    fun aReadThatNeverCompletesTimesOutAndIsAbandoned() {
+        val channel = Channel(content, stalledReads = 1, readTimeoutMillis = 50)
+        assertThrows(SocketTimeoutException::class.java) {
+            channel.read(ByteBuffer.allocate(16))
+        }
+        assertTrue(channel.stalledFutures.single().isCancelled)
+        assertEquals(0L, channel.position())
+    }
+
+    @Test
+    fun aReadAfterATimeoutAsksAgainAndIsStillSmall() {
+        val channel = Channel(content, stalledReads = 1, readTimeoutMillis = 50)
+        assertThrows(SocketTimeoutException::class.java) {
+            channel.read(ByteBuffer.allocate(16))
+        }
+        val destination = ByteBuffer.allocate(16)
+        channel.read(destination)
+        assertArrayEquals(content.copyOf(16), destination.array())
+        assertEquals(listOf(0L to 128 * 1024, 0L to 128 * 1024), channel.requests)
     }
 }

@@ -30,6 +30,13 @@ class ClientException : Exception {
     private val status: NtStatus? = (cause as? SMBApiException)?.status
     private val statusCode: Long? = (cause as? SMBApiException)?.statusCode
 
+    /**
+     * Whether the server no longer knows the session (it expired or was logged off) or the tree
+     * this went through; the operation may succeed with a fresh session. See [withSession].
+     */
+    internal val isSessionGone: Boolean
+        get() = status in SESSION_GONE_STATUSES
+
     @Throws(AtomicMoveNotSupportedException::class)
     fun maybeThrowAtomicMoveNotSupportedException(file: String?, other: String?) {
         if (status == NtStatus.STATUS_NOT_SAME_DEVICE) {
@@ -52,8 +59,7 @@ class ClientException : Exception {
             NtStatus.STATUS_PRIVILEGE_NOT_HELD, NtStatus.STATUS_LOGON_FAILURE,
             NtStatus.STATUS_PASSWORD_EXPIRED, NtStatus.STATUS_ACCOUNT_DISABLED,
             NtStatus.STATUS_OPLOCK_NOT_GRANTED, NtStatus.STATUS_CANNOT_DELETE,
-            NtStatus.STATUS_LOGON_TYPE_NOT_GRANTED, NtStatus.STATUS_USER_SESSION_DELETED,
-            NtStatus.STATUS_FILE_ENCRYPTED, NtStatus.STATUS_NETWORK_SESSION_EXPIRED ->
+            NtStatus.STATUS_LOGON_TYPE_NOT_GRANTED, NtStatus.STATUS_FILE_ENCRYPTED ->
                 AccessDeniedException(file, other, message)
 
             NtStatus.STATUS_OBJECT_NAME_COLLISION ->
@@ -67,8 +73,8 @@ class ClientException : Exception {
 
             NtStatus.STATUS_NO_SUCH_FILE, NtStatus.STATUS_OBJECT_NAME_NOT_FOUND,
             NtStatus.STATUS_OBJECT_PATH_NOT_FOUND, NtStatus.STATUS_DELETE_PENDING,
-            NtStatus.STATUS_BAD_NETWORK_PATH, NtStatus.STATUS_NETWORK_NAME_DELETED,
-            NtStatus.STATUS_BAD_NETWORK_NAME, NtStatus.STATUS_NOT_FOUND ->
+            NtStatus.STATUS_BAD_NETWORK_PATH, NtStatus.STATUS_BAD_NETWORK_NAME,
+            NtStatus.STATUS_NOT_FOUND ->
                 NoSuchFileException(file, other, message)
 
             else -> when (statusCode) {
@@ -80,4 +86,12 @@ class ClientException : Exception {
                 else -> FileSystemException(file, other, message)
             }
         }.apply { initCause(this@ClientException) }
+
+    companion object {
+        private val SESSION_GONE_STATUSES = setOf(
+            NtStatus.STATUS_USER_SESSION_DELETED,
+            NtStatus.STATUS_NETWORK_SESSION_EXPIRED,
+            NtStatus.STATUS_NETWORK_NAME_DELETED
+        )
+    }
 }

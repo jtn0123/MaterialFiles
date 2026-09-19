@@ -87,7 +87,9 @@ fun <T> Deferred<T>.asFuture(): Future<T> = object : Future<T> {
 
     @Throws(ExecutionException::class, InterruptedException::class, TimeoutException::class)
     override fun get(timeout: Long, unit: TimeUnit): T {
-        latch.await(timeout, unit)
+        if (!latch.await(timeout, unit)) {
+            throw TimeoutException()
+        }
         return getCompleted()
     }
 
