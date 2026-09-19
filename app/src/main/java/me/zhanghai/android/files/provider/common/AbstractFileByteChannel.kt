@@ -218,6 +218,11 @@ abstract class AbstractFileByteChannel(
         private var pendingRead: Future<ByteBuffer>? = null
         private val pendingReadLock = Any()
 
+        // Many readers only want what is at the start of a file (its type, its metadata, an
+        // embedded thumbnail), so the first read is small and nothing is read ahead until a
+        // second one shows that the file is being read through.
+        private var isFirstRead = true
+
         @Throws(IOException::class)
         fun read(destination: ByteBuffer): Int {
             if (!buffer.hasRemaining()) {
@@ -236,9 +241,11 @@ abstract class AbstractFileByteChannel(
 
         @Throws(IOException::class)
         private fun readIntoBuffer() {
+            val isFirstRead = isFirstRead
+            this.isFirstRead = false
             val future = synchronized(pendingReadLock) {
                 pendingRead?.also { pendingRead = null }
-            } ?: readIntoBufferAsync()
+            } ?: readIntoBufferAsync(if (isFirstRead) FIRST_READ_SIZE else BUFFER_SIZE)
             val newBuffer = try {
                 future.get()
             } catch (e: CancellationException) {
@@ -260,13 +267,16 @@ abstract class AbstractFileByteChannel(
                 return
             }
             bufferedPosition += buffer.remaining()
+            if (isFirstRead) {
+                return
+            }
             synchronized(pendingReadLock) {
-                pendingRead = readIntoBufferAsync()
+                pendingRead = readIntoBufferAsync(BUFFER_SIZE)
             }
         }
 
-        private fun readIntoBufferAsync(): Future<ByteBuffer> =
-            onReadAsync(bufferedPosition, BUFFER_SIZE, TIMEOUT_MILLIS)
+        private fun readIntoBufferAsync(size: Int): Future<ByteBuffer> =
+            onReadAsync(bufferedPosition, size, TIMEOUT_MILLIS)
 
         fun reposition(oldPosition: Long, newPosition: Long) {
             if (newPosition == oldPosition) {
@@ -307,6 +317,7 @@ abstract class AbstractFileByteChannel(
 
     companion object {
         private const val BUFFER_SIZE = 1024 * 1024
+        private const val FIRST_READ_SIZE = 128 * 1024
         private const val TIMEOUT_MILLIS = 15_000L
     }
 }
