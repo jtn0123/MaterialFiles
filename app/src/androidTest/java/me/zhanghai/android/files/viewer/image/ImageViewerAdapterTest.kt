@@ -1,0 +1,141 @@
+/*
+ * Copyright (c) 2026 Hai Zhang <dreaming.in.code.zh@gmail.com>
+ * All Rights Reserved.
+ */
+
+package me.zhanghai.android.files.viewer.image
+
+import android.content.Intent
+import android.net.Uri
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.core.view.isVisible
+import androidx.test.core.app.ActivityScenario
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+import java8.nio.file.Path
+import java8.nio.file.Paths
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import me.zhanghai.android.files.NoRootAccessRule
+import me.zhanghai.android.files.coil.TestJpeg
+import me.zhanghai.android.files.filelist.FileListActivity
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/** How the image viewer reads a photo and what it shows when it cannot. */
+@RunWith(AndroidJUnit4::class)
+class ImageViewerAdapterTest {
+    @get:Rule
+    val noRootAccess = NoRootAccessRule()
+
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val context = instrumentation.targetContext
+    private lateinit var directory: File
+    private var scenario: ActivityScenario<FileListActivity>? = null
+
+    /** Counts what the adapter hands to the dispatcher it was given for reading. */
+    private val reads = AtomicInteger()
+    private val readDispatcher = object : CoroutineDispatcher() {
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            reads.incrementAndGet()
+            Dispatchers.IO.dispatch(context, block)
+        }
+    }
+
+    @Before
+    fun setUp() {
+        directory = File(context.cacheDir, "image-viewer-${UUID.randomUUID()}")
+            .apply { mkdirs() }
+    }
+
+    @After
+    fun tearDown() {
+        scenario?.close()
+        directory.deleteRecursively()
+    }
+
+    /**
+     * Binds one page of the viewer inside a real activity, which is where a photo is loaded and
+     * shown.
+     */
+    private fun show(path: Path): ImageViewerAdapter.ViewHolder {
+        val intent = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(Uri.fromFile(directory), "inode/directory")
+            .setClass(context, FileListActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val scenario = ActivityScenario.launch<FileListActivity>(intent)
+        this.scenario = scenario
+        lateinit var holder: ImageViewerAdapter.ViewHolder
+        scenario.onActivity { activity ->
+            val parent = FrameLayout(activity)
+            activity.addContentView(
+                parent,
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            )
+            val adapter = ImageViewerAdapter(activity, readDispatcher) {}
+            adapter.replace(listOf(path))
+            holder = adapter.onCreateViewHolder(parent, 0)
+            adapter.onBindViewHolder(holder, 0)
+            parent.addView(holder.itemView)
+        }
+        return holder
+    }
+
+    private fun await(what: String, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + 20_000
+        while (System.currentTimeMillis() < deadline) {
+            var satisfied = false
+            instrumentation.runOnMainSync { satisfied = condition() }
+            if (satisfied) {
+                return
+            }
+            Thread.sleep(100)
+        }
+        throw AssertionError(what)
+    }
+
+    @Test
+    fun aPhotoIsReadOffTheShowingThreadAndThenShown() {
+        val file = File(directory, "Photo.jpg")
+        TestJpeg.write(file, 320, 240)
+        val holder = show(Paths.get(file.path))
+
+        await("The photo was never shown") { holder.binding.image.drawable != null }
+
+        assertTrue(
+            "The photo should be read on the dispatcher given to the adapter",
+            reads.get() > 0
+        )
+        assertTrue(holder.binding.image.isVisible)
+        assertFalse(holder.binding.errorText.isVisible)
+        assertEquals(320, holder.binding.image.drawable!!.intrinsicWidth)
+    }
+
+    @Test
+    fun aPhotoThatIsGoneShowsWhyItCannotBeShown() {
+        val holder = show(Paths.get(File(directory, "Gone.jpg").path))
+
+        await("The error was never shown") { holder.binding.errorText.isVisible }
+
+        assertTrue(
+            holder.binding.errorText.text.toString(),
+            holder.binding.errorText.text.contains("Gone.jpg")
+        )
+        assertFalse(holder.binding.image.isVisible)
+        assertFalse(holder.binding.largeImage.isVisible)
+    }
+}
