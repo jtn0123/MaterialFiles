@@ -143,6 +143,9 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     testImplementation libs.junit
+    // The XmlPull API of the platform is a stub in unit tests; the JVM implementation the
+    // vendored dav4jvm tests already use makes the WebDAV provider testable off-device.
+    testImplementation libs.xpp3
     androidTestImplementation libs.androidx.test.runner
     androidTestImplementation libs.androidx.test.ext.junit
     androidTestImplementation libs.androidx.test.uiautomator
