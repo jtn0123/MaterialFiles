@@ -87,11 +87,35 @@ class SettingsPreferenceDialogTest {
         instrumentation.waitForIdleSync()
     }
 
-    private fun launchSettings(): PreferenceFragmentCompat {
-        val scenario = ActivityScenario.launch(SettingsActivity::class.java)
+    @Test
+    fun aShownDialogSurvivesTheScreenBeingRecreated() {
+        val fragment = launchSettings()
+        val preference =
+            fragment.requirePreference<ThemeColorPreference>(R.string.pref_key_theme_color)
+        instrumentation.runOnMainSync { fragment.onDisplayPreferenceDialog(preference) }
+        instrumentation.waitForIdleSync()
+        assertNotNull(fragment.dialogFragment())
+
+        scenario!!.recreate()
+        instrumentation.waitForIdleSync()
+
+        val recreatedFragment = scenario!!.preferenceFragment()
+        val dialog = recreatedFragment.dialogFragment()
+        assertNotNull("The dialog must come back after a recreation", dialog)
+        // Still finds its preference through the fragment it is a child of.
+        assertEquals(preference.key, dialog!!.preference.key)
+        instrumentation.runOnMainSync { dialog.dismiss() }
+        instrumentation.waitForIdleSync()
+    }
+
+    private fun launchSettings(): PreferenceFragmentCompat =
+        ActivityScenario.launch(SettingsActivity::class.java)
             .also { this.scenario = it }
+            .preferenceFragment()
+
+    private fun ActivityScenario<SettingsActivity>.preferenceFragment(): PreferenceFragmentCompat {
         lateinit var fragment: PreferenceFragmentCompat
-        scenario.onActivity { activity ->
+        onActivity { activity ->
             fragment = activity.supportFragmentManager.findPreferenceFragment()
                 ?: error("No preference fragment in the settings activity")
         }

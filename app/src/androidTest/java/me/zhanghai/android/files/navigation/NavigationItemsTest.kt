@@ -12,11 +12,13 @@ import java8.nio.file.Path
 import java8.nio.file.Paths
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.about.AboutActivity
+import me.zhanghai.android.files.file.ExternalStorageUri
 import me.zhanghai.android.files.ftpserver.FtpServerActivity
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.settings.SettingsActivity
 import me.zhanghai.android.files.settings.StandardDirectoryListActivity
 import me.zhanghai.android.files.storage.AddStorageDialogActivity
+import me.zhanghai.android.files.storage.ExternalStorageShortcut
 import me.zhanghai.android.files.storage.FileSystemRoot
 import me.zhanghai.android.files.storage.PrimaryStorageVolume
 import me.zhanghai.android.files.storage.Storage
@@ -77,6 +79,27 @@ class NavigationItemsTest {
         assertTrue(listener.isDrawerClosed)
         assertTrue(item.onLongClick(listener))
         assertEquals(1, listener.intents.size)
+    }
+
+    @Test
+    fun aStorageWithoutAPathOpensItsIntentInstead() {
+        val shortcut = ExternalStorageShortcut(
+            null,
+            "Shortcut",
+            ExternalStorageUri("primary", "Download")
+        )
+        putStorages(listOf(shortcut))
+
+        val item = currentItems().filterNotNull().first { it.id == shortcut.id }
+
+        assertEquals("Shortcut", item.getTitle(context))
+        val listener = RecordingListener(Paths.get(FileSystemRoot.LINUX_PATH))
+        assertFalse("A storage opened elsewhere is never the current one", item.isChecked(listener))
+        item.onClick(listener)
+        assertEquals(1, listener.intents.size)
+        assertEquals(shortcut.createIntent().data, listener.intents.single().data)
+        assertTrue(listener.isDrawerClosed)
+        assertTrue(listener.navigatedTo.isEmpty())
     }
 
     @Test
