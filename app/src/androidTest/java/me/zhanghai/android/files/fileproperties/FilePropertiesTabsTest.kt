@@ -19,6 +19,7 @@ import androidx.viewpager.widget.ViewPager
 import com.google.android.material.textfield.TextInputLayout
 import java.io.File
 import java.io.FileInputStream
+import java.security.MessageDigest
 import java.util.UUID
 import java8.nio.file.Paths
 import me.zhanghai.android.files.NoRootAccessRule
@@ -47,6 +48,7 @@ class FilePropertiesTabsTest {
     private val context = instrumentation.targetContext
     private val device = UiDevice.getInstance(instrumentation)
     private lateinit var directory: File
+    private lateinit var properties: PropertiesDialogTesting
 
     @Before
     fun setUp() {
@@ -55,6 +57,7 @@ class FilePropertiesTabsTest {
             "pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS"
         )
         directory = File(context.cacheDir, "properties-${UUID.randomUUID()}").apply { mkdirs() }
+        properties = PropertiesDialogTesting(directory)
     }
 
     @After
@@ -68,91 +71,15 @@ class FilePropertiesTabsTest {
         }
     }
 
-    /** Opens the file list on the test directory and the properties dialog for one file. */
-    private fun showProperties(file: File): ActivityScenario<FileListActivity> {
-        val fileItem: FileItem = Paths.get(file.path).loadFileItem()
-        val intent = Intent(Intent.ACTION_VIEW)
-            .setDataAndType(Uri.fromFile(directory), "inode/directory")
-            .setClass(context, FileListActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        val scenario = ActivityScenario.launch<FileListActivity>(intent)
-        assertNotNull(device.wait(Until.findObject(By.text(file.name)), 20_000))
-        scenario.onActivity { activity ->
-            FilePropertiesDialogFragment.show(fileItem, activity.fileListFragment)
-        }
-        return scenario
-    }
-
-    private val FileListActivity.fileListFragment: FileListFragment
-        get() = supportFragmentManager.fragments.filterIsInstance<FileListFragment>().single()
-
-    /** Switches to the tab with the given title and returns the values it shows, by their hint. */
-    private fun ActivityScenario<FileListActivity>.openTab(
-        titleRes: Int,
-        expectedHintRes: Int
-    ): Map<String, String> {
-        val title = context.getString(titleRes)
-        val deadline = System.currentTimeMillis() + 30_000
-        var items: Map<String, String> = emptyMap()
-        while (System.currentTimeMillis() < deadline) {
-            onActivity { activity ->
-                val dialog = activity.fileListFragment.childFragmentManager.fragments
-                    .filterIsInstance<FilePropertiesDialogFragment>()
-                    .singleOrNull()
-                    ?.dialog
-                if (dialog != null) {
-                    val viewPager = dialog.window!!.decorView
-                        .findViewById<ViewPager>(R.id.viewPager)
-                    val adapter = viewPager.adapter
-                    val index = (0 until (adapter?.count ?: 0))
-                        .firstOrNull { adapter!!.getPageTitle(it) == title }
-                    if (index != null) {
-                        if (viewPager.currentItem != index) {
-                            viewPager.currentItem = index
-                        }
-                        items = dialog.window!!.decorView.propertyItems()
-                    }
-                }
-            }
-            if (items.containsKey(context.getString(expectedHintRes))) {
-                return items
-            }
-            Thread.sleep(200)
-        }
-        throw AssertionError("The $title tab never showed its values: ${items.keys}")
-    }
-
-    /** Every labelled value in the view tree, as hint to text. */
-    private fun View.propertyItems(): Map<String, String> {
-        val items = mutableMapOf<String, String>()
-        collectPropertyItems(items)
-        return items
-    }
-
-    private fun View.collectPropertyItems(items: MutableMap<String, String>) {
-        if (this is TextInputLayout) {
-            val hint = hint?.toString()
-            val text = editText?.text?.toString()
-            if (hint != null && text != null) {
-                items[hint] = text
-            }
-            return
-        }
-        if (this is ViewGroup) {
-            for (index in 0 until childCount) {
-                getChildAt(index).collectPropertyItems(items)
-            }
-        }
-    }
-
     @Test
     fun aPhotoTellsWhatCameraTookItAndHow() {
         val file = File(directory, "Camera.jpg")
         TestJpeg.write(file, 800, 600)
         TestJpeg.writeExif(file)
 
-        showProperties(file).use { scenario ->
-            val items = scenario.openTab(
+        properties.show(file).use { scenario ->
+            val items = properties.openTab(
+                scenario,
                 R.string.file_properties_image,
                 R.string.file_properties_media_dimensions
             )
@@ -198,8 +125,9 @@ class FilePropertiesTabsTest {
         TestJpeg.write(file, 400, 300)
         TestJpeg.writeExif(file)
 
-        showProperties(file).use { scenario ->
-            val items = scenario.openTab(
+        properties.show(file).use { scenario ->
+            val items = properties.openTab(
+                scenario,
                 R.string.file_properties_image,
                 R.string.file_properties_media_coordinates
             )
@@ -222,8 +150,9 @@ class FilePropertiesTabsTest {
         val file = File(directory, "Plain.jpg")
         TestJpeg.write(file, 120, 240)
 
-        showProperties(file).use { scenario ->
-            val items = scenario.openTab(
+        properties.show(file).use { scenario ->
+            val items = properties.openTab(
+                scenario,
                 R.string.file_properties_image,
                 R.string.file_properties_media_dimensions
             )
@@ -241,14 +170,115 @@ class FilePropertiesTabsTest {
     }
 
     @Test
+    fun anApkTellsWhichAppItWouldInstallAndWhatItAsksFor() {
+        val file = File(directory, "Installer.apk")
+        File(context.applicationInfo.sourceDir).copyTo(file)
+
+        properties.show(file).use { scenario ->
+            val items = properties.openTab(
+                scenario,
+                R.string.file_properties_apk,
+                R.string.file_properties_apk_package_name
+            )
+
+            assertEquals(
+                context.packageName,
+                items[context.getString(R.string.file_properties_apk_package_name)]
+            )
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val version = items[context.getString(R.string.file_properties_apk_version)]
+            assertTrue(version.orEmpty(), version.orEmpty().contains(packageInfo.versionName!!))
+
+            // The number of permissions opens the list of what the app would be allowed to do.
+            val permissions =
+                items[context.getString(R.string.file_properties_apk_requested_permissions)]
+            assertNotNull(items.keys.toString(), permissions)
+            device.wait(Until.findObject(By.text(permissions!!)), 20_000)!!.click()
+
+            assertNotNull(
+                "The permission list never showed a permission name",
+                device.wait(Until.findObject(By.textStartsWith("android.permission.")), 20_000)
+            )
+        }
+    }
+
+    @Test
+    fun aFileTellsItsChecksumsAndRecognisesOneThatMatches() {
+        val file = File(directory, "Notes.txt")
+        file.writeText("Nothing to see")
+        val sha256 = MessageDigest.getInstance("SHA-256")
+            .digest(file.readBytes())
+            .joinToString("") { "%02x".format(it) }
+
+        properties.show(file).use { scenario ->
+            val items = properties.openTab(
+                scenario,
+                R.string.file_properties_checksum,
+                R.string.file_properties_checksum_sha_256
+            )
+
+            assertEquals(
+                sha256.uppercase(),
+                items[context.getString(R.string.file_properties_checksum_sha_256)]?.uppercase()
+            )
+
+            val compareEdit = device.wait(
+                Until.findObject(By.res(context.packageName, "compareEdit")),
+                20_000
+            )
+            assertNotNull("The checksum tab never showed its compare field", compareEdit)
+            compareEdit!!.text = sha256
+
+            val match = context.getString(
+                R.string.file_properties_checksum_compare_match_format,
+                context.getString(R.string.file_properties_checksum_sha_256)
+            )
+            assertNotNull(
+                "The checksum that was typed in was never recognised",
+                device.wait(Until.findObject(By.text(match)), 20_000)
+            )
+        }
+    }
+
+    @Test
+    fun aSongTellsWhatItIsAndHowLongItPlays() {
+        val file = File(directory, "Tone.m4a")
+        instrumentation.context.assets.open("clip.m4a").use { input ->
+            file.outputStream().use { input.copyTo(it) }
+        }
+
+        properties.show(file).use { scenario ->
+            val items = properties.openTab(
+                scenario,
+                R.string.file_properties_audio,
+                R.string.file_properties_media_title
+            )
+
+            assertEquals(
+                "Test tone",
+                items[context.getString(R.string.file_properties_media_title)]
+            )
+            assertEquals("Ansel", items[context.getString(R.string.file_properties_audio_artist)])
+            assertEquals(
+                "Test album",
+                items[context.getString(R.string.file_properties_audio_album)]
+            )
+            val duration = items[context.getString(R.string.file_properties_media_duration)]
+            // The tone is 5 s long, give or take the last frame.
+            assertTrue(duration.orEmpty(), duration in listOf("00:04", "00:05"))
+        }
+    }
+
+    @Test
     fun aVideoTellsItsSizeAndLength() {
         val file = File(directory, "Clip.mp4")
         instrumentation.context.assets.open("clip.mp4").use { input ->
             file.outputStream().use { input.copyTo(it) }
         }
 
-        showProperties(file).use { scenario ->
-            val items = scenario.openTab(
+        properties.show(file).use { scenario ->
+            val items = properties.openTab(
+                scenario,
                 R.string.file_properties_video,
                 R.string.file_properties_media_dimensions
             )
