@@ -35,9 +35,9 @@ abstract class MaterialPreferenceDialogFragmentCompat :
     DialogInterface.OnClickListener {
 
     open val preference: DialogPreference by lazy {
-        val fragment = targetFragment
+        val fragment = parentFragment
         check(fragment is DialogPreference.TargetFragment) {
-            "Target fragment must implement TargetFragment interface"
+            "Parent fragment must implement TargetFragment interface"
         }
         val key = requireArguments().getString(ARG_KEY)!!
         fragment.findPreference(key)!!

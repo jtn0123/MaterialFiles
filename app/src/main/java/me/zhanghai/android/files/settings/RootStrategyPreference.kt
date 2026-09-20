@@ -20,12 +20,6 @@ class RootStrategyPreference : SimpleMenuPreference {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
     constructor(
         context: Context,
         attrs: AttributeSet?,
@@ -45,7 +39,8 @@ class RootStrategyPreference : SimpleMenuPreference {
             jobCount,
             jobCount
         )
-        setPositiveButtonText(android.R.string.yes)
+        // android.R.string.yes is deprecated and has always been "OK" anyway.
+        setPositiveButtonText(android.R.string.ok)
         setNegativeButtonText(R.string.maybe_later)
         preferenceManager.showDialog(this)
     }

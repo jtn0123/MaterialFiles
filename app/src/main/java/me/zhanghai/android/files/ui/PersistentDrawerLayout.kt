@@ -19,7 +19,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.children
 import androidx.core.view.isInvisible
 import androidx.customview.widget.ViewDragHelper
-import me.zhanghai.android.files.util.layoutInStatusBar
 import me.zhanghai.android.files.util.replaceSystemBarsInsets
 import me.zhanghai.android.files.util.systemBarsInsets
 
@@ -35,12 +34,6 @@ class PersistentDrawerLayout @JvmOverloads constructor(
         ViewDragHelper.create(this, PersistentDrawerLayoutDragCallback(this, Gravity.RIGHT))
 
     private var lastInsets: WindowInsetsCompat? = null
-
-    init {
-        if (fitsSystemWindows) {
-            layoutInStatusBar = true
-        }
-    }
 
     override fun dispatchApplyWindowInsets(windowInsets: WindowInsets): WindowInsets {
         if (!fitsSystemWindows) {

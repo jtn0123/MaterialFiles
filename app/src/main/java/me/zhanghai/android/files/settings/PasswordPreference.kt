@@ -14,22 +14,7 @@ import androidx.preference.EditTextPreference as AndroidXEditTextPreference
 import me.zhanghai.android.files.ui.EditTextPreference
 
 class PasswordPreference : EditTextPreference {
-    constructor(context: Context) : super(context)
-
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
-    constructor(
-        context: Context,
-        attrs: AttributeSet?,
-        @AttrRes defStyleAttr: Int,
-        @StyleRes defStyleRes: Int
-    ) : super(context, attrs, defStyleAttr, defStyleRes)
 
     init {
         if (summaryProvider is AndroidXEditTextPreference.SimpleSummaryProvider) {
@@ -64,15 +49,15 @@ class PasswordPreference : EditTextPreference {
         }
     }
 
-    object SimpleSummaryProvider : SummaryProvider<EditTextPreference> {
-        override fun provideSummary(preference: EditTextPreference): CharSequence? {
+    companion object {
+        /** Shows the password as dots, and the usual "not set" summary when there is none. */
+        val SimpleSummaryProvider = SummaryProvider<EditTextPreference> { preference ->
             val text = preference.text
-            return if (!text.isNullOrEmpty()) {
+            if (!text.isNullOrEmpty()) {
                 PasswordTransformationMethod.getInstance().getTransformation(text, null)
             } else {
-                AndroidXEditTextPreference.SimpleSummaryProvider.getInstance().provideSummary(
-                    preference
-                )
+                AndroidXEditTextPreference.SimpleSummaryProvider.getInstance()
+                    .provideSummary(preference)
             }
         }
     }

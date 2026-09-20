@@ -21,12 +21,6 @@ open class FixLayoutSearchView : SearchView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
     init {
         // A negative value won't work here because SearchView will use its preferred width as max
         // width instead.

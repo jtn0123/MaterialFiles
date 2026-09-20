@@ -34,12 +34,6 @@ class CrossfadeSubtitleToolbar : Toolbar {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
     override fun getSubtitle(): CharSequence? = nextSubtitle ?: super.getSubtitle()
 
     override fun setSubtitle(subtitle: CharSequence?) {

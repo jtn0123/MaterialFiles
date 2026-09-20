@@ -20,28 +20,7 @@ open class EditTextPreference : AndroidXEditTextPreference {
     private var inputType = 0
     private var userOnBindEditTextListener: OnBindEditTextListener? = null
 
-    constructor(context: Context) : super(context) {
-        init(null)
-    }
-
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
-        init(attrs)
-    }
-
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    ) {
-        init(attrs)
-    }
-
-    constructor(
-        context: Context,
-        attrs: AttributeSet?,
-        @AttrRes defStyleAttr: Int,
-        @StyleRes defStyleRes: Int
-    ) : super(context, attrs, defStyleAttr, defStyleRes) {
         init(attrs)
     }
 
