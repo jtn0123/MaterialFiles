@@ -304,7 +304,7 @@ class Client(internal val authenticator: Authenticator) {
         }
         useClient(path.authority) { client ->
             return client.mlistFileCompat(path.remotePath)
-                ?: client.throwNegativeReplyCodeException()
+                ?: throw client.createNoSuchFileException()
         }
     }
 
