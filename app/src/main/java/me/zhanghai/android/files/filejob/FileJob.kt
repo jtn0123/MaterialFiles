@@ -10,6 +10,7 @@ import java.io.InterruptedIOException
 import java.net.SocketTimeoutException
 import java.util.Random
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.util.getQuantityString
@@ -41,7 +42,7 @@ abstract class FileJob {
     suspend fun runOn(service: FileJobService) {
         this.service = service
         try {
-            runInterruptible { run() }
+            runInterruptible(Dispatchers.IO) { run() }
             if (skippedErrorCount > 0) {
                 service.showToast(
                     service.getQuantityString(

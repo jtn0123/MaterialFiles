@@ -42,6 +42,7 @@ import me.zhanghai.android.files.provider.common.Searchable
 import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
 import me.zhanghai.android.files.provider.common.WatchServicePathObservable
 import me.zhanghai.android.files.provider.common.decodedPathByteString
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.common.toCopyOptions
@@ -121,7 +122,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
 
     @Throws(IOException::class)
     override fun newInputStream(file: Path, vararg options: OpenOption): InputStream {
-        file as? WebDavPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<WebDavPath>(file)
         val openOptions = options.toOpenOptions()
         openOptions.checkForWebDav()
         if (openOptions.write) {
@@ -166,7 +167,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
 
     @Throws(IOException::class)
     override fun newOutputStream(file: Path, vararg options: OpenOption): OutputStream {
-        file as? WebDavPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<WebDavPath>(file)
         val optionsSet = mutableSetOf(*options)
         if (optionsSet.isEmpty()) {
             optionsSet += StandardOpenOption.CREATE
@@ -202,7 +203,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): FileChannel {
-        file as? WebDavPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<WebDavPath>(file)
         options.toOpenOptions().checkForWebDav()
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
@@ -216,7 +217,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): SeekableByteChannel {
-        file as? WebDavPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<WebDavPath>(file)
         val openOptions = options.toOpenOptions()
         openOptions.checkForWebDav()
         if (openOptions.write && !openOptions.truncateExisting) {
@@ -266,7 +267,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         directory: Path,
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
-        directory as? WebDavPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<WebDavPath>(directory)
         val paths = try {
             @Suppress("UNCHECKED_CAST")
             client.findCollectionMembers(directory) as List<Path>
@@ -278,7 +279,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
 
     @Throws(IOException::class)
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
-        directory as? WebDavPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<WebDavPath>(directory)
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
         }
@@ -290,7 +291,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
     }
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
-        link as? WebDavPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<WebDavPath>(link)
         when (target) {
             is WebDavPath, is ByteStringPath -> {}
             else -> throw ProviderMismatchException(target.toString())
@@ -302,14 +303,14 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
     }
 
     override fun createLink(link: Path, existing: Path) {
-        link as? WebDavPath ?: throw ProviderMismatchException(link.toString())
-        existing as? WebDavPath ?: throw ProviderMismatchException(existing.toString())
+        requireProviderPath<WebDavPath>(link)
+        requireProviderPath<WebDavPath>(existing)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun delete(path: Path) {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         try {
             // A collection must be addressed with a trailing slash (nginx insists), so find out
             // what this is first; a directory listing that just happened makes this a cache hit.
@@ -321,7 +322,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
     }
 
     override fun readSymbolicLink(link: Path): Path {
-        link as? WebDavPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<WebDavPath>(link)
         val linkResponse = try {
             client.findProperties(link, true)
         } catch (e: DavException) {
@@ -335,39 +336,39 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
 
     @Throws(IOException::class)
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        source as? WebDavPath ?: throw ProviderMismatchException(source.toString())
-        target as? WebDavPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<WebDavPath>(source)
+        requireProviderPath<WebDavPath>(target)
         val copyOptions = options.toCopyOptions()
         WebDavCopyMove.copy(source, target, copyOptions)
     }
 
     @Throws(IOException::class)
     override fun move(source: Path, target: Path, vararg options: CopyOption) {
-        source as? WebDavPath ?: throw ProviderMismatchException(source.toString())
-        target as? WebDavPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<WebDavPath>(source)
+        requireProviderPath<WebDavPath>(target)
         val copyOptions = options.toCopyOptions()
         WebDavCopyMove.move(source, target, copyOptions)
     }
 
     override fun isSameFile(path: Path, path2: Path): Boolean {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         return path == path2
     }
 
     override fun isHidden(path: Path): Boolean {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         val fileName = path.fileNameByteString ?: return false
         return fileName.startsWith(HIDDEN_FILE_NAME_PREFIX)
     }
 
     override fun getFileStore(path: Path): FileStore {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         val accessModes = modes.toAccessModes()
         if (accessModes.write) {
             throw UnsupportedOperationException(AccessMode.WRITE.toString())
@@ -415,7 +416,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         path: Path,
         vararg options: LinkOption
     ): WebDavFileAttributeView {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         val linkOptions = options.toLinkOptions()
         return WebDavFileAttributeView(path, linkOptions.noFollowLinks)
     }
@@ -425,7 +426,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any> {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -435,13 +436,13 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         value: Any,
         vararg options: LinkOption
     ) {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
-        path as? WebDavPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<WebDavPath>(path)
         return WatchServicePathObservable(path, intervalMillis)
     }
 
@@ -452,7 +453,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         intervalMillis: Long,
         listener: (List<Path>) -> Unit
     ) {
-        directory as? WebDavPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<WebDavPath>(directory)
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 }

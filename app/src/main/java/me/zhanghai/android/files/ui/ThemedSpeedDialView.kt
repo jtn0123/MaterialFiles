@@ -35,6 +35,7 @@ import me.zhanghai.android.files.compat.foregroundCompat
 import me.zhanghai.android.files.compat.setTextAppearanceCompat
 import me.zhanghai.android.files.util.ParcelableState
 import me.zhanghai.android.files.util.asColor
+import me.zhanghai.android.files.util.asState
 import me.zhanghai.android.files.util.dpToDimensionPixelSize
 import me.zhanghai.android.files.util.getColorByAttr
 import me.zhanghai.android.files.util.getParcelableSafe
@@ -216,9 +217,9 @@ class ThemedSpeedDialView : SpeedDialView {
     }
 
     override fun onRestoreInstanceState(state: Parcelable) {
-        state as State
-        super.onRestoreInstanceState(state.superState)
-        if (state.isOpen) {
+        val speedDialState = state.asState<State>()
+        super.onRestoreInstanceState(speedDialState.superState)
+        if (speedDialState.isOpen) {
             toggle(false)
         }
     }

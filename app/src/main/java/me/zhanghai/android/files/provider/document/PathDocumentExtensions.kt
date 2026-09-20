@@ -12,13 +12,14 @@ import android.os.ParcelFileDescriptor
 import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.ProviderMismatchException
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
 
 val Path.documentUri: Uri
     @Throws(IOException::class)
     get() {
-        this as? DocumentPath ?: throw ProviderMismatchException(toString())
+        requireProviderPath<DocumentPath>(this)
         return try {
             DocumentResolver.getDocumentUri(this)
         } catch (e: ResolverException) {
@@ -28,7 +29,7 @@ val Path.documentUri: Uri
 
 val Path.documentTreeUri: Uri
     get() {
-        this as? DocumentPath ?: throw ProviderMismatchException(toString())
+        requireProviderPath<DocumentPath>(this)
         return treeUri
     }
 
@@ -38,13 +39,13 @@ fun Uri.createDocumentTreeRootPath(): Path =
 /** Whether this document path is backed by local storage rather than a cloud provider. */
 val Path.isLocalDocument: Boolean
     get() {
-        this as? DocumentPath ?: throw ProviderMismatchException(toString())
+        requireProviderPath<DocumentPath>(this)
         return DocumentResolver.isLocal(this)
     }
 
 @Throws(IOException::class)
 fun Path.openDocumentParcelFileDescriptor(mode: String): ParcelFileDescriptor {
-    this as? DocumentPath ?: throw ProviderMismatchException(toString())
+    requireProviderPath<DocumentPath>(this)
     return try {
         DocumentResolver.openParcelFileDescriptor(this, mode)
     } catch (e: ResolverException) {
@@ -55,7 +56,7 @@ fun Path.openDocumentParcelFileDescriptor(mode: String): ParcelFileDescriptor {
 /** The provider's own thumbnail for this document, or null when it has none. */
 @Throws(IOException::class)
 fun Path.getDocumentThumbnail(width: Int, height: Int, signal: CancellationSignal): Bitmap? {
-    this as? DocumentPath ?: throw ProviderMismatchException(toString())
+    requireProviderPath<DocumentPath>(this)
     return try {
         DocumentResolver.getThumbnail(this, width, height, signal)
     } catch (e: ResolverException) {

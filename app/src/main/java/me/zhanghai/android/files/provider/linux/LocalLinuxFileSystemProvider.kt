@@ -34,6 +34,7 @@ import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
 import me.zhanghai.android.files.provider.common.WatchServicePathObservable
 import me.zhanghai.android.files.provider.common.decodedPathByteString
 import me.zhanghai.android.files.provider.common.open
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.common.toCopyOptions
@@ -82,7 +83,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): FileChannel {
-        file as? LinuxPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<LinuxPath>(file)
         val fileBytes = file.toByteString()
         val openOptions = options.toOpenOptions()
         val flags = openOptions.toLinuxFlags()
@@ -121,7 +122,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
         directory: Path,
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
-        directory as? LinuxPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<LinuxPath>(directory)
         val directoryBytes = directory.toByteString()
         val dir = try {
             Syscall.opendir(directoryBytes)
@@ -133,7 +134,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
-        directory as? LinuxPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<LinuxPath>(directory)
         val directoryBytes = directory.toByteString()
         val mode = (
             PosixFileMode.fromAttributes(attributes)
@@ -150,7 +151,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
-        link as? LinuxPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<LinuxPath>(link)
         val targetBytes = when (target) {
             is LinuxPath -> target.toByteString()
             is ByteStringPath -> target.toByteString()
@@ -171,8 +172,8 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun createLink(link: Path, existing: Path) {
-        link as? LinuxPath ?: throw ProviderMismatchException(link.toString())
-        existing as? LinuxPath ?: throw ProviderMismatchException(existing.toString())
+        requireProviderPath<LinuxPath>(link)
+        requireProviderPath<LinuxPath>(existing)
         val oldPathBytes = existing.toByteString()
         val newPathBytes = link.toByteString()
         try {
@@ -186,7 +187,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun delete(path: Path) {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         val pathBytes = path.toByteString()
         try {
             Syscall.remove(pathBytes)
@@ -198,7 +199,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun readSymbolicLink(link: Path): Path {
-        link as? LinuxPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<LinuxPath>(link)
         val linkBytes = link.toByteString()
         val targetBytes = try {
             Syscall.readlink(linkBytes)
@@ -211,8 +212,8 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        source as? LinuxPath ?: throw ProviderMismatchException(source.toString())
-        target as? LinuxPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<LinuxPath>(source)
+        requireProviderPath<LinuxPath>(target)
         val sourceBytes = source.toByteString()
         val targetBytes = target.toByteString()
         val copyOptions = options.toCopyOptions()
@@ -222,8 +223,8 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun move(source: Path, target: Path, vararg options: CopyOption) {
-        source as? LinuxPath ?: throw ProviderMismatchException(source.toString())
-        target as? LinuxPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<LinuxPath>(source)
+        requireProviderPath<LinuxPath>(target)
         val sourceBytes = source.toByteString()
         val targetBytes = target.toByteString()
         val copyOptions = options.toCopyOptions()
@@ -234,14 +235,14 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun isSameFile(path: Path, path2: Path): Boolean {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         if (path == path2) {
             return true
         }
         if (path2 !is LinuxPath) {
             return false
         }
-        path2 as? LinuxPath ?: throw ProviderMismatchException(path2.toString())
+        requireProviderPath<LinuxPath>(path2)
         val pathBytes = path.toByteString()
         val path2Bytes = path2.toByteString()
         val pathStat = try {
@@ -258,7 +259,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
     }
 
     override fun isHidden(path: Path): Boolean {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         val fileName = path.fileName ?: return false
         val fileNameBytes = fileName.toByteString()
         return fileNameBytes.startsWith(HIDDEN_FILE_NAME_PREFIX)
@@ -266,13 +267,13 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
 
     @Throws(IOException::class)
     override fun getFileStore(path: Path): FileStore {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         return LinuxFileStore(path)
     }
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         val pathBytes = path.toByteString()
         val accessModes = modes.toAccessModes()
         var mode: Int
@@ -306,7 +307,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
         type: Class<V>,
         vararg options: LinkOption
     ): V? {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         if (!supportsFileAttributeView(type)) {
             return null
         }
@@ -320,7 +321,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
         type: Class<A>,
         vararg options: LinkOption
     ): A {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         if (!type.isAssignableFrom(LinuxFileAttributes::class.java)) {
             throw UnsupportedOperationException(type.toString())
         }
@@ -332,7 +333,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
         path: Path,
         vararg options: LinkOption
     ): LinuxFileAttributeView {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         val linkOptions = options.toLinkOptions()
         return LinuxFileAttributeView(path, linkOptions.noFollowLinks)
     }
@@ -342,7 +343,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any> {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -352,13 +353,13 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
         value: Any,
         vararg options: LinkOption
     ) {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
-        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<LinuxPath>(path)
         return WatchServicePathObservable(path, intervalMillis)
     }
 
@@ -369,7 +370,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) :
         intervalMillis: Long,
         listener: (List<Path>) -> Unit
     ) {
-        directory as? LinuxPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<LinuxPath>(directory)
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 

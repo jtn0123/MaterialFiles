@@ -112,8 +112,7 @@ internal object FtpCopyMove : AbstractCopyMove<FtpPath, FTPFile>() {
         }
     }
 
-    override fun replacementSibling(target: FtpPath): FtpPath =
-        target.replacementSibling() as FtpPath
+    override fun replacementSibling(target: FtpPath): FtpPath = target.replacementSibling()
 
     // Whether RNTO overwrites depends on the server, so a target being replaced goes first.
     override fun rename(source: FtpPath, target: FtpPath, replaceExisting: Boolean) {

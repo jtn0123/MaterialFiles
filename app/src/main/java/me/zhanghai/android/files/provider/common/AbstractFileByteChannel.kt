@@ -18,6 +18,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java8.nio.channels.SeekableByteChannel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -77,13 +78,17 @@ abstract class AbstractFileByteChannel(
         }
     }
 
+    /** The dispatcher [onReadAsync] reads on; overridable so that tests can run it eagerly. */
+    protected open val readDispatcher: CoroutineDispatcher
+        get() = Dispatchers.IO
+
     protected open fun onReadAsync(
         position: Long,
         size: Int,
         timeoutMillis: Long
     ): Future<ByteBuffer> =
         @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.async(Dispatchers.IO) {
+        GlobalScope.async(readDispatcher) {
             withTimeout(timeoutMillis) {
                 runInterruptible {
                     onRead(position, size)

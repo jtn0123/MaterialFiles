@@ -132,14 +132,10 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
         }
         val sourceAttributes = readAttributes(source, copyOptions.noFollowLinks)
         val targetAttributes = readAttributesOrNull(target)
-        if (targetAttributes != null) {
-            if (isSameFile(source, sourceAttributes, target, targetAttributes)) {
-                copyOptions.progressListener?.invoke(getSize(sourceAttributes))
-                return
-            }
-            if (!copyOptions.replaceExisting) {
-                throw FileAlreadyExistsException(source.toString(), target.toString(), null)
-            }
+        if (targetAttributes != null &&
+            isDone(source, sourceAttributes, target, targetAttributes, copyOptions)
+        ) {
+            return
         }
         when (getFileType(sourceAttributes)) {
             FileType.REGULAR_FILE ->
@@ -160,22 +156,7 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
             }
 
             FileType.SYMBOLIC_LINK -> {
-                try {
-                    copySymbolicLink(source, sourceAttributes, target, copyOptions)
-                } catch (e: FileAlreadyExistsException) {
-                    if (!copyOptions.replaceExisting) {
-                        throw e
-                    }
-                    // Not deleted beforehand: the provider may not support links at all.
-                    try {
-                        // The target's own type is unknown here: the link was not deleted first.
-                        delete(target, readAttributes(target, true).let { getFileType(it) })
-                        copySymbolicLink(source, sourceAttributes, target, copyOptions)
-                    } catch (e2: IOException) {
-                        e2.addSuppressed(e)
-                        throw e2
-                    }
-                }
+                copySymbolicLinkReplacing(source, sourceAttributes, target, copyOptions)
                 copyOptions.progressListener?.invoke(getSize(sourceAttributes))
             }
 
@@ -183,6 +164,57 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
                 throw FileSystemException(source.toString(), null, "Cannot copy a special file")
         }
         copyAttributes(source, sourceAttributes, target, copyOptions)
+    }
+
+    /**
+     * Whether a copy or move onto an existing [target] is already done, because it is the very
+     * file being copied or moved.
+     *
+     * @throws FileAlreadyExistsException when the target is a different file and [CopyOptions]
+     *   does not ask for it to be replaced.
+     */
+    @Throws(IOException::class)
+    private fun isDone(
+        source: P,
+        sourceAttributes: A,
+        target: P,
+        targetAttributes: A,
+        copyOptions: CopyOptions
+    ): Boolean {
+        if (isSameFile(source, sourceAttributes, target, targetAttributes)) {
+            copyOptions.progressListener?.invoke(getSize(sourceAttributes))
+            return true
+        }
+        if (!copyOptions.replaceExisting) {
+            throw FileAlreadyExistsException(source.toString(), target.toString(), null)
+        }
+        return false
+    }
+
+    /** [copySymbolicLink], deleting an existing target only once it is in the way. */
+    @Throws(IOException::class)
+    private fun copySymbolicLinkReplacing(
+        source: P,
+        sourceAttributes: A,
+        target: P,
+        copyOptions: CopyOptions
+    ) {
+        try {
+            copySymbolicLink(source, sourceAttributes, target, copyOptions)
+        } catch (e: FileAlreadyExistsException) {
+            if (!copyOptions.replaceExisting) {
+                throw e
+            }
+            // Not deleted beforehand: the provider may not support links at all.
+            try {
+                // The target's own type is unknown here: the link was not deleted first.
+                delete(target, readAttributes(target, true).let { getFileType(it) })
+                copySymbolicLink(source, sourceAttributes, target, copyOptions)
+            } catch (e2: IOException) {
+                e2.addSuppressed(e)
+                throw e2
+            }
+        }
     }
 
     @Throws(IOException::class)
@@ -220,38 +252,16 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
     fun move(source: P, target: P, copyOptions: CopyOptions) {
         val sourceAttributes = readAttributes(source, true)
         val targetAttributes = readAttributesOrNull(target)
-        if (targetAttributes != null) {
-            if (isSameFile(source, sourceAttributes, target, targetAttributes)) {
-                copyOptions.progressListener?.invoke(getSize(sourceAttributes))
-                return
-            }
-            if (!copyOptions.replaceExisting) {
-                throw FileAlreadyExistsException(source.toString(), target.toString(), null)
-            }
+        if (targetAttributes != null &&
+            isDone(source, sourceAttributes, target, targetAttributes, copyOptions)
+        ) {
+            return
         }
-        if (canRename) {
-            val renamed = try {
-                rename(source, target, getFileType(sourceAttributes), targetAttributes != null)
-                true
-            } catch (e: IOException) {
-                if (copyOptions.atomicMove) {
-                    throw e
-                }
-                false
-            } catch (e: UnsupportedOperationException) {
-                if (copyOptions.atomicMove) {
-                    throw AtomicMoveNotSupportedException(
-                        source.toString(),
-                        target.toString(),
-                        e.message
-                    ).apply { initCause(e) }
-                }
-                false
-            }
-            if (renamed) {
-                copyOptions.progressListener?.invoke(getSize(sourceAttributes))
-                return
-            }
+        if (canRename &&
+            tryRename(source, sourceAttributes, target, targetAttributes != null, copyOptions)
+        ) {
+            copyOptions.progressListener?.invoke(getSize(sourceAttributes))
+            return
         }
         if (copyOptions.atomicMove) {
             throw AtomicMoveNotSupportedException(
@@ -260,19 +270,7 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
                 "Cannot move the file in one step"
             )
         }
-        val copyOptionsForCopy = if (copyOptions.copyAttributes && copyOptions.noFollowLinks) {
-            copyOptions
-        } else {
-            CopyOptions(
-                copyOptions.replaceExisting,
-                true,
-                false,
-                true,
-                copyOptions.progressIntervalMillis,
-                copyOptions.progressListener
-            )
-        }
-        copy(source, target, copyOptionsForCopy)
+        copy(source, target, copyOptions.forMoveCopy())
         val fileType = getFileType(sourceAttributes)
         try {
             delete(source, fileType)
@@ -283,6 +281,55 @@ internal abstract class AbstractCopyMove<P : Any, A : Any> {
             deleteSuppressing(target, fileType, e)
             throw e
         }
+    }
+
+    /**
+     * Tries to move [source] onto [target] with a single [rename].
+     *
+     * @return whether the rename succeeded; a failure is only reported when
+     *   [CopyOptions.atomicMove] asked for the move to happen in one step.
+     */
+    @Throws(IOException::class)
+    private fun tryRename(
+        source: P,
+        sourceAttributes: A,
+        target: P,
+        isReplacing: Boolean,
+        copyOptions: CopyOptions
+    ): Boolean = try {
+        rename(source, target, getFileType(sourceAttributes), isReplacing)
+        true
+    } catch (e: IOException) {
+        if (copyOptions.atomicMove) {
+            throw e
+        }
+        false
+    } catch (e: UnsupportedOperationException) {
+        if (copyOptions.atomicMove) {
+            throw AtomicMoveNotSupportedException(
+                source.toString(),
+                target.toString(),
+                e.message
+            ).apply { initCause(e) }
+        }
+        false
+    }
+
+    /**
+     * These options for the copy a move falls back to: the source is going away, so its
+     * attributes and any symbolic link have to be carried over.
+     */
+    private fun CopyOptions.forMoveCopy(): CopyOptions = if (copyAttributes && noFollowLinks) {
+        this
+    } else {
+        CopyOptions(
+            replaceExisting,
+            true,
+            false,
+            true,
+            progressIntervalMillis,
+            progressListener
+        )
     }
 
     private fun deleteSuppressing(path: P, fileType: FileType, exception: Throwable) {

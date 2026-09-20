@@ -41,16 +41,8 @@ open class DelegateForceableSeekableByteChannel(private val channel: SeekableByt
 
 abstract class BaseDelegateSeekableByteChannel internal constructor(
     private val channel: SeekableByteChannel
-) : SeekableByteChannel {
-    @Throws(IOException::class)
-    override fun read(dst: ByteBuffer): Int = channel.read(dst)
-
-    @Throws(IOException::class)
-    override fun write(src: ByteBuffer): Int = channel.write(src)
-
-    @Throws(IOException::class)
-    override fun position(): Long = channel.position()
-
+) : SeekableByteChannel by channel {
+    // Overridden so that the caller keeps this channel, and not the one behind it.
     @Throws(IOException::class)
     override fun position(newPosition: Long): SeekableByteChannel {
         channel.position(newPosition)
@@ -58,18 +50,8 @@ abstract class BaseDelegateSeekableByteChannel internal constructor(
     }
 
     @Throws(IOException::class)
-    override fun size(): Long = channel.size()
-
-    @Throws(IOException::class)
     override fun truncate(size: Long): SeekableByteChannel {
         channel.truncate(size)
         return this
-    }
-
-    override fun isOpen(): Boolean = channel.isOpen
-
-    @Throws(IOException::class)
-    override fun close() {
-        channel.close()
     }
 }

@@ -139,8 +139,7 @@ internal object SmbCopyMove : AbstractCopyMove<SmbPath, FileInformation>() {
         }
     }
 
-    override fun replacementSibling(target: SmbPath): SmbPath =
-        target.replacementSibling() as SmbPath
+    override fun replacementSibling(target: SmbPath): SmbPath = target.replacementSibling()
 
     // The client renames with FILE_RENAME_INFORMATION.ReplaceIfExists set.
     override fun rename(source: SmbPath, target: SmbPath, replaceExisting: Boolean) {

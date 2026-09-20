@@ -8,53 +8,73 @@ package me.zhanghai.android.files.util
 import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Test
 
+/**
+ * Closing is what releases a connection or a file descriptor, so it has to happen even when the
+ * work failed, and a failure to close must not hide the failure that came first.
+ */
 class AutoCloseableExtensionsTest {
-    private class Resource(private val closeFailure: Exception? = null) : AutoCloseable {
+    @Test
+    fun closeSafeClosesAndSwallowsAFailureToClose() {
+        val closeable = TestCloseable()
+        closeable.closeSafe()
+        assertTrue(closeable.isClosed)
+        TestCloseable(failToClose = true).closeSafe()
+    }
+
+    @Test
+    fun theResultOfTheWorkIsReturnedAndTheCloseableIsClosed() {
+        val closeable = TestCloseable()
+        val result = closeable.useMappingCloseFailure({ it }) { "done with $it" }
+        assertEquals("done with $closeable", result)
+        assertTrue(closeable.isClosed)
+    }
+
+    @Test
+    fun aFailureToCloseIsReportedAsTheCallerWantsItNamed() {
+        val closeable = TestCloseable(failToClose = true)
+        val exception = assertThrows(IOException::class.java) {
+            closeable.useMappingCloseFailure({ IOException("/path/to/file", it) }) {}
+        }
+        assertEquals("/path/to/file", exception.message)
+        assertEquals("close failed", exception.cause!!.message)
+    }
+
+    @Test
+    fun aFailureOfTheWorkIsPassedThroughUnchangedAndStillCloses() {
+        val closeable = TestCloseable()
+        val failure = IllegalStateException("work failed")
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            closeable.useMappingCloseFailure({ IOException("mapped", it) }) { throw failure }
+        }
+        assertSame(failure, thrown)
+        assertTrue(closeable.isClosed)
+    }
+
+    @Test
+    fun aFailureToCloseAfterAFailedWorkIsOnlySuppressed() {
+        val failure = IllegalStateException("work failed")
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            TestCloseable(failToClose = true)
+                .useMappingCloseFailure({ IOException("mapped", it) }) { throw failure }
+        }
+        assertSame(failure, thrown)
+        assertEquals(1, thrown.suppressed.size)
+        assertEquals("close failed", thrown.suppressed[0].message)
+    }
+
+    private class TestCloseable(private val failToClose: Boolean = false) : AutoCloseable {
         var isClosed = false
+            private set
 
         override fun close() {
             isClosed = true
-            closeFailure?.let { throw it }
+            if (failToClose) {
+                throw IOException("close failed")
+            }
         }
-    }
-
-    private class Mapped(cause: Exception) : Exception(cause)
-
-    @Test
-    fun closesAfterTheBlockAndReturnsItsResult() {
-        val resource = Resource()
-        val result = resource.useMappingCloseFailure(::Mapped) { 42 }
-        assertEquals(42, result)
-        assertTrue(resource.isClosed)
-    }
-
-    @Test
-    fun aFailureToCloseIsMapped() {
-        val closeFailure = IOException("close")
-        try {
-            Resource(closeFailure).useMappingCloseFailure(::Mapped) {}
-            fail()
-        } catch (e: Mapped) {
-            assertSame(closeFailure, e.cause)
-        }
-    }
-
-    @Test
-    fun aFailureToCloseNeverHidesAFailureOfTheBlock() {
-        val closeFailure = IOException("close")
-        val blockFailure = IOException("block")
-        val resource = Resource(closeFailure)
-        try {
-            resource.useMappingCloseFailure(::Mapped) { throw blockFailure }
-            fail()
-        } catch (e: IOException) {
-            assertSame(blockFailure, e)
-            assertSame(closeFailure, e.suppressed.single())
-        }
-        assertTrue(resource.isClosed)
     }
 }

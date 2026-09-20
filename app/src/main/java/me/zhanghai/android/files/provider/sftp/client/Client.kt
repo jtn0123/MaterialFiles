@@ -21,6 +21,7 @@ import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.FileMode
 import net.schmizz.sshj.sftp.OpenMode
 import net.schmizz.sshj.sftp.RemoteFile
+import net.schmizz.sshj.sftp.RemoteResourceInfo
 import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPClient
 import net.schmizz.sshj.sftp.SFTPException
@@ -41,6 +42,10 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
 
     private val directoryFileAttributesCache =
         Collections.synchronizedMap(WeakHashMap<Path, FileAttributes>())
+
+    // Whether the server at an authority takes the arguments of a symbolic link the other way
+    // round, filled in when the session to it is opened.
+    private val reversedSymlinkArguments = ConcurrentHashMap<Authority, Boolean>()
 
     @Throws(ClientException::class)
     fun access(path: Path, flags: Set<OpenMode>) {
@@ -185,7 +190,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
     @Throws(ClientException::class)
     fun scandir(path: Path): List<Path> {
         val client = getClient(path.authority)
-        val files = try {
+        val files: List<RemoteResourceInfo> = try {
             client.ls(path.remotePath)
         } catch (e: IOException) {
             throw ClientException(e)
@@ -228,9 +233,14 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
 
     @Throws(ClientException::class)
     fun symlink(link: Path, target: String) {
-        val client = getClient(link.authority)
+        val authority = link.authority
+        val client = getClient(authority)
         try {
-            client.symlink(link.remotePath, target)
+            if (reversedSymlinkArguments[authority] == true) {
+                client.symlink(target, link.remotePath)
+            } else {
+                client.symlink(link.remotePath, target)
+            }
         } catch (e: IOException) {
             throw ClientException(e)
         }
@@ -284,10 +294,21 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
                 sshClient.closeSafe()
                 throw ClientException(e)
             }
+            // OpenSSH reads the two paths of a symbolic link in the order opposite to the one
+            // the draft everything else here follows asks for, and says so in its own PROTOCOL
+            // file; sshj sends what the draft says. Almost every SFTP server is OpenSSH, and on
+            // one the link would otherwise be created where its target should be, pointing back
+            // at it.
+            reversedSymlinkArguments[authority] =
+                OPENSSH_IDENTIFICATION in sshClient.transport.serverVersion
             client = sshClient.newSFTPClient()
             clients[authority] = client
             return client
         }
+    }
+
+    private companion object {
+        const val OPENSSH_IDENTIFICATION = "OpenSSH"
     }
 
     interface Path {

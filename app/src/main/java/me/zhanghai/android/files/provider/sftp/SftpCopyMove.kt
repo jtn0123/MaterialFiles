@@ -145,8 +145,7 @@ internal object SftpCopyMove : AbstractCopyMove<SftpPath, FileAttributes>() {
         }
     }
 
-    override fun replacementSibling(target: SftpPath): SftpPath =
-        target.replacementSibling() as SftpPath
+    override fun replacementSibling(target: SftpPath): SftpPath = target.replacementSibling()
 
     // SFTP rename does not overwrite, so a target being replaced goes first.
     override fun rename(source: SftpPath, target: SftpPath, replaceExisting: Boolean) {

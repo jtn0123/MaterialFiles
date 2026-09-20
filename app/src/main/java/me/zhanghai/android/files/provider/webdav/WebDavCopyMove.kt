@@ -113,8 +113,7 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
         }
     }
 
-    override fun replacementSibling(target: WebDavPath): WebDavPath =
-        target.replacementSibling() as WebDavPath
+    override fun replacementSibling(target: WebDavPath): WebDavPath = target.replacementSibling()
 
     override fun rename(source: WebDavPath, target: WebDavPath, replaceExisting: Boolean) {
         rename(source, target, getFileType(readAttributes(source, true)), replaceExisting)

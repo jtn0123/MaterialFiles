@@ -172,40 +172,56 @@ fun Set<PosixFileModeBit>.toPermissions(): Set<PosixFilePermission> =
     }
 
 fun Set<PosixFileModeBit>.toModeString(): String = StringBuilder()
-    .append(if (contains(PosixFileModeBit.OWNER_READ)) 'r' else '-')
-    .append(if (contains(PosixFileModeBit.OWNER_WRITE)) 'w' else '-')
-    .apply {
-        val hasSetUserIdBit = contains(PosixFileModeBit.SET_USER_ID)
-        append(
-            if (contains(PosixFileModeBit.OWNER_EXECUTE)) {
-                if (hasSetUserIdBit) 's' else 'x'
-            } else {
-                if (hasSetUserIdBit) 'S' else '-'
-            }
-        )
-    }
-    .append(if (contains(PosixFileModeBit.GROUP_READ)) 'r' else '-')
-    .append(if (contains(PosixFileModeBit.GROUP_WRITE)) 'w' else '-')
-    .apply {
-        val hasSetGroupIdBit = contains(PosixFileModeBit.SET_GROUP_ID)
-        append(
-            if (contains(PosixFileModeBit.GROUP_EXECUTE)) {
-                if (hasSetGroupIdBit) 's' else 'x'
-            } else {
-                if (hasSetGroupIdBit) 'S' else '-'
-            }
-        )
-    }
-    .append(if (contains(PosixFileModeBit.OTHERS_READ)) 'r' else '-')
-    .append(if (contains(PosixFileModeBit.OTHERS_WRITE)) 'w' else '-')
-    .apply {
-        val hasStickyBit = contains(PosixFileModeBit.STICKY)
-        append(
-            if (contains(PosixFileModeBit.OTHERS_EXECUTE)) {
-                if (hasStickyBit) 't' else 'x'
-            } else {
-                if (hasStickyBit) 'T' else '-'
-            }
-        )
-    }
+    .appendModeTriplet(
+        this,
+        PosixFileModeBit.OWNER_READ,
+        PosixFileModeBit.OWNER_WRITE,
+        PosixFileModeBit.OWNER_EXECUTE,
+        PosixFileModeBit.SET_USER_ID,
+        's'
+    )
+    .appendModeTriplet(
+        this,
+        PosixFileModeBit.GROUP_READ,
+        PosixFileModeBit.GROUP_WRITE,
+        PosixFileModeBit.GROUP_EXECUTE,
+        PosixFileModeBit.SET_GROUP_ID,
+        's'
+    )
+    .appendModeTriplet(
+        this,
+        PosixFileModeBit.OTHERS_READ,
+        PosixFileModeBit.OTHERS_WRITE,
+        PosixFileModeBit.OTHERS_EXECUTE,
+        PosixFileModeBit.STICKY,
+        't'
+    )
     .toString()
+
+/**
+ * Appends one `rwx` triplet of a mode string, where the execute character also carries [special]
+ * (the set-user-ID, set-group-ID or sticky bit) as [specialCharacter], upper case when the file
+ * is not executable.
+ */
+private fun StringBuilder.appendModeTriplet(
+    mode: Set<PosixFileModeBit>,
+    read: PosixFileModeBit,
+    write: PosixFileModeBit,
+    execute: PosixFileModeBit,
+    special: PosixFileModeBit,
+    specialCharacter: Char
+): StringBuilder {
+    append(if (read in mode) 'r' else '-')
+    append(if (write in mode) 'w' else '-')
+    val hasExecute = execute in mode
+    val hasSpecial = special in mode
+    append(
+        when {
+            hasExecute && hasSpecial -> specialCharacter
+            hasExecute -> 'x'
+            hasSpecial -> specialCharacter.uppercaseChar()
+            else -> '-'
+        }
+    )
+    return this
+}

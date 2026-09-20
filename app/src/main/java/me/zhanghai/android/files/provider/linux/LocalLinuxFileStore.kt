@@ -45,11 +45,15 @@ internal class LocalLinuxFileStore :
 
     @Throws(IOException::class)
     override fun refresh() {
-        this.mntent = try {
+        val mntent = try {
             findMountEntry(path)
         } catch (e: SyscallException) {
             throw e.toFileSystemException(path.toString())
-        } ?: throw FileStoreNotFoundException(path.toString())
+        }
+        if (mntent == null) {
+            throw FileStoreNotFoundException(path.toString())
+        }
+        this.mntent = mntent
     }
 
     @Throws(SyscallException::class)
