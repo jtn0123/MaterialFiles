@@ -50,6 +50,13 @@ object FileListDialogTesting {
         }
     }
 
+    /** Presses the dialog's cancel button, which is the only way out that closes it for sure. */
+    fun cancel(scenario: ActivityScenario<FileListActivity>) {
+        onNameDialog(scenario) {
+            (it as AlertDialog).getButton(AlertDialog.BUTTON_NEGATIVE).performClick()
+        }
+    }
+
     /** What the dialog says is wrong with the name, if anything. */
     fun nameError(scenario: ActivityScenario<FileListActivity>): String? {
         var error: String? = null

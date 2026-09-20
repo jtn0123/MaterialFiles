@@ -134,8 +134,11 @@ class FileListNavigateToTest {
         )
 
         // Nothing moved: the list is still where it was, behind the dialog.
-        device.pressBack()
-        assertNotNull(device.wait(Until.findObject(By.text("Outside.txt")), TIMEOUT_MILLIS))
+        FileListDialogTesting.cancel(scenario)
+        assertNotNull(
+            "The file list should have stayed where it was",
+            device.wait(Until.findObject(By.text("Outside.txt")), TIMEOUT_MILLIS)
+        )
     }
 
     companion object {
