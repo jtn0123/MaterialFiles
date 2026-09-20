@@ -12,7 +12,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import java.io.File
 import java.io.FileInputStream
@@ -21,6 +20,7 @@ import me.zhanghai.android.files.NoRootAccessRule
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.UiFailureDiagnosticsRule
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
@@ -65,20 +65,22 @@ class FileListNavigateToTest {
         }
     }
 
-    private fun openDirectory() {
+    private fun openDirectory(): ActivityScenario<FileListActivity> {
         val intent = Intent(Intent.ACTION_VIEW)
             .setDataAndType(Uri.fromFile(directory), "inode/directory")
             .setClass(context, FileListActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        scenario = ActivityScenario.launch(intent)
+        val scenario = ActivityScenario.launch<FileListActivity>(intent)
+        this.scenario = scenario
         assertNotNull(
             "The file list never appeared",
             device.wait(Until.findObject(By.text("Outside.txt")), TIMEOUT_MILLIS)
         )
+        return scenario
     }
 
-    /** Opens the dialog that asks where to go, and returns its text field. */
-    private fun openNavigateToDialog(): UiObject2 {
+    /** Opens the dialog that asks where to go. */
+    private fun openNavigateToDialog(scenario: ActivityScenario<FileListActivity>) {
         device.waitForIdle()
         val overflow = device.wait(Until.findObject(By.desc("More options")), TIMEOUT_MILLIS)
         assertNotNull("The toolbar never showed its overflow", overflow)
@@ -89,25 +91,16 @@ class FileListNavigateToTest {
         )
         assertNotNull("The menu never showed the navigate to item", item)
         item!!.click()
-        val nameEdit = device.wait(
-            Until.findObject(By.res(context.packageName, "nameEdit")),
-            TIMEOUT_MILLIS
-        )
-        assertNotNull("The navigate to dialog never opened", nameEdit)
-        return nameEdit!!
-    }
-
-    /** Confirms the dialog the way a keyboard does, which the soft one cannot cover up. */
-    private fun confirm() {
-        device.pressEnter()
+        FileListDialogTesting.awaitNameDialog(scenario)
     }
 
     @Test
     fun typingAFolderPathGoesThere() {
-        openDirectory()
+        val scenario = openDirectory()
 
-        openNavigateToDialog().text = subdirectory.path
-        confirm()
+        openNavigateToDialog(scenario)
+        FileListDialogTesting.typeName(scenario, subdirectory.path)
+        FileListDialogTesting.confirm(scenario)
 
         assertNotNull(
             "The file list never went to the folder that was typed in",
@@ -117,21 +110,29 @@ class FileListNavigateToTest {
 
     @Test
     fun aPathThatIsNotOneIsRefusedAndTheDialogStaysOpen() {
-        openDirectory()
+        val scenario = openDirectory()
 
-        val nameEdit = openNavigateToDialog()
-        nameEdit.text = "not a path"
-        confirm()
+        openNavigateToDialog(scenario)
+        FileListDialogTesting.typeName(scenario, "not a path")
+        FileListDialogTesting.confirm(scenario)
 
-        assertNotNull(
+        val invalid = context.getString(R.string.file_list_path_error_invalid)
+        assertEquals(
             "The dialog never said the path was invalid",
-            device.wait(
-                Until.findObject(
-                    By.text(context.getString(R.string.file_list_path_error_invalid))
-                ),
-                TIMEOUT_MILLIS
-            )
+            invalid,
+            FileListDialogTesting.awaitNameError(scenario, invalid)
         )
+
+        FileListDialogTesting.typeName(scenario, "")
+        FileListDialogTesting.confirm(scenario)
+
+        val empty = context.getString(R.string.file_list_path_error_empty)
+        assertEquals(
+            "The dialog never said the path was empty",
+            empty,
+            FileListDialogTesting.awaitNameError(scenario, empty)
+        )
+
         // Nothing moved: the list is still where it was, behind the dialog.
         device.pressBack()
         assertNotNull(device.wait(Until.findObject(By.text("Outside.txt")), TIMEOUT_MILLIS))

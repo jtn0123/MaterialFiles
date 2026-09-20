@@ -6,17 +6,18 @@
 package me.zhanghai.android.files.viewer.image
 
 import android.content.Intent
-import android.graphics.Canvas
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.ImageView
-import androidx.core.graphics.createBitmap
 import androidx.core.view.isVisible
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import coil.drawable.CrossfadeDrawable
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
@@ -118,8 +119,8 @@ class ImageViewerAdapterTest {
         val holder = show(Paths.get(file.path))
 
         // The test photo is blue on its left half and red on its right half.
-        await("The photo was never drawn") {
-            val colors = holder.binding.image.drawnColors()
+        await("The photo that was read is not the one in the file") {
+            val colors = holder.binding.image.drawable.photoColors()
             colors != null && colors.first.isMostly(Color.BLUE) && colors.second.isMostly(Color.RED)
         }
 
@@ -131,18 +132,24 @@ class ImageViewerAdapterTest {
         assertFalse(holder.binding.errorText.isVisible)
     }
 
-    /** The colours the view draws at the middle of its left and right halves. */
-    private fun ImageView.drawnColors(): Pair<Int, Int>? {
-        if (width == 0 || height == 0 || drawable == null) {
-            return null
+    /** The colours in the middle of the left and right halves of the photo that is shown. */
+    private fun Drawable?.photoColors(): Pair<Int, Int>? {
+        // While it fades in, the photo is the far end of a crossfade.
+        val drawable = (this as? CrossfadeDrawable)?.end ?: this
+        val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return null
+        // A photo decoded into graphics memory has no pixels that can be read back directly.
+        val readable = if (bitmap.config == Bitmap.Config.HARDWARE) {
+            bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: return null
+        } else {
+            bitmap
         }
-        val bitmap = createBitmap(width, height)
         try {
-            draw(Canvas(bitmap))
-            return bitmap.getPixel(width / 4, height / 2) to
-                bitmap.getPixel(width * 3 / 4, height / 2)
+            return readable.getPixel(readable.width / 4, readable.height / 2) to
+                readable.getPixel(readable.width * 3 / 4, readable.height / 2)
         } finally {
-            bitmap.recycle()
+            if (readable !== bitmap) {
+                readable.recycle()
+            }
         }
     }
 

@@ -166,16 +166,11 @@ class FileListRowMenuTest {
     @Test
     fun renamingFromTheRowMenuRenamesTheFileOnDisk() {
         val file = File(directory, "Notes.txt").apply { writeText("Nothing to see") }
-        launch(file.name).use {
+        launch(file.name).use { scenario ->
             chooseInRowMenu(R.string.rename)
 
-            val nameEdit = device.wait(
-                Until.findObject(By.res(context.packageName, "nameEdit")),
-                TIMEOUT_MILLIS
-            )
-            assertNotNull("The rename dialog never opened", nameEdit)
-            nameEdit!!.text = "Renamed.txt"
-            tapOk()
+            FileListDialogTesting.typeName(scenario, "Renamed.txt")
+            FileListDialogTesting.confirm(scenario)
 
             val renamed = File(directory, "Renamed.txt")
             await("The file was never renamed") { renamed.isFile && !file.exists() }
@@ -186,7 +181,7 @@ class FileListRowMenuTest {
     @Test
     fun compressingFromTheRowMenuWritesAnArchiveBesideTheFile() {
         val file = File(directory, "Notes.txt").apply { writeText("Nothing to see") }
-        launch(file.name).use {
+        launch(file.name).use { scenario ->
             chooseInRowMenu(R.string.file_item_action_archive)
 
             assertNotNull(
@@ -202,7 +197,8 @@ class FileListRowMenuTest {
                     TIMEOUT_MILLIS
                 )
             )
-            tapOk()
+            FileListDialogTesting.awaitNameDialog(scenario)
+            FileListDialogTesting.confirm(scenario)
 
             // The name the dialog offers is the whole file name, so the archive is Notes.txt.zip.
             await("The archive was never written") {
