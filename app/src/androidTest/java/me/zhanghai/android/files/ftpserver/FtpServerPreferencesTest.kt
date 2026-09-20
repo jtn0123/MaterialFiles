@@ -5,12 +5,15 @@
 
 package me.zhanghai.android.files.ftpserver
 
+import android.content.ClipboardManager
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
 import android.os.SystemClock
 import android.text.InputType
+import android.view.View
 import android.widget.EditText
+import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.preference.Preference
@@ -18,11 +21,15 @@ import androidx.preference.PreferenceGroup
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import java.util.concurrent.atomic.AtomicInteger
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.ui.EditTextPreference
 import me.zhanghai.android.files.ui.PreferenceFragmentCompat
+import me.zhanghai.android.files.util.primaryText
 import me.zhanghai.android.files.util.valueCompat
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -165,6 +172,48 @@ class FtpServerPreferencesTest {
                 Settings.FTP_SERVER_PASSWORD.putValue(savedPassword)
             }
         }
+    }
+
+    @Test
+    fun longPressingTheUrlCopiesItToTheClipboard() {
+        val urlPreference = checkNotNull(
+            fragment.preferenceScreen.findPreferenceOfType(FtpServerUrlPreference::class.java)
+        ) { "The FTP server screen has no URL preference" }
+        val url = FtpServerUrl.getUrl()
+        assertNotNull("The emulator must have a local address for this test", url)
+        val row = checkNotNull(rowFor(urlPreference)) { "The URL preference has no row" }
+
+        instrumentation.runOnMainSync { row.showContextMenu() }
+        val device = UiDevice.getInstance(instrumentation)
+        val copyUrl = device.wait(
+            Until.findObject(By.text(context.getString(R.string.ftp_server_url_menu_copy_url))),
+            5000
+        )
+        assertNotNull("Long pressing the URL must offer to copy it", copyUrl)
+        copyUrl.click()
+        device.waitForIdle()
+
+        var copied: CharSequence? = null
+        scenario!!.onActivity {
+            copied = it.getSystemService(ClipboardManager::class.java).primaryText
+        }
+        assertEquals(url, copied)
+    }
+
+    private fun rowFor(preference: Preference): View? {
+        var row: View? = null
+        instrumentation.runOnMainSync {
+            val listView = fragment.listView
+            for (index in 0 until listView.childCount) {
+                val child = listView.getChildAt(index)
+                val title = child.findViewById<TextView>(android.R.id.title)
+                if (title != null && title.text == preference.title) {
+                    row = child
+                    break
+                }
+            }
+        }
+        return row
     }
 
     @Test
