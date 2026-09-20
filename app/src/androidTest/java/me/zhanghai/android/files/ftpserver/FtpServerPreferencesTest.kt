@@ -20,8 +20,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.util.concurrent.atomic.AtomicInteger
 import me.zhanghai.android.files.R
+import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.ui.EditTextPreference
 import me.zhanghai.android.files.ui.PreferenceFragmentCompat
+import me.zhanghai.android.files.util.valueCompat
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -118,6 +120,51 @@ class FtpServerPreferencesTest {
         val expected = FtpServerUrl.getUrl()
             ?: context.getString(R.string.ftp_server_url_summary_no_local_inet_address)
         assertEquals(expected, urlPreference!!.summary)
+    }
+
+    @Test
+    fun theUrlMenuOffersThePasswordOnlyWhenThereIsOneToCopy() {
+        val urlPreference = checkNotNull(
+            fragment.preferenceScreen.findPreferenceOfType(FtpServerUrlPreference::class.java)
+        ) { "The FTP server screen has no URL preference" }
+        val savedAnonymous = Settings.FTP_SERVER_ANONYMOUS_LOGIN.valueCompat
+        val savedPassword = Settings.FTP_SERVER_PASSWORD.valueCompat
+        try {
+            instrumentation.runOnMainSync {
+                Settings.FTP_SERVER_ANONYMOUS_LOGIN.putValue(true)
+            }
+            assertEquals(
+                listOf(R.string.ftp_server_url_menu_copy_url),
+                urlPreference.createContextMenuItems().map { it.first }
+            )
+
+            instrumentation.runOnMainSync {
+                Settings.FTP_SERVER_ANONYMOUS_LOGIN.putValue(false)
+                Settings.FTP_SERVER_PASSWORD.putValue("")
+            }
+            assertEquals(
+                "Without a password there is nothing to copy",
+                listOf(R.string.ftp_server_url_menu_copy_url),
+                urlPreference.createContextMenuItems().map { it.first }
+            )
+
+            instrumentation.runOnMainSync { Settings.FTP_SERVER_PASSWORD.putValue("secret") }
+            val items = urlPreference.createContextMenuItems()
+            assertEquals(
+                listOf(
+                    R.string.ftp_server_url_menu_copy_url,
+                    R.string.ftp_server_url_menu_copy_password
+                ),
+                items.map { it.first }
+            )
+            assertEquals("secret", items[1].second)
+            assertEquals(FtpServerUrl.getUrl(), items[0].second)
+        } finally {
+            instrumentation.runOnMainSync {
+                Settings.FTP_SERVER_ANONYMOUS_LOGIN.putValue(savedAnonymous)
+                Settings.FTP_SERVER_PASSWORD.putValue(savedPassword)
+            }
+        }
     }
 
     @Test

@@ -71,22 +71,26 @@ class FtpServerUrlPreference : Preference {
         summary = url ?: context.getString(R.string.ftp_server_url_summary_no_local_inet_address)
     }
 
+    /** What the long press menu offers: a title and the text copied when it is chosen. */
+    internal fun createContextMenuItems(): List<Pair<Int, String>> {
+        val url = url ?: return emptyList()
+        val items = mutableListOf(R.string.ftp_server_url_menu_copy_url to url)
+        if (!Settings.FTP_SERVER_ANONYMOUS_LOGIN.valueCompat) {
+            val password = Settings.FTP_SERVER_PASSWORD.valueCompat
+            if (password.isNotEmpty()) {
+                items += R.string.ftp_server_url_menu_copy_password to password
+            }
+        }
+        return items
+    }
+
     private fun onCreateContextMenu(menu: ContextMenu) {
         val url = url ?: return
         menu.setHeaderTitle(url)
-        menu.add(Menu.NONE, Menu.NONE, Menu.NONE, R.string.ftp_server_url_menu_copy_url)
-            .setOnMenuItemClickListener {
-                clipboardManager.copyText(url, context)
-                true
-            }
-        if (Settings.FTP_SERVER_ANONYMOUS_LOGIN.valueCompat) {
-            return
-        }
-        val password = Settings.FTP_SERVER_PASSWORD.valueCompat
-        if (password.isNotEmpty()) {
-            menu.add(Menu.NONE, Menu.NONE, Menu.NONE, R.string.ftp_server_url_menu_copy_password)
+        for ((titleRes, text) in createContextMenuItems()) {
+            menu.add(Menu.NONE, Menu.NONE, Menu.NONE, titleRes)
                 .setOnMenuItemClickListener {
-                    clipboardManager.copyText(password, context)
+                    clipboardManager.copyText(text, context)
                     true
                 }
         }
