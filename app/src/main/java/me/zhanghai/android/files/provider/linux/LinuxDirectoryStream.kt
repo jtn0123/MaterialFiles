@@ -86,7 +86,11 @@ internal class LinuxDirectoryStream(
                     throw DirectoryIteratorException(
                         e.toFileSystemException(directory.toString())
                     )
-                } ?: return null
+                }
+                if (dirent == null) {
+                    // The end of the directory.
+                    return null
+                }
                 val name = dirent.d_name
                 if (name == BYTE_STRING_DOT || name == BYTE_STRING_DOT_DOT) {
                     continue

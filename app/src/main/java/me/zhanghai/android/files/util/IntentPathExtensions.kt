@@ -71,10 +71,10 @@ val Intent.saveAsUris: List<Uri>
     get() = when (action) {
         Intent.ACTION_VIEW -> listOfNotNull(data)
 
-        Intent.ACTION_SEND -> listOfNotNull(getParcelableExtraSafe(Intent.EXTRA_STREAM) as? Uri)
+        Intent.ACTION_SEND -> listOfNotNull(getParcelableExtraSafe<Uri>(Intent.EXTRA_STREAM))
 
         Intent.ACTION_SEND_MULTIPLE ->
-            getParcelableArrayListExtraSafe<Uri>(Intent.EXTRA_STREAM).orEmpty().filterNotNull()
+            getParcelableArrayListExtraSafe<Uri>(Intent.EXTRA_STREAM).orEmpty()
 
         else -> emptyList()
     }

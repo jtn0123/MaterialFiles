@@ -15,10 +15,16 @@ import androidx.core.view.children
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import me.zhanghai.android.files.app.inputMethodManager
+
+/**
+ * The scope the `*Unsafe` animations run in: they are started from view code that has no scope of
+ * its own and they have to finish, because they are what sets the view's final visibility.
+ */
+private val viewAnimationScope by lazy { CoroutineScope(Dispatchers.Main.immediate) }
 
 fun View.doOnGlobalLayout(block: () -> Unit): OneShotGlobalLayoutListener =
     OneShotGlobalLayoutListener.add(this, block)
@@ -122,7 +128,7 @@ suspend fun View.fadeIn(force: Boolean = false) {
 }
 
 fun View.fadeInUnsafe(force: Boolean = false) {
-    GlobalScope.launch(Dispatchers.Main.immediate) { fadeIn(force) }
+    viewAnimationScope.launch { fadeIn(force) }
 }
 
 suspend fun View.fadeOut(force: Boolean = false, gone: Boolean = false) {
@@ -145,7 +151,7 @@ suspend fun View.fadeOut(force: Boolean = false, gone: Boolean = false) {
 }
 
 fun View.fadeOutUnsafe(force: Boolean = false, gone: Boolean = false) {
-    GlobalScope.launch(Dispatchers.Main.immediate) { fadeOut(force, gone) }
+    viewAnimationScope.launch { fadeOut(force, gone) }
 }
 
 suspend fun View.fadeToVisibility(visible: Boolean, force: Boolean = false, gone: Boolean = false) {
@@ -157,7 +163,7 @@ suspend fun View.fadeToVisibility(visible: Boolean, force: Boolean = false, gone
 }
 
 fun View.fadeToVisibilityUnsafe(visible: Boolean, force: Boolean = false, gone: Boolean = false) {
-    GlobalScope.launch(Dispatchers.Main.immediate) { fadeToVisibility(visible, force, gone) }
+    viewAnimationScope.launch { fadeToVisibility(visible, force, gone) }
 }
 
 @SuppressLint("RtlHardcoded")
@@ -180,7 +186,7 @@ suspend fun View.slideIn(gravity: Int, force: Boolean = false) {
 }
 
 suspend fun View.slideInUnsafe(gravity: Int, force: Boolean = false) {
-    GlobalScope.launch(Dispatchers.Main.immediate) { slideIn(gravity, force) }
+    viewAnimationScope.launch { slideIn(gravity, force) }
 }
 
 @SuppressLint("RtlHardcoded")
@@ -209,7 +215,7 @@ suspend fun View.slideOut(gravity: Int, force: Boolean = false, gone: Boolean = 
 }
 
 fun View.slideOutUnsafe(gravity: Int, force: Boolean = false, gone: Boolean = false) {
-    GlobalScope.launch(Dispatchers.Main.immediate) { slideOut(gravity, force, gone) }
+    viewAnimationScope.launch { slideOut(gravity, force, gone) }
 }
 
 suspend fun View.slideToVisibility(
@@ -231,7 +237,7 @@ fun View.slideToVisibilityUnsafe(
     force: Boolean = false,
     gone: Boolean = false
 ) {
-    GlobalScope.launch(Dispatchers.Main.immediate) {
+    viewAnimationScope.launch {
         slideToVisibility(gravity, visible, force, gone)
     }
 }

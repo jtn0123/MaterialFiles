@@ -26,7 +26,10 @@ internal object LinuxUserPrincipalLookupService : UserPrincipalLookupService() {
             Syscall.getpwnam(name)
         } catch (e: SyscallException) {
             throw e.toFileSystemException(null)
-        } ?: throw UserPrincipalNotFoundException(name.toString())
+        }
+        if (passwd == null) {
+            throw UserPrincipalNotFoundException(name.toString())
+        }
         return PosixUser(passwd.pw_uid, passwd.pw_name)
     }
 
@@ -53,7 +56,10 @@ internal object LinuxUserPrincipalLookupService : UserPrincipalLookupService() {
             Syscall.getgrnam(group)
         } catch (e: SyscallException) {
             throw e.toFileSystemException(null)
-        } ?: throw UserPrincipalNotFoundException(group.toString())
+        }
+        if (groupStruct == null) {
+            throw UserPrincipalNotFoundException(group.toString())
+        }
         return PosixGroup(groupStruct.gr_gid, groupStruct.gr_name)
     }
 

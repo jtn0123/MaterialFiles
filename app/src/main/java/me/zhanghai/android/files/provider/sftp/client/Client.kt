@@ -21,6 +21,7 @@ import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.FileMode
 import net.schmizz.sshj.sftp.OpenMode
 import net.schmizz.sshj.sftp.RemoteFile
+import net.schmizz.sshj.sftp.RemoteResourceInfo
 import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPClient
 import net.schmizz.sshj.sftp.SFTPException
@@ -185,7 +186,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
     @Throws(ClientException::class)
     fun scandir(path: Path): List<Path> {
         val client = getClient(path.authority)
-        val files = try {
+        val files: List<RemoteResourceInfo> = try {
             client.ls(path.remotePath)
         } catch (e: IOException) {
             throw ClientException(e)

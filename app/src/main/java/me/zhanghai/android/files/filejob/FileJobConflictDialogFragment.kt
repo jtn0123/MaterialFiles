@@ -184,10 +184,9 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
             dispose()
             setImageDrawable(null)
             val appDirectoryPackageName = file.appDirectoryPackageName
-            val hasAppIconBadge = appDirectoryPackageName != null
-            isVisible = hasAppIconBadge
-            if (hasAppIconBadge) {
-                load(AppIconPackageName(appDirectoryPackageName!!))
+            isVisible = appDirectoryPackageName != null
+            if (appDirectoryPackageName != null) {
+                load(AppIconPackageName(appDirectoryPackageName))
             }
         }
         badgeImage.apply {
@@ -202,10 +201,9 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
             } else {
                 null
             }
-            val hasBadge = badgeIconRes != null
-            isVisible = hasBadge
-            if (hasBadge) {
-                setImageResource(badgeIconRes!!)
+            isVisible = badgeIconRes != null
+            if (badgeIconRes != null) {
+                setImageResource(badgeIconRes)
             } else {
                 setImageDrawable(null)
             }

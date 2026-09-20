@@ -201,13 +201,27 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
     ) {
         // Ownership should be copied before permissions so that special permission bits like
         // setuid work properly.
+        if (copyOptions.copyAttributes) {
+            copyOwner(source, sourceAttributes, target)
+        }
+        copyPermissions(source, sourceAttributes, target)
+        copyTimes(source, sourceAttributes, target, copyOptions.copyAttributes)
+        copyExtendedAttributes(source, target, copyOptions)
+    }
+
+    private fun copyOwner(source: ByteString, sourceAttributes: StructStat, target: ByteString) {
         try {
-            if (copyOptions.copyAttributes) {
-                Syscall.lchown(target, sourceAttributes.st_uid, sourceAttributes.st_gid)
-            }
+            Syscall.lchown(target, sourceAttributes.st_uid, sourceAttributes.st_gid)
         } catch (e: SyscallException) {
             e.logWarning("LinuxCopyMove", "copyAttributes($source)")
         }
+    }
+
+    private fun copyPermissions(
+        source: ByteString,
+        sourceAttributes: StructStat,
+        target: ByteString
+    ) {
         try {
             if (!OsConstants.S_ISLNK(sourceAttributes.st_mode)) {
                 Syscall.chmod(target, sourceAttributes.st_mode)
@@ -215,9 +229,18 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
         } catch (e: SyscallException) {
             e.logWarning("LinuxCopyMove", "copyAttributes($source)")
         }
+    }
+
+    /** Copies the modification time, and the access time only with [copyAccessTime]. */
+    private fun copyTimes(
+        source: ByteString,
+        sourceAttributes: StructStat,
+        target: ByteString,
+        copyAccessTime: Boolean
+    ) {
         try {
             val times = arrayOf(
-                if (copyOptions.copyAttributes) {
+                if (copyAccessTime) {
                     sourceAttributes.st_atim
                 } else {
                     StructTimespec(0, Constants.UTIME_OMIT)
@@ -228,31 +251,51 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
         } catch (e: SyscallException) {
             e.logWarning("LinuxCopyMove", "copyAttributes($source)")
         }
+    }
+
+    /**
+     * Copies the extended attributes, or only the user ones when [CopyOptions.copyAttributes] was
+     * not asked for; a failure is only fatal when it was.
+     */
+    private fun copyExtendedAttributes(
+        source: ByteString,
+        target: ByteString,
+        copyOptions: CopyOptions
+    ) {
         try {
             val xattrNames = Syscall.llistxattr(source)
             for (xattrName in xattrNames) {
                 if (!(copyOptions.copyAttributes || xattrName.startsWith(XATTR_NAME_PREFIX_USER))) {
                     continue
                 }
-                val xattrValue = Syscall.lgetxattr(source, xattrName)
-                val targetValue = try {
-                    Syscall.lgetxattr(target, xattrName)
-                } catch (e: SyscallException) {
-                    if (e.errno != OsConstants.ENODATA) {
-                        throw e
-                    }
-                    null
-                }
-                // Inherited security labels may already match and may not be writable by apps.
-                if (targetValue == null || !targetValue.contentEquals(xattrValue)) {
-                    Syscall.lsetxattr(target, xattrName, xattrValue, 0)
-                }
+                copyExtendedAttribute(source, target, xattrName)
             }
         } catch (e: SyscallException) {
             if (copyOptions.copyAttributes) {
                 throw e.toFileSystemException(source.toString(), target.toString())
             }
             e.logWarning("LinuxCopyMove", "copyAttributes($source)")
+        }
+    }
+
+    @Throws(SyscallException::class)
+    private fun copyExtendedAttribute(
+        source: ByteString,
+        target: ByteString,
+        xattrName: ByteString
+    ) {
+        val xattrValue = Syscall.lgetxattr(source, xattrName)
+        val targetValue = try {
+            Syscall.lgetxattr(target, xattrName)
+        } catch (e: SyscallException) {
+            if (e.errno != OsConstants.ENODATA) {
+                throw e
+            }
+            null
+        }
+        // Inherited security labels may already match and may not be writable by apps.
+        if (targetValue == null || !targetValue.contentEquals(xattrValue)) {
+            Syscall.lsetxattr(target, xattrName, xattrValue, 0)
         }
     }
 }

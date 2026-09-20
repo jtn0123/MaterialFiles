@@ -17,8 +17,10 @@ class ParcelableCopyOptions(val value: Array<out CopyOption>) : Parcelable {
         Array(source.readInt()) {
             when (val type = source.readInt()) {
                 0 ->
-                    source.readParcelable<Parcelable>(CopyOption::class.java.classLoader)!!
-                        as CopyOption
+                    source.readParcelable(
+                        CopyOption::class.java.classLoader,
+                        CopyOption::class.java
+                    )!!
 
                 1 -> source.readSerializableCompat()!!
 
