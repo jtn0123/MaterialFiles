@@ -27,6 +27,8 @@ import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.runInterruptible
@@ -70,7 +72,9 @@ class PathAttributesFetcher(
     private val options: Options,
     private val imageLoader: ImageLoader,
     private val appIconFetcherFactory: AppIconFetcher.Factory<Path>,
-    private val pdfPageFetcherFactory: PdfPageFetcher.Factory<Path>
+    private val pdfPageFetcherFactory: PdfPageFetcher.Factory<Path>,
+    // Reading a file blocks, and a thumbnail is never worth holding up the thread that shows it.
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Fetcher {
     override suspend fun fetch(): FetchResult? {
         val (path, attributes) = data
@@ -153,7 +157,7 @@ class PathAttributesFetcher(
         check(!RemoteThumbnails.contains(key)) { "The thumbnail of $path is on disk" }
         RemoteThumbnails.checkNotUnreadable(path, attributes)
         val thumbnail = RemoteThumbnails.withPreviewPermit {
-            runInterruptible { path.readExifThumbnail(0) }
+            runInterruptible(ioDispatcher) { path.readExifThumbnail(0) }
         } ?: error("No embedded thumbnail in $path")
         return toDrawableResult(thumbnail)
     }
@@ -233,7 +237,7 @@ class PathAttributesFetcher(
         val path = data.first
         if (remoteThumbnailSizePx != null && mimeType == MimeType.IMAGE_JPEG) {
             val thumbnail = try {
-                runInterruptible { path.readExifThumbnail(remoteThumbnailSizePx) }
+                runInterruptible(ioDispatcher) { path.readExifThumbnail(remoteThumbnailSizePx) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -245,7 +249,7 @@ class PathAttributesFetcher(
                 return toDrawableResult(thumbnail)
             }
         }
-        return runInterruptible { path.openImage(mimeType, options) }
+        return runInterruptible(ioDispatcher) { path.openImage(mimeType, options) }
     }
 
     /**
