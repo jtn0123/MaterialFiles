@@ -11,6 +11,7 @@ import java.text.CollationKey
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileTime
+import me.zhanghai.android.files.coil.isReadableForThumbnail
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.getBrokenSymbolicLinkName
@@ -22,7 +23,6 @@ import me.zhanghai.android.files.file.isPdf
 import me.zhanghai.android.files.provider.archive.createArchiveRootPath
 import me.zhanghai.android.files.provider.document.documentSupportsThumbnail
 import me.zhanghai.android.files.provider.document.isDocumentPath
-import me.zhanghai.android.files.provider.ftp.isFtpPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.asFileName
@@ -61,12 +61,8 @@ val FileItem.supportsThumbnail: Boolean
         if (path.isDocumentPath && attributes.documentSupportsThumbnail) {
             return true
         }
-        if (path.isRemotePath) {
-            val shouldReadRemotePath = !path.isFtpPath &&
-                Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
-            if (!shouldReadRemotePath) {
-                return false
-            }
+        if (path.isRemotePath && !path.isReadableForThumbnail) {
+            return false
         }
         return when {
             mimeType.isApk && path.isGetPackageArchiveInfoCompatible -> true

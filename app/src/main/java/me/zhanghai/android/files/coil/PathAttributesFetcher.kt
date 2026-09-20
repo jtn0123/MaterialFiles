@@ -7,8 +7,10 @@ package me.zhanghai.android.files.coil
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.media.MediaMetadataRetriever
+import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
 import androidx.core.graphics.drawable.toDrawable
 import coil.ImageLoader
@@ -19,7 +21,6 @@ import coil.fetch.Fetcher
 import coil.fetch.SourceResult
 import coil.key.Keyer
 import coil.request.Options
-import coil.size.Dimension
 import coil.size.Size
 import java.io.Closeable
 import java.io.IOException
@@ -38,7 +39,6 @@ import me.zhanghai.android.files.file.isImage
 import me.zhanghai.android.files.file.isMedia
 import me.zhanghai.android.files.file.isPdf
 import me.zhanghai.android.files.file.isVideo
-import me.zhanghai.android.files.file.lastModifiedInstant
 import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.provider.common.AndroidFileTypeDetector
 import me.zhanghai.android.files.provider.common.newInputStream
@@ -46,9 +46,7 @@ import me.zhanghai.android.files.provider.document.documentSupportsThumbnail
 import me.zhanghai.android.files.provider.document.getDocumentThumbnail
 import me.zhanghai.android.files.provider.document.isDocumentPath
 import me.zhanghai.android.files.provider.document.openDocumentParcelFileDescriptor
-import me.zhanghai.android.files.provider.ftp.isFtpPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
-import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.closeSafe
 import me.zhanghai.android.files.util.getDimensionPixelSize
 import me.zhanghai.android.files.util.getPackageArchiveInfoCompat
@@ -57,23 +55,13 @@ import me.zhanghai.android.files.util.isMediaMetadataRetrieverCompatible
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.runWithCancellationSignal
 import me.zhanghai.android.files.util.setDataSource
-import me.zhanghai.android.files.util.setDataSource as appSetDataSource
-import me.zhanghai.android.files.util.valueCompat
 import okio.buffer
 import okio.source
 
 class PathAttributesKeyer : Keyer<Pair<Path, BasicFileAttributes>> {
     override fun key(data: Pair<Path, BasicFileAttributes>, options: Options): String {
         val (path, attributes) = data
-        // A thumbnail decoded for a list icon is too small for a grid cell, so the size is part of
-        // the key, rounded so that sizes a few pixels apart still share an entry.
-        val (width, height) = options.size
-        val size = if (width is Dimension.Pixels && height is Dimension.Pixels) {
-            "${RemoteThumbnails.roundSize(width.px)}x${RemoteThumbnails.roundSize(height.px)}"
-        } else {
-            "original"
-        }
-        return "$path:${attributes.lastModifiedInstant.toEpochMilli()}:${attributes.size()}:$size"
+        return RemoteThumbnails.createMemoryKey(path, attributes, options.size)
     }
 }
 
@@ -86,44 +74,39 @@ class PathAttributesFetcher(
 ) : Fetcher {
     override suspend fun fetch(): FetchResult? {
         val (path, attributes) = data
-        val (width, height) = options.size
         // A grid cell on a dense screen is larger than MediaStore's MINI_SIZE, but still a
         // thumbnail.
-        val isThumbnail = width is Dimension.Pixels && width.px <= RemoteThumbnails.MAX_SIZE_PX &&
-            height is Dimension.Pixels && height.px <= RemoteThumbnails.MAX_SIZE_PX
-        if (isThumbnail) {
-            if (path.isDocumentPath && attributes.documentSupportsThumbnail) {
-                val thumbnail = runWithCancellationSignal { signal ->
-                    try {
-                        path.getDocumentThumbnail(width.px, height.px, signal)
-                    } catch (e: IOException) {
-                        e.logWarning(TAG, "Get the document thumbnail of $path")
-                        null
-                    }
-                }
-                if (thumbnail != null) {
-                    return DrawableResult(
-                        thumbnail.toDrawable(options.context.resources),
-                        true,
-                        path.dataSource
-                    )
-                }
-            }
-            if (path.isRemotePath) {
-                // FTP doesn't support random access and requires one connection per parallel read.
-                val shouldReadRemotePath = !path.isFtpPath &&
-                    Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
-                if (!shouldReadRemotePath) {
-                    error("Cannot read $path for thumbnail")
-                }
-            }
+        val thumbnailSize = RemoteThumbnails.getThumbnailSize(options.size)
+            ?: return fetchFile(null, options)
+        val (width, height) = thumbnailSize
+        if (path.isDocumentPath && attributes.documentSupportsThumbnail) {
+            fetchDocumentThumbnail(width, height)?.let { return it }
         }
-        if (!(path.isRemotePath && isThumbnail)) {
+        if (!path.isRemotePath) {
             return fetchFile(null, options)
         }
+        // FTP doesn't support random access and requires one connection per parallel read.
+        check(path.isReadableForThumbnail) { "Cannot read $path for thumbnail" }
+        return fetchRemoteThumbnail(width, height)
+    }
+
+    private suspend fun fetchDocumentThumbnail(width: Int, height: Int): FetchResult? {
+        val path = data.first
+        val thumbnail = runWithCancellationSignal { signal ->
+            path.getDocumentThumbnailOrNull(width, height, signal)
+        }
+        return thumbnail?.let { toDrawableResult(it) }
+    }
+
+    /**
+     * Returns the thumbnail kept on disk, the one a camera embedded in a JPEG, or the one read and
+     * decoded now, whichever the request asks for and is available.
+     */
+    private suspend fun fetchRemoteThumbnail(width: Int, height: Int): FetchResult? {
+        val (path, attributes) = data
         // Rounded up, so that a list, a grid and a rotated grid mostly share what is on disk.
-        val cacheWidth = RemoteThumbnails.roundSize(width.px)
-        val cacheHeight = RemoteThumbnails.roundSize(height.px)
+        val cacheWidth = RemoteThumbnails.roundSize(width)
+        val cacheHeight = RemoteThumbnails.roundSize(height)
         val key = RemoteThumbnails.createKey(path, attributes, cacheWidth, cacheHeight)
         if (options.parameters.value<Boolean>(RemoteThumbnails.PARAMETER_PREVIEW) == true) {
             return fetchPreview(key)
@@ -132,27 +115,29 @@ class PathAttributesFetcher(
         RemoteThumbnails.checkNotUnreadable(path, attributes)
         return RemoteThumbnails.withReadPermit {
             val cacheOptions = options.copy(size = Size(cacheWidth, cacheHeight))
-            val drawable = try {
-                when (val result = fetchFile(maxOf(width.px, height.px), cacheOptions)) {
-                    is DrawableResult -> result.drawable
-                    is SourceResult -> decode(result, cacheOptions)
-                    null -> null
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: IOException) {
-                // The server may well answer next time.
-                throw e
-            } catch (e: Exception) {
-                RemoteThumbnails.markUnreadable(path, attributes)
-                throw e
-            }
+            val drawable = readRemoteThumbnail(maxOf(width, height), cacheOptions)
             if (drawable == null) {
                 RemoteThumbnails.markUnreadable(path, attributes)
                 return@withReadPermit null
             }
             RemoteThumbnails.put(key, drawable)
             DrawableResult(drawable, true, path.dataSource)
+        }
+    }
+
+    private suspend fun readRemoteThumbnail(sizePx: Int, cacheOptions: Options): Drawable? {
+        val (path, attributes) = data
+        return try {
+            when (val result = fetchFile(sizePx, cacheOptions)) {
+                is DrawableResult -> result.drawable
+                is SourceResult -> decode(result, cacheOptions)
+                null -> null
+            }
+        } catch (e: Exception) {
+            if (!RemoteThumbnails.isWorthReadingAgain(e)) {
+                RemoteThumbnails.markUnreadable(path, attributes)
+            }
+            throw e
         }
     }
 
@@ -170,11 +155,7 @@ class PathAttributesFetcher(
         val thumbnail = RemoteThumbnails.withPreviewPermit {
             runInterruptible { path.readExifThumbnail(0) }
         } ?: error("No embedded thumbnail in $path")
-        return DrawableResult(
-            thumbnail.toDrawable(options.context.resources),
-            true,
-            path.dataSource
-        )
+        return toDrawableResult(thumbnail)
     }
 
     /**
@@ -201,67 +182,70 @@ class PathAttributesFetcher(
      */
     private suspend fun fetchFile(remoteThumbnailSizePx: Int?, options: Options): FetchResult? {
         val path = data.first
-        val mimeType = AndroidFileTypeDetector.getMimeType(data.first, data.second).asMimeType()
+        val mimeType = AndroidFileTypeDetector.getMimeType(path, data.second).asMimeType()
         when {
-            mimeType.isApk && path.isGetPackageArchiveInfoCompatible -> {
-                try {
+            mimeType.isApk && path.isGetPackageArchiveInfoCompatible ->
+                fetchOrLogWarning("Load the app icon of $path") {
                     return appIconFetcherFactory.create(path, options, imageLoader).fetch()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    e.logWarning(TAG, "Load the app icon of $path")
                 }
-            }
 
-            mimeType.isImage || mimeType == MimeType.GENERIC -> {
-                if (remoteThumbnailSizePx != null && mimeType == MimeType.IMAGE_JPEG) {
-                    val thumbnail = try {
-                        runInterruptible { path.readExifThumbnail(remoteThumbnailSizePx) }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        e.logWarning(TAG, "Read the embedded thumbnail of $path")
-                        null
-                    }
-                    currentCoroutineContext().ensureActive()
-                    if (thumbnail != null) {
-                        return DrawableResult(
-                            thumbnail.toDrawable(options.context.resources),
-                            true,
-                            path.dataSource
-                        )
-                    }
-                }
-                val inputStream = path.newInputStream()
-                return SourceResult(
-                    ImageSource(inputStream.source().buffer(), options.context),
-                    if (mimeType != MimeType.GENERIC) mimeType.value else null,
-                    path.dataSource
-                )
-            }
+            mimeType.isImage || mimeType == MimeType.GENERIC ->
+                return fetchImage(mimeType, remoteThumbnailSizePx, options)
 
             mimeType.isMedia && path.isMediaMetadataRetrieverCompatible -> {
-                try {
+                fetchOrLogWarning("Read the picture or a frame of $path") {
                     return fetchMedia(path, mimeType.isVideo, options)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    e.logWarning(TAG, "Read the picture or a frame of $path")
                 }
                 currentCoroutineContext().ensureActive()
             }
 
-            mimeType.isPdf && (path.isLinuxPath || path.isDocumentPath) -> {
-                try {
+            mimeType.isPdf && (path.isLinuxPath || path.isDocumentPath) ->
+                fetchOrLogWarning("Render the first page of $path") {
                     return pdfPageFetcherFactory.create(path, options, imageLoader).fetch()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    e.logWarning(TAG, "Render the first page of $path")
                 }
-            }
         }
         return null
+    }
+
+    /**
+     * Runs [block], which returns from the caller when it succeeds, and logs whatever went wrong
+     * so that the caller can fall back to the generic icon.
+     */
+    private inline fun fetchOrLogWarning(operation: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            e.logWarning(TAG, operation)
+        }
+    }
+
+    /**
+     * @param remoteThumbnailSizePx the larger side of the view in pixels, when fetching a thumbnail
+     * of a remote file
+     */
+    private suspend fun fetchImage(
+        mimeType: MimeType,
+        remoteThumbnailSizePx: Int?,
+        options: Options
+    ): FetchResult {
+        val path = data.first
+        if (remoteThumbnailSizePx != null && mimeType == MimeType.IMAGE_JPEG) {
+            val thumbnail = try {
+                runInterruptible { path.readExifThumbnail(remoteThumbnailSizePx) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                e.logWarning(TAG, "Read the embedded thumbnail of $path")
+                null
+            }
+            currentCoroutineContext().ensureActive()
+            if (thumbnail != null) {
+                return toDrawableResult(thumbnail)
+            }
+        }
+        return runInterruptible { path.openImage(mimeType, options) }
     }
 
     /**
@@ -291,9 +275,8 @@ class PathAttributesFetcher(
             }
         }
 
-    companion object {
-        private const val TAG = "PathAttributesFetcher"
-    }
+    private fun toDrawableResult(bitmap: Bitmap): DrawableResult =
+        DrawableResult(bitmap.toDrawable(options.context.resources), true, data.first.dataSource)
 
     class Factory(private val context: Context) : Fetcher.Factory<Pair<Path, BasicFileAttributes>> {
         private val appIconFetcherFactory = object : AppIconFetcher.Factory<Path>(
@@ -340,3 +323,23 @@ class PathAttributesFetcher(
         )
     }
 }
+
+private const val TAG = "PathAttributesFetcher"
+
+private fun Path.getDocumentThumbnailOrNull(
+    width: Int,
+    height: Int,
+    signal: CancellationSignal
+): Bitmap? = try {
+    getDocumentThumbnail(width, height, signal)
+} catch (e: IOException) {
+    e.logWarning(TAG, "Get the document thumbnail of $this")
+    null
+}
+
+/** Opens this file for Coil to decode, which is blocking and so belongs off the main thread. */
+private fun Path.openImage(mimeType: MimeType, options: Options): SourceResult = SourceResult(
+    ImageSource(newInputStream().source().buffer(), options.context),
+    if (mimeType != MimeType.GENERIC) mimeType.value else null,
+    dataSource
+)
