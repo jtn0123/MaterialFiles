@@ -304,7 +304,7 @@ fun Path.readSymbolicLink(): Path = Files.readSymbolicLink(this)
 
 fun Path.readSymbolicLinkByteString(): ByteString {
     val target = readSymbolicLink()
-    target as? ByteStringPath ?: throw ProviderMismatchException(target.toString())
+    requireProviderPath<ByteStringPath>(target)
     return target.toByteString()
 }
 
@@ -385,6 +385,6 @@ fun Path.asByteStringListPath(): ByteStringListPath<*> {
     contract {
         returns() implies (this@asByteStringListPath is ByteStringListPath<*>)
     }
-    this as? ByteStringListPath<*> ?: throw ProviderMismatchException(toString())
+    requireProviderPath<ByteStringListPath<*>>(this)
     return this
 }

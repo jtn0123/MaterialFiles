@@ -46,7 +46,7 @@ internal class ContentFileAttributeView(private val path: ContentPath) :
     override fun describeContents(): Int = 0
 
     override fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeParcelable(path as Parcelable, flags)
+        dest.writeParcelable(path, flags)
     }
 
     companion object {

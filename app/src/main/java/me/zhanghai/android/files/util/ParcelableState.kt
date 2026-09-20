@@ -18,3 +18,6 @@ fun <State : ParcelableState> Bundle.getState(stateClass: KClass<State>): State 
     getParcelableSafe(stateClass.java.name)!!
 
 inline fun <reified State : ParcelableState> Bundle.getState() = getState(State::class)
+
+/** The saved instance state of a view, as the [ParcelableState] the view itself saved. */
+inline fun <reified State : ParcelableState> Parcelable.asState(): State = this as State

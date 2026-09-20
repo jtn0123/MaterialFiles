@@ -28,6 +28,14 @@ class ReplacementPathTest {
     }
 
     @Test
+    fun aProvidersOwnPathTypeIsPreserved() {
+        val target = TestPath("/pictures/holiday.jpg")
+        val sibling: TestPath = target.replacementSibling()
+        assertEquals(target.parent, sibling.parent)
+        assertTrue(sibling.fileName.toString().startsWith(".holiday.jpg."))
+    }
+
+    @Test
     fun worksForARelativeSingleName() {
         val sibling = TestPath("notes.txt").replacementSibling()
         assertEquals(1, sibling.nameCount)

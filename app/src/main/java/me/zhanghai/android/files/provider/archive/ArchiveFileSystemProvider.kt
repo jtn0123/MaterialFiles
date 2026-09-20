@@ -36,6 +36,7 @@ import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
 import me.zhanghai.android.files.provider.common.decodedPathByteString
 import me.zhanghai.android.files.provider.common.decodedQueryByteString
 import me.zhanghai.android.files.provider.common.isSameFile
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.common.toOpenOptions
@@ -95,7 +96,7 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
 
     @Throws(IOException::class)
     override fun newInputStream(file: Path, vararg options: OpenOption): InputStream {
-        file as? ArchivePath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<ArchivePath>(file)
         options.toOpenOptions().checkForArchive()
         return file.fileSystem.newInputStream(file)
     }
@@ -105,7 +106,7 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): FileChannel {
-        file as? ArchivePath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<ArchivePath>(file)
         options.toOpenOptions().checkForArchive()
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
@@ -118,7 +119,7 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): SeekableByteChannel {
-        file as? ArchivePath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<ArchivePath>(file)
         options.toOpenOptions().checkForArchive()
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
@@ -131,20 +132,20 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
         directory: Path,
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
-        directory as? ArchivePath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<ArchivePath>(directory)
         val children = directory.fileSystem.getDirectoryChildren(directory)
         return PathListDirectoryStream(children, filter)
     }
 
     @Throws(IOException::class)
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
-        directory as? ArchivePath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<ArchivePath>(directory)
         throw ReadOnlyFileSystemException(directory.toString())
     }
 
     @Throws(IOException::class)
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
-        link as? ArchivePath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<ArchivePath>(link)
         when (target) {
             is ArchivePath, is ByteStringPath -> {}
             else -> throw ProviderMismatchException(target.toString())
@@ -154,41 +155,41 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
 
     @Throws(IOException::class)
     override fun createLink(link: Path, existing: Path) {
-        link as? ArchivePath ?: throw ProviderMismatchException(link.toString())
-        existing as? ArchivePath ?: throw ProviderMismatchException(existing.toString())
+        requireProviderPath<ArchivePath>(link)
+        requireProviderPath<ArchivePath>(existing)
         throw ReadOnlyFileSystemException(link.toString(), existing.toString(), null)
     }
 
     @Throws(IOException::class)
     override fun delete(path: Path) {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         throw ReadOnlyFileSystemException(path.toString())
     }
 
     @Throws(IOException::class)
     override fun readSymbolicLink(link: Path): Path {
-        link as? ArchivePath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<ArchivePath>(link)
         val target = link.fileSystem.readSymbolicLink(link)
         return ByteStringPath(target.toByteString())
     }
 
     @Throws(IOException::class)
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        source as? ArchivePath ?: throw ProviderMismatchException(source.toString())
-        target as? ArchivePath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<ArchivePath>(source)
+        requireProviderPath<ArchivePath>(target)
         throw ReadOnlyFileSystemException(source.toString(), target.toString(), null)
     }
 
     @Throws(IOException::class)
     override fun move(source: Path, target: Path, vararg options: CopyOption) {
-        source as? ArchivePath ?: throw ProviderMismatchException(source.toString())
-        target as? ArchivePath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<ArchivePath>(source)
+        requireProviderPath<ArchivePath>(target)
         throw ReadOnlyFileSystemException(source.toString(), target.toString(), null)
     }
 
     @Throws(IOException::class)
     override fun isSameFile(path: Path, path2: Path): Boolean {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         if (path == path2) {
             return true
         }
@@ -203,19 +204,19 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
     }
 
     override fun isHidden(path: Path): Boolean {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         return false
     }
 
     override fun getFileStore(path: Path): FileStore {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         val archiveFile = path.fileSystem.archiveFile
         return ArchiveFileStore(archiveFile)
     }
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         val accessModes = modes.toAccessModes()
         path.fileSystem.getEntry(path)
         if (accessModes.write || accessModes.execute) {
@@ -228,7 +229,7 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
         type: Class<V>,
         vararg options: LinkOption
     ): V? {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         if (!supportsFileAttributeView(type)) {
             return null
         }
@@ -245,7 +246,7 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
         type: Class<A>,
         vararg options: LinkOption
     ): A {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         if (!type.isAssignableFrom(ArchiveFileAttributes::class.java)) {
             throw UnsupportedOperationException(type.toString())
         }
@@ -261,7 +262,7 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any> {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -271,7 +272,7 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
         value: Any,
         vararg options: LinkOption
     ) {
-        path as? ArchivePath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ArchivePath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -286,7 +287,7 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
         intervalMillis: Long,
         listener: (List<Path>) -> Unit
     ) {
-        directory as? ArchivePath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<ArchivePath>(directory)
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 }

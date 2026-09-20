@@ -35,6 +35,7 @@ import me.zhanghai.android.files.provider.common.Searchable
 import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
 import me.zhanghai.android.files.provider.common.WatchServicePathObservable
 import me.zhanghai.android.files.provider.common.decodedPathByteString
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.common.toCopyOptions
@@ -126,13 +127,13 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): FileChannel {
-        file as? SftpPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<SftpPath>(file)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun newOutputStream(file: Path, vararg options: OpenOption): OutputStream {
-        file as? SftpPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<SftpPath>(file)
         val optionsSet = mutableSetOf(*options)
         if (optionsSet.isEmpty()) {
             optionsSet += StandardOpenOption.CREATE
@@ -159,7 +160,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): SeekableByteChannel {
-        file as? SftpPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<SftpPath>(file)
         val openOptions = options.toOpenOptions()
         val flags = openOptions.toSftpFlags()
         val sftpAttributes = (
@@ -178,7 +179,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         directory: Path,
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
-        directory as? SftpPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<SftpPath>(directory)
         val paths = try {
             @Suppress("UNCHECKED_CAST")
             client.scandir(directory) as List<Path>
@@ -190,7 +191,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
 
     @Throws(IOException::class)
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
-        directory as? SftpPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<SftpPath>(directory)
         val sftpAttributes = (
             PosixFileMode.fromAttributes(attributes)
                 ?: PosixFileMode.CREATE_DIRECTORY_DEFAULT
@@ -203,7 +204,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
     }
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
-        link as? SftpPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<SftpPath>(link)
         val targetString = when (target) {
             is SftpPath -> target.toString()
             is ByteStringPath -> target.toString()
@@ -220,14 +221,14 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
     }
 
     override fun createLink(link: Path, existing: Path) {
-        link as? SftpPath ?: throw ProviderMismatchException(link.toString())
-        existing as? SftpPath ?: throw ProviderMismatchException(existing.toString())
+        requireProviderPath<SftpPath>(link)
+        requireProviderPath<SftpPath>(existing)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun delete(path: Path) {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         try {
             client.remove(path)
         } catch (e: ClientException) {
@@ -236,7 +237,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
     }
 
     override fun readSymbolicLink(link: Path): Path {
-        link as? SftpPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<SftpPath>(link)
         val target = try {
             client.readlink(link)
         } catch (e: ClientException) {
@@ -247,39 +248,39 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
 
     @Throws(IOException::class)
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        source as? SftpPath ?: throw ProviderMismatchException(source.toString())
-        target as? SftpPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<SftpPath>(source)
+        requireProviderPath<SftpPath>(target)
         val copyOptions = options.toCopyOptions()
         SftpCopyMove.copy(source, target, copyOptions)
     }
 
     @Throws(IOException::class)
     override fun move(source: Path, target: Path, vararg options: CopyOption) {
-        source as? SftpPath ?: throw ProviderMismatchException(source.toString())
-        target as? SftpPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<SftpPath>(source)
+        requireProviderPath<SftpPath>(target)
         val copyOptions = options.toCopyOptions()
         SftpCopyMove.move(source, target, copyOptions)
     }
 
     override fun isSameFile(path: Path, path2: Path): Boolean {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         return path == path2
     }
 
     override fun isHidden(path: Path): Boolean {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         val fileName = path.fileNameByteString ?: return false
         return fileName.startsWith(HIDDEN_FILE_NAME_PREFIX)
     }
 
     override fun getFileStore(path: Path): FileStore {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         val accessModes = modes.toAccessModes()
         if (accessModes.execute) {
             throw UnsupportedOperationException(AccessMode.EXECUTE.toString())
@@ -331,7 +332,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         path: Path,
         vararg options: LinkOption
     ): SftpFileAttributeView {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         val linkOptions = options.toLinkOptions()
         return SftpFileAttributeView(path, linkOptions.noFollowLinks)
     }
@@ -341,7 +342,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any> {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -351,13 +352,13 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         value: Any,
         vararg options: LinkOption
     ) {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
-        path as? SftpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SftpPath>(path)
         return WatchServicePathObservable(path, intervalMillis)
     }
 
@@ -368,7 +369,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         intervalMillis: Long,
         listener: (List<Path>) -> Unit
     ) {
-        directory as? SftpPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<SftpPath>(directory)
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 }

@@ -15,6 +15,10 @@ import kotlin.random.Random
  */
 fun Path.replacementSibling(): Path = resolveSibling(replacementSiblingName(fileName.toString()))
 
+/** [replacementSibling] for a provider's own path type, which its [resolveSibling] preserves. */
+fun <P : CovariantPath<P>> P.replacementSibling(): P =
+    resolveSibling(replacementSiblingName(fileName.toString()))
+
 /** The name [replacementSibling] uses beside a file called [fileName]. */
 fun replacementSiblingName(fileName: String): String =
     ".$fileName.${Random.nextLong().toULong().toString(16)}.part"
