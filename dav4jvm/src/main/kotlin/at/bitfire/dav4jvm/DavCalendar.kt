@@ -24,6 +24,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.xmlpull.v1.XmlSerializer
 import java.io.IOException
 import java.io.StringWriter
 import java.time.Instant
@@ -100,18 +101,8 @@ class DavCalendar @JvmOverloads constructor(
                     attribute(null, COMP_FILTER_NAME, "VCALENDAR")
                     insertTag(COMP_FILTER) {
                         attribute(null, COMP_FILTER_NAME, component)
-                        if (start != null || end != null) {
-                            insertTag(TIME_RANGE) {
-                                if (start != null)
-                                    attribute(null, TIME_RANGE_START, timeFormatUTC.format(
-                                        ZonedDateTime.ofInstant(start, ZoneOffset.UTC)
-                                    ))
-                                if (end != null)
-                                    attribute(null, TIME_RANGE_END, timeFormatUTC.format(
-                                        ZonedDateTime.ofInstant(end, ZoneOffset.UTC)
-                                    ))
-                            }
-                        }
+                        if (start != null || end != null)
+                            insertTimeRange(start, end)
                     }
                 }
             }
@@ -126,6 +117,19 @@ class DavCalendar @JvmOverloads constructor(
                     .build()).execute()
         }.use {
             return processMultiStatus(it, callback)
+        }
+    }
+
+    private fun XmlSerializer.insertTimeRange(start: Instant?, end: Instant?) {
+        insertTag(TIME_RANGE) {
+            if (start != null)
+                attribute(null, TIME_RANGE_START, timeFormatUTC.format(
+                    ZonedDateTime.ofInstant(start, ZoneOffset.UTC)
+                ))
+            if (end != null)
+                attribute(null, TIME_RANGE_END, timeFormatUTC.format(
+                    ZonedDateTime.ofInstant(end, ZoneOffset.UTC)
+                ))
         }
     }
 

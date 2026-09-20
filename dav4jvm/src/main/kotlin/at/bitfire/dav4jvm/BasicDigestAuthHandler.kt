@@ -74,56 +74,25 @@ class BasicDigestAuthHandler(
 
 
     fun authenticateRequest(request: Request, response: Response?): Request? {
-        domain?.let {
-            val host = request.url.host
-            if (!domain.equals(UrlUtils.hostToDomain(host), true)) {
-                logger.warning("Not authenticating against $host because it doesn't belong to $domain")
-                return null
-            }
-        }
+        if (!isAllowedHost(request.url.host))
+            return null
 
         if (response == null) {
             // we're not processing a 401 response
-
             if (basicAuth == null && digestAuth == null && (request.isHttps || insecurePreemptive)) {
                 logger.fine("Trying Basic auth preemptively")
                 basicAuth = Challenge("Basic", "")
             }
-
-        } else {
-            // we're processing a 401 response
-
-            var newBasicAuth: Challenge? = null
-            var newDigestAuth: Challenge? = null
-            for (challenge in response.challenges())
-                when {
-                    "Basic".equals(challenge.scheme, true) -> {
-                        basicAuth?.let {
-                            logger.warning("Basic credentials didn't work last time -> aborting")
-                            basicAuth = null
-                            return null
-                        }
-                        newBasicAuth = challenge
-                    }
-                    "Digest".equals(challenge.scheme, true) -> {
-                        if (digestAuth != null && !"true".equals(challenge.authParams["stale"], true)) {
-                            logger.warning("Digest credentials didn't work last time and server nonce has not expired -> aborting")
-                            digestAuth = null
-                            return null
-                        }
-                        newDigestAuth = challenge
-                    }
-                }
-
-            basicAuth = newBasicAuth
-            digestAuth = newDigestAuth
+        } else if (!updateChallenges(response)) {
+            // we're processing a 401 response, and the cached credentials were rejected
+            return null
         }
 
         // we MUST prefer Digest auth [https://tools.ietf.org/html/rfc2617#section-4.6]
-        when {
+        return when {
             digestAuth != null -> {
                 logger.fine("Adding Digest authorization request for ${request.url}")
-                return digestRequest(request, digestAuth)
+                digestRequest(request, digestAuth)
             }
 
             basicAuth != null -> {
@@ -134,16 +103,57 @@ class BasicDigestAuthHandler(
                  which creates a new charset parameter for WWW-Authenticate, which always must be UTF-8.
                  So, UTF-8 encoding for credentials is compatible with all RFC 7617 servers and many,
                  but not all pre-RFC 7617 servers. */
-                return request.newBuilder()
+                request.newBuilder()
                         .header(HEADER_AUTHORIZATION, Credentials.basic(username, password.concatToString(), Charsets.UTF_8))
                         .build()
             }
 
-            response != null ->
-                logger.warning("No supported authentication scheme")
+            else -> {
+                if (response != null)
+                    logger.warning("No supported authentication scheme")
+                null
+            }
         }
+    }
 
-        return null
+    private fun isAllowedHost(host: String): Boolean {
+        if (domain == null || domain.equals(UrlUtils.hostToDomain(host), true))
+            return true
+        logger.warning("Not authenticating against $host because it doesn't belong to $domain")
+        return false
+    }
+
+    /**
+     * Takes the Basic and Digest challenges of a 401 response.
+     *
+     * @return false if the cached credentials have already been tried and were rejected
+     */
+    private fun updateChallenges(response: Response): Boolean {
+        var newBasicAuth: Challenge? = null
+        var newDigestAuth: Challenge? = null
+        for (challenge in response.challenges())
+            when {
+                "Basic".equals(challenge.scheme, true) -> {
+                    if (basicAuth != null) {
+                        logger.warning("Basic credentials didn't work last time -> aborting")
+                        basicAuth = null
+                        return false
+                    }
+                    newBasicAuth = challenge
+                }
+                "Digest".equals(challenge.scheme, true) -> {
+                    if (digestAuth != null && !"true".equals(challenge.authParams["stale"], true)) {
+                        logger.warning("Digest credentials didn't work last time and server nonce has not expired -> aborting")
+                        digestAuth = null
+                        return false
+                    }
+                    newDigestAuth = challenge
+                }
+            }
+
+        basicAuth = newBasicAuth
+        digestAuth = newDigestAuth
+        return true
     }
 
     fun digestRequest(request: Request, digest: Challenge?): Request? {
@@ -157,23 +167,20 @@ class BasicDigestAuthHandler(
         val algorithm = Algorithm.determine(digest.authParams["algorithm"])
         val qop = Protection.selectFrom(digest.authParams["qop"])
 
-        // build response parameters
-        var response: String? = null
-
-        val params = LinkedList<String>()
-        params.add("username=${quotedString(username)}")
-        if (realm != null)
-            params.add("realm=${quotedString(realm)}")
-        else {
+        if (realm == null) {
             logger.warning("No realm provided, aborting Digest auth")
             return null
         }
-        if (nonce != null)
-            params.add("nonce=${quotedString(nonce)}")
-        else {
+        if (nonce == null) {
             logger.warning("No nonce provided, aborting Digest auth")
             return null
         }
+
+        // build response parameters
+        val params = LinkedList<String>()
+        params.add("username=${quotedString(username)}")
+        params.add("realm=${quotedString(realm)}")
+        params.add("nonce=${quotedString(nonce)}")
         if (opaque != null)
             params.add("opaque=${quotedString(opaque)}")
 
@@ -184,7 +191,7 @@ class BasicDigestAuthHandler(
         val digestURI = request.url.encodedPath
         params.add("uri=${quotedString(digestURI)}")
 
-        if (qop != null) {
+        val response = if (qop != null) {
             params.add("qop=${qop.qop}")
             params.add("cnonce=${quotedString(clientNonce)}")
 
@@ -192,35 +199,12 @@ class BasicDigestAuthHandler(
             val ncValue = String.format(Locale.ROOT, "%08x", nc)
             params.add("nc=$ncValue")
 
-            val a1: String? = when (algorithm) {
-                Algorithm.MD5 ->
-                    "$username:$realm:${password.concatToString()}"
-                Algorithm.MD5_SESSION ->
-                    h("$username:$realm:${password.concatToString()}") + ":$nonce:$clientNonce"
-                else ->
-                    null
-            }
-            // Contains password! Only uncomment for debugging:
-            // logger.finer("A1=$a1")
-
-            val a2: String? = when (qop) {
-                Protection.Auth ->
-                    "$method:$digestURI"
-                Protection.AuthInt -> {
-                    try {
-                        val body = request.body
-                        "$method:$digestURI:" + (if (body != null) h(body) else h(""))
-                    } catch(e: IOException) {
-                        logger.warning("Couldn't get entity-body for hash calculation")
-                        null
-                    }
-                }
-            }
-            // logger.finer("A2=$a2")
-
+            val a1 = digestA1(algorithm, realm, nonce)
+            val a2 = digestA2(qop, request)
             if (a1 != null && a2 != null)
-                response = kd(h(a1), "$nonce:$ncValue:$clientNonce:${qop.qop}:${h(a2)}")
-
+                kd(h(a1), "$nonce:$ncValue:$clientNonce:${qop.qop}:${h(a2)}")
+            else
+                null
         } else {
             logger.finer("Using legacy Digest auth")
 
@@ -228,17 +212,46 @@ class BasicDigestAuthHandler(
             if (algorithm == Algorithm.MD5) {
                 val a1 = "$username:$realm:${password.concatToString()}"
                 val a2 = "$method:$digestURI"
-                response = kd(h(a1), nonce + ":" + h(a2))
-            }
+                kd(h(a1), nonce + ":" + h(a2))
+            } else
+                null
         }
 
-        return if (response != null) {
-            params.add("response=" + quotedString(response))
-            request.newBuilder()
-                    .header(HEADER_AUTHORIZATION, "Digest " + params.joinToString(", "))
-                    .build()
-        } else
-            null
+        if (response == null)
+            return null
+        params.add("response=" + quotedString(response))
+        return request.newBuilder()
+                .header(HEADER_AUTHORIZATION, "Digest " + params.joinToString(", "))
+                .build()
+    }
+
+    // Contains the password; never log it.
+    private fun digestA1(algorithm: Algorithm?, realm: String, nonce: String): String? =
+        when (algorithm) {
+            Algorithm.MD5 ->
+                "$username:$realm:${password.concatToString()}"
+            Algorithm.MD5_SESSION ->
+                h("$username:$realm:${password.concatToString()}") + ":$nonce:$clientNonce"
+            else ->
+                null
+        }
+
+    private fun digestA2(qop: Protection, request: Request): String? {
+        val method = request.method
+        val digestURI = request.url.encodedPath
+        return when (qop) {
+            Protection.Auth ->
+                "$method:$digestURI"
+            Protection.AuthInt -> {
+                try {
+                    val body = request.body
+                    "$method:$digestURI:" + (if (body != null) h(body) else h(""))
+                } catch(e: IOException) {
+                    logger.warning("Couldn't get entity-body for hash calculation")
+                    null
+                }
+            }
+        }
     }
 
 

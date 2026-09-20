@@ -286,4 +286,172 @@ class BasicDigestAuthHandlerTest {
         authenticator.authenticate(null, response)
     }
 
+    private fun unauthorized(request: Request, vararg challenges: String) =
+        Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(401).message("Unauthorized")
+            .apply { for (challenge in challenges) addHeader("WWW-Authenticate", challenge) }
+            .build()
+
+    @Test
+    fun testDomainRestriction() {
+        val authenticator = BasicDigestAuthHandler("example.com", "user", "password".toCharArray())
+        val foreign = Request.Builder().url("https://dav.other.org/").build()
+        assertNull(authenticator.authenticateRequest(foreign, unauthorized(foreign, "Basic realm=\"x\"")))
+
+        val own = Request.Builder().url("https://dav.example.com/").build()
+        assertEquals(
+            "Basic dXNlcjpwYXNzd29yZA==",
+            authenticator.authenticateRequest(own, unauthorized(own, "Basic realm=\"x\""))!!.header("Authorization")
+        )
+    }
+
+    @Test
+    fun testPreemptiveBasic() {
+        val https = Request.Builder().url("https://example.com/").build()
+        val http = Request.Builder().url("http://example.com/").build()
+
+        // Plain HTTP: no credentials are sent before the server asks for them.
+        assertNull(BasicDigestAuthHandler(null, "user", "password".toCharArray()).authenticateRequest(http, null))
+
+        // HTTPS: Basic credentials are sent right away, and again for the next request.
+        val authenticator = BasicDigestAuthHandler(null, "user", "password".toCharArray())
+        assertEquals("Basic dXNlcjpwYXNzd29yZA==", authenticator.authenticateRequest(https, null)!!.header("Authorization"))
+        assertEquals("Basic dXNlcjpwYXNzd29yZA==", authenticator.authenticateRequest(https, null)!!.header("Authorization"))
+
+        // Plain HTTP when explicitly allowed.
+        val insecure = BasicDigestAuthHandler(null, "user", "password".toCharArray(), insecurePreemptive = true)
+        assertEquals("Basic dXNlcjpwYXNzd29yZA==", insecure.authenticateRequest(http, null)!!.header("Authorization"))
+    }
+
+    @Test
+    fun testBasicRejectedTwiceAborts() {
+        val authenticator = BasicDigestAuthHandler(null, "user", "password".toCharArray())
+        val request = Request.Builder().url("http://example.com/").build()
+        val challenge = unauthorized(request, "Basic realm=\"x\"")
+        assertNotNull(authenticator.authenticateRequest(request, challenge))
+        // The same credentials were rejected: give up instead of looping.
+        assertNull(authenticator.authenticateRequest(request, challenge))
+        // The cache was cleared, so a new challenge starts over.
+        assertNotNull(authenticator.authenticateRequest(request, challenge))
+    }
+
+    @Test
+    fun testDigestPreferredOverBasicAndStaleNonce() {
+        val authenticator = BasicDigestAuthHandler(null, "user", "password".toCharArray())
+        val request = Request.Builder().url("http://example.com/dir/").build()
+        val first = unauthorized(request, "Basic realm=\"x\"", "Digest realm=\"x\", nonce=\"n1\", qop=\"auth\"")
+        val auth = authenticator.authenticateRequest(request, first)!!.header("Authorization")!!
+        assertTrue(auth.startsWith("Digest "))
+        assertTrue(auth.contains("nonce=\"n1\""))
+
+        // Digest cached: later requests are authenticated without a new challenge.
+        assertTrue(authenticator.authenticateRequest(request, null)!!.header("Authorization")!!.startsWith("Digest "))
+
+        // Nonce expired: the server says stale=true, so retry with the new nonce.
+        val stale = unauthorized(request, "Digest realm=\"x\", nonce=\"n2\", qop=\"auth\", stale=true")
+        assertTrue(authenticator.authenticateRequest(request, stale)!!.header("Authorization")!!.contains("nonce=\"n2\""))
+
+        // Not stale: the credentials themselves are wrong, give up.
+        val rejected = unauthorized(request, "Digest realm=\"x\", nonce=\"n3\", qop=\"auth\"")
+        assertNull(authenticator.authenticateRequest(request, rejected))
+    }
+
+    @Test
+    fun testUnsupportedScheme() {
+        val authenticator = BasicDigestAuthHandler(null, "user", "password".toCharArray())
+        val request = Request.Builder().url("http://example.com/").build()
+        assertNull(authenticator.authenticateRequest(request, unauthorized(request, "Bearer realm=\"x\"")))
+    }
+
+    @Test
+    fun testDigestUnknownAlgorithm() {
+        val authenticator = BasicDigestAuthHandler(null, "user", "password".toCharArray())
+        val request = Request.Builder().url("http://example.com/").build()
+        // With qop: A1 cannot be computed for an unknown algorithm.
+        assertNull(authenticator.digestRequest(request, Challenge("Digest", mapOf(
+            "realm" to "x", "nonce" to "n", "qop" to "auth", "algorithm" to "SHA-256"
+        ))))
+        // Legacy (no qop) only knows MD5.
+        assertNull(authenticator.digestRequest(request, Challenge("Digest", mapOf(
+            "realm" to "x", "nonce" to "n", "algorithm" to "SHA-256"
+        ))))
+        assertNull(authenticator.digestRequest(request, null))
+    }
+
+    @Test
+    fun testDigestUnknownQopFallsBackToLegacy() {
+        val authenticator = BasicDigestAuthHandler(null, "Mufasa", "CircleOfLife".toCharArray())
+        val request = Request.Builder().url("http://www.nowhere.org/dir/index.html").build()
+        val auth = authenticator.digestRequest(request, Challenge("Digest", mapOf(
+            "realm" to "testrealm@host.com",
+            "nonce" to "dcd98b7102dd2f0e8b11d0f600bfb0c093",
+            "qop" to "auth-conf"
+        )))!!.header("Authorization")!!
+        assertFalse(auth.contains("qop="))
+        // Same response as the RFC 2069 example in testDigestLegacy.
+        assertTrue(auth.contains("response=\"1949323746fe6a43ef61f9606e7febea\""))
+    }
+
+    @Test
+    fun testDigestAuthIntUnreadableBody() {
+        val authenticator = BasicDigestAuthHandler(null, "user", "password".toCharArray())
+        val body = object : okhttp3.RequestBody() {
+            override fun contentType() = null
+            override fun writeTo(sink: okio.BufferedSink): Unit = throw java.io.IOException("gone")
+        }
+        val request = Request.Builder().url("http://example.com/").put(body).build()
+        assertNull(authenticator.digestRequest(request, Challenge("Digest", mapOf(
+            "realm" to "x", "nonce" to "n", "qop" to "auth-int"
+        ))))
+    }
+
+    @Test
+    fun testDigestAuthIntWithoutBody() {
+        val authenticator = BasicDigestAuthHandler(null, "user", "password".toCharArray())
+        val request = Request.Builder().url("http://example.com/").build()
+        val auth = authenticator.digestRequest(request, Challenge("Digest", mapOf(
+            "realm" to "x", "nonce" to "n", "qop" to "auth,auth-int"
+        )))!!.header("Authorization")!!
+        // auth-int is preferred when both are offered
+        assertTrue(auth.contains("qop=auth-int"))
+    }
+
+    @Test
+    fun testWithOkHttp() {
+        mockwebserver3.MockWebServer().use { server ->
+            server.start()
+            server.enqueue(mockwebserver3.MockResponse.Builder()
+                .code(401)
+                .addHeader("WWW-Authenticate", "Basic realm=\"x\"")
+                .build())
+            server.enqueue(mockwebserver3.MockResponse.Builder().code(200).build())
+            server.enqueue(mockwebserver3.MockResponse.Builder().code(200).build())
+            server.enqueue(mockwebserver3.MockResponse.Builder().code(200).build())
+
+            val authenticator = BasicDigestAuthHandler(null, "user", "password".toCharArray())
+            val client = okhttp3.OkHttpClient.Builder()
+                .authenticator(authenticator)
+                .addNetworkInterceptor(authenticator)
+                .build()
+
+            // First request: no credentials yet; the 401 makes OkHttp ask the authenticator.
+            client.newCall(Request.Builder().url(server.url("/a")).build()).execute().use {
+                assertEquals(200, it.code)
+            }
+            assertNull(server.takeRequest().headers["Authorization"])
+            assertEquals("Basic dXNlcjpwYXNzd29yZA==", server.takeRequest().headers["Authorization"])
+
+            // Second request: the interceptor adds the cached credentials up front.
+            client.newCall(Request.Builder().url(server.url("/b")).build()).execute().close()
+            assertEquals("Basic dXNlcjpwYXNzd29yZA==", server.takeRequest().headers["Authorization"])
+
+            // An explicit Authorization header is left alone.
+            client.newCall(Request.Builder().url(server.url("/c")).header("Authorization", "Bearer t").build())
+                .execute().close()
+            assertEquals("Bearer t", server.takeRequest().headers["Authorization"])
+        }
+    }
+
 }
