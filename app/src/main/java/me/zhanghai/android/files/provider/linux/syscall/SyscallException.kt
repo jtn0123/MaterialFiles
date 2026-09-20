@@ -52,7 +52,7 @@ class SyscallException @JvmOverloads constructor(
     @Throws(NotLinkException::class)
     fun maybeThrowNotLinkException(file: String?) {
         if (errno == OsConstants.EINVAL) {
-            throw InvalidFileNameException(file, null, message)
+            throw NotLinkException(file, null, message)
                 .apply { initCause(this@SyscallException) }
         }
     }
