@@ -97,6 +97,28 @@ sonar {
             syscallFunctionNames: ['kotlin:S100', [
                 '**/src/main/java/me/zhanghai/android/files/provider/linux/syscall/Syscall.kt'
             ]],
+            // The syscalls behind these really do return null: no entry for a user, a group or a
+            // mount point, and the end of a directory.
+            nullableSyscalls: ['kotlin:S6619', [
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/LinuxDirectoryStream.kt',
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/LinuxUserPrincipalLookupService.kt',
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/LocalLinuxFileStore.kt'
+            ]],
+            // Storage.createIntent() returns null for storage that has a path, and an activity
+            // starting fresh has no state to restore.
+            nullableState: ['kotlin:S6619', [
+                '**/src/main/java/me/zhanghai/android/files/navigation/NavigationItems.kt',
+                '**/src/main/java/me/zhanghai/android/files/settings/SettingsActivity.kt'
+            ]],
+            // The job body already runs in runInterruptible(Dispatchers.IO).
+            jobOnIo: ['kotlin:S6307', [
+                '**/src/main/java/me/zhanghai/android/files/filejob/FileJob.kt'
+            ]],
+            // Nothing there is deprecated; the dialog is shown as a child fragment precisely to
+            // avoid the deprecated target fragment, and the compiler warns about none of it.
+            preferenceDialog: ['kotlin:S1874', [
+                '**/src/main/java/me/zhanghai/android/files/ui/PreferenceFragmentCompat.kt'
+            ]],
             // Replacing the deprecated soft input calls means driving the keyboard insets by
             // hand, which changes how these dialogs behave; worth its own change.
             softInput: ['kotlin:S1874', [
