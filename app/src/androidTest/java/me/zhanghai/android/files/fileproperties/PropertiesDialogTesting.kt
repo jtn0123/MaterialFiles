@@ -24,6 +24,7 @@ import me.zhanghai.android.files.file.loadFileItem
 import me.zhanghai.android.files.filelist.FileListActivity
 import me.zhanghai.android.files.filelist.FileListFragment
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 
 /** Opens the properties dialog of a file in the file list and reads what its tabs show. */
 class PropertiesDialogTesting(private val directory: File) {
@@ -87,6 +88,26 @@ class PropertiesDialogTesting(private val directory: File) {
             Thread.sleep(200)
         }
         throw AssertionError("The $title tab never showed its values: ${items.keys}")
+    }
+
+    /**
+     * Runs a block against the view tree of the showing properties dialog, on the main thread.
+     *
+     * Views below the fold of a tab are not on screen, so uiautomator cannot reach them.
+     */
+    fun onDialogView(scenario: ActivityScenario<FileListActivity>, block: (View) -> Unit) {
+        var shown = false
+        scenario.onActivity { activity ->
+            val dialog = activity.fileListFragment.childFragmentManager.fragments
+                .filterIsInstance<FilePropertiesDialogFragment>()
+                .singleOrNull()
+                ?.dialog
+            if (dialog != null) {
+                shown = true
+                block(dialog.window!!.decorView)
+            }
+        }
+        assertTrue("The properties dialog is not showing", shown)
     }
 
     /** Every labelled value in the view tree, as hint to text. */

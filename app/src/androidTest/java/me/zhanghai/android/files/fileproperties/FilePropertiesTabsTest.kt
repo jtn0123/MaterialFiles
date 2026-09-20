@@ -5,30 +5,20 @@
 
 package me.zhanghai.android.files.fileproperties
 
-import android.content.Intent
-import android.net.Uri
-import android.view.View
-import android.view.ViewGroup
-import androidx.test.core.app.ActivityScenario
+import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
-import androidx.viewpager.widget.ViewPager
 import com.google.android.material.textfield.TextInputLayout
 import java.io.File
 import java.io.FileInputStream
 import java.security.MessageDigest
 import java.util.UUID
-import java8.nio.file.Paths
 import me.zhanghai.android.files.NoRootAccessRule
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.coil.TestJpeg
-import me.zhanghai.android.files.file.FileItem
-import me.zhanghai.android.files.file.loadFileItem
-import me.zhanghai.android.files.filelist.FileListActivity
-import me.zhanghai.android.files.filelist.FileListFragment
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -222,21 +212,29 @@ class FilePropertiesTabsTest {
                 items[context.getString(R.string.file_properties_checksum_sha_256)]?.uppercase()
             )
 
-            val compareEdit = device.wait(
-                Until.findObject(By.res(context.packageName, "compareEdit")),
-                20_000
-            )
-            assertNotNull("The checksum tab never showed its compare field", compareEdit)
-            compareEdit!!.text = sha256
+            // The compare field sits below the checksums, off the screen of a small dialog.
+            properties.onDialogView(scenario) { view ->
+                val compareEdit = view.findViewById<EditText>(R.id.compareEdit)
+                assertNotNull("The checksum tab never showed its compare field", compareEdit)
+                compareEdit.setText(sha256)
+            }
 
             val match = context.getString(
                 R.string.file_properties_checksum_compare_match_format,
                 context.getString(R.string.file_properties_checksum_sha_256)
             )
-            assertNotNull(
-                "The checksum that was typed in was never recognised",
-                device.wait(Until.findObject(By.text(match)), 20_000)
-            )
+            var helperText: String? = null
+            val deadline = System.currentTimeMillis() + PropertiesDialogTesting.TIMEOUT_MILLIS
+            while (helperText != match && System.currentTimeMillis() < deadline) {
+                properties.onDialogView(scenario) { view ->
+                    helperText = view.findViewById<TextInputLayout>(R.id.compareLayout)
+                        .helperText?.toString()
+                }
+                if (helperText != match) {
+                    Thread.sleep(200)
+                }
+            }
+            assertEquals("The checksum that was typed in was never recognised", match, helperText)
         }
     }
 

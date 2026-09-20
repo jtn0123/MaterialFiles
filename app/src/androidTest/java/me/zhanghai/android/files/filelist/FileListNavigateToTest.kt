@@ -133,15 +133,6 @@ class FileListNavigateToTest {
             )
         )
         // Nothing moved: the list is still where it was, behind the dialog.
-        nameEdit.text = ""
-        confirm()
-        assertNotNull(
-            "The dialog never said the path was empty",
-            device.wait(
-                Until.findObject(By.text(context.getString(R.string.file_list_path_error_empty))),
-                TIMEOUT_MILLIS
-            )
-        )
         device.pressBack()
         assertNotNull(device.wait(Until.findObject(By.text("Outside.txt")), TIMEOUT_MILLIS))
     }

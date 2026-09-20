@@ -123,13 +123,13 @@ class FileListRowMenuTest {
             chooseInRowMenu(R.string.file_item_action_copy_path)
 
             var copied: String? = null
-            await("The path never reached the clipboard") {
+            await("The path never reached the clipboard: $copied") {
                 scenario.onActivity { activity ->
                     copied = activity.getSystemService<ClipboardManager>()
                         ?.primaryClip?.takeIf { it.itemCount > 0 }
                         ?.getItemAt(0)?.text?.toString()
                 }
-                copied != null
+                copied == file.path
             }
             assertEquals(file.path, copied)
         }
