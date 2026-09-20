@@ -21,6 +21,7 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.DefaultOnIm
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import kotlin.math.max
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,6 +42,8 @@ import me.zhanghai.android.files.util.shortAnimTime
 
 class ImageViewerAdapter(
     private val lifecycleOwner: LifecycleOwner,
+    // Reading an image blocks, so it never runs on the thread that shows it.
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val listener: (View) -> Unit
 ) : SimpleAdapter<Path, ImageViewerAdapter.ViewHolder>() {
     override val hasStableIds: Boolean
@@ -74,7 +77,7 @@ class ImageViewerAdapter(
         binding.largeImage.isVisible = false
         lifecycleOwner.lifecycleScope.launch {
             val imageInfo = try {
-                withContext(Dispatchers.IO) { path.loadImageInfo() }
+                withContext(ioDispatcher) { path.loadImageInfo() }
             } catch (e: Exception) {
                 e.printStackTrace()
                 showError(binding, e)

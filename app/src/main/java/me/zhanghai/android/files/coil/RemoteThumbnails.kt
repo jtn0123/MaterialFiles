@@ -17,10 +17,13 @@ import coil.decode.DataSource
 import coil.decode.ImageSource
 import coil.disk.DiskCache
 import coil.fetch.SourceResult
+import coil.size.Dimension
+import coil.size.Size
 import java.io.Closeable
 import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
@@ -31,8 +34,11 @@ import kotlinx.coroutines.sync.withPermit
 import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.file.lastModifiedInstant
 import me.zhanghai.android.files.provider.common.newInputStream
+import me.zhanghai.android.files.provider.ftp.isFtpPath
+import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.closeSafe
 import me.zhanghai.android.files.util.logWarning
+import me.zhanghai.android.files.util.valueCompat
 import okio.buffer
 
 /**
@@ -90,6 +96,45 @@ internal object RemoteThumbnails {
 
     suspend fun <T> withPreviewPermit(block: suspend () -> T): T =
         previewSemaphore.withPermit { block() }
+
+    /**
+     * The width and height of a request small enough to be a thumbnail, or `null` for one that
+     * wants an image to show on its own.
+     */
+    fun getThumbnailSize(size: Size): Pair<Int, Int>? {
+        val (width, height) = size
+        return if (width is Dimension.Pixels && width.px <= MAX_SIZE_PX &&
+            height is Dimension.Pixels && height.px <= MAX_SIZE_PX
+        ) {
+            width.px to height.px
+        } else {
+            null
+        }
+    }
+
+    /**
+     * The key of a decoded image in memory. A thumbnail decoded for a list icon is too small for a
+     * grid cell, so the size is part of the key, rounded so that sizes a few pixels apart still
+     * share an entry.
+     */
+    fun createMemoryKey(path: Path, attributes: BasicFileAttributes, size: Size): String {
+        val (width, height) = size
+        val sizeKey = if (width is Dimension.Pixels && height is Dimension.Pixels) {
+            "${roundSize(width.px)}x${roundSize(height.px)}"
+        } else {
+            "original"
+        }
+        return "$path:${attributes.lastModifiedInstant.toEpochMilli()}:${attributes.size()}:" +
+            sizeKey
+    }
+
+    /**
+     * Whether a failed read says nothing about the file itself, so that it is worth reading again
+     * rather than remembered as unreadable.
+     */
+    fun isWorthReadingAgain(throwable: Throwable): Boolean =
+        // The server may well answer next time, and a cancelled read never reached the file.
+        throwable is IOException || throwable is CancellationException
 
     /** Rounds a thumbnail size up to a step; a size for a viewer is left as it is. */
     fun roundSize(sizePx: Int): Int = if (sizePx > MAX_SIZE_PX) {
@@ -170,6 +215,13 @@ internal object RemoteThumbnails {
 
     private const val TAG = "RemoteThumbnails"
 }
+
+/**
+ * Whether reading this file for a thumbnail is allowed at all: FTP doesn't support random access
+ * and needs one connection per parallel read, and reading files on a server can be turned off.
+ */
+internal val Path.isReadableForThumbnail: Boolean
+    get() = !isFtpPath && Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
 
 /**
  * Lets a coroutine abandon blocking work that thread interruption does not reach, by closing what

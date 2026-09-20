@@ -73,11 +73,15 @@ class FileListSearchBackTest {
             device.wait(Until.findObject(By.text(CHILD_FILE_NAME)), TIMEOUT_MILLIS)
         )
 
+        device.waitForIdle()
         checkNotNull(device.findObject(By.desc("Search"))).click()
-        assertNotNull(
-            "The search view never opened",
-            device.wait(Until.findObject(searchText), TIMEOUT_MILLIS)
-        )
+        var searchView = device.wait(Until.findObject(searchText), SHORT_TIMEOUT_MILLIS)
+        if (searchView == null) {
+            // A tap that landed while the toolbar was still settling is lost.
+            device.findObject(By.desc("Search"))?.click()
+            searchView = device.wait(Until.findObject(searchText), TIMEOUT_MILLIS)
+        }
+        assertNotNull("The search view never opened", searchView)
 
         // The first Back may only hide the keyboard; the one after it must close search.
         var closed = false

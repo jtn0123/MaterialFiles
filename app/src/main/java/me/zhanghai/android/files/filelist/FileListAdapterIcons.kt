@@ -29,7 +29,6 @@ import me.zhanghai.android.files.util.logWarning
 
 /** Binds the icon, thumbnail and badges of a file list item. */
 internal fun FileListAdapter.ViewHolder.bindIcons(file: FileItem) {
-    val path = file.path
     val isDirectory = file.attributes.isDirectory
     val iconRes = file.mimeType.iconRes
     iconImage.apply {
@@ -39,40 +38,57 @@ internal fun FileListAdapter.ViewHolder.bindIcons(file: FileItem) {
     directoryThumbnailImage?.isVisible = isDirectory
     thumbnailOutlineView?.isVisible = !isDirectory
     val supportsThumbnail = file.supportsThumbnail
+    // An APK icon is shown at icon size, with the generic icon behind it while it loads.
     val shouldLoadThumbnailIcon = supportsThumbnail && thumbnailIconImage != null &&
         file.mimeType.isApk
-    val attributes = file.attributes
+    bindThumbnailIcon(file, iconRes, shouldLoadThumbnailIcon)
+    bindThumbnail(file, supportsThumbnail && !shouldLoadThumbnailIcon)
+    bindAppIconBadge(file)
+    bindBadge(file)
+}
+
+private fun FileListAdapter.ViewHolder.bindThumbnailIcon(
+    file: FileItem,
+    iconRes: Int,
+    shouldLoad: Boolean
+) {
     thumbnailIconImage?.apply {
         dispose()
-        isVisible = !isDirectory
+        isVisible = !file.attributes.isDirectory
         setImageResource(iconRes)
-        if (shouldLoadThumbnailIcon) {
-            load(path to attributes)
+        if (shouldLoad) {
+            load(file.path to file.attributes)
         }
     }
+}
+
+private fun FileListAdapter.ViewHolder.bindThumbnail(file: FileItem, shouldLoad: Boolean) {
     thumbnailImage.apply {
         dispose()
         (getTag(R.id.thumbnail_load) as ThumbnailLoad?)?.preview?.dispose()
         setTag(R.id.thumbnail_load, null)
         setImageDrawable(null)
-        val shouldLoadThumbnail = supportsThumbnail && !shouldLoadThumbnailIcon
-        isVisible = shouldLoadThumbnail
-        if (shouldLoadThumbnail) {
-            val thumbnailLoad = ThumbnailLoad(path to attributes)
-            setTag(R.id.thumbnail_load, thumbnailLoad)
-            val onShown = {
-                val iconImage = thumbnailIconImage ?: iconImage
-                iconImage.isVisible = false
-            }
-            // A grid cell is too large for the thumbnail a camera embeds, so the sharp one means
-            // reading the whole photo; the embedded one fills the cell in the meantime.
-            val isGrid = directoryThumbnailImage != null
-            if (isGrid && path.isRemotePath && file.mimeType == MimeType.IMAGE_JPEG) {
-                thumbnailLoad.preview = loadThumbnailPreview(thumbnailLoad, onShown)
-            }
-            loadThumbnail(thumbnailLoad, false, onShown)
+        isVisible = shouldLoad
+        if (!shouldLoad) {
+            return
         }
+        val thumbnailLoad = ThumbnailLoad(file.path to file.attributes)
+        setTag(R.id.thumbnail_load, thumbnailLoad)
+        val onShown = {
+            val iconImage = thumbnailIconImage ?: iconImage
+            iconImage.isVisible = false
+        }
+        // A grid cell is too large for the thumbnail a camera embeds, so the sharp one means
+        // reading the whole photo; the embedded one fills the cell in the meantime.
+        val isGrid = directoryThumbnailImage != null
+        if (isGrid && file.path.isRemotePath && file.mimeType == MimeType.IMAGE_JPEG) {
+            thumbnailLoad.preview = loadThumbnailPreview(thumbnailLoad, onShown)
+        }
+        loadThumbnail(thumbnailLoad, false, onShown)
     }
+}
+
+private fun FileListAdapter.ViewHolder.bindAppIconBadge(file: FileItem) {
     appIconBadgeImage.apply {
         dispose()
         setImageDrawable(null)
@@ -83,27 +99,34 @@ internal fun FileListAdapter.ViewHolder.bindIcons(file: FileItem) {
             load(AppIconPackageName(appDirectoryPackageName))
         }
     }
+}
+
+private fun FileListAdapter.ViewHolder.bindBadge(file: FileItem) {
     badgeImage.apply {
-        val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
-            if (file.isSymbolicLinkBroken) {
-                R.drawable.error_badge_icon_18dp
-            } else {
-                R.drawable.symbolic_link_badge_icon_18dp
-            }
-        } else if (file.attributesNoFollowLinks.isEncrypted()) {
-            R.drawable.encrypted_badge_icon_18dp
-        } else {
-            null
-        }
-        val hasBadge = badgeIconRes != null
-        isVisible = hasBadge
-        if (hasBadge) {
+        val badgeIconRes = file.badgeIconRes
+        isVisible = badgeIconRes != null
+        if (badgeIconRes != null) {
             setImageResource(badgeIconRes)
         } else {
             setImageDrawable(null)
         }
     }
 }
+
+/** The badge shown over the icon of a link or an encrypted file, if it needs one. */
+private val FileItem.badgeIconRes: Int?
+    get() = when {
+        attributesNoFollowLinks.isSymbolicLink ->
+            if (isSymbolicLinkBroken) {
+                R.drawable.error_badge_icon_18dp
+            } else {
+                R.drawable.symbolic_link_badge_icon_18dp
+            }
+
+        attributesNoFollowLinks.isEncrypted() -> R.drawable.encrypted_badge_icon_18dp
+
+        else -> null
+    }
 
 /** The thumbnail a view is loading, so that a callback for a file it no longer shows is dropped. */
 private class ThumbnailLoad(val data: Pair<Path, BasicFileAttributes>) {
