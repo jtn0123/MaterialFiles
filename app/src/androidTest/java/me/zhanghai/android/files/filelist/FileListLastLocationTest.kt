@@ -16,17 +16,22 @@ import androidx.test.uiautomator.Until
 import java.io.File
 import java.io.FileInputStream
 import java.util.UUID
+import me.zhanghai.android.files.UiFailureDiagnosticsRule
 import me.zhanghai.android.files.settings.Settings
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /** Where the file list opens: where it was left off, or where the system destroyed it. */
 @RunWith(AndroidJUnit4::class)
 class FileListLastLocationTest {
+    @get:Rule
+    val diagnostics = UiFailureDiagnosticsRule()
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val device = UiDevice.getInstance(instrumentation)
@@ -34,6 +39,8 @@ class FileListLastLocationTest {
     private lateinit var directoryName: String
     private var previousRemember: Boolean? = null
     private var previousLocation: FileListLastLocation? = null
+    private var previousViewType: FileViewType? = null
+    private var previousSortOptions: FileSortOptions? = null
 
     @Before
     fun setUp() {
@@ -50,6 +57,14 @@ class FileListLastLocationTest {
         instrumentation.runOnMainSync {
             previousRemember = Settings.FILE_LIST_REMEMBER_LAST_DIRECTORY.value
             previousLocation = Settings.FILE_LIST_LAST_LOCATION.value
+            previousViewType = Settings.FILE_LIST_VIEW_TYPE.value
+            previousSortOptions = Settings.FILE_LIST_SORT_OPTIONS.value
+            // Another test may have left a grid sorted by something else, which would put the
+            // test folder out of sight.
+            Settings.FILE_LIST_VIEW_TYPE.putValue(FileViewType.LIST)
+            Settings.FILE_LIST_SORT_OPTIONS.putValue(
+                FileSortOptions(FileSortOptions.By.NAME, FileSortOptions.Order.ASCENDING, true)
+            )
         }
     }
 
@@ -58,6 +73,8 @@ class FileListLastLocationTest {
         instrumentation.runOnMainSync {
             previousRemember?.let { Settings.FILE_LIST_REMEMBER_LAST_DIRECTORY.putValue(it) }
             Settings.FILE_LIST_LAST_LOCATION.putValue(previousLocation)
+            previousViewType?.let { Settings.FILE_LIST_VIEW_TYPE.putValue(it) }
+            previousSortOptions?.let { Settings.FILE_LIST_SORT_OPTIONS.putValue(it) }
         }
         directory.deleteRecursively()
     }
@@ -73,6 +90,15 @@ class FileListLastLocationTest {
             .setAction(Intent.ACTION_MAIN)
             .addCategory(Intent.CATEGORY_LAUNCHER)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // A task another test left behind can still be finishing, which drops this start back to
+        // the launcher; start again instead of waiting out the search on an empty screen.
+        repeat(LAUNCH_ATTEMPTS - 1) {
+            val scenario = ActivityScenario.launch<FileListActivity>(intent)
+            if (device.wait(Until.hasObject(By.pkg(context.packageName).depth(0)), 10_000)) {
+                return scenario
+            }
+            scenario.close()
+        }
         return ActivityScenario.launch(intent)
     }
 
@@ -147,5 +173,9 @@ class FileListLastLocationTest {
             assertNotNull(device.wait(Until.findObject(By.text("Inside.txt")), 20_000))
             assertEquals(directory.path, scenario.currentPath())
         }
+    }
+
+    companion object {
+        private const val LAUNCH_ATTEMPTS = 3
     }
 }
