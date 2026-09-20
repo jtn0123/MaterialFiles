@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.settings
 
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.preference.ListPreference
 import androidx.preference.Preference
@@ -63,20 +64,27 @@ class SettingsPreferenceDialogTest {
     }
 
     @Test
-    fun aListPreferenceGetsTheMaterialListDialogWithItsEntries() {
+    fun aListPreferenceGetsTheMaterialListDialogShowingItsEntries() {
         val fragment = launchSettings()
-        val preference = fragment.requirePreference<ListPreference>(R.string.pref_key_locale)
+        val preference = fragment.requirePreference<ListPreference>(R.string.pref_key_root_strategy)
 
         instrumentation.runOnMainSync { fragment.onDisplayPreferenceDialog(preference) }
         instrumentation.waitForIdleSync()
 
-        val dialog = fragment.dialogFragment()
+        val dialogFragment = fragment.dialogFragment()
         assertTrue(
-            "Expected the Material list dialog but got $dialog",
-            dialog is MaterialListPreferenceDialogFragmentCompat
+            "Expected the Material list dialog but got $dialogFragment",
+            dialogFragment is MaterialListPreferenceDialogFragmentCompat
         )
-        assertSame(preference, dialog!!.preference)
-        assertTrue(preference.entries.isNotEmpty())
+        assertSame(preference, dialogFragment!!.preference)
+        val listView = (dialogFragment.requireDialog() as AlertDialog).listView
+        assertEquals(preference.entries.size, listView.count)
+        assertEquals(preference.entries.first(), listView.getItemAtPosition(0))
+        // The current value is the checked row.
+        assertEquals(preference.findIndexOfValue(preference.value), listView.checkedItemPosition)
+
+        instrumentation.runOnMainSync { dialogFragment.dismiss() }
+        instrumentation.waitForIdleSync()
     }
 
     private fun launchSettings(): PreferenceFragmentCompat {

@@ -6,7 +6,9 @@
 package me.zhanghai.android.files.ftpserver
 
 import android.net.ConnectivityManager
+import android.net.LinkProperties
 import android.net.Network
+import android.os.SystemClock
 import android.text.InputType
 import android.widget.EditText
 import androidx.fragment.app.DialogFragment
@@ -16,11 +18,13 @@ import androidx.preference.PreferenceGroup
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import java.util.concurrent.atomic.AtomicInteger
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.ui.EditTextPreference
 import me.zhanghai.android.files.ui.PreferenceFragmentCompat
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -118,21 +122,55 @@ class FtpServerPreferencesTest {
 
     @Test
     fun aNetworkChangeRefreshesWhateverWatchesTheUrl() {
-        var changes = 0
-        val watcher = FtpServerUrl.createChangeWatcher(context) { changes += 1 }
+        val changes = AtomicInteger()
+        val watcher = FtpServerUrl.createChangeWatcher(context) { changes.incrementAndGet() }
+
         watcher.register()
         try {
+            // Registering reports the network that is already there.
+            assertTrue(
+                "Registering must report the current default network",
+                waitForChange(changes, 0)
+            )
+
+            val afterRegister = changes.get()
+            instrumentation.runOnMainSync { watcher.networkCallback.onLost(activeNetwork()) }
+            assertTrue("Losing the network must refresh the URL", changes.get() > afterRegister)
+
+            val afterLost = changes.get()
+            instrumentation.runOnMainSync { watcher.networkCallback.onAvailable(activeNetwork()) }
+            assertTrue("Getting a network must refresh the URL", changes.get() > afterLost)
+
+            val afterAvailable = changes.get()
             instrumentation.runOnMainSync {
-                watcher.networkCallback.onLost(activeNetwork())
+                watcher.networkCallback.onLinkPropertiesChanged(activeNetwork(), LinkProperties())
             }
-            assertEquals(1, changes)
-            instrumentation.runOnMainSync {
-                watcher.networkCallback.onAvailable(activeNetwork())
-            }
-            assertEquals(2, changes)
+            assertTrue(
+                "A new address on the same network must refresh the URL",
+                changes.get() > afterAvailable
+            )
         } finally {
             watcher.unregister()
         }
+
+        // Nothing arrives once we are done watching.
+        val afterUnregister = changes.get()
+        assertFalse(waitForChange(changes, afterUnregister, timeoutMillis = 500))
+    }
+
+    private fun waitForChange(
+        changes: AtomicInteger,
+        from: Int,
+        timeoutMillis: Long = 5000
+    ): Boolean {
+        val deadline = SystemClock.uptimeMillis() + timeoutMillis
+        while (SystemClock.uptimeMillis() < deadline) {
+            if (changes.get() > from) {
+                return true
+            }
+            Thread.sleep(50)
+        }
+        return false
     }
 
     private fun activeNetwork(): Network = checkNotNull(
