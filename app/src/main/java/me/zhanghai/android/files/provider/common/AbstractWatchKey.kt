@@ -86,11 +86,12 @@ abstract class AbstractWatchKey<K : AbstractWatchKey<K, P>, P : Path>(
     }
 
     override fun cancel() {
-        synchronized(lock) {
-            if (isValid) {
-                @Suppress("UNCHECKED_CAST")
-                watchService.cancel(this as K)
-            }
+        // The lock is released first: the watch service may hand the cancellation to another
+        // thread and wait for it, and that thread needs the lock to invalidate this key.
+        val isValid = synchronized(lock) { isValid }
+        if (isValid) {
+            @Suppress("UNCHECKED_CAST")
+            watchService.cancel(this as K)
         }
     }
 

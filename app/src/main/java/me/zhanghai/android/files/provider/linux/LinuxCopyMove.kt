@@ -255,7 +255,7 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
 
     /**
      * Copies the extended attributes, or only the user ones when [CopyOptions.copyAttributes] was
-     * not asked for; a failure is only fatal when it was.
+     * not asked for; a failure is only fatal when it was and the filesystem does support them.
      */
     private fun copyExtendedAttributes(
         source: ByteString,
@@ -271,7 +271,9 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
                 copyExtendedAttribute(source, target, xattrName)
             }
         } catch (e: SyscallException) {
-            if (copyOptions.copyAttributes) {
+            // External storage and FAT have no extended attributes at all, so there is nothing to
+            // carry over and no reason to fail a copy or a move onto or off them.
+            if (copyOptions.copyAttributes && e.errno != OsConstants.EOPNOTSUPP) {
                 throw e.toFileSystemException(source.toString(), target.toString())
             }
             e.logWarning("LinuxCopyMove", "copyAttributes($source)")
