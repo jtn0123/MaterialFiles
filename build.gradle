@@ -71,6 +71,38 @@ sonar {
             // WebView debugging is only turned on when BuildConfig.DEBUG.
             debugWebView: ['kotlin:S4507', [
                 '**/src/main/java/me/zhanghai/android/files/app/AppInitializers.kt'
+            ]],
+            // ByteStringBuilder.append() is not deprecated; the Kotlin compiler warns about
+            // nothing here.
+            byteStringAppend: ['kotlin:S1874', [
+                '**/src/main/java/me/zhanghai/android/files/filelist/CollatorFileNameExtensions.kt'
+            ]],
+            // Both call Geocoder through awaitGetFromLocation(), which is already on
+            // Dispatchers.IO.
+            geocoderOnIo: ['kotlin:S6307', [
+                '**/src/main/java/me/zhanghai/android/files/fileproperties/image/FilePropertiesImageTabFragment.kt',
+                '**/src/main/java/me/zhanghai/android/files/fileproperties/video/FilePropertiesVideoTabFragment.kt'
+            ]],
+            // FileChannel and MediaDataSource are abstract classes, so Kotlin cannot delegate to
+            // them with "by".
+            abstractDelegate: ['kotlin:S6514', [
+                '**/src/main/java/me/zhanghai/android/files/provider/common/DelegateFileChannel.kt',
+                '**/src/main/java/me/zhanghai/android/files/util/MediaMetadataRetrieverPathExtensions.kt'
+            ]],
+            // The JNI code looks these fields up by name.
+            syscallFieldNames: ['kotlin:S117', [
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/syscall/StructTimespec.kt'
+            ]],
+            // The syscall wrappers are named after the C functions they call.
+            syscallFunctionNames: ['kotlin:S100', [
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/syscall/Syscall.kt'
+            ]],
+            // Replacing the deprecated soft input calls means driving the keyboard insets by
+            // hand, which changes how these dialogs behave; worth its own change.
+            softInput: ['kotlin:S1874', [
+                '**/src/main/java/me/zhanghai/android/files/fileaction/ArchivePasswordDialogFragment.kt',
+                '**/src/main/java/me/zhanghai/android/files/filejob/FileJobConflictDialogFragment.kt',
+                '**/src/main/java/me/zhanghai/android/files/util/ViewExtensions.kt'
             ]]
         ]
         def criteria = ignoredIssues.collectMany { name, ruleAndFiles ->
