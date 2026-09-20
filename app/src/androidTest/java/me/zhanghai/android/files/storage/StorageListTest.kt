@@ -12,11 +12,13 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.h6ah4i.android.widget.advrecyclerview.utils.WrapperAdapterUtils
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.valueCompat
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -65,6 +67,42 @@ class StorageListTest {
             assertEquals(
                 storage.description,
                 row.findViewById<TextView>(R.id.descriptionText).text
+            )
+        }
+    }
+
+    @Test
+    fun onlyTheHandleStartsADragOnAStorageRow() {
+        scenario.onActivity { activity ->
+            val recyclerView = activity.findViewById<RecyclerView>(R.id.recyclerView)
+            val adapter = checkNotNull(
+                WrapperAdapterUtils.findWrappedAdapter(
+                    recyclerView.adapter!!,
+                    StorageListAdapter::class.java
+                )
+            ) { "The list must be backed by a StorageListAdapter" }
+            val row = recyclerView.getChildAt(0)
+            val holder = recyclerView.getChildViewHolder(row) as StorageListAdapter.ViewHolder
+
+            val handle = holder.binding.dragHandleView
+            assertTrue(
+                "Touching the handle must start a drag",
+                adapter.onCheckCanStartDrag(
+                    holder,
+                    0,
+                    handle.left + handle.width / 2,
+                    handle.top + handle.height / 2
+                )
+            )
+            val nameText = holder.binding.nameText
+            assertFalse(
+                "Touching the name must not start a drag",
+                adapter.onCheckCanStartDrag(
+                    holder,
+                    0,
+                    nameText.left + nameText.width / 2,
+                    nameText.top + nameText.height / 2
+                )
             )
         }
     }
