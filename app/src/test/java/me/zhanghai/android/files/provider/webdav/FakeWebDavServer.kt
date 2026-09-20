@@ -21,7 +21,7 @@ import java.util.Collections
  * Paths are stored without their trailing slash, the root being the empty string, so that a
  * request for `/dir` and one for `/dir/` address the same collection - which is the point of
  * [requests], where every request is recorded with the path exactly as it arrived (and, for a
- * MOVE, the path of its `Destination`).
+ * MOVE or a ranged GET, the `Destination` path or the `Range`).
  */
 internal class FakeWebDavServer(private val password: String? = null) {
     private class Entry(
@@ -38,8 +38,8 @@ internal class FakeWebDavServer(private val password: String? = null) {
     /** Every request received, as `METHOD path`, in order. */
     val requests: MutableList<String> = Collections.synchronizedList(mutableListOf<String>())
 
-    /** Paths answered with 403, whatever the method. */
-    val forbiddenPaths = mutableSetOf<String>()
+    /** Requests, as `METHOD path`, answered with 403 instead of being served. */
+    val refusedRequests = mutableSetOf<String>()
 
     /** Anything the handler itself threw; a test asserts this stays empty. */
     val failures: MutableList<Throwable> = Collections.synchronizedList(mutableListOf<Throwable>())
@@ -81,8 +81,13 @@ internal class FakeWebDavServer(private val password: String? = null) {
         try {
             val path = exchange.requestURI.path
             val destination = exchange.requestHeaders.getFirst("Destination")
+            val range = exchange.requestHeaders.getFirst("Range")
             requests += "${exchange.requestMethod} $path" +
-                if (destination != null) " -> ${URI(destination).path}" else ""
+                when {
+                    destination != null -> " -> ${URI(destination).path}"
+                    range != null -> " $range"
+                    else -> ""
+                }
             val body = exchange.requestBody.readBytes()
             val key = key(path)
             when {
@@ -91,7 +96,8 @@ internal class FakeWebDavServer(private val password: String? = null) {
                     exchange.sendResponseHeaders(401, -1)
                 }
 
-                key in forbiddenPaths -> exchange.sendResponseHeaders(403, -1)
+                "${exchange.requestMethod} $key" in refusedRequests ->
+                    exchange.sendResponseHeaders(403, -1)
 
                 else -> dispatch(exchange, key, body)
             }
@@ -178,12 +184,35 @@ internal class FakeWebDavServer(private val password: String? = null) {
             exchange.sendResponseHeaders(404, -1)
             return
         }
+        val range = exchange.requestHeaders.getFirst("Range")
+        if (range != null) {
+            getRange(exchange, entry, range)
+            return
+        }
         if (writeBody) {
             respond(exchange, 200, entry.content, "application/octet-stream")
         } else {
             exchange.responseHeaders.add("Content-Type", "application/octet-stream")
             exchange.sendResponseHeaders(200, entry.content.size.toLong())
         }
+    }
+
+    private fun getRange(exchange: HttpExchange, entry: Entry, range: String) {
+        val (first, last) = range.removePrefix("bytes=").split('-')
+        val start = first.toInt()
+        val size = entry.content.size
+        if (start >= size) {
+            exchange.sendResponseHeaders(416, -1)
+            return
+        }
+        val end = minOf(last.toInt(), size - 1)
+        exchange.responseHeaders.add("Content-Range", "bytes $start-$end/$size")
+        respond(
+            exchange,
+            206,
+            entry.content.copyOfRange(start, end + 1),
+            "application/octet-stream"
+        )
     }
 
     private fun put(exchange: HttpExchange, key: String, body: ByteArray) {

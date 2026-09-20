@@ -5,6 +5,8 @@
 
 package me.zhanghai.android.files.provider.webdav
 
+import at.bitfire.dav4jvm.exception.PreconditionFailedException
+import java.nio.ByteBuffer
 import java.time.Instant
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.DirectoryStream
@@ -12,7 +14,9 @@ import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.Path
 import java8.nio.file.StandardCopyOption
+import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.BasicFileAttributes
+import me.zhanghai.android.files.provider.common.ProgressCopyOption
 import me.zhanghai.android.files.provider.webdav.client.Authentication
 import me.zhanghai.android.files.provider.webdav.client.Authenticator
 import me.zhanghai.android.files.provider.webdav.client.Authority
@@ -143,19 +147,25 @@ class WebDavProviderTest {
         server.addFile("/file.txt", "hello")
         server.addCollection("/dir")
 
+        server.addFile("/other.txt", "hello")
+
         WebDavFileSystemProvider.delete(path("/file.txt"))
         WebDavFileSystemProvider.delete(path("/dir"))
+        // The client addresses a file, which is what it assumes by default, as it is named.
+        WebDavFileSystemProvider.client.delete(path("/other.txt"))
 
         assertFalse(server.exists("/file.txt"))
         assertFalse(server.exists("/dir"))
+        assertFalse(server.exists("/other.txt"))
         assertTrue("DELETE /file.txt" in server.requests)
         assertTrue("DELETE /dir/" in server.requests)
+        assertTrue("DELETE /other.txt" in server.requests)
     }
 
     @Test
     fun mapsAMissingFileAndAForbiddenOneToTheirNioExceptions() {
         server.addFile("/forbidden.txt", "hello")
-        server.forbiddenPaths += "/forbidden.txt"
+        server.refusedRequests += "PROPFIND /forbidden.txt"
 
         val notFound = assertThrows(NoSuchFileException::class.java) {
             readAttributes("/missing.txt")
@@ -246,13 +256,22 @@ class WebDavProviderTest {
             WebDavFileSystemProvider.move(path("/source.txt"), path("/target.txt"))
         }
         assertEquals("old", server.fileContent("/target.txt"))
+        // The client does not overwrite unless it is told to, and the server refuses the move.
+        assertThrows(PreconditionFailedException::class.java) {
+            WebDavFileSystemProvider.client.move(path("/source.txt"), path("/target.txt"))
+        }
+        assertEquals("old", server.fileContent("/target.txt"))
 
+        var reported = 0L
         WebDavFileSystemProvider.move(
             path("/source.txt"),
             path("/target.txt"),
-            StandardCopyOption.REPLACE_EXISTING
+            StandardCopyOption.REPLACE_EXISTING,
+            ProgressCopyOption(0) { reported += it }
         )
         assertEquals("source", server.fileContent("/target.txt"))
+        // A move the server did itself still reports the whole file as progress.
+        assertEquals(6L, reported)
         assertFalse(server.exists("/source.txt"))
         assertTrue("MOVE /source.txt -> /target.txt" in server.requests)
     }
@@ -270,6 +289,57 @@ class WebDavProviderTest {
         // The credentials are remembered for the next request to the same host.
         assertEquals(5L, readAttributes("/file.txt").size())
         assertEquals(3, server.requests.size)
+    }
+
+    @Test
+    fun aRefusedWriteIsReportedAndWhateverItWroteIsCleanedUp() {
+        server.addFile("/source.txt", "source")
+        server.refusedRequests += "PUT /target.txt"
+        server.refusedRequests += "DELETE /target.txt"
+
+        val denied = assertThrows(AccessDeniedException::class.java) {
+            WebDavFileSystemProvider.copy(path("/source.txt"), path("/target.txt"))
+        }
+        assertEquals("/target.txt", denied.file)
+        // The failed transfer is deleted, and that the server refuses that too is only suppressed.
+        assertTrue("DELETE /target.txt" in server.requests)
+        assertEquals(1, denied.suppressed.size)
+        assertFalse(server.exists("/target.txt"))
+    }
+
+    @Test
+    fun aRefusedCollectionCreationIsReported() {
+        server.addCollection("/dir")
+        server.refusedRequests += "MKCOL /copy"
+
+        val denied = assertThrows(AccessDeniedException::class.java) {
+            WebDavFileSystemProvider.copy(path("/dir"), path("/copy"))
+        }
+        assertEquals("/copy", denied.file)
+        assertFalse(server.exists("/copy"))
+    }
+
+    @Test
+    fun readsAByteChannelInRanges() {
+        server.addFile("/file.txt", "0123456789")
+
+        val read = WebDavFileSystemProvider
+            .newByteChannel(path("/file.txt"), setOf(StandardOpenOption.READ))
+            .use { channel ->
+                val buffer = ByteBuffer.allocate(4)
+                assertEquals(4, channel.read(buffer))
+                channel.position(8)
+                val rest = ByteBuffer.allocate(4)
+                // Only two bytes are left, and reading at the end reports the end of the file.
+                assertEquals(2, channel.read(rest))
+                assertEquals(-1, channel.read(rest))
+                String(buffer.array()) to String(rest.array(), 0, 2)
+            }
+        assertEquals("0123" to "89", read)
+        // The channel asks what the server can do, then reads only the ranges it needs.
+        assertTrue(server.requests.any { it.startsWith("OPTIONS ") })
+        val gets = server.requests.filter { it.startsWith("GET ") }
+        assertTrue(gets.toString(), gets.isNotEmpty() && gets.all { "bytes=" in it })
     }
 
     @Test
