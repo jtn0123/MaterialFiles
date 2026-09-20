@@ -35,12 +35,13 @@ class SettingsActivity :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val args = intent.extras?.getArgsOrNull<Args>()
-        val savedInstanceState = savedInstanceState ?: args?.savedInstanceState
-        super.onCreate(savedInstanceState)
+        // A restart for a theme, night mode or locale change carries the state in its arguments.
+        val restoredState = savedInstanceState ?: args?.savedInstanceState
+        super.onCreate(restoredState)
 
         // Calls ensureSubDecor().
         findViewById<View>(android.R.id.content)
-        if (savedInstanceState == null) {
+        if (restoredState == null) {
             supportFragmentManager.commit { add<SettingsFragment>(android.R.id.content) }
         }
     }

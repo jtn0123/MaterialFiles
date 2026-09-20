@@ -45,7 +45,8 @@ class RootStrategyPreference : SimpleMenuPreference {
             jobCount,
             jobCount
         )
-        setPositiveButtonText(android.R.string.yes)
+        // android.R.string.yes is deprecated and has always been "OK" anyway.
+        setPositiveButtonText(android.R.string.ok)
         setNegativeButtonText(R.string.maybe_later)
         preferenceManager.showDialog(this)
     }

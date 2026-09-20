@@ -91,11 +91,12 @@ abstract class PathPreference :
 
     protected abstract var persistedPath: Path
 
-    object SimpleSummaryProvider : SummaryProvider<PathPreference> {
-        override fun provideSummary(preference: PathPreference): CharSequence? {
+    companion object {
+        /** Shows the navigation root name for the path, or the path itself. */
+        val SimpleSummaryProvider = SummaryProvider<PathPreference> { preference ->
             val path = preference.path
             val navigationRoot = NavigationRootMapLiveData.valueCompat[path]
-            return navigationRoot?.getName(preference.context) ?: path.toUserFriendlyString()
+            navigationRoot?.getName(preference.context) ?: path.toUserFriendlyString()
         }
     }
 }

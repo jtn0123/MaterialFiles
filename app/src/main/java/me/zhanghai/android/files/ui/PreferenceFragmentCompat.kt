@@ -70,7 +70,10 @@ abstract class PreferenceFragmentCompat : AndroidXPreferenceFragmentCompat() {
     }
 
     override fun onDisplayPreferenceDialog(preference: Preference) {
-        if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null) {
+        // The AndroidX implementation shows its own dialogs in the parent fragment manager.
+        if (childFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null ||
+            parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null
+        ) {
             return
         }
         val fragment = when {
@@ -92,9 +95,9 @@ abstract class PreferenceFragmentCompat : AndroidXPreferenceFragmentCompat() {
 
     private fun displayPreferenceDialog(fragment: DialogFragment, key: String) {
         fragment.arguments = bundleOf(MaterialPreferenceDialogFragmentCompat.ARG_KEY to key)
-        @Suppress("DEPRECATION")
-        fragment.setTargetFragment(this, 0)
-        fragment.show(parentFragmentManager, DIALOG_FRAGMENT_TAG)
+        // Shown as a child fragment so that it can find us as its parent fragment, instead of
+        // the deprecated target fragment.
+        fragment.show(childFragmentManager, DIALOG_FRAGMENT_TAG)
     }
 
     companion object {

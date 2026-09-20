@@ -64,15 +64,15 @@ class PasswordPreference : EditTextPreference {
         }
     }
 
-    object SimpleSummaryProvider : SummaryProvider<EditTextPreference> {
-        override fun provideSummary(preference: EditTextPreference): CharSequence? {
+    companion object {
+        /** Shows the password as dots, and the usual "not set" summary when there is none. */
+        val SimpleSummaryProvider = SummaryProvider<EditTextPreference> { preference ->
             val text = preference.text
-            return if (!text.isNullOrEmpty()) {
+            if (!text.isNullOrEmpty()) {
                 PasswordTransformationMethod.getInstance().getTransformation(text, null)
             } else {
-                AndroidXEditTextPreference.SimpleSummaryProvider.getInstance().provideSummary(
-                    preference
-                )
+                AndroidXEditTextPreference.SimpleSummaryProvider.getInstance()
+                    .provideSummary(preference)
             }
         }
     }
