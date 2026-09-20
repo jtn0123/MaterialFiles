@@ -227,6 +227,12 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
 
         private fun post(ensureOpen: Boolean, continuation: Continuation<*>, runnable: () -> Unit) {
             synchronized(lock) {
+                if (isClosed && ensureOpen) {
+                    // The poller has stopped and its file descriptors are gone, so the write
+                    // below would only fail with EBADF.
+                    continuation.resumeWithException(ClosedWatchServiceException())
+                    return
+                }
                 runnables.offer {
                     if (isClosed) {
                         if (ensureOpen) {
