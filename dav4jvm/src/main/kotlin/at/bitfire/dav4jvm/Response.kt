@@ -129,37 +129,10 @@ data class Response(
             while (!(eventType == XmlPullParser.END_TAG && parser.depth == depth)) {
                 if (eventType == XmlPullParser.START_TAG && parser.depth == depth+1)
                     when (parser.propertyName()) {
-                        DavResource.HREF -> {
-                            var sHref = parser.nextText()
-                            if (!sHref.startsWith("/")) {
-                                /* According to RFC 4918 8.3 URL Handling, only absolute paths are allowed as relative
-                                   URLs. However, some servers reply with relative paths. */
-                                val firstColon = sHref.indexOf(':')
-                                if (firstColon != -1) {
-                                    /* There are some servers which return not only relative paths, but relative paths like "a:b.vcf",
-                                       which would be interpreted as scheme: "a", scheme-specific part: "b.vcf" normally.
-                                       For maximum compatibility, we prefix all relative paths which contain ":" (but not "://"),
-                                       with "./" to allow resolving by HttpUrl. */
-                                    var hierarchical = false
-                                    try {
-                                        if (sHref.substring(firstColon, firstColon + 3) == "://")
-                                            hierarchical = true
-                                    } catch (e: IndexOutOfBoundsException) {
-                                        // no "://"
-                                    }
-                                    if (!hierarchical)
-                                        sHref = "./$sHref"
-                                }
-                            }
-                            hrefOrNull = location.resolve(sHref)
-                        }
+                        DavResource.HREF ->
+                            hrefOrNull = location.resolve(resolvableHref(parser.nextText()))
                         STATUS ->
-                            status = try {
-                                StatusLine.parse(parser.nextText())
-                            } catch(e: ProtocolException) {
-                                logger.warning("Invalid status line, treating as HTTP error 500")
-                                StatusLine(Protocol.HTTP_1_1, 500, "Invalid status line")
-                            }
+                            status = parseStatus(parser.nextText(), logger)
                         PropStat.NAME ->
                             PropStat.parse(parser).let { propStat += it }
                         Error.NAME ->
@@ -187,40 +160,6 @@ data class Response(
                         href = UrlUtils.withTrailingSlash(href)
                 }
 
-            //log.log(Level.FINE, "Received properties for $href", if (status != null) status else propStat)
-
-            // Which resource does this <response> represent?
-            val relation = when {
-                UrlUtils.omitTrailingSlash(href).equalsForWebDAV(UrlUtils.omitTrailingSlash(location)) ->
-                    HrefRelation.SELF
-
-                else -> {
-                    if (location.scheme == href.scheme && location.host == href.host && location.port == href.port) {
-                        val locationSegments = location.pathSegments
-                        val hrefSegments = href.pathSegments
-
-                        // don't compare trailing slash segment ("")
-                        var nBasePathSegments = locationSegments.size
-                        if (locationSegments[nBasePathSegments - 1] == "")
-                            nBasePathSegments--
-
-                        /* example:   locationSegments  = [ "davCollection", "" ]
-                                      nBasePathSegments = 1
-                                      hrefSegments      = [ "davCollection", "aMember" ]
-                        */
-                        var relation = HrefRelation.OTHER
-                        if (hrefSegments.size > nBasePathSegments) {
-                            val sameBasePath = (0 until nBasePathSegments).none { locationSegments[it] != hrefSegments[it] }
-                            if (sameBasePath)
-                                relation = HrefRelation.MEMBER
-                        }
-
-                        relation
-                    } else
-                        HrefRelation.OTHER
-                }
-            }
-
             callback.onResponse(
                 Response(
                     requestedUrl = location,
@@ -230,8 +169,68 @@ data class Response(
                     error = error,
                     newLocation = newLocation
                 ),
-                relation
+                // Which resource does this <response> represent?
+                relation(location, href)
             )
+        }
+
+        /**
+         * Makes an `href` value resolvable by [HttpUrl.resolve].
+         *
+         * According to RFC 4918 8.3 URL Handling, only absolute paths are allowed as relative
+         * URLs. However, some servers reply with relative paths.
+         */
+        private fun resolvableHref(sHref: String): String {
+            if (sHref.startsWith("/"))
+                return sHref
+
+            val firstColon = sHref.indexOf(':')
+            if (firstColon == -1)
+                return sHref
+
+            /* There are some servers which return not only relative paths, but relative paths like "a:b.vcf",
+               which would be interpreted as scheme: "a", scheme-specific part: "b.vcf" normally.
+               For maximum compatibility, we prefix all relative paths which contain ":" (but not "://"),
+               with "./" to allow resolving by HttpUrl. */
+            val hierarchical = sHref.regionMatches(firstColon, "://", 0, 3)
+            return if (hierarchical) sHref else "./$sHref"
+        }
+
+        private fun parseStatus(text: String, logger: Logger): StatusLine =
+            try {
+                StatusLine.parse(text)
+            } catch(e: ProtocolException) {
+                logger.warning("Invalid status line, treating as HTTP error 500")
+                StatusLine(Protocol.HTTP_1_1, 500, "Invalid status line")
+            }
+
+        /**
+         * Determines whether [href] is the requested resource itself, a member of it, or something else.
+         */
+        private fun relation(location: HttpUrl, href: HttpUrl): HrefRelation {
+            if (UrlUtils.omitTrailingSlash(href).equalsForWebDAV(UrlUtils.omitTrailingSlash(location)))
+                return HrefRelation.SELF
+
+            if (location.scheme != href.scheme || location.host != href.host || location.port != href.port)
+                return HrefRelation.OTHER
+
+            val locationSegments = location.pathSegments
+            val hrefSegments = href.pathSegments
+
+            // don't compare trailing slash segment ("")
+            var nBasePathSegments = locationSegments.size
+            if (locationSegments[nBasePathSegments - 1] == "")
+                nBasePathSegments--
+
+            /* example:   locationSegments  = [ "davCollection", "" ]
+                          nBasePathSegments = 1
+                          hrefSegments      = [ "davCollection", "aMember" ]
+            */
+            if (hrefSegments.size <= nBasePathSegments)
+                return HrefRelation.OTHER
+
+            val sameBasePath = (0 until nBasePathSegments).none { locationSegments[it] != hrefSegments[it] }
+            return if (sameBasePath) HrefRelation.MEMBER else HrefRelation.OTHER
         }
 
     }

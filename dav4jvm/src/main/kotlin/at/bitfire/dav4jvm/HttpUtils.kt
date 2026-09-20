@@ -114,6 +114,7 @@ object HttpUtils {
             try {
                 return ZonedDateTime.parse(dateStr, format).toInstant()
             } catch (ignored: DateTimeParseException) {
+                // not this format, try the next one
             }
 
         // try ANSI C's asctime() format
@@ -122,6 +123,7 @@ object HttpUtils {
             val local = LocalDateTime.parse(dateStr, formatC)
             return local.atZone(ZoneOffset.UTC).toInstant()
         } catch (ignored: DateTimeParseException) {
+            // not an asctime() date either
         }
 
         // no success in parsing

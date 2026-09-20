@@ -69,6 +69,8 @@ open class DavResource @JvmOverloads constructor(
         const val MAX_REDIRECTS = 5
 
         const val HTTP_MULTISTATUS = 207
+
+        private const val HEADER_CONTENT_LENGTH = "Content-Length"
         val MIME_XML = "application/xml; charset=utf-8".toMediaType()
 
         val PROPFIND = Property.Name(NS_WEBDAV, "propfind")
@@ -165,7 +167,7 @@ open class DavResource @JvmOverloads constructor(
         val requestOptions = {
             httpClient.newCall(Request.Builder()
                 .method("OPTIONS", null)
-                .header("Content-Length", "0")
+                .header(HEADER_CONTENT_LENGTH, "0")
                 .url(location)
                 .header("Accept-Encoding", "identity")      // disable compression
                 .build()).execute()
@@ -198,7 +200,7 @@ open class DavResource @JvmOverloads constructor(
     fun move(destination: HttpUrl, overwrite: Boolean, callback: ResponseCallback) {
         val requestBuilder = Request.Builder()
                 .method("MOVE", null)
-                .header("Content-Length", "0")
+                .header(HEADER_CONTENT_LENGTH, "0")
                 .header("Destination", destination.toString())
 
         if (!overwrite)      // RFC 4918 9.9.3 and 10.6, default value: T
@@ -240,7 +242,7 @@ open class DavResource @JvmOverloads constructor(
     fun copy(destination:HttpUrl, overwrite: Boolean, callback: ResponseCallback) {
         val requestBuilder = Request.Builder()
                 .method("COPY", null)
-                .header("Content-Length", "0")
+                .header(HEADER_CONTENT_LENGTH, "0")
                 .header("Destination", destination.toString())
 
         if (!overwrite)      // RFC 4918 9.9.3 and 10.6, default value: T
@@ -351,25 +353,6 @@ open class DavResource @JvmOverloads constructor(
 
             httpClient.newCall(request.build()).execute()
         }
-
-    /**
-     * Sends a GET request to the resource. Sends `Accept-Encoding: identity` to disable
-     * compression, because compression might change the ETag.
-     *
-     * Follows up to [MAX_REDIRECTS] redirects.
-     *
-     * @param accept   value of `Accept` header (always sent for clarity; use *&#47;* if you don't care)
-     * @param callback called with server response unless an exception is thrown
-     *
-     * @throws IOException on I/O error
-     * @throws HttpException on HTTP error
-     * @throws DavException on HTTPS -> HTTP redirect
-     */
-    @Deprecated("Use get(accept, headers, callback) with explicit Accept-Encoding instead")
-    @Throws(IOException::class, HttpException::class)
-    fun get(accept: String, callback: ResponseCallback) {
-        get(accept, Headers.headersOf("Accept-Encoding", "identity"), callback)
-    }
 
     /**
      * Sends a GET request to the resource. Follows up to [MAX_REDIRECTS] redirects.
@@ -628,9 +611,6 @@ open class DavResource @JvmOverloads constructor(
                     .build()
             ).execute()
         }.use {
-            // TODO handle not only 207 Multi-Status
-            // http://www.webdav.org/specs/rfc4918.html#PROPPATCH-status
-
             processMultiStatus(it, callback)
         }
     }
@@ -667,36 +647,27 @@ open class DavResource @JvmOverloads constructor(
      * @throws HttpException in case of an HTTP error
      */
     // Public in this vendored copy (was protected); see README.md.
-    fun checkStatus(response: Response) =
-            checkStatus(response.code, response.message, response)
-
-    /**
-     * Checks the status from an HTTP response and throws an exception in case of an error.
-     *
-     * @throws HttpException (with XML error names, if available) in case of an HTTP error
-     */
-    private fun checkStatus(code: Int, message: String?, response: Response?) {
-        if (code / 100 == 2)
+    fun checkStatus(response: Response) {
+        if (response.code / 100 == 2)
             // everything OK
             return
 
-        throw when (code) {
-            HttpURLConnection.HTTP_UNAUTHORIZED ->
-                if (response != null) UnauthorizedException(response) else UnauthorizedException(message)
-            HttpURLConnection.HTTP_FORBIDDEN ->
-                if (response != null) ForbiddenException(response) else ForbiddenException(message)
-            HttpURLConnection.HTTP_NOT_FOUND ->
-                if (response != null) NotFoundException(response) else NotFoundException(message)
-            HttpURLConnection.HTTP_CONFLICT ->
-                if (response != null) ConflictException(response) else ConflictException(message)
-            HttpURLConnection.HTTP_PRECON_FAILED ->
-                if (response != null) PreconditionFailedException(response) else PreconditionFailedException(message)
-            HttpURLConnection.HTTP_UNAVAILABLE ->
-                if (response != null) ServiceUnavailableException(response) else ServiceUnavailableException(message)
-            else ->
-                if (response != null) HttpException(response) else HttpException(code, message)
-        }
+        throw exceptionFor(response.code, response)
     }
+
+    /**
+     * The exception for an HTTP error response (with XML error names, if available).
+     */
+    private fun exceptionFor(code: Int, response: Response): HttpException =
+        when (code) {
+            HttpURLConnection.HTTP_UNAUTHORIZED -> UnauthorizedException(response)
+            HttpURLConnection.HTTP_FORBIDDEN -> ForbiddenException(response)
+            HttpURLConnection.HTTP_NOT_FOUND -> NotFoundException(response)
+            HttpURLConnection.HTTP_CONFLICT -> ConflictException(response)
+            HttpURLConnection.HTTP_PRECON_FAILED -> PreconditionFailedException(response)
+            HttpURLConnection.HTTP_UNAVAILABLE -> ServiceUnavailableException(response)
+            else -> HttpException(response)
+        }
 
     /**
      * Send a request and follows up to [MAX_REDIRECTS] redirects.
@@ -745,7 +716,7 @@ open class DavResource @JvmOverloads constructor(
 
         response.peekBody(XML_SIGNATURE.size.toLong()).use { body ->
             body.contentType()?.let { mimeType ->
-                if (((mimeType.type != "application" && mimeType.type != "text")) || mimeType.subtype != "xml") {
+                if ((mimeType.type != "application" && mimeType.type != "text") || mimeType.subtype != "xml") {
                     /* Content-Type is not application/xml or text/xml although that is expected here.
                        Some broken servers return an XML response with some other MIME type. So we try to see
                        whether the response is maybe XML although the Content-Type is something else. */
@@ -806,38 +777,16 @@ open class DavResource @JvmOverloads constructor(
      * @throws DavException on WebDAV error (like an invalid XML response)
      */
     protected fun processMultiStatus(reader: Reader, callback: MultiResponseCallback): List<Property> {
-        val responseProperties = mutableListOf<Property>()
         val parser = XmlUtils.newPullParser()
-
-        fun parseMultiStatus(): List<Property> {
-            // <!ELEMENT multistatus (response*, responsedescription?,
-            //                        sync-token?) >
-            val depth = parser.depth
-            var eventType = parser.eventType
-            while (!(eventType == XmlPullParser.END_TAG && parser.depth == depth)) {
-                if (eventType == XmlPullParser.START_TAG && parser.depth == depth + 1)
-                    when (parser.propertyName()) {
-                        DavResponse.RESPONSE ->
-                            at.bitfire.dav4jvm.Response.parse(parser, location, callback)
-                        SyncToken.NAME ->
-                            XmlReader(parser).readText()?.let {
-                                responseProperties += SyncToken(it)
-                            }
-                    }
-                eventType = parser.next()
-            }
-
-            return responseProperties
-        }
 
         try {
             parser.setInput(reader)
 
             var eventType = parser.eventType
             while (eventType != XmlPullParser.END_DOCUMENT) {
-                if (eventType == XmlPullParser.START_TAG && parser.depth == 1)
-                    if (parser.propertyName() == DavResponse.MULTISTATUS)
-                        return parseMultiStatus()
+                if (eventType == XmlPullParser.START_TAG && parser.depth == 1 &&
+                    parser.propertyName() == DavResponse.MULTISTATUS)
+                    return parseMultiStatus(parser, callback)
                 // ignore further <multistatus> elements
                 eventType = parser.next()
             }
@@ -849,6 +798,33 @@ open class DavResource @JvmOverloads constructor(
         } catch (e: XmlPullParserException) {
             throw DavException("Couldn't parse multistatus XML element", e)
         }
+    }
+
+    /**
+     * Parses the children of a `<multistatus>` element, which the [parser] must be positioned at.
+     *
+     * @return properties of the Multi-Status response itself (like `sync-token`)
+     */
+    private fun parseMultiStatus(parser: XmlPullParser, callback: MultiResponseCallback): List<Property> {
+        // <!ELEMENT multistatus (response*, responsedescription?,
+        //                        sync-token?) >
+        val responseProperties = mutableListOf<Property>()
+        val depth = parser.depth
+        var eventType = parser.eventType
+        while (!(eventType == XmlPullParser.END_TAG && parser.depth == depth)) {
+            if (eventType == XmlPullParser.START_TAG && parser.depth == depth + 1)
+                when (parser.propertyName()) {
+                    DavResponse.RESPONSE ->
+                        at.bitfire.dav4jvm.Response.parse(parser, location, callback)
+                    SyncToken.NAME ->
+                        XmlReader(parser).readText()?.let {
+                            responseProperties += SyncToken(it)
+                        }
+                }
+            eventType = parser.next()
+        }
+
+        return responseProperties
     }
 
 }

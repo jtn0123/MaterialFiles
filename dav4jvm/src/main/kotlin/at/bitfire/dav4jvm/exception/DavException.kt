@@ -16,6 +16,7 @@ import at.bitfire.dav4jvm.XmlUtils.propertyName
 import at.bitfire.dav4jvm.exception.DavException.Companion.MAX_EXCERPT_SIZE
 import okhttp3.MediaType
 import okhttp3.Response
+import okhttp3.ResponseBody
 import okio.Buffer
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
@@ -107,46 +108,45 @@ open class DavException @JvmOverloads constructor(
 
             try {
                 // save response body excerpt
-                if (httpResponse.body?.source() != null) {
-                    // response body has a source
-
-                    httpResponse.peekBody(MAX_EXCERPT_SIZE.toLong()).let { body ->
-                        body.contentType()?.let { mimeType ->
-                            if (isPlainText(mimeType))
-                                responseBody = body.string()
-                        }
+                httpResponse.peekBody(MAX_EXCERPT_SIZE.toLong()).let { body ->
+                    body.contentType()?.let { mimeType ->
+                        if (isPlainText(mimeType))
+                            responseBody = body.string()
                     }
+                }
 
-                    httpResponse.body?.use { body ->
-                        body.contentType()?.let {
-                            if (it.type in arrayOf("application", "text") && it.subtype == "xml") {
-                                // look for precondition/postcondition XML elements
-                                try {
-                                    val parser = XmlUtils.newPullParser()
-                                    parser.setInput(body.charStream())
-
-                                    var eventType = parser.eventType
-                                    while (eventType != XmlPullParser.END_DOCUMENT) {
-                                        if (eventType == XmlPullParser.START_TAG && parser.depth == 1)
-                                            if (parser.propertyName() == Error.NAME)
-                                                errors = Error.parseError(parser)
-                                        eventType = parser.next()
-                                    }
-                                } catch (e: XmlPullParserException) {
-                                    logger.log(Level.WARNING, "Couldn't parse XML response", e)
-                                }
-                            }
-                        }
+                httpResponse.body.use { body ->
+                    body.contentType()?.let {
+                        if (it.type in arrayOf("application", "text") && it.subtype == "xml")
+                            // look for precondition/postcondition XML elements
+                            parseErrors(body)
                     }
                 }
             } catch (e: IOException) {
                 logger.log(Level.WARNING, "Couldn't read HTTP response", e)
                 responseBody = "Couldn't read HTTP response: ${e.message}"
             } finally {
-                httpResponse.body?.close()
+                httpResponse.body.close()
             }
         } else
             response = null
+    }
+
+    private fun parseErrors(body: ResponseBody) {
+        try {
+            val parser = XmlUtils.newPullParser()
+            parser.setInput(body.charStream())
+
+            var eventType = parser.eventType
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if (eventType == XmlPullParser.START_TAG && parser.depth == 1 &&
+                    parser.propertyName() == Error.NAME)
+                    errors = Error.parseError(parser)
+                eventType = parser.next()
+            }
+        } catch (e: XmlPullParserException) {
+            logger.log(Level.WARNING, "Couldn't parse XML response", e)
+        }
     }
 
 }

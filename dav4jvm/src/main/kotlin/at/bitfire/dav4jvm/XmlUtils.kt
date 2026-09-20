@@ -68,8 +68,7 @@ object XmlUtils {
     fun XmlPullParser.propertyName(): Property.Name {
         val propNs = namespace
         val propName = name
-        if (propNs == null || propName == null)
-            throw IllegalStateException("Current event must be START_TAG or END_TAG")
+        check(propNs != null && propName != null) { "Current event must be START_TAG or END_TAG" }
         return Property.Name(propNs, propName)
     }
 
