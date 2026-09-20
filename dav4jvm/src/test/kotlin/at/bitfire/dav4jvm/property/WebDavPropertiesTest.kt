@@ -203,4 +203,15 @@ class WebDavPropertiesTest: PropertyTest() {
         )
     }
 
+    @Test
+    fun testEmptyElementsGiveDefaults() {
+        assertEquals(Depth(), parseProperty(Depth.Factory, "<depth xmlns=\"DAV:\"/>"))
+        assertEquals(SyncLevel(), parseProperty(SyncLevel.Factory, "<sync-level xmlns=\"DAV:\"/>"))
+        assertEquals(ResourceType().types, (parseProperty("<resourcetype xmlns=\"DAV:\"/>").first() as ResourceType).types)
+        assertEquals(
+            SupportedReportSet().reports,
+            (parseProperty("<supported-report-set xmlns=\"DAV:\"/>").first() as SupportedReportSet).reports
+        )
+    }
+
 }

@@ -146,4 +146,24 @@ class CalDavPropertiesTest: PropertyTest() {
         assertFalse(iCalOnly.hasJCal())
     }
 
+    @Test
+    fun testScheduleTagFromResponse() {
+        val response = okhttp3.Response.Builder()
+            .request(okhttp3.Request.Builder().url("https://example.com/cal/1.ics").build())
+            .protocol(okhttp3.Protocol.HTTP_1_1)
+            .code(200).message("OK")
+            .header("Schedule-Tag", "\"abc\"")
+            .build()
+        assertEquals("abc", ScheduleTag.fromResponse(response)?.scheduleTag)
+        assertNull(ScheduleTag.fromResponse(response.newBuilder().removeHeader("Schedule-Tag").build()))
+    }
+
+    @Test
+    fun testEmptyElementsGiveDefaults() {
+        assertEquals(
+            SupportedCalendarData().types,
+            (parseProperty("<supported-calendar-data $CAL/>").first() as SupportedCalendarData).types
+        )
+    }
+
 }

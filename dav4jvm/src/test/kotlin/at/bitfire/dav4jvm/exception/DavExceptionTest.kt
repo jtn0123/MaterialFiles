@@ -20,12 +20,17 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.asResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.Response
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import okio.buffer
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
@@ -187,6 +192,56 @@ class DavExceptionTest {
             assertTrue(e.errors.any { it.name == Property.Name(NS_WEBDAV, "lock-token-submitted") })
             assertEquals(body, e.responseBody)
         }
+    }
+
+    private fun response(body: ResponseBody) =
+        Response.Builder()
+            .request(Request.Builder().url(sampleUrl()).build())
+            .protocol(Protocol.HTTP_1_1)
+            .code(500).message("Server Error")
+            .body(body)
+            .build()
+
+    @Test
+    fun testUnreadableRequestBody() {
+        val request = Request.Builder()
+            .url(sampleUrl())
+            .put(object: RequestBody() {
+                override fun contentType() = "text/plain".toMediaType()
+                override fun writeTo(sink: okio.BufferedSink) = throw java.io.IOException("can't read")
+            })
+            .build()
+        val response = Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(500).message("Server Error")
+            .build()
+
+        val e = DavException("Error", httpResponse = response)
+        assertEquals("Couldn't read HTTP request: can't read", e.requestBody)
+        assertTrue(e.request!!.contains("PUT"))
+    }
+
+    @Test
+    fun testUnreadableResponseBody() {
+        val failing = object: okio.Source {
+            override fun read(sink: okio.Buffer, byteCount: Long): Long = throw java.io.IOException("connection lost")
+            override fun timeout() = okio.Timeout.NONE
+            override fun close() {}
+        }
+        val body = failing.buffer().asResponseBody("text/plain".toMediaType(), -1)
+        val e = DavException("Error", httpResponse = response(body))
+        assertEquals("Couldn't read HTTP response: connection lost", e.responseBody)
+        assertTrue(e.errors.isEmpty())
+    }
+
+    @Test
+    fun testInvalidXmlErrorResponse() {
+        val body = "<error><a></error>".toResponseBody("application/xml".toMediaType())
+        val e = DavException("Error", httpResponse = response(body))
+        // the excerpt is still available, but no error elements could be parsed
+        assertEquals("<error><a></error>", e.responseBody)
+        assertTrue(e.errors.isEmpty())
     }
 
 }

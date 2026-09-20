@@ -57,4 +57,13 @@ class CardDavPropertiesTest: PropertyTest() {
         assertFalse(vCard3.hasJCard())
     }
 
+    @Test
+    fun testEmptyElementsGiveDefaults() {
+        assertEquals(AddressbookDescription(), parseProperty("<addressbook-description $CARD/>").first())
+        assertEquals(
+            SupportedAddressData().types,
+            (parseProperty("<supported-address-data $CARD/>").first() as SupportedAddressData).types
+        )
+    }
+
 }

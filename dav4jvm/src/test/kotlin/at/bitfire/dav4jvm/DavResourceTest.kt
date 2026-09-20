@@ -845,7 +845,8 @@ class DavResourceTest {
                 }
             }
         }
-        assertEquals(4, nrCalled)
+        // 4 members plus the collection itself; the subcollection is reported with a trailing slash
+        assertEquals(5, nrCalled)
 
 
         /*** SPECIAL CASES ***/

@@ -105,4 +105,20 @@ class PushPropertiesTest: PropertyTest() {
         assertEquals(AuthSecret("secret-data"), subscription.authSecret)
     }
 
+    @Test
+    fun testEmptyElementsGiveDefaults() {
+        assertEquals(Topic(), parseProperty(Topic.Factory, "<topic xmlns=\"$NS_WEBDAV_PUSH\"/>"))
+        assertEquals(AuthSecret(), parseProperty(AuthSecret.Factory, "<auth-secret xmlns=\"$NS_WEBDAV_PUSH\"/>"))
+        assertEquals(PushResource(), parseProperty(PushResource.Factory, "<push-resource xmlns=\"$NS_WEBDAV_PUSH\"/>"))
+        assertEquals(WebPush(), parseProperty(WebPush.Factory, "<web-push xmlns=\"$NS_WEBDAV_PUSH\"/>"))
+        assertEquals(
+            VapidPublicKey(),
+            parseProperty(VapidPublicKey.Factory, "<vapid-public-key xmlns=\"$NS_WEBDAV_PUSH\"/>")
+        )
+        assertEquals(
+            SubscriptionPublicKey(),
+            parseProperty(SubscriptionPublicKey.Factory, "<subscription-public-key xmlns=\"$NS_WEBDAV_PUSH\"/>")
+        )
+    }
+
 }

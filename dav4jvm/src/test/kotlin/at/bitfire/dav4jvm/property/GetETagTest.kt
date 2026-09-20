@@ -12,6 +12,7 @@ package at.bitfire.dav4jvm.property
 
 import at.bitfire.dav4jvm.property.webdav.GetETag
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -56,6 +57,16 @@ class GetETagTest: PropertyTest() {
         val getETag = results.first() as GetETag
         assertEquals("Weak ETag without quotes", getETag.eTag)
         assertTrue(getETag.weak)
+    }
+
+    @Test
+    fun testEqualsAndHashCode() {
+        // the weakness indicator and the quotes are not part of the value
+        assertEquals(GetETag("12345"), GetETag("\"12345\""))
+        assertEquals(GetETag("\"12345\"").hashCode(), GetETag("12345").hashCode())
+        assertNotEquals(GetETag("12345"), GetETag("W/\"12345\""))
+        assertNotEquals(GetETag("12345"), GetETag("67890"))
+        assertFalse(GetETag("12345").equals("12345"))
     }
 
 }
