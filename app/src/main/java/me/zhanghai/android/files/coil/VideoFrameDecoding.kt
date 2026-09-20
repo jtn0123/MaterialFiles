@@ -137,7 +137,7 @@ private fun Options.computeFrameScale(srcWidth: Int, srcHeight: Int): Double = c
  * Redraws the frame at the requested size, or in a config the request can use, when the retriever
  * did not give us one.
  */
-private fun Bitmap.toRequestedFrame(
+internal fun Bitmap.toRequestedFrame(
     options: Options,
     scale: Double,
     width: Int,
