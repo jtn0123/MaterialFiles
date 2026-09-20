@@ -8,7 +8,7 @@ package me.zhanghai.android.files.compat
 import android.os.Build
 import androidx.annotation.RequiresApi
 import java.io.IOException
-import java.nio.ByteBuffer
+import java.nio.channels.ByteChannel
 import java.nio.channels.SeekableByteChannel as JavaSeekableByteChannel
 import java8.nio.channels.SeekableByteChannel
 
@@ -20,13 +20,8 @@ fun SeekableByteChannel.toJavaSeekableByteChannel(): JavaSeekableByteChannel =
 
 @RequiresApi(Build.VERSION_CODES.N)
 private class DelegateJavaSeekableByteChannel(private val channel: SeekableByteChannel) :
-    JavaSeekableByteChannel {
-    @Throws(IOException::class)
-    override fun read(dst: ByteBuffer): Int = channel.read(dst)
-
-    @Throws(IOException::class)
-    override fun write(src: ByteBuffer): Int = channel.write(src)
-
+    JavaSeekableByteChannel,
+    ByteChannel by channel {
     @Throws(IOException::class)
     override fun position(): Long = channel.position()
 
@@ -43,12 +38,5 @@ private class DelegateJavaSeekableByteChannel(private val channel: SeekableByteC
     override fun truncate(size: Long): DelegateJavaSeekableByteChannel {
         channel.truncate(size)
         return this
-    }
-
-    override fun isOpen(): Boolean = channel.isOpen
-
-    @Throws(IOException::class)
-    override fun close() {
-        channel.close()
     }
 }
