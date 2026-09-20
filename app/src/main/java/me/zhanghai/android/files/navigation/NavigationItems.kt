@@ -7,7 +7,6 @@ package me.zhanghai.android.files.navigation
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Environment
 import android.os.storage.StorageVolume
 import androidx.annotation.DrawableRes
@@ -65,8 +64,14 @@ val navigationItems: List<NavigationItem?>
 private val storageItems: List<NavigationItem>
     @Size(min = 0)
     get() =
-        Settings.STORAGES.valueCompat.filter { it.isVisible }.map {
-            if (it.path != null) PathStorageItem(it) else IntentStorageItem(it)
+        Settings.STORAGES.valueCompat.filter { it.isVisible }.mapNotNull { storage ->
+            val path = storage.path
+            if (path != null) {
+                PathStorageItem(storage, path)
+            } else {
+                // A storage without a path always has an intent, but don't crash if it doesn't.
+                storage.createIntent()?.let { IntentStorageItem(storage, it) }
+            }
         }
 
 private abstract class PathItem(val path: Path) : NavigationItem() {
@@ -82,8 +87,8 @@ private abstract class PathItem(val path: Path) : NavigationItem() {
     }
 }
 
-private class PathStorageItem(private val storage: Storage) :
-    PathItem(storage.path!!),
+private class PathStorageItem(private val storage: Storage, path: Path) :
+    PathItem(path),
     NavigationRoot {
     init {
         require(storage.isVisible)
@@ -109,7 +114,8 @@ private class PathStorageItem(private val storage: Storage) :
     override fun getName(context: Context): String = getTitle(context)
 }
 
-private class IntentStorageItem(private val storage: Storage) : NavigationItem() {
+private class IntentStorageItem(private val storage: Storage, private val intent: Intent) :
+    NavigationItem() {
     init {
         require(storage.isVisible)
     }
@@ -124,7 +130,7 @@ private class IntentStorageItem(private val storage: Storage) : NavigationItem()
     override fun getTitle(context: Context): String = storage.getName(context)
 
     override fun onClick(listener: Listener) {
-        listener.launchIntent(storage.createIntent()!!)
+        listener.launchIntent(intent)
         listener.closeNavigationDrawer()
     }
 
@@ -242,28 +248,13 @@ val standardDirectories: List<StandardDirectory>
 private const val relativePathSeparator = ":"
 
 private val defaultStandardDirectories: List<StandardDirectory>
-    // HACK: Show QQ, TIM and WeChat standard directories based on whether the directory exists.
+    // HACK: Direct access to Android/data has been blocked since Android 11, so the QQ, TIM and
+    // WeChat standard directories are never shown.
     get() =
-        DEFAULT_STANDARD_DIRECTORIES.mapNotNull {
-            when (it.iconRes) {
-                R.drawable.qq_icon_white_24dp, R.drawable.tim_icon_white_24dp,
-                R.drawable.wechat_icon_white_24dp -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        // Direct access to Android/data is blocked since Android 11.
-                        null
-                    } else {
-                        for (relativePath in it.relativePath.split(relativePathSeparator)) {
-                            val path = getExternalStorageDirectory(relativePath)
-                            if (JavaFile.isDirectory(path)) {
-                                return@mapNotNull it.copy(relativePath = relativePath)
-                            }
-                        }
-                        null
-                    }
-                }
-
-                else -> it
-            }
+        DEFAULT_STANDARD_DIRECTORIES.filterNot {
+            it.iconRes == R.drawable.qq_icon_white_24dp ||
+                it.iconRes == R.drawable.tim_icon_white_24dp ||
+                it.iconRes == R.drawable.wechat_icon_white_24dp
         }
 
 // @see android.os.Environment#STANDARD_DIRECTORIES
