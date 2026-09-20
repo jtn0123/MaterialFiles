@@ -37,11 +37,11 @@ val ftpServerServiceNotificationTemplate =
     )
 
 class FtpServerNotification(private val service: Service) {
-    private val receiver = FtpServerUrl.createChangeReceiver(service) { doStartForeground() }
+    private val watcher = FtpServerUrl.createChangeWatcher(service) { doStartForeground() }
 
     fun startForeground() {
         doStartForeground()
-        receiver.register()
+        watcher.register()
     }
 
     private fun doStartForeground() {
@@ -78,7 +78,7 @@ class FtpServerNotification(private val service: Service) {
     }
 
     fun stopForeground() {
-        receiver.unregister()
+        watcher.unregister()
         service.stopForegroundCompat(ServiceCompat.STOP_FOREGROUND_REMOVE)
     }
 }
