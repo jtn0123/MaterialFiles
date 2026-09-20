@@ -1161,4 +1161,258 @@ class DavResourceTest {
             .build())
     }
 
+    @Test
+    fun testToStringAndFileName() {
+        val dav = DavResource(httpClient, mockServer.url("/dav/file.txt"))
+        assertEquals(mockServer.url("/dav/file.txt").toString(), dav.toString())
+        assertEquals("file.txt", dav.fileName())
+        assertEquals("dav", DavResource(httpClient, mockServer.url("/dav/")).fileName())
+    }
+
+    @Test
+    fun testOptions_FollowsRedirect() {
+        val dav = DavResource(httpClient, sampleUrl())
+        mockServer.enqueue(MockResponse.Builder()
+            .code(302)
+            .addHeader("Location", "/dav2/")
+            .build())
+        mockServer.enqueue(MockResponse.Builder()
+            .code(200)
+            .addHeader("DAV", "1, 2, 3")
+            .addHeader("DAV", " hyperactive-access")
+            .build())
+
+        var capabilities: Set<String>? = null
+        dav.options(followRedirects = true) { davCapabilities, _ ->
+            capabilities = davCapabilities
+        }
+        assertEquals(setOf("1", "2", "3", "hyperactive-access"), capabilities)
+        assertEquals(mockServer.url("/dav2/"), dav.location)
+
+        val first = mockServer.takeRequest()
+        assertEquals("OPTIONS", first.method)
+        assertEquals("identity", first.headers["Accept-Encoding"])
+        assertEquals("/dav2/", mockServer.takeRequest().target)
+    }
+
+    @Test
+    fun testMkCol() {
+        val dav = DavResource(httpClient, mockServer.url("/dav/new"))
+        mockServer.enqueue(MockResponse.Builder().code(201).build())
+
+        var responseCode = 0
+        dav.mkCol(
+            "<mkcol xmlns=\"DAV:\"/>",
+            method = "MKCALENDAR",
+            headers = okhttp3.Headers.headersOf("X-Test", "1")
+        ) { response ->
+            responseCode = response.code
+        }
+        assertEquals(201, responseCode)
+
+        val rq = mockServer.takeRequest()
+        assertEquals("MKCALENDAR", rq.method)
+        // a collection is always addressed with a trailing slash
+        assertEquals("/dav/new/", rq.target)
+        assertEquals("1", rq.headers["X-Test"])
+        assertEquals("<mkcol xmlns=\"DAV:\"/>", rq.body?.utf8())
+    }
+
+    @Test
+    fun testMkCol_Error() {
+        val dav = DavResource(httpClient, mockServer.url("/dav/new"))
+        mockServer.enqueue(MockResponse.Builder().code(405).build())
+        try {
+            dav.mkCol(null) { }
+            fail("expected HttpException")
+        } catch (e: HttpException) {
+            assertEquals(405, e.code)
+        }
+        assertNull(mockServer.takeRequest().body?.utf8()?.ifEmpty { null })
+    }
+
+    @Test
+    fun testHead() {
+        val dav = DavResource(httpClient, mockServer.url("/dav/file.txt"))
+        mockServer.enqueue(MockResponse.Builder()
+            .code(200)
+            .addHeader("ETag", "\"12345\"")
+            .build())
+
+        var eTag: String? = null
+        dav.head { response ->
+            eTag = GetETag.fromResponse(response)?.eTag
+        }
+        assertEquals("12345", eTag)
+        assertEquals("HEAD", mockServer.takeRequest().method)
+    }
+
+    @Test
+    fun testGetAndGetRange_SendHeaders() {
+        val dav = DavResource(httpClient, mockServer.url("/dav/file.txt"))
+        mockServer.enqueue(MockResponse.Builder().code(200).body(sampleText).build())
+        dav.get("text/plain", okhttp3.Headers.headersOf("Accept-Encoding", "identity")) { response ->
+            assertEquals(sampleText, response.body.string())
+        }
+        val get = mockServer.takeRequest()
+        assertEquals("text/plain", get.headers["Accept"])
+        assertEquals("identity", get.headers["Accept-Encoding"])
+
+        mockServer.enqueue(MockResponse.Builder().code(206).body("SAMPLE").build())
+        dav.getRange("*/*", 100, 342, okhttp3.Headers.headersOf("X-Test", "1")) { response ->
+            assertEquals(206, response.code)
+        }
+        val range = mockServer.takeRequest()
+        assertEquals("bytes=100-441", range.headers["Range"])
+        assertEquals("1", range.headers["X-Test"])
+    }
+
+    @Test
+    fun testPost_IfNoneMatchAndHeaders() {
+        val dav = DavResource(httpClient, mockServer.url("/dav/"))
+        mockServer.enqueue(MockResponse.Builder().code(201).build())
+        dav.post(sampleText.toRequestBody("text/plain".toMediaType()), ifNoneMatch = true) { }
+        val rq = mockServer.takeRequest()
+        assertEquals("POST", rq.method)
+        assertEquals("*", rq.headers["If-None-Match"])
+        assertEquals(sampleText, rq.body?.utf8())
+
+        mockServer.enqueue(MockResponse.Builder().code(201).build())
+        dav.post(
+            sampleText.toRequestBody("text/plain".toMediaType()),
+            headers = okhttp3.Headers.headersOf("X-Test", "1")
+        ) { }
+        assertEquals("1", mockServer.takeRequest().headers["X-Test"])
+    }
+
+    @Test
+    fun testPut_ScheduleTagAndCustomHeaders() {
+        val dav = DavResource(httpClient, mockServer.url("/dav/file.txt"))
+        mockServer.enqueue(MockResponse.Builder().code(204).build())
+        dav.put(
+            sampleText.toRequestBody("text/plain".toMediaType()),
+            ifScheduleTag = "12345",
+            headers = mapOf("X-Test" to "1")
+        ) { }
+        val rq = mockServer.takeRequest()
+        assertEquals("PUT", rq.method)
+        assertEquals("\"12345\"", rq.headers["If-Schedule-Tag-Match"])
+        assertEquals("1", rq.headers["X-Test"])
+    }
+
+    @Test
+    fun testDelete_ScheduleTagAndCustomHeaders() {
+        val dav = DavResource(httpClient, mockServer.url("/dav/file.txt"))
+        mockServer.enqueue(MockResponse.Builder().code(204).build())
+        dav.delete(ifScheduleTag = "12345", headers = mapOf("X-Test" to "1")) { }
+        val rq = mockServer.takeRequest()
+        assertEquals("DELETE", rq.method)
+        assertEquals("\"12345\"", rq.headers["If-Schedule-Tag-Match"])
+        assertEquals("1", rq.headers["X-Test"])
+    }
+
+    @Test
+    fun testPropfind_InfiniteDepth() {
+        val dav = DavResource(httpClient, sampleUrl())
+        mockServer.enqueue(MockResponse.Builder()
+            .code(207)
+            .addHeader("Content-Type", "application/xml")
+            .body("<multistatus xmlns=\"DAV:\"/>")
+            .build())
+        dav.propfind(-1, DisplayName.NAME) { _, _ -> }
+        assertEquals("infinity", mockServer.takeRequest().headers["Depth"])
+    }
+
+    @Test
+    fun testCheckStatus_SpecificExceptions() {
+        val dav = DavResource(httpClient, sampleUrl())
+        val codes = mapOf(
+            HttpURLConnection.HTTP_UNAUTHORIZED to at.bitfire.dav4jvm.exception.UnauthorizedException::class.java,
+            HttpURLConnection.HTTP_FORBIDDEN to at.bitfire.dav4jvm.exception.ForbiddenException::class.java,
+            HttpURLConnection.HTTP_NOT_FOUND to at.bitfire.dav4jvm.exception.NotFoundException::class.java,
+            HttpURLConnection.HTTP_CONFLICT to at.bitfire.dav4jvm.exception.ConflictException::class.java,
+            HttpURLConnection.HTTP_PRECON_FAILED to PreconditionFailedException::class.java,
+            HttpURLConnection.HTTP_UNAVAILABLE to at.bitfire.dav4jvm.exception.ServiceUnavailableException::class.java,
+            HttpURLConnection.HTTP_INTERNAL_ERROR to HttpException::class.java
+        )
+        for ((code, expected) in codes) {
+            val response = okhttp3.Response.Builder()
+                .request(Request.Builder().url(dav.location).build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(code).message("Error")
+                .build()
+            try {
+                dav.checkStatus(response)
+                fail("expected $expected for $code")
+            } catch (e: HttpException) {
+                assertEquals(expected, e.javaClass)
+                assertEquals(code, e.code)
+            }
+        }
+
+        // 2xx is not an error
+        dav.checkStatus(okhttp3.Response.Builder()
+            .request(Request.Builder().url(dav.location).build())
+            .protocol(Protocol.HTTP_1_1)
+            .code(204).message("No Content")
+            .build())
+    }
+
+    @Test
+    fun testFollowRedirects_WithoutLocation() {
+        val dav = DavResource(httpClient, sampleUrl())
+        mockServer.enqueue(MockResponse.Builder().code(302).build())
+        try {
+            dav.head { }
+            fail("expected DavException")
+        } catch (e: DavException) {
+            assertTrue(e.message!!.contains("without new Location"))
+        }
+    }
+
+    @Test
+    fun testAssertMultiStatus_XmlSignatureWithWrongContentType() {
+        val dav = DavResource(httpClient, "https://from.com".toHttpUrl())
+        // some servers return XML with a wrong Content-Type; the XML signature saves the response
+        dav.assertMultiStatus(okhttp3.Response.Builder()
+            .request(Request.Builder().url(dav.location).build())
+            .protocol(Protocol.HTTP_1_1)
+            .code(207).message("Multi-Status")
+            .body("<?xml version=\"1.0\"?><multistatus xmlns=\"DAV:\"/>"
+                .toResponseBody("application/octet-stream".toMediaType()))
+            .build())
+    }
+
+    @Test
+    fun testProcessMultiStatus_InvalidXml() {
+        val dav = DavResource(httpClient, sampleUrl())
+        mockServer.enqueue(MockResponse.Builder()
+            .code(207)
+            .addHeader("Content-Type", "application/xml")
+            .body("<multistatus xmlns=\"DAV:\"><response></multistatus>")
+            .build())
+        try {
+            dav.propfind(0, DisplayName.NAME) { _, _ -> }
+            fail("expected DavException")
+        } catch (e: DavException) {
+            assertTrue(e.message!!.contains("multistatus XML element"))
+        }
+    }
+
+    @Test
+    fun testProcessMultiStatus_WithoutMultistatusElement() {
+        val dav = DavResource(httpClient, sampleUrl())
+        mockServer.enqueue(MockResponse.Builder()
+            .code(207)
+            .addHeader("Content-Type", "application/xml")
+            .body("<?xml version=\"1.0\"?><something-else/>")
+            .build())
+        try {
+            dav.propfind(0, DisplayName.NAME) { _, _ -> }
+            fail("expected DavException")
+        } catch (e: DavException) {
+            assertEquals("Multi-Status response didn't contain multistatus XML element", e.message)
+        }
+    }
+
 }
