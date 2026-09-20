@@ -114,6 +114,41 @@ class FilePropertiesPermissionTest {
     }
 
     @Test
+    fun filteringTheUsersLeavesOnlyTheOnesThatMatch() {
+        val items = permissionItems()
+        val owner = items[context.getString(R.string.file_properties_permission_owner)]!!
+
+        tapValue(owner)
+        awaitDialog(R.string.file_properties_permission_set_owner_title)
+        device.wait(Until.findObject(By.res(context.packageName, "principalText")), TIMEOUT_MILLIS)
+        val users = device.findObjects(By.res(context.packageName, "principalText"))
+        assertTrue("The user list showed ${users.size} users", users.size > 1)
+
+        val filter = device.wait(
+            Until.findObject(By.res(context.packageName, "filterEdit")),
+            TIMEOUT_MILLIS
+        )
+        assertNotNull("The user list never showed its filter", filter)
+        val uid = Process.myUid().toString()
+        filter!!.text = uid
+
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        var remaining = users
+        while (System.currentTimeMillis() < deadline && remaining.size != 1) {
+            Thread.sleep(200)
+            remaining = device.findObjects(By.res(context.packageName, "principalText"))
+        }
+        assertEquals(
+            "Only the user that was filtered for should be left: " +
+                remaining.map { it.text },
+            1,
+            remaining.size
+        )
+        assertTrue(remaining.single().text, uid in remaining.single().text)
+        device.pressBack()
+    }
+
+    @Test
     fun theSeLinuxContextOfAFileOpensAnEditorHoldingIt() {
         val items = permissionItems()
 

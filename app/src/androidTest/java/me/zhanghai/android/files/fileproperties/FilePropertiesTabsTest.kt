@@ -292,4 +292,29 @@ class FilePropertiesTabsTest {
             assertTrue(bitRate.orEmpty(), bitRate.orEmpty().endsWith(" kbps"))
         }
     }
+
+    @Test
+    fun aVideoTakenSomewhereTellsWhereThatWas() {
+        val file = File(directory, "Located.mp4")
+        instrumentation.context.assets.open("clip-located.mp4").use { input ->
+            file.outputStream().use { input.copyTo(it) }
+        }
+
+        properties.show(file).use { scenario ->
+            val items = properties.openTab(
+                scenario,
+                R.string.file_properties_video,
+                R.string.file_properties_media_coordinates
+            )
+
+            assertEquals(
+                context.getString(
+                    R.string.file_properties_media_coordinates_format,
+                    37.8f,
+                    -122.4f
+                ),
+                items[context.getString(R.string.file_properties_media_coordinates)]
+            )
+        }
+    }
 }
