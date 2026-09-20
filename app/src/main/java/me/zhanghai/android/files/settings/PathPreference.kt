@@ -44,14 +44,6 @@ abstract class PathPreference :
         init(attrs, 0, 0)
     }
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    ) {
-        init(attrs, defStyleAttr, 0)
-    }
-
     constructor(
         context: Context,
         attrs: AttributeSet?,

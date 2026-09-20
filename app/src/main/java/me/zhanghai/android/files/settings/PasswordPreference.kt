@@ -14,22 +14,7 @@ import androidx.preference.EditTextPreference as AndroidXEditTextPreference
 import me.zhanghai.android.files.ui.EditTextPreference
 
 class PasswordPreference : EditTextPreference {
-    constructor(context: Context) : super(context)
-
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
-    constructor(
-        context: Context,
-        attrs: AttributeSet?,
-        @AttrRes defStyleAttr: Int,
-        @StyleRes defStyleRes: Int
-    ) : super(context, attrs, defStyleAttr, defStyleRes)
 
     init {
         if (summaryProvider is AndroidXEditTextPreference.SimpleSummaryProvider) {

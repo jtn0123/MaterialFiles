@@ -16,22 +16,7 @@ import me.zhanghai.android.files.util.showToast
 
 /** An [EditTextPreference] that only stores a valid, normalized [FtpPassivePorts] list. */
 class FtpServerPassivePortsPreference : EditTextPreference {
-    constructor(context: Context) : super(context)
-
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
-    constructor(
-        context: Context,
-        attrs: AttributeSet?,
-        @AttrRes defStyleAttr: Int,
-        @StyleRes defStyleRes: Int
-    ) : super(context, attrs, defStyleAttr, defStyleRes)
 
     init {
         summaryProvider = Preference.SummaryProvider<FtpServerPassivePortsPreference> {

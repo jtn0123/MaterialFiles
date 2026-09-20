@@ -15,22 +15,7 @@ import me.zhanghai.android.files.ui.EditTextPreference
 class DefaultIfEmptyEditTextPreference : EditTextPreference {
     private var defaultValue: String? = null
 
-    constructor(context: Context) : super(context)
-
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
-    constructor(
-        context: Context,
-        attrs: AttributeSet?,
-        @AttrRes defStyleAttr: Int,
-        @StyleRes defStyleRes: Int
-    ) : super(context, attrs, defStyleAttr, defStyleRes)
 
     override fun onGetDefaultValue(a: TypedArray, index: Int): Any? =
         super.onGetDefaultValue(a, index).also { defaultValue = it as String? }

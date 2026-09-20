@@ -52,12 +52,6 @@ class ThemedSpeedDialView : SpeedDialView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
     init {
         // Work around ripple bug on Android 12 when useCompatPadding = true.
         // @see https://github.com/material-components/material-components-android/issues/2617
