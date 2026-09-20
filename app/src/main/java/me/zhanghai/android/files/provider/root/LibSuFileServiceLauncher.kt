@@ -33,10 +33,12 @@ object LibSuFileServiceLauncher {
 
     init {
         Shell.enableVerboseLogging = true
+        // What the deprecated Shell.FLAG_REDIRECT_STDERR sets for us anyway.
+        Shell.enableLegacyStderrRedirection = true
         Shell.setDefaultBuilder(
             Shell.Builder.create()
                 .setInitializers(LibSuShellInitializer::class.java)
-                .setFlags(Shell.FLAG_MOUNT_MASTER or Shell.FLAG_REDIRECT_STDERR)
+                .setFlags(Shell.FLAG_MOUNT_MASTER)
                 .setTimeout(TimeUnit.MILLISECONDS.toSeconds(RootFileService.TIMEOUT_MILLIS))
         )
     }
