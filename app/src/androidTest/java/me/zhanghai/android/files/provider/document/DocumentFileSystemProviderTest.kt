@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.provider.document
 
 import android.net.Uri
+import android.os.CancellationSignal
 import android.provider.DocumentsContract
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
@@ -193,6 +194,9 @@ class DocumentFileSystemProviderTest {
         assertThrows<IOException> { provider.move(file, root.resolve("moved")) }
         assertThrows<IOException> { file.documentUri }
         assertThrows<IOException> { file.openDocumentParcelFileDescriptor("r") }
+        assertThrows<IOException> {
+            file.getDocumentThumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE, CancellationSignal())
+        }
     }
 
     private val provider = DocumentFileSystemProvider
@@ -216,6 +220,7 @@ class DocumentFileSystemProviderTest {
     }
 
     companion object {
+        private const val THUMBNAIL_SIZE = 64
         private const val AUTHORITY = "me.zhanghai.android.files.test.absent.documents"
     }
 }

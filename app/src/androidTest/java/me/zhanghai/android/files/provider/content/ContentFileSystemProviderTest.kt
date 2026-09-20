@@ -21,7 +21,9 @@ import java8.nio.file.FileSystemException
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import java8.nio.file.StandardOpenOption
+import java8.nio.file.StandardWatchEventKinds
 import java8.nio.file.attribute.BasicFileAttributes
+import me.zhanghai.android.files.provider.common.PollingWatchService
 import me.zhanghai.android.files.provider.common.checkAccess
 import me.zhanghai.android.files.provider.common.delete
 import me.zhanghai.android.files.provider.common.isHidden
@@ -227,7 +229,10 @@ class ContentFileSystemProviderTest {
 
     @Test
     fun aPathIsOnlyTheSameFileAsItself() {
-        assertTrue(path.isSameFile(Paths.get(path.toUri())))
+        val samePath = Paths.get(path.toUri())
+        assertTrue(path.isSameFile(samePath))
+        assertEquals(path, samePath)
+        assertEquals(path.hashCode(), samePath.hashCode())
         assertFalse(path.isHidden)
     }
 
@@ -245,6 +250,11 @@ class ContentFileSystemProviderTest {
         assertThrowsUnsupported { provider.readAttributes(path, "basic:*") }
         assertThrowsUnsupported { provider.setAttribute(path, "basic:size", 0L) }
         assertThrowsUnsupported { provider.createSymbolicLink(path, path) }
+        // A content URI is not a file and cannot be watched either.
+        assertThrowsUnsupported { path.toFile() }
+        assertThrowsUnsupported {
+            path.register(PollingWatchService(), arrayOf(StandardWatchEventKinds.ENTRY_MODIFY))
+        }
     }
 
     @Test
