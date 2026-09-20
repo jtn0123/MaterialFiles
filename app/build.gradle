@@ -253,6 +253,10 @@ tasks.withType(Test).configureEach {
     if (smbContainer != null) {
         systemProperty 'material.smb.container', smbContainer
     }
+    def sftpPort = providers.environmentVariable('MATERIAL_SFTP_PORT').orNull
+    if (sftpPort != null) {
+        systemProperty 'material.sftp.port', sftpPort
+    }
 }
 
 // An independent CLI invocation keeps touched-file formatting separate from global lint tasks.
