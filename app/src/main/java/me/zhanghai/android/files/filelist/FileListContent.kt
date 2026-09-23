@@ -175,11 +175,19 @@ internal class FileListContent(private val fragment: FileListFragment) {
             if (generation != adapterFileListUpdateGeneration) {
                 return@launch
             }
+            // Entries of a folder still loading arrive in batches, and the ones sorting first are
+            // then inserted above the top row, where the list would otherwise keep them out of
+            // sight.
+            val wasAtTop = !binding.recyclerView.canScrollVertically(-1)
             adapter.replaceListAndIsSearching(visibleFiles, isSearching) {
-                if (restorePendingState && generation == adapterFileListUpdateGeneration) {
-                    viewModel.pendingState?.let {
-                        fragment.layoutManager.onRestoreInstanceState(it)
-                    }
+                if (generation != adapterFileListUpdateGeneration) {
+                    return@replaceListAndIsSearching
+                }
+                val pendingState = if (restorePendingState) viewModel.pendingState else null
+                if (pendingState != null) {
+                    fragment.layoutManager.onRestoreInstanceState(pendingState)
+                } else if (wasAtTop) {
+                    fragment.layoutManager.scrollToPosition(0)
                 }
             }
         }
