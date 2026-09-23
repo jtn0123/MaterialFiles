@@ -9,6 +9,7 @@ import android.content.ContentValues
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.IOException
@@ -66,8 +67,26 @@ class ContentFileSystemProviderTest {
         }
         uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)!!
         contentResolver.openOutputStream(uri)!!.use { it.write(CONTENT) }
+        awaitReportedSize(CONTENT.size.toLong())
         path = Paths.get(URI.create(uri.toString()))
     }
+
+    // MediaStore updates the size column after the stream is closed, on its own schedule.
+    private fun awaitReportedSize(size: Long) {
+        val deadline = System.currentTimeMillis() + 10_000
+        while (queryReportedSize() != size) {
+            assertTrue(
+                "MediaStore never reported the size of the test file",
+                System.currentTimeMillis() < deadline
+            )
+            Thread.sleep(50)
+        }
+    }
+
+    private fun queryReportedSize(): Long? =
+        contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use {
+            if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else null
+        }
 
     @After
     fun tearDown() {

@@ -54,7 +54,8 @@ class FileListIconsTest {
         executeShellCommand(
             "pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS"
         )
-        directory = File(context.cacheDir, "icons-${UUID.randomUUID()}").apply { mkdirs() }
+        // Not the cache directory, which the system purges whenever storage runs low.
+        directory = File(context.filesDir, "icons-${UUID.randomUUID()}").apply { mkdirs() }
         TestJpeg.write(File(directory, "Photo.jpg"), 800, 600)
         File(directory, "Notes.txt").writeText("Nothing to show")
         File(directory, "com.example.app").mkdirs()

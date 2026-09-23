@@ -104,6 +104,9 @@ class FileListLastLocationTest {
 
     private fun openTestDirectory(scenario: ActivityScenario<FileListActivity>) {
         val folder = device.wait(Until.findObject(By.text(directoryName)), 20_000)
+        if (folder == null) {
+            diagnostics.capture("noTestFolder")
+        }
         assertNotNull("The test folder never appeared", folder)
         folder.click()
         assertNotNull(device.wait(Until.findObject(By.text("Inside.txt")), 20_000))
