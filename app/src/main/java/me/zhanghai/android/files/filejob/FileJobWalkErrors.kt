@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.filejob
 
+import androidx.annotation.StringRes
 import java.io.IOException
 import java.io.InterruptedIOException
 import java8.nio.file.DirectoryIteratorException
@@ -172,38 +173,33 @@ internal fun FileJob.decideOnWalkError(
     return decision
 }
 
+/** The message of the dialog about a failure of a walk. */
+@StringRes
+internal fun walkErrorMessageRes(failure: WalkFailure): Int = when (failure) {
+    WalkFailure.VISIT -> R.string.file_job_read_error_message_format
+    WalkFailure.LIST -> R.string.file_job_list_error_message_format
+}
+
 private fun FileJob.showWalkErrorDialog(
     path: Path,
     exception: IOException,
     failure: WalkFailure
-): ErrorResult {
-    val messageRes = when (failure) {
-        WalkFailure.VISIT -> R.string.file_job_read_error_message_format
-        WalkFailure.LIST -> R.string.file_job_list_error_message_format
-    }
-    return showRetrySkipCancelDialog(
-        getString(R.string.file_job_read_error_title),
-        getString(messageRes, getFileName(path), exception.toUserMessage(service)),
-        path,
-        exception
-    )
-}
-
-/** Wraps [visitor] for a job, asking the user about each failure of the walk. */
-internal fun FileJob.walkErrorVisitor(
-    visitor: FileVisitor<in Path>,
-    actionAllInfo: ActionAllInfo,
-    transferInfo: TransferInfo?,
-    walk: FileTreeWalk = { path, walkVisitor -> Files.walkFileTree(path, walkVisitor) }
-): WalkErrorVisitor = WalkErrorVisitor(
-    visitor,
-    { path, exception, failure ->
-        decideOnWalkError(path, exception, failure, actionAllInfo, transferInfo) {
-            showWalkErrorDialog(path, exception, failure)
-        }
-    },
-    walk
+): ErrorResult = showRetrySkipCancelDialog(
+    getString(R.string.file_job_read_error_title),
+    getString(walkErrorMessageRes(failure), getFileName(path), exception.toUserMessage(service)),
+    path,
+    exception
 )
+
+/** Decides on each failure of a job's walk as [decideOnWalkError] does, asking with a dialog. */
+internal fun FileJob.walkErrorDecider(
+    actionAllInfo: ActionAllInfo,
+    transferInfo: TransferInfo?
+): WalkErrorDecider = { path, exception, failure ->
+    decideOnWalkError(path, exception, failure, actionAllInfo, transferInfo) {
+        showWalkErrorDialog(path, exception, failure)
+    }
+}
 
 /** Walks [start] with [visitor], asking the user about each failure of the walk. */
 @Throws(IOException::class)
@@ -213,5 +209,8 @@ internal fun FileJob.walkFileTreeAskingOnErrors(
     actionAllInfo: ActionAllInfo,
     transferInfo: TransferInfo?
 ) {
-    Files.walkFileTree(start, walkErrorVisitor(visitor, actionAllInfo, transferInfo))
+    Files.walkFileTree(
+        start,
+        WalkErrorVisitor(visitor, walkErrorDecider(actionAllInfo, transferInfo))
+    )
 }

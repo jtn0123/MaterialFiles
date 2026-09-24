@@ -30,8 +30,25 @@ internal fun FileJob.walkSettingAttribute(
     val actionAllInfo = ActionAllInfo()
     val scanInfo = scan(path, recursive, scanNotificationTitleRes, actionAllInfo)
     val transferInfo = TransferInfo(scanInfo, null)
-    val visitor = SettingAttributeVisitor { file, attributes ->
+    val decide = walkErrorDecider(actionAllInfo, transferInfo)
+    walkSettingAttribute(path, recursive, decide) { file, attributes ->
         setAttribute(file, attributes, transferInfo, actionAllInfo)
+    }
+}
+
+/**
+ * Calls [visit] on [path], and on everything under it if [recursive], deciding on each failure of
+ * the walk with [decide].
+ */
+@Throws(IOException::class)
+internal fun FileJob.walkSettingAttribute(
+    path: Path,
+    recursive: Boolean,
+    decide: WalkErrorDecider,
+    visit: (Path, BasicFileAttributes) -> Unit
+) {
+    val visitor = SettingAttributeVisitor { file, attributes ->
+        visit(file, attributes)
         throwIfInterrupted()
     }
     // A retry at the start path walks it the same way again; anything below it is walked plainly.
@@ -42,7 +59,7 @@ internal fun FileJob.walkSettingAttribute(
             Files.walkFileTree(start, walkVisitor)
         }
     }
-    walk(path, walkErrorVisitor(visitor, actionAllInfo, transferInfo, walk))
+    walk(path, WalkErrorVisitor(visitor, decide, walk))
 }
 
 /**

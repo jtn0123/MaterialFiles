@@ -115,37 +115,47 @@ internal fun FileJob.scan(
     @PluralsRes notificationTitleRes: Int,
     actionAllInfo: ActionAllInfo = ActionAllInfo()
 ): ScanInfo {
-    val scanInfo = ScanInfo()
-    for (source in sources) {
-        // A path skipped here is not counted, and the job skips it again without asking.
-        walkFileTreeAskingOnErrors(
-            source,
-            object : SimpleFileVisitor<Path>() {
-                @Throws(IOException::class)
-                override fun preVisitDirectory(
-                    directory: Path,
-                    attributes: BasicFileAttributes
-                ): FileVisitResult {
-                    scanPath(attributes, scanInfo, notificationTitleRes)
-                    throwIfInterrupted()
-                    return FileVisitResult.CONTINUE
-                }
-
-                @Throws(IOException::class)
-                override fun visitFile(
-                    file: Path,
-                    attributes: BasicFileAttributes
-                ): FileVisitResult {
-                    scanPath(attributes, scanInfo, notificationTitleRes)
-                    throwIfInterrupted()
-                    return FileVisitResult.CONTINUE
-                }
-            },
-            actionAllInfo,
-            null
-        )
+    val scanInfo = countFiles(sources, actionAllInfo) {
+        postScanNotification(it, notificationTitleRes)
     }
     postScanNotification(scanInfo, notificationTitleRes)
+    return scanInfo
+}
+
+/**
+ * Counts the files under [sources] and their total size, calling [onProgress] after each one. A
+ * path skipped here is not counted, and the job skips it again without asking.
+ */
+@Throws(IOException::class)
+internal fun FileJob.countFiles(
+    sources: List<Path>,
+    actionAllInfo: ActionAllInfo,
+    onProgress: (ScanInfo) -> Unit
+): ScanInfo {
+    val scanInfo = ScanInfo()
+    val visitor = object : SimpleFileVisitor<Path>() {
+        @Throws(IOException::class)
+        override fun preVisitDirectory(
+            directory: Path,
+            attributes: BasicFileAttributes
+        ): FileVisitResult = count(attributes)
+
+        @Throws(IOException::class)
+        override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult =
+            count(attributes)
+
+        @Throws(InterruptedIOException::class)
+        private fun count(attributes: BasicFileAttributes): FileVisitResult {
+            scanInfo.incrementFileCount()
+            scanInfo.addToSize(attributes.size())
+            onProgress(scanInfo)
+            throwIfInterrupted()
+            return FileVisitResult.CONTINUE
+        }
+    }
+    for (source in sources) {
+        walkFileTreeAskingOnErrors(source, visitor, actionAllInfo, null)
+    }
     return scanInfo
 }
 

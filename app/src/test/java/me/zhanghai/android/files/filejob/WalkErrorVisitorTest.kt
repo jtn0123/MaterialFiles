@@ -8,6 +8,7 @@ package me.zhanghai.android.files.filejob
 import java.io.File
 import java.io.IOException
 import java.io.InterruptedIOException
+import java8.nio.file.FileSystemException
 import java8.nio.file.FileVisitResult
 import java8.nio.file.Files
 import java8.nio.file.Path
@@ -207,6 +208,97 @@ class WalkErrorVisitorTest {
         visitor.postVisitDirectory(tree, IOException("broke off"))
         assertFalse(file("tree/a.txt").exists())
         assertTrue(file("tree/b.txt").exists())
+    }
+
+    @Test
+    fun aJobCancelledWhileListingIsNotAskedAbout() {
+        createFiles("tree/a.txt")
+        val visitor = WalkErrorVisitor(recorder, decideAlways(ErrorDecision.SKIP))
+        val tree = path("/tree")
+        visitor.preVisitDirectory(tree, tree.readAttributes(BasicFileAttributes::class.java))
+        val cancellation = InterruptedIOException()
+        try {
+            visitor.postVisitDirectory(tree, cancellation)
+            fail("cancellation was swallowed")
+        } catch (e: InterruptedIOException) {
+            assertSame(cancellation, e)
+        }
+        assertEquals(emptyList<Pair<String, WalkFailure>>(), decided)
+        assertEquals(emptyList<String>(), finishedDirectories)
+    }
+
+    @Test
+    fun cancellingAtABrokenListingStopsTheWalk() {
+        createFiles("tree/a.txt", "tree/b.txt")
+        fileSystem.brokenListings.add(path("/tree"))
+        try {
+            walk(path("/tree"), WalkErrorVisitor(recorder, decideAlways(ErrorDecision.CANCEL)))
+            fail("the walk went on")
+        } catch (expected: InterruptedIOException) {
+            // Cancelled, as the job expects.
+        }
+        assertEquals(listOf("/tree" to WalkFailure.LIST), decided)
+        assertEquals(1, visitedFiles.size)
+        assertEquals(emptyList<String>(), finishedDirectories)
+    }
+
+    @Test
+    fun aListingThatBreaksOffAgainOnRetryIsAskedAboutAgain() {
+        createFiles("tree/a.txt", "tree/b.txt", "tree/c.txt")
+        val tree = path("/tree")
+        fileSystem.brokenListings.add(tree)
+        val visitor = WalkErrorVisitor(recorder, { path, _, failure ->
+            decided += path.toString() to failure
+            // The first retry breaks off again after a child that was visited already.
+            if (decided.size == 2) {
+                fileSystem.brokenListings.remove(tree)
+            }
+            ErrorDecision.RETRY
+        })
+        walk(tree, visitor)
+        assertEquals(listOf("/tree" to WalkFailure.LIST, "/tree" to WalkFailure.LIST), decided)
+        assertEquals(setOf("/tree/a.txt", "/tree/b.txt", "/tree/c.txt"), visitedFiles.toSet())
+        assertEquals(3, visitedFiles.size)
+        assertEquals(listOf("/tree"), finishedDirectories)
+    }
+
+    @Test
+    fun aListingThatCannotBeOpenedOnRetryIsAskedAboutAgain() {
+        createFiles("tree/a.txt", "tree/b.txt")
+        val tree = path("/tree")
+        fileSystem.brokenListings.add(tree)
+        val failures = mutableListOf<IOException>()
+        val visitor = WalkErrorVisitor(recorder, { path, exception, failure ->
+            decided += path.toString() to failure
+            failures += exception
+            when (decided.size) {
+                // The folder cannot even be opened for the retry...
+                1 -> lock("tree")
+
+                // ...until it can, and lists in full.
+                2 -> {
+                    unlock(file("tree"))
+                    fileSystem.brokenListings.remove(tree)
+                }
+            }
+            ErrorDecision.RETRY
+        })
+        walk(tree, visitor)
+        assertEquals(listOf("/tree" to WalkFailure.LIST, "/tree" to WalkFailure.LIST), decided)
+        assertEquals("The listing broke off", failures[0].message)
+        assertTrue(failures[1] is FileSystemException)
+        assertEquals(setOf("/tree/a.txt", "/tree/b.txt"), visitedFiles.toSet())
+        assertEquals(listOf("/tree"), finishedDirectories)
+    }
+
+    @Test
+    fun skippingABrokenListingLeavesOutTheRestOfTheFolder() {
+        createFiles("tree/a.txt", "tree/b.txt")
+        fileSystem.brokenListings.add(path("/tree"))
+        walk(path("/tree"), WalkErrorVisitor(recorder, decideAlways(ErrorDecision.SKIP)))
+        assertEquals(listOf("/tree" to WalkFailure.LIST), decided)
+        assertEquals(1, visitedFiles.size)
+        assertEquals(emptyList<String>(), finishedDirectories)
     }
 
     private fun decideAlways(decision: ErrorDecision): WalkErrorDecider = { path, _, failure ->
