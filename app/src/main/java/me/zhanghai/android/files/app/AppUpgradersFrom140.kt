@@ -120,7 +120,7 @@ private fun migratePath1_4_0(oldParcel: Parcel, newParcel: Parcel) {
         "me.zhanghai.android.files.provider.smb.SmbPath" ->
             newParcel.writeParcelable(oldParcel.readParcelable<SmbFileSystem>(), 0)
 
-        else -> throw IllegalStateException(className)
+        else -> error("Unknown path class $className")
     }
 }
 

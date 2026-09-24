@@ -169,7 +169,7 @@ internal class CopyMoveOperation(
         val sourceIsDirectory = sourceFile.attributesNoFollowLinks.isDirectory
         val targetIsDirectory = targetFile.attributesNoFollowLinks.isDirectory
         if (!sourceIsDirectory && targetIsDirectory) {
-            // TODO: Don't allow replace directory with file.
+            // A file never replaces a directory, so there is nothing to ask.
             throw exception
         }
         val isMerge = sourceIsDirectory && targetIsDirectory

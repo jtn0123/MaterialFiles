@@ -185,11 +185,7 @@ internal fun <A : Any> diffPolledFiles(
     kinds: Set<WatchEvent.Kind<*>>
 ): List<Pair<WatchEvent.Kind<Path>, Path>> = buildList {
     for ((path, oldAttributes) in oldFiles) {
-        val kind = when (newFiles[path]) {
-            null -> StandardWatchEventKinds.ENTRY_DELETE
-            oldAttributes -> null
-            else -> StandardWatchEventKinds.ENTRY_MODIFY
-        }
+        val kind = changeKind(oldAttributes, newFiles[path])
         if (kind != null && kind in kinds) {
             this += kind to path
         }
@@ -202,3 +198,10 @@ internal fun <A : Any> diffPolledFiles(
         }
     }
 }
+
+private fun <A : Any> changeKind(oldAttributes: A, newAttributes: A?): WatchEvent.Kind<Path>? =
+    when (newAttributes) {
+        null -> StandardWatchEventKinds.ENTRY_DELETE
+        oldAttributes -> null
+        else -> StandardWatchEventKinds.ENTRY_MODIFY
+    }

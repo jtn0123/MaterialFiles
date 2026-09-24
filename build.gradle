@@ -77,11 +77,20 @@ sonar {
             byteStringAppend: ['kotlin:S1874', [
                 '**/src/main/java/me/zhanghai/android/files/filelist/CollatorFileNameExtensions.kt'
             ]],
-            // Both call Geocoder through awaitGetFromLocation(), which is already on
-            // Dispatchers.IO.
+            // The image and video tabs call Geocoder through awaitGetFromLocation(), which is
+            // already on Dispatchers.IO.
             geocoderOnIo: ['kotlin:S6307', [
-                '**/src/main/java/me/zhanghai/android/files/fileproperties/image/FilePropertiesImageTabFragment.kt',
-                '**/src/main/java/me/zhanghai/android/files/fileproperties/video/FilePropertiesVideoTabFragment.kt'
+                '**/src/main/java/me/zhanghai/android/files/fileproperties/FilePropertiesTabFragment.kt'
+            ]],
+            // Each migration is named after the version it upgrades to, like every other upgrader
+            // in the file.
+            upgraderNames: ['kotlin:S100', [
+                '**/src/main/java/me/zhanghai/android/files/app/AppUpgradersFrom140.kt'
+            ]],
+            // Only read from the app's own theme, as the colour of the scrim drawn behind the
+            // status bar; what is deprecated is the window drawing it.
+            statusBarScrim: ['kotlin:S1874', [
+                '**/src/main/java/me/zhanghai/android/files/navigation/NavigationRecyclerView.kt'
             ]],
             // FileChannel and MediaDataSource are abstract classes, so Kotlin cannot delegate to
             // them with "by".

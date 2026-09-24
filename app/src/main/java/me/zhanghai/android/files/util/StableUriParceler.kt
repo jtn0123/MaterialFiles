@@ -31,7 +31,7 @@ object StableUriParceler : Parceler<Uri?> {
 
     override fun create(parcel: Parcel): Uri? {
         val uriString = parcel.readString() ?: return null
-        // Parcel.readParcelableCreator()
+        // As in Parcel.readParcelableCreator().
         return if (uriString.startsWith(Uri::class.java.name)) {
             readUri(parcel)
         } else {
@@ -39,12 +39,12 @@ object StableUriParceler : Parceler<Uri?> {
         }
     }
 
-    // Uri.CREATOR.createFromParcel()
+    // As in Uri.CREATOR.createFromParcel().
     private fun readUri(parcel: Parcel): Uri? {
         val uriString = when (val typeId = parcel.readInt()) {
             NULL_TYPE_ID -> return null
 
-            // Uri.StringUri.readFrom()
+            // As in Uri.StringUri.readFrom().
             STRING_URI_TYPE_ID -> parcel.readUriString()
 
             OPAQUE_URI_TYPE_ID -> readOpaqueUriString(parcel)
@@ -56,7 +56,7 @@ object StableUriParceler : Parceler<Uri?> {
         return Uri.parse(uriString)
     }
 
-    // Uri.OpaqueUri.readFrom()
+    // As in Uri.OpaqueUri.readFrom().
     private fun readOpaqueUriString(parcel: Parcel): String {
         val scheme = checkNotNull(parcel.readUriString()) { "Opaque Uri without a scheme" }
         // Assume that we never persist a Uri with only a scheme.
@@ -68,7 +68,7 @@ object StableUriParceler : Parceler<Uri?> {
         return buildOpaqueUriString(scheme, encodedSsp, encodedFragment)
     }
 
-    // Uri.HierarchicalUri.readFrom()
+    // As in Uri.HierarchicalUri.readFrom().
     private fun readHierarchicalUriString(parcel: Parcel): String {
         // Scheme can be null for HierarchicalUri.
         val scheme = parcel.readUriString()
@@ -90,7 +90,7 @@ object StableUriParceler : Parceler<Uri?> {
         )
     }
 
-    // Uri.OpaqueUri.toString()
+    // As in Uri.OpaqueUri.toString().
     internal fun buildOpaqueUriString(
         scheme: String,
         encodedSsp: String?,
@@ -102,7 +102,7 @@ object StableUriParceler : Parceler<Uri?> {
         appendIfNotEmpty('#', encodedFragment)
     }
 
-    // Uri.HierarchicalUri.toString()
+    // As in Uri.HierarchicalUri.toString().
     internal fun buildHierarchicalUriString(
         scheme: String?,
         encodedAuthority: String?,
@@ -132,7 +132,7 @@ object StableUriParceler : Parceler<Uri?> {
         }
     }
 
-    // Uri.Part.readFrom()
+    // As in Uri.Part.readFrom().
     private fun readEncodedPart(parcel: Parcel): String? =
         when (val representation = parcel.readInt()) {
             REPRESENTATION_BOTH -> parcel.readUriString().also { parcel.readUriString() }
@@ -141,7 +141,7 @@ object StableUriParceler : Parceler<Uri?> {
             else -> error("Unknown representation $representation")
         }
 
-    // Uri.PathPart.readFrom()
+    // As in Uri.PathPart.readFrom().
     private fun readEncodedPathPart(hasSchemeOrAuthority: Boolean, parcel: Parcel): String? {
         val encodedPathPart = when (val representation = parcel.readInt()) {
             REPRESENTATION_BOTH -> parcel.readUriString().also { parcel.readUriString() }
@@ -156,7 +156,7 @@ object StableUriParceler : Parceler<Uri?> {
         }
     }
 
-    // Uri.PathPart.makeAbsolute()
+    // As in Uri.PathPart.makeAbsolute().
     internal fun makeEncodedPathPartAbsolute(encodedPathPart: String?): String? =
         if (encodedPathPart.isNullOrEmpty() || encodedPathPart.startsWith("/")) {
             encodedPathPart

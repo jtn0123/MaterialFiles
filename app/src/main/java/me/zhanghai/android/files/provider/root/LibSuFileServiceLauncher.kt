@@ -68,7 +68,7 @@ object LibSuFileServiceLauncher {
                             // Proactively create the shell because RootService doesn't allow us to
                             // handle errors during shell creation.
                             createShell()
-                            bindService()
+                            bindService(this)
                         }
                     } catch (e: TimeoutCancellationException) {
                         throw RemoteFileSystemException(e)
@@ -96,14 +96,14 @@ object LibSuFileServiceLauncher {
     }
 
     @Throws(RemoteFileSystemException::class)
-    private suspend fun CoroutineScope.bindService(): IRemoteFileService =
+    private suspend fun bindService(scope: CoroutineScope): IRemoteFileService =
         suspendCancellableCoroutine { continuation ->
             val intent = LibSuFileService::class.createIntent()
             val connection = LibSuServiceConnection(continuation)
-            launch(Dispatchers.Main.immediate) {
+            scope.launch(Dispatchers.Main.immediate) {
                 RootService.bind(intent, connection)
                 continuation.invokeOnCancellation {
-                    launch(Dispatchers.Main.immediate) { RootService.unbind(connection) }
+                    scope.launch(Dispatchers.Main.immediate) { RootService.unbind(connection) }
                 }
             }
         }

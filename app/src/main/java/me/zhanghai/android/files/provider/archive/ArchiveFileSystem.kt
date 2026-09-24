@@ -320,8 +320,9 @@ internal class ArchiveFileSystem(
         @JvmField
         val CREATOR = object : Parcelable.Creator<ArchiveFileSystem> {
             override fun createFromParcel(source: Parcel): ArchiveFileSystem {
-                val archiveFile = source.readParcelable<Parcelable>(Path::class.java.classLoader)
-                    as Path
+                val archiveFile = checkNotNull(
+                    source.readParcelable(Path::class.java.classLoader, Parcelable::class.java)
+                ) as Path
                 return ArchiveFileSystemProvider.getOrNewFileSystem(archiveFile)
             }
 

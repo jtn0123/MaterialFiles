@@ -12,6 +12,7 @@ import com.hierynomus.mssmb2.SMB2ShareAccess
 import com.hierynomus.smbj.common.SMBRuntimeException
 import com.hierynomus.smbj.session.Session
 import com.rapid7.client.dcerpc.mssrvs.ServerService
+import com.rapid7.client.dcerpc.mssrvs.dto.NetShareInfo1
 import com.rapid7.client.dcerpc.transport.SMBTransportFactories
 import java.io.Closeable
 import java.io.IOException
@@ -30,7 +31,7 @@ internal fun Client.openShareIterator(path: Path, session: Session): CloseableIt
         throw ClientException(e)
     }
     val serverService = ServerService(transport)
-    val netShareInfos = try {
+    val netShareInfos: List<NetShareInfo1> = try {
         serverService.shares1
     } catch (e: IOException) {
         throw ClientException(e)
