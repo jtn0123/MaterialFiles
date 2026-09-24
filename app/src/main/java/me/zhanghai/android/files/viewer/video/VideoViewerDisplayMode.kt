@@ -5,12 +5,10 @@
 
 package me.zhanghai.android.files.viewer.video
 
-import android.app.Activity
 import android.content.pm.ActivityInfo
 import androidx.annotation.StringRes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import me.zhanghai.android.files.R
 
 /**
@@ -22,25 +20,25 @@ internal class VideoViewerDisplayMode(
     var screenOrientationIndex: Int = 0,
     var resizeMode: Int = AspectRatioFrameLayout.RESIZE_MODE_FIT
 ) {
-    fun toggleResizeMode(playerView: PlayerView) {
+    /** The screen orientation to request from the activity. */
+    val screenOrientation: Int
+        get() = SCREEN_ORIENTATIONS[screenOrientationIndex]
+
+    /** Switches between fitting and filling the screen and returns the new resize mode. */
+    fun toggleResizeMode(): Int {
         resizeMode = if (resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT) {
             AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         } else {
             AspectRatioFrameLayout.RESIZE_MODE_FIT
         }
-        playerView.resizeMode = resizeMode
+        return resizeMode
     }
 
     /** Moves on to the next screen orientation and returns its title. */
     @StringRes
-    fun cycleScreenOrientation(activity: Activity): Int {
+    fun cycleScreenOrientation(): Int {
         screenOrientationIndex = (screenOrientationIndex + 1) % SCREEN_ORIENTATIONS.size
-        applyScreenOrientation(activity)
         return SCREEN_ORIENTATION_TITLE_RESOURCES[screenOrientationIndex]
-    }
-
-    fun applyScreenOrientation(activity: Activity) {
-        activity.requestedOrientation = SCREEN_ORIENTATIONS[screenOrientationIndex]
     }
 
     companion object {

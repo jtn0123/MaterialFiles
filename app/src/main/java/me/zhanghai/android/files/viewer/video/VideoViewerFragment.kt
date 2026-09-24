@@ -164,8 +164,8 @@ class VideoViewerFragment :
         systemUiHelper = binding.setUpChrome(
             activity as AppCompatActivity,
             displayMode.resizeMode
-        ) { displayMode.toggleResizeMode(binding.playerView) }
-        displayMode.applyScreenOrientation(requireActivity())
+        ) { binding.playerView.resizeMode = displayMode.toggleResizeMode() }
+        requireActivity().requestedOrientation = displayMode.screenOrientation
         updateTitle()
 
         viewLifecycleOwner.lifecycleScope.launch { loadSubtitles() }
@@ -233,7 +233,9 @@ class VideoViewerFragment :
         }
 
         R.id.action_screen_orientation -> {
-            showToast(getString(displayMode.cycleScreenOrientation(requireActivity())))
+            val title = displayMode.cycleScreenOrientation()
+            requireActivity().requestedOrientation = displayMode.screenOrientation
+            showToast(getString(title))
             true
         }
 

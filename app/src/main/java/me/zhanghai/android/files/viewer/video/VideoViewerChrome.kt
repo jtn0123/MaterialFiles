@@ -5,7 +5,6 @@
 
 package me.zhanghai.android.files.viewer.video
 
-import android.graphics.Color
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
@@ -28,8 +27,6 @@ internal fun VideoViewerFragmentBinding.setUpChrome(
 ): SystemUiHelper {
     activity.setSupportActionBar(toolbar)
     activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-    // Our app bar will draw the status bar background.
-    activity.window.statusBarColor = Color.TRANSPARENT
     appBarLayout.applySystemWindowInsetsToPadding(left = true, top = true, right = true)
     val systemUiHelper = SystemUiHelper(
         activity,
