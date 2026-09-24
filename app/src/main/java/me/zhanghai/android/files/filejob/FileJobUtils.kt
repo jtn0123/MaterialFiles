@@ -110,10 +110,15 @@ internal fun FileJob.throwIfInterrupted() {
 }
 
 @Throws(IOException::class)
-internal fun FileJob.scan(sources: List<Path?>, @PluralsRes notificationTitleRes: Int): ScanInfo {
+internal fun FileJob.scan(
+    sources: List<Path>,
+    @PluralsRes notificationTitleRes: Int,
+    actionAllInfo: ActionAllInfo = ActionAllInfo()
+): ScanInfo {
     val scanInfo = ScanInfo()
     for (source in sources) {
-        Files.walkFileTree(
+        // A path skipped here is not counted, and the job skips it again without asking.
+        walkFileTreeAskingOnErrors(
             source,
             object : SimpleFileVisitor<Path>() {
                 @Throws(IOException::class)
@@ -135,13 +140,9 @@ internal fun FileJob.scan(sources: List<Path?>, @PluralsRes notificationTitleRes
                     throwIfInterrupted()
                     return FileVisitResult.CONTINUE
                 }
-
-                @Throws(IOException::class)
-                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                    // TODO: Prompt retry, skip, skip-all or abort.
-                    return super.visitFileFailed(file, exception)
-                }
-            }
+            },
+            actionAllInfo,
+            null
         )
     }
     postScanNotification(scanInfo, notificationTitleRes)
@@ -149,17 +150,21 @@ internal fun FileJob.scan(sources: List<Path?>, @PluralsRes notificationTitleRes
 }
 
 @Throws(IOException::class)
-internal fun FileJob.scan(source: Path, @PluralsRes notificationTitleRes: Int): ScanInfo =
-    scan(listOf(source), notificationTitleRes)
+internal fun FileJob.scan(
+    source: Path,
+    @PluralsRes notificationTitleRes: Int,
+    actionAllInfo: ActionAllInfo = ActionAllInfo()
+): ScanInfo = scan(listOf(source), notificationTitleRes, actionAllInfo)
 
 @Throws(IOException::class)
 internal fun FileJob.scan(
     source: Path,
     recursive: Boolean,
-    @PluralsRes notificationTitleRes: Int
+    @PluralsRes notificationTitleRes: Int,
+    actionAllInfo: ActionAllInfo = ActionAllInfo()
 ): ScanInfo {
     if (recursive) {
-        return scan(source, notificationTitleRes)
+        return scan(source, notificationTitleRes, actionAllInfo)
     }
     val scanInfo = ScanInfo()
     val attributes = source.readAttributes(

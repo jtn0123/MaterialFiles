@@ -50,7 +50,9 @@ internal class ActionAllInfo(
     var skipSetGroupError: Boolean = false,
     var skipSetOwnerError: Boolean = false,
     var skipSetModeError: Boolean = false,
-    var skipSetSeLinuxContextError: Boolean = false
+    var skipSetSeLinuxContextError: Boolean = false,
+    var skipWalkError: Boolean = false,
+    val skippedWalkPaths: MutableSet<Path> = mutableSetOf()
 )
 
 @Throws(IOException::class)
