@@ -73,6 +73,36 @@ class ArchiveDataStreamsTest {
     }
 
     @Test
+    fun aReadIntoPartOfAnArrayFillsOnlyThatPart() {
+        val stream = ArchiveDataInputStream(::readData)
+        val array = ByteArray(200) { -1 }
+
+        assertEquals(3, stream.read(array, 4, 3))
+
+        assertArrayEquals(content.copyOfRange(0, 3), array.copyOfRange(4, 7))
+        assertTrue(array.copyOfRange(0, 4).all { it == (-1).toByte() })
+        assertTrue(array.copyOfRange(7, 200).all { it == (-1).toByte() })
+        // What was not asked for is still there for the next read.
+        assertEquals(content[3].toUByte().toInt(), stream.read())
+    }
+
+    @Test
+    fun aReadOfNothingReadsNothing() {
+        val stream = ArchiveDataInputStream(::readData)
+
+        assertEquals(0, stream.read(ByteArray(16), 8, 0))
+        assertEquals(0, readOffset)
+    }
+
+    @Test
+    fun anEntryIsReadWholeByReadersThatFillTheirArraysBitByBit() {
+        // Like Okio or InputStream.readAllBytes, which continue where the last read ended.
+        val stream = ArchiveDataInputStream(::readData)
+
+        assertArrayEquals(content, stream.readAllBytes())
+    }
+
+    @Test
     fun whatLibarchiveThrowsWhileReadingIsPassedOn() {
         val failure = ArchiveException(Archive.ERRNO_FATAL, "Truncated input")
         val stream = ArchiveDataInputStream { throw failure }

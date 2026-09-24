@@ -21,22 +21,23 @@ internal class ArchiveDataInputStream(private val readData: (ByteBuffer) -> Unit
 
     @Throws(IOException::class)
     override fun read(): Int {
-        read(oneByteBuffer)
+        oneByteBuffer.clear()
+        readData(oneByteBuffer)
+        oneByteBuffer.flip()
         return if (oneByteBuffer.hasRemaining()) oneByteBuffer.get().toUByte().toInt() else -1
     }
 
     @Throws(IOException::class)
     override fun read(b: ByteArray, off: Int, len: Int): Int {
+        // Not cleared: that would make the buffer the whole array, and the data would land at
+        // its start, overwriting what the caller had there, and could be more than len bytes.
         val buffer = ByteBuffer.wrap(b, off, len)
-        read(buffer)
-        return if (buffer.hasRemaining()) buffer.remaining() else -1
-    }
-
-    @Throws(IOException::class)
-    private fun read(buffer: ByteBuffer) {
-        buffer.clear()
+        if (len == 0) {
+            return 0
+        }
         readData(buffer)
-        buffer.flip()
+        val count = buffer.position() - off
+        return if (count > 0) count else -1
     }
 }
 
