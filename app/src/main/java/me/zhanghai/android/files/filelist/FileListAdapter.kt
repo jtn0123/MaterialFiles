@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.filelist
 
+import android.content.Context
 import android.text.TextUtils
 import android.view.View
 import android.view.ViewGroup
@@ -220,18 +221,36 @@ class FileListAdapter(private val listener: Listener) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: List<Any>) {
         val file = getItem(position)
-        val isDirectory = file.attributes.isDirectory
-        val isEnabled = isFileSelectable(file) || isDirectory
+        bindViewHolderState(holder, file)
+        if (payloads.isNotEmpty()) {
+            return
+        }
+        bindViewHolderAnimation(holder)
+        holder.itemLayout.apply {
+            setOnClickListener { onItemClick(holder.currentFile(file)) }
+            setOnLongClickListener {
+                onItemLongClick(holder.currentFile(file))
+                true
+            }
+        }
+        holder.iconLayout.setOnClickListener { selectFile(holder.currentFile(file)) }
+        holder.bindIcons(file)
+        holder.nameText.text = file.name
+        holder.descriptionText?.let { it.text = getDescription(file, it.context) }
+        bindViewHolderMenu(holder, file)
+    }
+
+    /** Binds what a change of the selection or the pick options can change. */
+    private fun bindViewHolderState(holder: ViewHolder, file: FileItem) {
+        val isEnabled = isFileSelectable(file) || file.attributes.isDirectory
         holder.itemLayout.isEnabled = isEnabled
         holder.menuButton.isEnabled = isEnabled
         val menu = holder.popupMenu.menu
-        val path = file.path
         val hasPickOptions = pickOptions != null
-        val isReadOnly = path.fileSystem.isReadOnly
+        val isReadOnly = file.path.fileSystem.isReadOnly
         menu.findItem(R.id.action_cut).isVisible = !hasPickOptions && !isReadOnly
         menu.findItem(R.id.action_copy).isVisible = !hasPickOptions
-        val checked = file in selectedFiles
-        holder.itemLayout.isChecked = checked
+        holder.itemLayout.isChecked = file in selectedFiles
         holder.nameText.apply {
             if (isSingleLineCompat) {
                 val nameEllipsize = nameEllipsize
@@ -239,41 +258,39 @@ class FileListAdapter(private val listener: Listener) :
                 isSelected = nameEllipsize == TextUtils.TruncateAt.MARQUEE
             }
         }
-        if (payloads.isNotEmpty()) {
-            return
-        }
-        bindViewHolderAnimation(holder)
-        holder.itemLayout.apply {
-            setOnClickListener {
-                if (selectedFiles.isEmpty()) {
-                    listener.openFile(holder.currentFile(file))
-                } else {
-                    selectFile(holder.currentFile(file))
-                }
-            }
-            setOnLongClickListener {
-                if (selectedFiles.isEmpty()) {
-                    selectFile(holder.currentFile(file))
-                } else {
-                    listener.openFile(holder.currentFile(file))
-                }
-                true
-            }
-        }
-        holder.iconLayout.setOnClickListener { selectFile(holder.currentFile(file)) }
-        holder.bindIcons(file)
-        val attributes = file.attributes
-        holder.nameText.text = file.name
-        holder.descriptionText?.text = if (isDirectory) {
-            null
+    }
+
+    private fun onItemClick(file: FileItem) {
+        if (selectedFiles.isEmpty()) {
+            listener.openFile(file)
         } else {
-            val context = holder.descriptionText.context
-            val lastModificationTime = attributes.lastModifiedTime().toInstant()
-                .formatShort(context)
-            val size = attributes.fileSize.formatHumanReadable(context)
-            val descriptionSeparator = context.getString(R.string.file_item_description_separator)
-            listOf(lastModificationTime, size).joinToString(descriptionSeparator)
+            selectFile(file)
         }
+    }
+
+    private fun onItemLongClick(file: FileItem) {
+        if (selectedFiles.isEmpty()) {
+            selectFile(file)
+        } else {
+            listener.openFile(file)
+        }
+    }
+
+    private fun getDescription(file: FileItem, context: Context): String? {
+        if (file.attributes.isDirectory) {
+            return null
+        }
+        val attributes = file.attributes
+        val lastModificationTime = attributes.lastModifiedTime().toInstant().formatShort(context)
+        val size = attributes.fileSize.formatHumanReadable(context)
+        val descriptionSeparator = context.getString(R.string.file_item_description_separator)
+        return listOf(lastModificationTime, size).joinToString(descriptionSeparator)
+    }
+
+    private fun bindViewHolderMenu(holder: ViewHolder, file: FileItem) {
+        val menu = holder.popupMenu.menu
+        val path = file.path
+        val isReadOnly = path.fileSystem.isReadOnly
         val isArchivePath = path.isArchivePath
         menu.findItem(R.id.action_copy)
             .setTitle(if (isArchivePath) R.string.file_item_action_extract else R.string.copy)
@@ -281,72 +298,9 @@ class FileListAdapter(private val listener: Listener) :
         menu.findItem(R.id.action_rename).isVisible = !isReadOnly
         menu.findItem(R.id.action_extract).isVisible = file.isArchiveFile
         menu.findItem(R.id.action_archive).isVisible = !isArchivePath
-        menu.findItem(R.id.action_add_bookmark).isVisible = isDirectory
+        menu.findItem(R.id.action_add_bookmark).isVisible = file.attributes.isDirectory
         holder.popupMenu.setOnMenuItemClickListener {
-            val currentFile = holder.currentFile(file)
-            when (it.itemId) {
-                R.id.action_open_with -> {
-                    listener.openFileWith(currentFile)
-                    true
-                }
-
-                R.id.action_cut -> {
-                    listener.cutFile(currentFile)
-                    true
-                }
-
-                R.id.action_copy -> {
-                    listener.copyFile(currentFile)
-                    true
-                }
-
-                R.id.action_delete -> {
-                    listener.confirmDeleteFile(currentFile)
-                    true
-                }
-
-                R.id.action_rename -> {
-                    listener.showRenameFileDialog(currentFile)
-                    true
-                }
-
-                R.id.action_extract -> {
-                    listener.extractFile(currentFile)
-                    true
-                }
-
-                R.id.action_archive -> {
-                    listener.showCreateArchiveDialog(currentFile)
-                    true
-                }
-
-                R.id.action_share -> {
-                    listener.shareFile(currentFile)
-                    true
-                }
-
-                R.id.action_copy_path -> {
-                    listener.copyPath(currentFile)
-                    true
-                }
-
-                R.id.action_add_bookmark -> {
-                    listener.addBookmark(currentFile)
-                    true
-                }
-
-                R.id.action_create_shortcut -> {
-                    listener.createShortcut(currentFile)
-                    true
-                }
-
-                R.id.action_properties -> {
-                    listener.showPropertiesDialog(currentFile)
-                    true
-                }
-
-                else -> false
-            }
+            listener.onFileItemMenuItemClick(it.itemId, holder.currentFile(file))
         }
     }
 
