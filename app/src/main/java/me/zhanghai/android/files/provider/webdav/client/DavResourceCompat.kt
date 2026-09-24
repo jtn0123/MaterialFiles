@@ -90,29 +90,97 @@ fun DavResource.putCompat(
     for ((key, value) in headers) {
         builder.header(key, value)
     }
-    var exceptionRef: IOException? = null
-    var responseRef: Response? = null
-    val callbackLatch = CountDownLatch(1)
-    httpClient.newCall(builder.build()).enqueue(
-        object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                exceptionRef = e
-                callbackLatch.countDown()
+    val upload = PipedUpload(pipe)
+    httpClient.newCall(builder.build()).enqueue(upload)
+    return upload.outputStream { checkStatus(it) }
+}
+
+/**
+ * The call of a streaming PUT and the stream feeding its body through [pipe].
+ *
+ * Once the call is over, nothing reads the pipe any more, so it is cancelled: a writer blocked on
+ * a full pipe (because the server could not be reached, or refused the upload before reading all
+ * of it) then fails instead of waiting forever, with the failure of the call rather than that of
+ * the pipe. The response is closed after its status is checked, so that its connection goes back
+ * to the pool even when the server sent a body with it.
+ */
+private class PipedUpload(private val pipe: Pipe) : Callback {
+    @Volatile
+    private var failure: IOException? = null
+
+    @Volatile
+    private var response: Response? = null
+
+    private val latch = CountDownLatch(1)
+
+    override fun onFailure(call: Call, e: IOException) {
+        failure = e
+        latch.countDown()
+        pipe.cancel()
+    }
+
+    override fun onResponse(call: Call, response: Response) {
+        this.response = response
+        latch.countDown()
+        pipe.cancel()
+    }
+
+    fun outputStream(checkStatus: (Response) -> Unit): OutputStream =
+        object : DelegateOutputStream(pipe.sink.buffer().outputStream()) {
+            override fun write(b: Int) {
+                whenWriting { super.write(b) }
             }
 
-            override fun onResponse(call: Call, response: Response) {
-                responseRef = response
-                callbackLatch.countDown()
+            override fun write(b: ByteArray) {
+                whenWriting { super.write(b) }
+            }
+
+            override fun write(b: ByteArray, off: Int, len: Int) {
+                whenWriting { super.write(b, off, len) }
+            }
+
+            override fun flush() {
+                whenWriting { super.flush() }
+            }
+
+            override fun close() {
+                val closeFailure = try {
+                    super.close()
+                    null
+                } catch (e: IOException) {
+                    e
+                }
+                latch.await()
+                checkResult(closeFailure, checkStatus)
+                closeFailure?.let { throw it }
+            }
+
+            private fun whenWriting(block: () -> Unit) {
+                try {
+                    block()
+                } catch (e: IOException) {
+                    if (latch.count == 0L) {
+                        checkResult(e, checkStatus)
+                    }
+                    throw e
+                }
             }
         }
-    )
-    return object : DelegateOutputStream(pipe.sink.buffer().outputStream()) {
-        override fun close() {
-            super.close()
-            callbackLatch.await()
-            exceptionRef?.let { throw it }
-            checkStatus(responseRef!!)
+
+    // Only the first write or close to fail reports why; a close after a failed write (as in `use`)
+    // then does not throw the same exception again, which would be added to itself as suppressed.
+    private var isResultReported = false
+
+    private fun checkResult(pipeFailure: IOException?, checkStatus: (Response) -> Unit) {
+        if (isResultReported) {
+            return
         }
+        isResultReported = true
+        failure?.let { callFailure ->
+            pipeFailure?.let { callFailure.addSuppressed(it) }
+            throw callFailure
+        }
+        response!!.use { checkStatus(it) }
     }
 }
 

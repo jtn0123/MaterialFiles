@@ -13,7 +13,14 @@ import at.bitfire.dav4jvm.exception.NotFoundException
 import at.bitfire.dav4jvm.exception.PreconditionFailedException
 import at.bitfire.dav4jvm.exception.ServiceUnavailableException
 import at.bitfire.dav4jvm.exception.UnauthorizedException
+import java.io.IOException
+import java.net.ConnectException
+import java.net.InetAddress
+import java.net.ServerSocket
 import java.nio.ByteBuffer
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import me.zhanghai.android.files.provider.webdav.FakeWebDavServer
 import me.zhanghai.android.files.provider.webdav.FakeWebDavServer.CannedResponse
 import okhttp3.Credentials
@@ -160,6 +167,75 @@ class DavResourceCompatTest {
     }
 
     @Test
+    fun aSuccessfulUploadGivesItsConnectionBack() {
+        // Apache answers a PUT with a small HTML page, which has to be read or discarded.
+        server.cannedResponses["PUT /created.txt"] = CannedResponse(
+            201,
+            "<html><body>Created</body></html>",
+            mapOf("Content-Type" to "text/html")
+        )
+
+        resource("/created.txt").putCompat().use { it.write("data".toByteArray()) }
+
+        assertEquals(1, httpClient.connectionPool.connectionCount())
+        assertEquals(1, idleConnectionCount())
+    }
+
+    @Test
+    fun anUnreachableServerFailsTheUploadInsteadOfBlockingIt() {
+        val port = server.port
+        server.stop()
+        val stream = DavResource(httpClient, "http://127.0.0.1:$port/file.bin".toHttpUrl())
+            .putCompat()
+
+        // Far more than the pipe between the writer and the request body holds.
+        val failure = runWithTimeout {
+            runCatching {
+                stream.use { it.write(ByteArray(1024 * 1024)) }
+            }.exceptionOrNull()
+        }
+        // The failure is the connection's, not the pipe's.
+        assertTrue(failure.toString(), failure is ConnectException)
+    }
+
+    @Test
+    fun aServerThatRefusesBeforeReadingTheUploadDoesNotBlockIt() {
+        // Like nginx refusing an upload that is too large: answer, and hang up without reading.
+        val refusingServer = ServerSocket(0, 1, InetAddress.getLoopbackAddress())
+        val serverThread = Thread {
+            refusingServer.accept().use { socket ->
+                val headers = socket.getInputStream().bufferedReader()
+                while (headers.readLine().orEmpty().isNotEmpty()) {
+                    // Only the request line and the headers are read.
+                }
+                socket.getOutputStream().write(
+                    "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                        .toByteArray()
+                )
+                socket.getOutputStream().flush()
+            }
+        }.apply { isDaemon = true }
+        serverThread.start()
+        try {
+            val url = "http://127.0.0.1:${refusingServer.localPort}/file.bin".toHttpUrl()
+            val stream = DavResource(httpClient, url).putCompat()
+
+            val failure = runWithTimeout {
+                runCatching {
+                    stream.use { it.write(ByteArray(16 * 1024 * 1024)) }
+                }.exceptionOrNull()
+            }
+            // Whether the refusal or the broken connection is seen first depends on timing.
+            assertTrue(
+                failure.toString(),
+                failure is ForbiddenException || failure is IOException
+            )
+        } finally {
+            refusingServer.close()
+        }
+    }
+
+    @Test
     fun thePartialUpdateAServerSupportsIsFoundInItsOptions() {
         server.addFile("/file.txt", "hello")
         assertEquals(PatchSupport.NONE, resource("/file.txt").getPatchSupport())
@@ -236,6 +312,15 @@ class DavResourceCompatTest {
         // The first attempt was refused, and the second one still had the whole body.
         assertEquals(2, server.requests.count { it == "PATCH /file.txt" })
         assertEquals("01abc56789", server.fileContent("/file.txt"))
+    }
+
+    private fun <T> runWithTimeout(block: () -> T): T {
+        val executor = Executors.newSingleThreadExecutor { Thread(it).apply { isDaemon = true } }
+        try {
+            return executor.submit(Callable(block)).get(10, TimeUnit.SECONDS)
+        } finally {
+            executor.shutdownNow()
+        }
     }
 
     private fun idleConnectionCount(): Int {
