@@ -7,6 +7,7 @@ package me.zhanghai.android.files.provider.webdav
 
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.CopyOption
+import java8.nio.file.DirectoryNotEmptyException
 import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.StandardCopyOption
@@ -137,6 +138,21 @@ class WebDavCopyMoveTest {
     }
 
     @Test
+    fun aRefusedMoveOfACollectionKeepsWhatItHolds() {
+        server.addCollection("/a/dir")
+        server.addFile("/a/dir/file.txt", "content")
+        server.refusedRequests += "MOVE /a/dir"
+
+        // Copying a collection creates it empty, so deleting the source would lose its members.
+        assertThrows(DirectoryNotEmptyException::class.java) { move("/a/dir", "/b/dir") }
+
+        assertEquals("content", server.fileContent("/a/dir/file.txt"))
+        assertFalse("DELETE /a/dir/" in server.requests)
+        // The empty copy is removed again, so the move did not turn into a partial duplicate.
+        assertFalse(server.exists("/b/dir"))
+    }
+
+    @Test
     fun anEmptyCollectionIsMovedByCopyingWhenTheServerRefusesToMoveIt() {
         server.addCollection("/a/dir")
         server.refusedRequests += "MOVE /a/dir"
@@ -146,6 +162,18 @@ class WebDavCopyMoveTest {
         assertTrue(server.exists("/b/dir"))
         assertFalse(server.exists("/a/dir"))
         assertTrue("DELETE /a/dir/" in server.requests)
+    }
+
+    @Test
+    fun aCollectionIsNotCopiedOverACollectionThatHoldsSomething() {
+        server.addCollection("/a/dir")
+        server.addCollection("/b/dir")
+        server.addFile("/b/dir/keep.txt", "keep")
+
+        assertThrows(DirectoryNotEmptyException::class.java) {
+            copy("/a/dir", "/b/dir", StandardCopyOption.REPLACE_EXISTING)
+        }
+        assertEquals("keep", server.fileContent("/b/dir/keep.txt"))
     }
 
     @Test
