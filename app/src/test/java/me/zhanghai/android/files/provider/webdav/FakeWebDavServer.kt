@@ -16,7 +16,8 @@ import java.util.Collections
 
 /**
  * An in-memory WebDAV server, speaking just enough of RFC 4918 for the provider: PROPFIND with
- * depth 0 and 1, GET, HEAD, PUT, MKCOL, DELETE, MOVE and OPTIONS.
+ * depth 0 and 1, GET, HEAD, PUT (also of a byte range, as Apache does), PATCH (as SabreDAV does),
+ * MKCOL, DELETE, MOVE and OPTIONS.
  *
  * Paths are stored without their trailing slash, the root being the empty string, so that a
  * request for `/dir` and one for `/dir/` address the same collection - which is the point of
@@ -40,6 +41,26 @@ internal class FakeWebDavServer(private val password: String? = null) {
 
     /** Requests, as `METHOD path`, answered with 403 instead of being served. */
     val refusedRequests = mutableSetOf<String>()
+
+    /** A response served verbatim instead of what the request would otherwise get. */
+    class CannedResponse(
+        val code: Int,
+        val body: String? = null,
+        val headers: Map<String, String> = emptyMap()
+    )
+
+    /** Requests, as `METHOD path`, answered with a [CannedResponse] instead of being served. */
+    val cannedResponses = mutableMapOf<String, CannedResponse>()
+
+    /** The headers of each request, lower-cased, by its entry in [requests]; the last one wins. */
+    val requestHeaders: MutableMap<String, Map<String, String>> =
+        Collections.synchronizedMap(mutableMapOf<String, Map<String, String>>())
+
+    /** The `DAV` header of an OPTIONS response, which is how a server tells what it can do. */
+    var davHeader = "1, 2, 3"
+
+    /** The `Server` header of an OPTIONS response, if any. */
+    var serverHeader: String? = null
 
     /** Anything the handler itself threw; a test asserts this stays empty. */
     val failures: MutableList<Throwable> = Collections.synchronizedList(mutableListOf<Throwable>())
@@ -71,6 +92,8 @@ internal class FakeWebDavServer(private val password: String? = null) {
 
     fun fileContent(path: String): String? = entries[key(path)]?.let { String(it.content) }
 
+    fun fileBytes(path: String): ByteArray? = entries[key(path)]?.content
+
     fun exists(path: String): Boolean = key(path) in entries
 
     fun paths(): Set<String> = entries.keys.toSet()
@@ -82,14 +105,18 @@ internal class FakeWebDavServer(private val password: String? = null) {
             val path = exchange.requestURI.path
             val destination = exchange.requestHeaders.getFirst("Destination")
             val range = exchange.requestHeaders.getFirst("Range")
-            requests += "${exchange.requestMethod} $path" +
+            val request = "${exchange.requestMethod} $path" +
                 when {
                     destination != null -> " -> ${URI(destination).path}"
                     range != null -> " $range"
                     else -> ""
                 }
+            requests += request
+            requestHeaders[request] = exchange.requestHeaders.entries
+                .associate { (name, values) -> name.lowercase() to values.first() }
             val body = exchange.requestBody.readBytes()
             val key = key(path)
+            val canned = cannedResponses["${exchange.requestMethod} $key"]
             when {
                 password != null && !isAuthorized(exchange) -> {
                     exchange.responseHeaders.add("WWW-Authenticate", "Basic realm=\"fake\"")
@@ -98,6 +125,8 @@ internal class FakeWebDavServer(private val password: String? = null) {
 
                 "${exchange.requestMethod} $key" in refusedRequests ->
                     exchange.sendResponseHeaders(403, -1)
+
+                canned != null -> respond(exchange, canned)
 
                 else -> dispatch(exchange, key, body)
             }
@@ -119,6 +148,8 @@ internal class FakeWebDavServer(private val password: String? = null) {
 
             "PUT" -> put(exchange, key, body)
 
+            "PATCH" -> patch(exchange, key, body)
+
             "MKCOL" -> mkCol(exchange, key)
 
             "DELETE" -> delete(exchange, key)
@@ -126,7 +157,8 @@ internal class FakeWebDavServer(private val password: String? = null) {
             "MOVE" -> move(exchange, key)
 
             "OPTIONS" -> {
-                exchange.responseHeaders.add("DAV", "1, 2, 3")
+                exchange.responseHeaders.add("DAV", davHeader)
+                serverHeader?.let { exchange.responseHeaders.add("Server", it) }
                 exchange.sendResponseHeaders(200, -1)
             }
 
@@ -221,8 +253,39 @@ internal class FakeWebDavServer(private val password: String? = null) {
             exchange.sendResponseHeaders(409, -1)
             return
         }
+        // Apache's partial update: a PUT of `Range: bytes=first-last/*`.
+        val range = exchange.requestHeaders.getFirst("Range")
+        if (range != null) {
+            updateRange(exchange, existing, range.substringBefore('/'), body)
+            return
+        }
         entries[key] = Entry(false, body, creationDate = existing?.creationDate)
         exchange.sendResponseHeaders(if (existing != null) 204 else 201, -1)
+    }
+
+    // SabreDAV's partial update: a PATCH with `X-Update-Range: bytes=first-last`.
+    private fun patch(exchange: HttpExchange, key: String, body: ByteArray) {
+        val range = exchange.requestHeaders.getFirst("X-Update-Range")
+        val contentType = exchange.requestHeaders.getFirst("Content-Type")
+        if (range == null || contentType != "application/x-sabredav-partialupdate") {
+            exchange.sendResponseHeaders(415, -1)
+            return
+        }
+        updateRange(exchange, entries[key], range, body)
+    }
+
+    private fun updateRange(exchange: HttpExchange, entry: Entry?, range: String, body: ByteArray) {
+        val (first, last) = range.removePrefix("bytes=").split('-').map { it.toInt() }
+        if (entry == null || entry.isCollection || last - first + 1 != body.size ||
+            first > entry.content.size
+        ) {
+            exchange.sendResponseHeaders(if (entry == null) 404 else 416, -1)
+            return
+        }
+        val content = entry.content.copyOf(maxOf(entry.content.size, last + 1))
+        body.copyInto(content, first)
+        entry.content = content
+        exchange.sendResponseHeaders(204, -1)
     }
 
     private fun mkCol(exchange: HttpExchange, key: String) {
@@ -274,6 +337,13 @@ internal class FakeWebDavServer(private val password: String? = null) {
 
     private fun removeSubtree(key: String) {
         subtree(key).forEach { entries -= it }
+    }
+
+    private fun respond(exchange: HttpExchange, canned: CannedResponse) {
+        canned.headers.forEach { (name, value) -> exchange.responseHeaders.add(name, value) }
+        val body = canned.body?.toByteArray()?.takeIf { it.isNotEmpty() }
+        exchange.sendResponseHeaders(canned.code, body?.size?.toLong() ?: -1)
+        body?.let { exchange.responseBody.write(it) }
     }
 
     private fun respond(exchange: HttpExchange, code: Int, body: ByteArray, contentType: String) {
