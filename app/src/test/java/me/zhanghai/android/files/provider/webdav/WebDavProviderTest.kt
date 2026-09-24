@@ -343,6 +343,23 @@ class WebDavProviderTest {
     }
 
     @Test
+    fun writesAByteChannelInChunksWithoutPartialUpdates() {
+        server.addFile("/file.txt", "old")
+
+        val options = setOf(StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+        WebDavFileSystemProvider.newByteChannel(path("/file.txt"), options)
+            .use { channel ->
+                val first = ByteBuffer.wrap("abc".toByteArray())
+                assertEquals(3, channel.write(first))
+                // A channel write consumes what it wrote, and the next one continues after it.
+                assertFalse(first.hasRemaining())
+                assertEquals(3L, channel.position())
+                assertEquals(3, channel.write(ByteBuffer.wrap("def".toByteArray())))
+            }
+        assertEquals("abcdef", server.fileContent("/file.txt"))
+    }
+
+    @Test
     fun pathsAreNotJavaFilesAndCannotBeResolvedToRealPaths() {
         assertThrows(UnsupportedOperationException::class.java) { path("/file.txt").toFile() }
         assertThrows(UnsupportedOperationException::class.java) { path("/file.txt").toRealPath() }
