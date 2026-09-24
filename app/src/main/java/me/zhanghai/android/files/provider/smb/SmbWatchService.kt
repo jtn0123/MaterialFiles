@@ -69,7 +69,9 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
     }
 
     override fun cancel(key: SmbWatchKey) {
-        val notifier = synchronized(notifiers) { notifiers.remove(key.watchable())!! }
+        // The notifier removes itself when its connection fails, which can happen after the key saw
+        // itself valid and before this call, so it may already be gone.
+        val notifier = synchronized(notifiers) { notifiers.remove(key.watchable()) } ?: return
         notifier.interrupt()
         try {
             notifier.join()
