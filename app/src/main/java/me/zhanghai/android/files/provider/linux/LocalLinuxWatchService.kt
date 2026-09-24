@@ -28,6 +28,7 @@ import kotlinx.coroutines.runBlocking
 import me.zhanghai.android.files.provider.FileSystemProviders
 import me.zhanghai.android.files.provider.common.AbstractWatchService
 import me.zhanghai.android.files.provider.common.readAttributes
+import me.zhanghai.android.files.provider.common.watchEventKindSetOf
 import me.zhanghai.android.files.provider.linux.syscall.Constants
 import me.zhanghai.android.files.provider.linux.syscall.Syscall
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
@@ -47,22 +48,7 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
         kinds: Array<WatchEvent.Kind<*>>,
         vararg modifiers: WatchEvent.Modifier
     ): LocalLinuxWatchKey {
-        val kindSet = mutableSetOf<WatchEvent.Kind<*>>()
-        for (kind in kinds) {
-            when (kind) {
-                StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.ENTRY_MODIFY -> kindSet += kind
-
-                // Ignored.
-                StandardWatchEventKinds.OVERFLOW -> {}
-
-                else -> throw UnsupportedOperationException(kind.name())
-            }
-        }
-        for (modifier in modifiers) {
-            throw UnsupportedOperationException(modifier.name())
-        }
-        return poller.register(path, kindSet)
+        return poller.register(path, watchEventKindSetOf(kinds, modifiers))
     }
 
     override fun cancel(key: LocalLinuxWatchKey) {

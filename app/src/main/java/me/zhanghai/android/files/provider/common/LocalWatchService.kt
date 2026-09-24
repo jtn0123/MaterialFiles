@@ -27,21 +27,7 @@ class LocalWatchService : AbstractWatchService<LocalWatchKey>() {
         kinds: Array<WatchEvent.Kind<*>>,
         vararg modifiers: WatchEvent.Modifier
     ): LocalWatchKey {
-        val kindSet = mutableSetOf<WatchEvent.Kind<*>>()
-        for (kind in kinds) {
-            when (kind) {
-                StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.ENTRY_MODIFY -> kindSet += kind
-
-                // Ignored.
-                StandardWatchEventKinds.OVERFLOW -> {}
-
-                else -> throw UnsupportedOperationException(kind.name())
-            }
-        }
-        for (modifier in modifiers) {
-            throw UnsupportedOperationException(modifier.name())
-        }
+        val kindSet = watchEventKindSetOf(kinds, modifiers)
         synchronized(keys) {
             var key = keys[path]
             if (key != null) {
