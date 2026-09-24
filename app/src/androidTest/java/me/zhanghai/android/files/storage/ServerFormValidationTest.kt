@@ -19,7 +19,11 @@ import com.google.android.material.textfield.TextInputLayout
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.ftp.client.Authority as FtpAuthority
 import me.zhanghai.android.files.provider.ftp.client.Protocol as FtpProtocol
+import me.zhanghai.android.files.provider.sftp.client.Authority as SftpAuthority
+import me.zhanghai.android.files.provider.sftp.client.PasswordAuthentication as SftpPasswordAuthentication
 import me.zhanghai.android.files.provider.webdav.client.AccessTokenAuthentication
+import me.zhanghai.android.files.provider.webdav.client.Authority as WebDavAuthority
+import me.zhanghai.android.files.provider.webdav.client.Protocol as WebDavProtocol
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.valueCompat
@@ -173,6 +177,85 @@ class ServerFormValidationTest {
             waitForStorages { it.none { storage -> storage.id == server.id } }
         }
     }
+
+    @Test
+    fun editingAnSftpServerFillsInTheFormAndSavesIt() {
+        val server = SftpServer(
+            null,
+            "Test SFTP",
+            SftpAuthority("10.0.2.2", 2222, "tester"),
+            SftpPasswordAuthentication("secret"),
+            "home"
+        )
+        checkEditRoundTrip(
+            server,
+            { (it as SftpServer).relativePath },
+            Intent(context, EditSftpServerActivity::class.java)
+                .putArgs(EditSftpServerFragment.Args(server))
+        ) { activity ->
+            assertEquals("2222", activity.textOf(R.id.portEdit))
+            assertEquals("tester", activity.textOf(R.id.usernameEdit))
+            assertEquals("secret", activity.textOf(R.id.passwordEdit))
+        }
+    }
+
+    @Test
+    fun editingAWebDavServerFillsInTheFormAndSavesIt() {
+        val server = WebDavServer(
+            null,
+            "Test WebDAV",
+            WebDavAuthority(WebDavProtocol.DAVS, "example.com", 8443, ""),
+            AccessTokenAuthentication("token"),
+            "dav"
+        )
+        checkEditRoundTrip(
+            server,
+            { (it as WebDavServer).relativePath },
+            Intent(context, EditWebDavServerActivity::class.java)
+                .putArgs(EditWebDavServerFragment.Args(server))
+        ) { activity ->
+            assertEquals("8443", activity.textOf(R.id.portEdit))
+            assertEquals("token", activity.textOf(R.id.accessTokenEdit))
+        }
+    }
+
+    /**
+     * Opens [server] for editing, checks the form with [checkForm], changes the path and saves,
+     * then checks that only the path changed.
+     */
+    private fun checkEditRoundTrip(
+        server: Storage,
+        relativePathOf: (Storage) -> String,
+        intent: Intent,
+        checkForm: (Activity) -> Unit
+    ) {
+        val savedStorages = Settings.STORAGES.valueCompat
+        Settings.STORAGES.putValue(savedStorages + server)
+        waitForStorages { it.any { storage -> storage.id == server.id } }
+        try {
+            ActivityScenario.launch<Activity>(intent).use { scenario ->
+                instrumentation.waitForIdleSync()
+                scenario.onActivity { activity ->
+                    assertEquals(server.customName, activity.textOf(R.id.nameEdit))
+                    checkForm(activity)
+                    activity.findViewById<EditText>(R.id.pathEdit).setText("other")
+                    activity.findViewById<Button>(R.id.saveOrConnectAndAddButton).performClick()
+                }
+                instrumentation.waitForIdleSync()
+            }
+
+            waitForStorages { storages ->
+                storages.any { it.id == server.id && relativePathOf(it) == "other" }
+            }
+            val savedServer = Settings.STORAGES.valueCompat.single { it.id == server.id }
+            assertEquals(server.customName, savedServer.customName)
+        } finally {
+            Settings.STORAGES.putValue(savedStorages)
+            waitForStorages { it.none { storage -> storage.id == server.id } }
+        }
+    }
+
+    private fun Activity.textOf(id: Int): String = findViewById<EditText>(id).text.toString()
 
     private fun Activity.selectItem(id: Int, @ArrayRes entriesRes: Int, index: Int) {
         val item = resources.getTextArray(entriesRes)[index]
