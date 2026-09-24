@@ -11,16 +11,14 @@ import android.content.Context
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.application
 
-var ClipboardManager.primaryText: CharSequence
-    get() = primaryClip?.firstOrNull()?.coerceToText(application)!!
-    set(value) {
-        setPrimaryClip(ClipData.newPlainText(null, value))
-    }
+/** The text on the clipboard, or null when it is empty. */
+val ClipboardManager.primaryText: CharSequence?
+    get() = primaryClip?.firstOrNull()?.coerceToText(application)
 
 private const val TOAST_COPIED_TEXT_MAX_LENGTH = 40
 
 fun ClipboardManager.copyText(text: CharSequence, context: Context) {
-    primaryText = text
+    setPrimaryClip(ClipData.newPlainText(null, text))
     var copiedText = text
     var ellipsized = false
     if (copiedText.length > TOAST_COPIED_TEXT_MAX_LENGTH) {
