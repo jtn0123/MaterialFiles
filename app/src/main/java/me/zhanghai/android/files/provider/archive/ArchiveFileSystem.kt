@@ -59,11 +59,7 @@ internal class ArchiveFileSystem(
 
     private var isRefreshNeeded = true
 
-    private var entries: Map<Path, ReadArchive.Entry>? = null
-
-    private var tree: Map<Path, List<Path>>? = null
-
-    private var entryIndices: Map<ReadArchive.Entry, Int>? = null
+    private var entries: ArchiveReader.Entries? = null
 
     // One forward-reading archive kept between newInputStream() calls, so that extracting entries
     // in archive order reads the archive once instead of once per entry.
@@ -75,55 +71,30 @@ internal class ArchiveFileSystem(
 
     @Throws(IOException::class)
     fun getEntry(path: Path): ReadArchive.Entry = synchronized(lock) {
-        ensureEntriesLocked(path)
-        getEntryLocked(path)
+        ensureEntriesLocked(path).getEntry(path)
     }
 
-    @Throws(IOException::class)
-    private fun getEntryLocked(path: Path): ReadArchive.Entry = synchronized(lock) {
-        entries!![path] ?: throw NoSuchFileException(path.toString())
-    }
+    @Throws(NoSuchFileException::class)
+    private fun ArchiveReader.Entries.getEntry(path: Path): ReadArchive.Entry =
+        entries[path] ?: throw NoSuchFileException(path.toString())
 
     @Throws(IOException::class)
     fun newInputStream(file: Path): InputStream = synchronized(lock) {
-        ensureEntriesLocked(file)
-        val entry = getEntryLocked(file)
+        val entries = ensureEntriesLocked(file)
+        val entry = entries.getEntry(file)
         if (entry.isDirectory) {
             throw IsDirectoryException(file.toString())
         }
-        val index = entryIndices!![entry] ?: throw NoSuchFileException(file.toString())
-        val cached = cachedArchive
-        val canReuseCached =
-            cached != null && !isCachedArchiveInUse && !isCachedArchiveStale &&
-                cached.position < index
-        val archive = if (canReuseCached) {
-            cached!!
-        } else {
-            if (!isCachedArchiveInUse) {
-                cached?.closeSafe()
-                cachedArchive = null
-                isCachedArchiveStale = false
-            }
-            try {
-                ArchiveReader.open(archiveFile, passwords)
-            } catch (e: ArchiveException) {
-                throw e.toFileSystemOrInterruptedIOException(file)
-            }
-        }
+        val index = entries.indices[entry] ?: throw NoSuchFileException(file.toString())
+        val archive = openArchiveBeforeLocked(index, file)
         val found = try {
             archive.seekTo(index, entry.name)
         } catch (e: ArchiveException) {
-            archive.closeSafe()
-            if (archive === cachedArchive) {
-                cachedArchive = null
-            }
+            closeArchiveLocked(archive)
             throw e.toFileSystemOrInterruptedIOException(file)
         }
         if (!found) {
-            archive.closeSafe()
-            if (archive === cachedArchive) {
-                cachedArchive = null
-            }
+            closeArchiveLocked(archive)
             throw NoSuchFileException(file.toString())
         }
         val isCaching = cachedArchive == null || archive === cachedArchive
@@ -149,6 +120,37 @@ internal class ArchiveFileSystem(
             },
             file
         )
+    }
+
+    /**
+     * Returns the cached archive if it has not read past the entry at [index] yet, or opens a new
+     * one. A cached archive that cannot be reused is closed here unless a stream still reads it.
+     */
+    @Throws(IOException::class)
+    private fun openArchiveBeforeLocked(index: Int, file: Path): ArchiveReader.OpenArchive {
+        val cached = cachedArchive
+        if (cached != null && !isCachedArchiveInUse && !isCachedArchiveStale &&
+            cached.position < index
+        ) {
+            return cached
+        }
+        if (!isCachedArchiveInUse) {
+            cached?.closeSafe()
+            cachedArchive = null
+            isCachedArchiveStale = false
+        }
+        return try {
+            ArchiveReader.open(archiveFile, passwords)
+        } catch (e: ArchiveException) {
+            throw e.toFileSystemOrInterruptedIOException(file)
+        }
+    }
+
+    private fun closeArchiveLocked(archive: ArchiveReader.OpenArchive) {
+        archive.closeSafe()
+        if (archive === cachedArchive) {
+            cachedArchive = null
+        }
     }
 
     private fun releaseArchiveLocked(archive: ArchiveReader.OpenArchive, isCached: Boolean) {
@@ -177,18 +179,18 @@ internal class ArchiveFileSystem(
 
     @Throws(IOException::class)
     fun getDirectoryChildren(directory: Path): List<Path> = synchronized(lock) {
-        ensureEntriesLocked(directory)
-        val entry = getEntryLocked(directory)
+        val entries = ensureEntriesLocked(directory)
+        val entry = entries.getEntry(directory)
         if (!entry.isDirectory) {
             throw NotDirectoryException(directory.toString())
         }
-        tree!![directory]!!
+        // ArchiveReader.readEntries() gives every directory entry a list, even an empty one.
+        checkNotNull(entries.tree[directory]) { "No children listed for directory $directory" }
     }
 
     @Throws(IOException::class)
     fun readSymbolicLink(link: Path): String = synchronized(lock) {
-        ensureEntriesLocked(link)
-        val entry = getEntryLocked(link)
+        val entry = ensureEntriesLocked(link).getEntry(link)
         if (!entry.isSymbolicLink) {
             throw NotLinkException(link.toString())
         }
@@ -216,21 +218,22 @@ internal class ArchiveFileSystem(
     }
 
     @Throws(IOException::class)
-    private fun ensureEntriesLocked(file: Path) {
+    private fun ensureEntriesLocked(file: Path): ArchiveReader.Entries {
         if (!isOpen) {
             throw ClosedFileSystemException()
         }
-        if (isRefreshNeeded) {
-            val readEntries = try {
-                ArchiveReader.readEntries(archiveFile, passwords, rootDirectory)
-            } catch (e: ArchiveException) {
-                throw e.toFileSystemOrInterruptedIOException(file)
-            }
-            entries = readEntries.entries
-            tree = readEntries.tree
-            entryIndices = readEntries.indices
-            isRefreshNeeded = false
+        val entries = entries
+        if (entries != null && !isRefreshNeeded) {
+            return entries
         }
+        val readEntries = try {
+            ArchiveReader.readEntries(archiveFile, passwords, rootDirectory)
+        } catch (e: ArchiveException) {
+            throw e.toFileSystemOrInterruptedIOException(file)
+        }
+        this.entries = readEntries
+        isRefreshNeeded = false
+        return readEntries
     }
 
     override fun provider(): FileSystemProvider = provider
@@ -243,8 +246,6 @@ internal class ArchiveFileSystem(
             provider.removeFileSystem(this)
             isRefreshNeeded = false
             entries = null
-            tree = null
-            entryIndices = null
             isOpen = false
             discardCachedArchiveLocked()
         }

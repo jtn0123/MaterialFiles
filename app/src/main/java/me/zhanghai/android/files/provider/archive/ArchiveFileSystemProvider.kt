@@ -146,9 +146,8 @@ object ArchiveFileSystemProvider : FileSystemProvider(), PathObservableProvider,
     @Throws(IOException::class)
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
         requireProviderPath<ArchivePath>(link)
-        when (target) {
-            is ArchivePath, is ByteStringPath -> {}
-            else -> throw ProviderMismatchException(target.toString())
+        if (target !is ArchivePath && target !is ByteStringPath) {
+            throw ProviderMismatchException(target.toString())
         }
         throw ReadOnlyFileSystemException(link.toString(), target.toString(), null)
     }

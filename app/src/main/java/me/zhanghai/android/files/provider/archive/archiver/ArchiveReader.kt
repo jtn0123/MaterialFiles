@@ -48,7 +48,7 @@ object ArchiveReader {
             var path = path
             while (true) {
                 val parentPath = path.parent ?: break
-                val entry = entries[path]!!
+                val entry = entries.getValue(path)
                 if (entry.isDirectory) {
                     tree.getOrPut(path) { mutableListOf() }
                 }
