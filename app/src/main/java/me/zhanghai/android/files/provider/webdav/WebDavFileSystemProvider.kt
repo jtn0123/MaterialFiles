@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.webdav
 
+import at.bitfire.dav4jvm.Response
 import at.bitfire.dav4jvm.exception.DavException
 import java.io.IOException
 import java.io.InputStream
@@ -35,6 +36,7 @@ import java8.nio.file.spi.FileSystemProvider
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.ByteStringPath
 import me.zhanghai.android.files.provider.common.DelegateSchemeFileSystemProvider
+import me.zhanghai.android.files.provider.common.OpenOptions
 import me.zhanghai.android.files.provider.common.PathListDirectoryStream
 import me.zhanghai.android.files.provider.common.PathObservable
 import me.zhanghai.android.files.provider.common.PathObservableProvider
@@ -125,38 +127,13 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         requireProviderPath<WebDavPath>(file)
         val openOptions = options.toOpenOptions()
         openOptions.checkForWebDav()
+        // Without WRITE, toOpenOptions() has already dropped TRUNCATE_EXISTING, CREATE and
+        // CREATE_NEW, and APPEND implies WRITE, so WRITE is all there is to refuse here.
         if (openOptions.write) {
             throw UnsupportedOperationException(StandardOpenOption.WRITE.toString())
         }
-        if (openOptions.append) {
-            throw UnsupportedOperationException(StandardOpenOption.APPEND.toString())
-        }
-        if (openOptions.truncateExisting) {
-            throw UnsupportedOperationException(StandardOpenOption.TRUNCATE_EXISTING.toString())
-        }
-        if (openOptions.create || openOptions.createNew || openOptions.noFollowLinks) {
-            val fileResponse = try {
-                client.findPropertiesOrNull(file, true)
-            } catch (e: DavException) {
-                throw e.toFileSystemException(file.toString())
-            }
-            if (openOptions.noFollowLinks && fileResponse != null && fileResponse.isSymbolicLink) {
-                throw FileSystemException(
-                    file.toString(),
-                    null,
-                    "File is a symbolic link: $fileResponse"
-                )
-            }
-            if (openOptions.createNew && fileResponse != null) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if ((openOptions.create || openOptions.createNew) && fileResponse == null) {
-                try {
-                    client.makeFile(file)
-                } catch (e: DavException) {
-                    throw e.toFileSystemException(file.toString())
-                }
-            }
+        if (openOptions.noFollowLinks) {
+            checkNoFollowLinks(file, openOptions, findPropertiesOrNullNoFollow(file))
         }
         try {
             return client.get(file)
@@ -179,11 +156,7 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         if (!openOptions.truncateExisting && !openOptions.createNew) {
             throw UnsupportedOperationException("Missing ${StandardOpenOption.TRUNCATE_EXISTING}")
         }
-        val fileResponse = try {
-            client.findPropertiesOrNull(file, true)
-        } catch (e: DavException) {
-            throw e.toFileSystemException(file.toString())
-        }
+        val fileResponse = findPropertiesOrNullNoFollow(file)
         if (openOptions.createNew && fileResponse != null) {
             throw FileAlreadyExistsException(file.toString())
         }
@@ -226,37 +199,55 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
         if (openOptions.write || openOptions.create || openOptions.createNew ||
             openOptions.noFollowLinks
         ) {
-            val fileResponse = try {
-                client.findPropertiesOrNull(file, true)
-            } catch (e: DavException) {
-                throw e.toFileSystemException(file.toString())
-            }
-            if (openOptions.createNew && fileResponse != null) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (openOptions.noFollowLinks && fileResponse != null && fileResponse.isSymbolicLink) {
-                throw FileSystemException(
-                    file.toString(),
-                    null,
-                    "File is a symbolic link: $fileResponse"
-                )
-            }
-            if (fileResponse == null) {
-                if (!(openOptions.create || openOptions.createNew)) {
-                    throw NoSuchFileException(file.toString())
-                }
-                try {
-                    client.makeFile(file)
-                } catch (e: DavException) {
-                    throw e.toFileSystemException(file.toString())
-                }
-            }
+            prepareFileToOpenChannel(file, openOptions)
         }
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
         }
         try {
             return client.openByteChannel(file, openOptions.append)
+        } catch (e: DavException) {
+            throw e.toFileSystemException(file.toString())
+        }
+    }
+
+    private fun prepareFileToOpenChannel(file: WebDavPath, openOptions: OpenOptions) {
+        val fileResponse = findPropertiesOrNullNoFollow(file)
+        if (openOptions.createNew && fileResponse != null) {
+            throw FileAlreadyExistsException(file.toString())
+        }
+        checkNoFollowLinks(file, openOptions, fileResponse)
+        if (fileResponse == null) {
+            if (!(openOptions.create || openOptions.createNew)) {
+                throw NoSuchFileException(file.toString())
+            }
+            makeFileToOpen(file)
+        }
+    }
+
+    private fun findPropertiesOrNullNoFollow(file: WebDavPath): Response? = try {
+        client.findPropertiesOrNull(file, true)
+    } catch (e: DavException) {
+        throw e.toFileSystemException(file.toString())
+    }
+
+    private fun checkNoFollowLinks(
+        file: WebDavPath,
+        openOptions: OpenOptions,
+        fileResponse: Response?
+    ) {
+        if (openOptions.noFollowLinks && fileResponse != null && fileResponse.isSymbolicLink) {
+            throw FileSystemException(
+                file.toString(),
+                null,
+                "File is a symbolic link: $fileResponse"
+            )
+        }
+    }
+
+    private fun makeFileToOpen(file: WebDavPath) {
+        try {
+            client.makeFile(file)
         } catch (e: DavException) {
             throw e.toFileSystemException(file.toString())
         }
@@ -292,9 +283,8 @@ object WebDavFileSystemProvider : FileSystemProvider(), PathObservableProvider, 
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
         requireProviderPath<WebDavPath>(link)
-        when (target) {
-            is WebDavPath, is ByteStringPath -> {}
-            else -> throw ProviderMismatchException(target.toString())
+        if (target !is WebDavPath && target !is ByteStringPath) {
+            throw ProviderMismatchException(target.toString())
         }
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
