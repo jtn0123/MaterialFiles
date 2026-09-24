@@ -21,7 +21,8 @@ import me.zhanghai.android.files.util.closeSafe
 // Without a socket timeout a connection that died silently (the server went away, a NAT forgot
 // us) stays "connected" in SMBJ forever and every request on it waits out its own timeout. SMB is
 // silent while idle, so this also closes a connection nobody used for that long (which a paused
-// video or a watched folder can be), hence a generous value; the next request connects again.
+// video or a watched folder can be), hence a generous value; the next request connects again, and
+// an open file is opened again on the new connection (see FileByteChannel).
 private const val SO_TIMEOUT_MINUTES = 10L
 
 internal fun newSmbConfig(encryptData: Boolean): SmbConfig = SmbConfig.builder()

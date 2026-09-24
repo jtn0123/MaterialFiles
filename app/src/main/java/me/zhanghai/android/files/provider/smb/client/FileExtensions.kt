@@ -5,8 +5,13 @@
 
 package me.zhanghai.android.files.provider.smb.client
 
+import com.hierynomus.msdtyp.AccessMask
 import com.hierynomus.mserref.NtStatus
+import com.hierynomus.msfscc.FileAttributes
+import com.hierynomus.mssmb2.SMB2CreateDisposition
+import com.hierynomus.mssmb2.SMB2CreateOptions
 import com.hierynomus.mssmb2.SMB2PacketHeader
+import com.hierynomus.mssmb2.SMB2ShareAccess
 import com.hierynomus.mssmb2.SMBApiException
 import com.hierynomus.mssmb2.copy.CopyChunkRequest
 import com.hierynomus.mssmb2.copy.CopyChunkResponse
@@ -14,6 +19,7 @@ import com.hierynomus.protocol.commons.buffer.Buffer
 import com.hierynomus.smb.SMBBuffer
 import com.hierynomus.smbj.ProgressListener
 import com.hierynomus.smbj.common.SMBRuntimeException
+import com.hierynomus.smbj.share.DiskShare
 import com.hierynomus.smbj.share.File
 import com.hierynomus.smbj.share.ShareAccessor
 import com.hierynomus.smbj.share.StatusHandler
@@ -135,4 +141,18 @@ private fun File.serverCopyChunk(
         throw SMBRuntimeException(e)
     }
     return ioctlResponse.header to response
+}
+
+@Throws(ClientException::class)
+internal fun DiskShare.openFileOrThrow(
+    path: String,
+    desiredAccess: Set<AccessMask>,
+    fileAttributes: Set<FileAttributes>,
+    shareAccess: Set<SMB2ShareAccess>,
+    createDisposition: SMB2CreateDisposition,
+    createOptions: Set<SMB2CreateOptions>
+): File = try {
+    openFile(path, desiredAccess, fileAttributes, shareAccess, createDisposition, createOptions)
+} catch (e: SMBRuntimeException) {
+    throw ClientException(e)
 }

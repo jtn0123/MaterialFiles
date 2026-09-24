@@ -27,10 +27,32 @@ import me.zhanghai.android.files.util.closeSafe
 import me.zhanghai.android.files.util.findCauseByClass
 
 class FileByteChannel(
-    private val file: File,
-    isAppend: Boolean
+    file: File,
+    isAppend: Boolean,
+    private val reopen: (() -> File)? = null
 // Cancelling reads leads to TransportException: Received response with unknown sequence number
 ) : AbstractFileByteChannel(isAppend, shouldCancelRead = false) {
+    private val fileLock = Any()
+
+    private var openFile = file
+
+    // SMBJ closes a connection that stays silent for its socket timeout, as a paused video's does,
+    // and the handle dies with it; the file is then opened again on a new connection if [reopen]
+    // says how.
+    private val file: File
+        @Throws(IOException::class)
+        get() = synchronized(fileLock) {
+            val reopen = reopen
+            if (reopen != null && !openFile.isConnected) {
+                openFile = try {
+                    reopen()
+                } catch (e: ClientException) {
+                    throw IOException(e)
+                }
+            }
+            openFile
+        }
+
     // SMBJ's async read takes no timeout and bypasses its transact timeout, so timeoutMillis is
     // enforced by the timed wait in AbstractFileByteChannel, which then abandons the future.
     @Throws(IOException::class)
@@ -120,6 +142,11 @@ class FileByteChannel(
 
     @Throws(IOException::class)
     override fun onClose() {
+        val file = synchronized(fileLock) { openFile }
+        if (!file.isConnected) {
+            // The server let go of the handle along with the connection.
+            return
+        }
         try {
             file.close()
         } catch (e: SMBRuntimeException) {
@@ -153,3 +180,6 @@ class FileByteChannel(
         }
     }
 }
+
+private val File.isConnected: Boolean
+    get() = diskShare.treeConnect.session.connection.isConnected

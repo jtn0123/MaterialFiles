@@ -61,20 +61,21 @@ class Client(internal val authenticator: Authenticator) {
         createDisposition: SMB2CreateDisposition,
         createOptions: Set<SMB2CreateOptions>,
         isAppend: Boolean
-    ): SeekableByteChannel = withDiskShare(path) { share, sharePath ->
-        val file = try {
-            share.openFile(
+    ): SeekableByteChannel {
+        fun open(disposition: SMB2CreateDisposition) = withDiskShare(path) { share, sharePath ->
+            share.openFileOrThrow(
                 sharePath.path,
                 desiredAccess,
                 fileAttributes,
                 shareAccess,
-                createDisposition,
+                disposition,
                 createOptions
             )
-        } catch (e: SMBRuntimeException) {
-            throw ClientException(e)
         }
-        FileByteChannel(file, isAppend)
+        // Whatever the first open created or replaced is there by the time it is reopened.
+        return FileByteChannel(open(createDisposition), isAppend) {
+            open(SMB2CreateDisposition.FILE_OPEN)
+        }
     }
 
     @Throws(ClientException::class)
