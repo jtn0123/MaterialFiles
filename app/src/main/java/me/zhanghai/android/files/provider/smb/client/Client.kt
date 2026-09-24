@@ -28,7 +28,6 @@ import java8.nio.channels.SeekableByteChannel
 import me.zhanghai.android.files.provider.common.CloseableIterator
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.hasBits
-import me.zhanghai.android.files.util.logWarning
 
 /**
  * The connections of this provider, one pool per authority, created on demand with credentials
@@ -115,8 +114,6 @@ class Client(internal val authenticator: Authenticator) {
         }
     }
 
-    // @see https://gitlab.com/samba-team/devel/samba/-/blob/master/source3/libsmb/clisymlink.c
-    //      cli_symlink_send
     @Throws(ClientException::class)
     fun createSymbolicLink(
         path: Path,
@@ -124,58 +121,10 @@ class Client(internal val authenticator: Authenticator) {
         fileAttributes: Set<FileAttributes>? = null
     ) {
         withDiskShare(path) { share, sharePath ->
-            val diskEntry = try {
-                share.open(
-                    sharePath.path,
-                    enumSetOf(
-                        AccessMask.FILE_READ_ATTRIBUTES,
-                        AccessMask.FILE_WRITE_ATTRIBUTES,
-                        AccessMask.FILE_READ_EA,
-                        AccessMask.FILE_WRITE_EA,
-                        AccessMask.DELETE,
-                        AccessMask.SYNCHRONIZE
-                    ),
-                    enumSetOf<FileAttributes>().apply {
-                        fileAttributes?.let { addAll(it) }
-                        this -= FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT
-                        if (isEmpty()) {
-                            this += FileAttributes.FILE_ATTRIBUTE_NORMAL
-                        }
-                    },
-                    null,
-                    SMB2CreateDisposition.FILE_CREATE,
-                    enumSetOf(
-                        SMB2CreateOptions.FILE_NON_DIRECTORY_FILE,
-                        SMB2CreateOptions.FILE_OPEN_REPARSE_POINT
-                    )
-                )
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
-            try {
-                diskEntry.use {
-                    var successful = false
-                    try {
-                        it.setSymbolicLinkReparseData(reparseData)
-                        successful = true
-                    } finally {
-                        if (!successful) {
-                            try {
-                                it.deleteOnClose()
-                            } catch (e: SMBRuntimeException) {
-                                e.logWarning("SmbClient", "createSymbolicLink($path)")
-                            }
-                        }
-                    }
-                }
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
+            share.createSymbolicLink(sharePath.path, reparseData, fileAttributes, path)
         }
     }
 
-    // @see https://gitlab.com/samba-team/devel/samba/-/blob/master/source3/libsmb/clifile.c
-    //      cli_smb2_hardlink_send
     @Throws(ClientException::class)
     fun createLink(path: Path, link: Path, openReparsePoint: Boolean) {
         val sharePath = path.sharePath ?: throw ClientException("$path does not have a share path")
@@ -191,28 +140,7 @@ class Client(internal val authenticator: Authenticator) {
             )
         }
         withDiskShare(path) { share, _ ->
-            val diskEntry = try {
-                share.open(
-                    sharePath.path,
-                    enumSetOf(AccessMask.FILE_WRITE_ATTRIBUTES, AccessMask.FILE_WRITE_EA),
-                    null,
-                    SMB2ShareAccess.ALL,
-                    SMB2CreateDisposition.FILE_OPEN,
-                    // CreateHardLink doesn't work for directories.
-                    enumSetOf(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE).apply {
-                        if (openReparsePoint) {
-                            this += SMB2CreateOptions.FILE_OPEN_REPARSE_POINT
-                        }
-                    }
-                )
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
-            try {
-                diskEntry.use { it.createHardlink(linkSharePath.path, false) }
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
+            share.createHardLink(sharePath.path, linkSharePath.path, openReparsePoint)
         }
     }
 
@@ -246,28 +174,10 @@ class Client(internal val authenticator: Authenticator) {
         }
     }
 
-    // @see https://gitlab.com/samba-team/devel/samba/-/blob/master/source3/libsmb/clisymlink.c
-    //      cli_readlink_send
     @Throws(ClientException::class)
     fun readSymbolicLink(path: Path): SymbolicLinkReparseData =
         withDiskShare(path) { share, sharePath ->
-            val diskEntry = try {
-                share.open(
-                    sharePath.path,
-                    enumSetOf(AccessMask.FILE_READ_ATTRIBUTES, AccessMask.FILE_READ_EA),
-                    null,
-                    SMB2ShareAccess.ALL,
-                    SMB2CreateDisposition.FILE_OPEN,
-                    enumSetOf(SMB2CreateOptions.FILE_OPEN_REPARSE_POINT)
-                )
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
-            try {
-                diskEntry.use { it.getSymbolicLinkReparseData() }
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
+            share.readSymbolicLink(sharePath.path)
         }
 
     // @see https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/cd0162e4-7650-4293-8a2a-d696923203ef
