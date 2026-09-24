@@ -134,7 +134,7 @@ class FilePropertiesDialogFragment : AppCompatDialogFragment() {
 
         // AlertDialog (its AlertController) adds FLAG_ALT_FOCUSABLE_IM when the initial custom
         // view doesn't have any view that returns true for onCheckIsTextEditor().
-        requireDialog().window!!.clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
+        requireDialog().window?.clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
     }
 
     companion object {

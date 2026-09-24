@@ -50,7 +50,7 @@ abstract class NameDialogFragment : AppCompatDialogFragment() {
             .setNegativeButton(android.R.string.cancel, null)
             .create()
             .apply {
-                window!!.setSoftInputMode(
+                window?.setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE or
                         WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
                 )

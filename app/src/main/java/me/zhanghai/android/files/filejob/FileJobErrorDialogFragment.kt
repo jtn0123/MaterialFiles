@@ -96,10 +96,12 @@ class FileJobErrorDialogFragment : AppCompatDialogFragment() {
             .apply { setCanceledOnTouchOutside(false) }
 
     private fun remount() {
-        if (!viewModel.remountState.value.isReady || !args.readOnlyFileStore!!.isReadOnly) {
+        // The remount button only shows for a read-only file store.
+        val fileStore = args.readOnlyFileStore ?: return
+        if (!viewModel.remountState.value.isReady || !fileStore.isReadOnly) {
             return
         }
-        viewModel.remount(args.readOnlyFileStore!!)
+        viewModel.remount(fileStore)
     }
 
     private fun onRemountStateChanged(state: ActionState<PosixFileStore, Unit>) {
@@ -118,12 +120,13 @@ class FileJobErrorDialogFragment : AppCompatDialogFragment() {
     }
 
     private fun updateRemountButton() {
+        val fileStore = args.readOnlyFileStore ?: return
         val textRes = when {
             viewModel.remountState.value.isRunning -> R.string.file_job_remount_loading_format
-            args.readOnlyFileStore!!.isReadOnly -> R.string.file_job_remount_format
+            fileStore.isReadOnly -> R.string.file_job_remount_format
             else -> R.string.file_job_remount_success_format
         }
-        binding.remountButton.text = getString(textRes, args.readOnlyFileStore!!.name())
+        binding.remountButton.text = getString(textRes, fileStore.name())
     }
 
     private fun onDialogButtonClick(dialog: DialogInterface, which: Int) {
