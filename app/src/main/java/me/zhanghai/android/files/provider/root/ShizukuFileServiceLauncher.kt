@@ -155,24 +155,25 @@ class ShizukuFileServiceInterface : RemoteFileServiceInterface() {
         RootFileService.main()
     }
 
-    /**
-     * Shizuku asks a user service to go away with a transaction of its own rather than killing the
-     * process, so the process lingers unless it exits here.
-     */
-    override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+    override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean =
         // Let super call data.enforceInterface() exactly once.
-        if (super.onTransact(code, data, reply, flags)) {
-            return true
-        }
-        if (code != TRANSACTION_DESTROY) {
-            return false
-        }
-        exitProcess(0)
-    }
-
-    companion object {
-        // The constant is library-internal, but it is the only name for Shizuku's destroy call.
-        @SuppressLint("RestrictedApi")
-        private const val TRANSACTION_DESTROY = ShizukuApiConstants.USER_SERVICE_TRANSACTION_destroy
-    }
+        super.onTransact(code, data, reply, flags) ||
+            handleShizukuUserServiceTransaction(code) { exitProcess(0) }
 }
+
+/**
+ * Shizuku asks a user service to go away with a transaction of its own rather than killing the
+ * process, so the process lingers unless it exits on that transaction. Returns whether [code] was
+ * that transaction.
+ */
+internal fun handleShizukuUserServiceTransaction(code: Int, destroy: () -> Unit): Boolean {
+    if (code != SHIZUKU_TRANSACTION_DESTROY) {
+        return false
+    }
+    destroy()
+    return true
+}
+
+// The constant is library-internal, but it is the only name for Shizuku's destroy call.
+@SuppressLint("RestrictedApi")
+private const val SHIZUKU_TRANSACTION_DESTROY = ShizukuApiConstants.USER_SERVICE_TRANSACTION_destroy
