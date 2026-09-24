@@ -152,28 +152,27 @@ abstract class ByteStringListPath<T : ByteStringListPath<T>> :
     override fun normalize(): T {
         val normalizedSegments = mutableListOf<ByteString>()
         for (segment in segments) {
-            if (segment == BYTE_STRING_DOT) {
-                // Ignored.
-            } else if (segment == BYTE_STRING_DOT_DOT) {
-                if (normalizedSegments.isEmpty()) {
-                    if (!isAbsolute) {
-                        normalizedSegments += segment
-                    }
-                } else {
-                    if (normalizedSegments.last() == BYTE_STRING_DOT_DOT) {
-                        normalizedSegments += segment
-                    } else {
-                        normalizedSegments.removeLastCompat()
-                    }
-                }
-            } else {
-                normalizedSegments += segment
+            when (segment) {
+                BYTE_STRING_DOT -> continue
+                BYTE_STRING_DOT_DOT -> appendDotDot(normalizedSegments)
+                else -> normalizedSegments += segment
             }
         }
         if (!isAbsolute && normalizedSegments.isEmpty()) {
             return createEmptyPath()
         }
         return createPath(isAbsolute, normalizedSegments)
+    }
+
+    // ".." removes the name before it; with none left, a root stays itself and a relative path
+    // keeps the "..".
+    private fun appendDotDot(normalizedSegments: MutableList<ByteString>) {
+        val lastSegment = normalizedSegments.lastOrNull()
+        when {
+            lastSegment == null -> if (!isAbsolute) normalizedSegments += BYTE_STRING_DOT_DOT
+            lastSegment == BYTE_STRING_DOT_DOT -> normalizedSegments += BYTE_STRING_DOT_DOT
+            else -> normalizedSegments.removeLastCompat()
+        }
     }
 
     override fun resolve(other: Path): T {
