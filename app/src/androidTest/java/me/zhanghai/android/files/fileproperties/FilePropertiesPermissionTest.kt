@@ -42,7 +42,7 @@ class FilePropertiesPermissionTest {
     fun setUp() {
         shell("appops set ${context.packageName} MANAGE_EXTERNAL_STORAGE allow")
         shell("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS")
-        directory = File(context.cacheDir, "permissions-${UUID.randomUUID()}").apply { mkdirs() }
+        directory = File(context.filesDir, "permissions-${UUID.randomUUID()}").apply { mkdirs() }
         file = File(directory, "Notes.txt").apply { writeText("Nothing to see") }
         properties = PropertiesDialogTesting(directory)
     }
@@ -64,10 +64,15 @@ class FilePropertiesPermissionTest {
         R.string.file_properties_permission_owner
     )
 
-    private fun tapValue(value: String) {
+    private val ownerLabel: String
+        get() = context.getString(R.string.file_properties_permission_owner)
+
+    private fun tapValue(value: String, index: Int = 0) {
         val item = device.wait(Until.findObject(By.text(value)), TIMEOUT_MILLIS)
         assertNotNull("The permissions tab never showed $value", item)
-        item!!.click()
+        val items = device.findObjects(By.text(value)).sortedBy { it.visibleBounds.top }
+        assertTrue("The permissions tab showed $value ${items.size} times", index < items.size)
+        items[index].click()
     }
 
     private fun awaitDialog(titleRes: Int) {
@@ -107,7 +112,8 @@ class FilePropertiesPermissionTest {
         val group = items[context.getString(R.string.file_properties_permission_group)]
         assertNotNull(items.keys.toString(), group)
 
-        tapValue(group!!)
+        // The group of an app's own file is named like its owner, and the owner comes first.
+        tapValue(group!!, index = if (group == items[ownerLabel]) 1 else 0)
         awaitDialog(R.string.file_properties_permission_set_group_title)
 
         device.pressBack()

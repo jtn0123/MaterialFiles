@@ -34,7 +34,7 @@ class PathAttributesFetcherTest {
     @Before
     fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        directory = File(context.cacheDir, "local-thumbnails-${UUID.randomUUID()}")
+        directory = File(context.filesDir, "local-thumbnails-${UUID.randomUUID()}")
             .apply { mkdirs() }
         loading = ThumbnailLoading(directory)
     }

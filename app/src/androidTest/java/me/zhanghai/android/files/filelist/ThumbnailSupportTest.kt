@@ -40,7 +40,7 @@ class ThumbnailSupportTest {
 
     @Before
     fun setUp() {
-        directory = File(context.cacheDir, "thumbnail-support-${UUID.randomUUID()}")
+        directory = File(context.filesDir, "thumbnail-support-${UUID.randomUUID()}")
             .apply { mkdirs() }
         instrumentation.runOnMainSync {
             previousReadRemote = Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.value

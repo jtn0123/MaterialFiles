@@ -59,7 +59,7 @@ class ImageViewerAdapterTest {
 
     @Before
     fun setUp() {
-        directory = File(context.cacheDir, "image-viewer-${UUID.randomUUID()}")
+        directory = File(context.filesDir, "image-viewer-${UUID.randomUUID()}")
             .apply { mkdirs() }
     }
 

@@ -43,7 +43,7 @@ class FileListPartialResultsTest {
         val previousIdleTimeout = configurator.waitForIdleTimeout
         // Observe short-lived toasts without waiting for animations to become idle.
         configurator.waitForIdleTimeout = 0
-        val directory = File(context.cacheDir, "Project files").apply { mkdirs() }
+        val directory = File(context.filesDir, "Project files").apply { mkdirs() }
         listOf("Meeting notes.txt", "Shopping list.txt", "Weekend plans.txt").forEach {
             File(directory, it).writeText("Review fixture")
         }

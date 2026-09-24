@@ -52,7 +52,7 @@ class FileListRowMenuTest {
         executeShellCommand(
             "pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS"
         )
-        directory = File(context.cacheDir, "row-menu-${UUID.randomUUID()}").apply { mkdirs() }
+        directory = File(context.filesDir, "row-menu-${UUID.randomUUID()}").apply { mkdirs() }
     }
 
     @After

@@ -34,7 +34,7 @@ class SafeFileWriteTest {
     @Test fun interruptedWritePreservesRealLocalFileAndSuccessPreservesMode() {
         val directory =
             File(
-                InstrumentationRegistry.getInstrumentation().targetContext.cacheDir,
+                InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
                 "safe-write-test"
             )
         directory.mkdirs()
@@ -77,7 +77,7 @@ class SafeFileWriteTest {
     @Test fun savingThroughSymlinkKeepsTheLink() {
         val directory =
             File(
-                InstrumentationRegistry.getInstrumentation().targetContext.cacheDir,
+                InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
                 "safe-link-test"
             )
         directory.mkdirs()
@@ -95,7 +95,7 @@ class SafeFileWriteTest {
 
     @Test fun changedTargetIsNotOverwrittenByStagedSave() {
         val file = File(
-            InstrumentationRegistry.getInstrumentation().targetContext.cacheDir,
+            InstrumentationRegistry.getInstrumentation().targetContext.filesDir,
             "concurrent-save.txt"
         ).apply { writeText("original") }
         try {
