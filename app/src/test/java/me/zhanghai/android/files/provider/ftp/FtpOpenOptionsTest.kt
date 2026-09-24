@@ -14,6 +14,7 @@ import java8.nio.file.NoSuchFileException
 import java8.nio.file.OpenOption
 import java8.nio.file.ProviderMismatchException
 import java8.nio.file.StandardOpenOption
+import java8.nio.file.attribute.FileAttribute
 import me.zhanghai.android.files.provider.common.ByteStringPath
 import me.zhanghai.android.files.provider.common.TestPath
 import me.zhanghai.android.files.provider.common.toByteString
@@ -151,6 +152,25 @@ class FtpOpenOptionsTest {
                 fileSystem.getPath("/file.txt"),
                 setOf(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
             ).use { assertEquals(5L, it.size()) }
+        }
+    }
+
+    @Test
+    fun aChannelCannotBeCreatedWithAttributes() {
+        File(root, "file.txt").writeText("hello")
+        withFtpFileSystem(root) { fileSystem ->
+            val attribute = object : FileAttribute<String> {
+                override fun name(): String = "test:attribute"
+
+                override fun value(): String = "value"
+            }
+            assertThrows(UnsupportedOperationException::class.java) {
+                FtpFileSystemProvider.newByteChannel(
+                    fileSystem.getPath("/file.txt"),
+                    setOf(StandardOpenOption.READ),
+                    attribute
+                )
+            }
         }
     }
 

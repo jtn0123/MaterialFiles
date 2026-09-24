@@ -15,6 +15,7 @@ import java8.nio.file.ProviderMismatchException
 import java8.nio.file.StandardCopyOption
 import java8.nio.file.StandardOpenOption
 import java8.nio.file.attribute.BasicFileAttributeView
+import java8.nio.file.attribute.FileAttribute
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.common.ByteStringPath
 import me.zhanghai.android.files.provider.common.TestPath
@@ -174,6 +175,23 @@ class WebDavOpenOptionsTest {
             path("/file.txt"),
             setOf(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
         ).use { assertEquals(5L, it.size()) }
+    }
+
+    @Test
+    fun aChannelCannotBeCreatedWithAttributes() {
+        server.addFile("/file.txt", "hello")
+        val attribute = object : FileAttribute<String> {
+            override fun name(): String = "test:attribute"
+
+            override fun value(): String = "value"
+        }
+        assertThrows(UnsupportedOperationException::class.java) {
+            WebDavFileSystemProvider.newByteChannel(
+                path("/file.txt"),
+                setOf(StandardOpenOption.READ),
+                attribute
+            )
+        }
     }
 
     @Test
