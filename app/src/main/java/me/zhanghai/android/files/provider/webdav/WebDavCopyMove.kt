@@ -58,12 +58,13 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
             throw e.toFileSystemException(source.toString())
         }
         sourceInputStream.useMappingCloseFailure({ it.toCloseFailure(source) }) {
+            // A refusal can also come while writing, once the server has answered early.
             val targetOutputStream = try {
-                client.put(target)
+                client.put(target).mapDavExceptions(target.toString())
             } catch (e: DavException) {
                 throw e.toFileSystemException(target.toString())
             }
-            targetOutputStream.useMappingCloseFailure({ it.toCloseFailure(target) }) {
+            targetOutputStream.use {
                 sourceInputStream.copyTo(
                     targetOutputStream,
                     copyOptions.progressIntervalMillis,

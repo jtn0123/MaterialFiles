@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.provider.webdav.client
 
 import at.bitfire.dav4jvm.DavResource
+import at.bitfire.dav4jvm.exception.DavException
 import at.bitfire.dav4jvm.exception.HttpException
 import at.bitfire.dav4jvm.property.webdav.GetContentLength
 import java.io.IOException
@@ -14,14 +15,23 @@ import java.nio.ByteBuffer
 import me.zhanghai.android.files.provider.common.AbstractFileByteChannel
 import me.zhanghai.android.files.provider.common.EMPTY
 import me.zhanghai.android.files.provider.common.readFully
+import me.zhanghai.android.files.provider.webdav.toFileSystemException
 import okhttp3.RequestBody.Companion.toRequestBody
 
+/**
+ * A channel on [resource], which is [file] to the user.
+ *
+ * What the server refuses arrives as a [DavException], which is not an [IOException]; the channel
+ * reports it as the [java8.nio.file.FileSystemException] for [file] instead, as the channel of
+ * any other provider would.
+ */
 // https://blog.sphere.chronosempire.org.uk/2012/11/21/webdav-and-the-http-patch-nightmare
 class FileByteChannel(
     private val client: Client,
     private val resource: DavResource,
     private val patchSupport: PatchSupport,
-    isAppend: Boolean
+    isAppend: Boolean,
+    private val file: String
 ) : AbstractFileByteChannel(isAppend) {
     private var nextSequentialWritePosition = 0L
     private var sequentialWriteOutputStream: OutputStream? = null
@@ -35,7 +45,9 @@ class FileByteChannel(
                 // We were reading at/past end of file
                 return ByteBuffer::class.EMPTY
             }
-            throw e
+            throw e.toFileSystemException(file)
+        } catch (e: DavException) {
+            throw e.toFileSystemException(file)
         }
         val destination = ByteBuffer.allocate(size)
         val limit = inputStream.use {
@@ -47,38 +59,43 @@ class FileByteChannel(
 
     @Throws(IOException::class)
     override fun onWrite(position: Long, source: ByteBuffer) {
-        when (patchSupport) {
-            PatchSupport.APACHE ->
-                resource.putRangeCompat(source, position) {}
+        mapDavException {
+            when (patchSupport) {
+                PatchSupport.APACHE ->
+                    resource.putRangeCompat(source, position) {}
 
-            PatchSupport.SABRE ->
-                resource.patchCompat(source, position) {}
+                PatchSupport.SABRE ->
+                    resource.patchCompat(source, position) {}
 
-            PatchSupport.NONE -> {
-                if (position != nextSequentialWritePosition) {
-                    throw IOException("Unsupported non-sequential write")
-                }
-                val outputStream = sequentialWriteOutputStream
-                    ?: resource.putCompat().also { sequentialWriteOutputStream = it }
-                val remaining = source.remaining()
-                // I don't think we are using native or read-only ByteBuffer, so just call array()
-                // here.
-                outputStream.write(
-                    source.array(),
-                    source.arrayOffset() + source.position(),
-                    remaining
-                )
-                // The caller counts what was written by how far the buffer moved.
-                source.position(source.limit())
-                nextSequentialWritePosition += remaining
+                PatchSupport.NONE -> writeSequentially(position, source)
             }
         }
+    }
+
+    @Throws(DavException::class, IOException::class)
+    private fun writeSequentially(position: Long, source: ByteBuffer) {
+        if (position != nextSequentialWritePosition) {
+            throw IOException("Unsupported non-sequential write")
+        }
+        val outputStream = sequentialWriteOutputStream
+            ?: resource.putCompat().also { sequentialWriteOutputStream = it }
+        val remaining = source.remaining()
+        // I don't think we are using native or read-only ByteBuffer, so just call array()
+        // here.
+        outputStream.write(
+            source.array(),
+            source.arrayOffset() + source.position(),
+            remaining
+        )
+        // The caller counts what was written by how far the buffer moved.
+        source.position(source.limit())
+        nextSequentialWritePosition += remaining
     }
 
     @Throws(IOException::class)
     override fun onTruncate(size: Long) {
         if (size == 0L) {
-            resource.put(byteArrayOf().toRequestBody()) {}
+            mapDavException { resource.put(byteArrayOf().toRequestBody()) {} }
         } else {
             throw IOException("Unsupported truncate to non-zero size")
         }
@@ -86,15 +103,21 @@ class FileByteChannel(
 
     @Throws(IOException::class)
     override fun onSize(): Long {
-        val getContentLength =
+        val getContentLength = mapDavException {
             client.findProperties(resource, GetContentLength.NAME)[GetContentLength::class.java]
-                ?: throw IOException("Missing GetContentLength")
+        } ?: throw IOException("Missing GetContentLength")
         return getContentLength.contentLength ?: throw IOException("Invalid GetContentLength")
     }
 
     @Throws(IOException::class)
     override fun onClose() {
-        sequentialWriteOutputStream?.close()
+        mapDavException { sequentialWriteOutputStream?.close() }
+    }
+
+    private inline fun <T> mapDavException(block: () -> T): T = try {
+        block()
+    } catch (e: DavException) {
+        throw e.toFileSystemException(file)
     }
 
     companion object {
