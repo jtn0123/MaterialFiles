@@ -6,8 +6,11 @@
 package me.zhanghai.android.files.provider.common
 
 import java.io.File
+import java.io.InterruptedIOException
+import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -98,5 +101,32 @@ class WalkFileTreeSearchableTest {
         val batches = search("/", "hello", TimeUnit.MINUTES.toMillis(10))
         assertEquals(1, batches.size)
         assertEquals(3, batches[0].size)
+    }
+
+    @Test
+    fun aBrokenSymbolicLinkIsStillFoundByItsName() {
+        Files.createSymbolicLink(
+            File(root, "hello-broken").toPath(),
+            File(root, "missing").toPath()
+        )
+        Files.createSymbolicLink(
+            File(root, "directory/hello-broken-deep").toPath(),
+            File(root, "missing").toPath()
+        )
+        assertEquals(
+            listOf("/directory/hello-broken-deep", "/hello-broken"),
+            search("/", "broken").flatten().sorted()
+        )
+    }
+
+    @Test
+    fun aSearchStopsWhenItsThreadIsInterrupted() {
+        Thread.currentThread().interrupt()
+        try {
+            assertThrows(InterruptedIOException::class.java) { search("/", "hello") }
+        } finally {
+            // The search cleared the flag by testing it; make sure the thread is clean either way.
+            Thread.interrupted()
+        }
     }
 }
