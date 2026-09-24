@@ -37,53 +37,16 @@ internal fun copyOpenedFile(
     listener: ((Long) -> Unit)?
 ) {
     val attributesToCopy = if (copyAttributes) {
-        val sourceAttributes = try {
-            sourceFile.getFileInformation(FileBasicInformation::class.java)
-        } catch (e: SMBRuntimeException) {
-            throw ClientException(e)
-        }.fileAttributes
-        EnumWithValue.EnumUtils.toEnumSet(sourceAttributes, FileAttributes::class.java)
+        readFileAttributes(sourceFile)
     } else {
         enumSetOf(FileAttributes.FILE_ATTRIBUTE_NORMAL)
     }
-    val targetFile = try {
-        targetShare.openFile(
-            targetSharePath.path,
-            enumSetOf(
-                AccessMask.FILE_WRITE_DATA,
-                AccessMask.FILE_WRITE_ATTRIBUTES,
-                AccessMask.FILE_WRITE_EA,
-                AccessMask.DELETE
-            ),
-            attributesToCopy,
-            SMB2ShareAccess.ALL,
-            SMB2CreateDisposition.FILE_CREATE,
-            enumSetOf(SMB2CreateOptions.FILE_OPEN_REPARSE_POINT)
-        )
-    } catch (e: SMBRuntimeException) {
-        throw ClientException(e)
-    }
+    val targetFile = openTargetFile(targetShare, targetSharePath, attributesToCopy)
     targetFile.use {
         var successful = false
         try {
             if (sourceSession == targetSession) {
-                val length = try {
-                    sourceFile.getFileInformation(FileStandardInformation::class.java)
-                } catch (e: SMBRuntimeException) {
-                    throw ClientException(e)
-                }.endOfFile
-                val progressListener = listener?.let {
-                    var lastCopiedSize = 0L
-                    ProgressListener { copiedSize, _ ->
-                        it(copiedSize - lastCopiedSize)
-                        lastCopiedSize = copiedSize
-                    }
-                }
-                try {
-                    sourceFile.serverCopy(0, targetFile, 0, length, progressListener)
-                } catch (e: SMBRuntimeException) {
-                    throw ClientException(e)
-                }
+                serverCopy(sourceFile, targetFile, listener)
             } else {
                 val sourceInputStream = FileByteChannel(sourceFile, false)
                     .newInputStream()
@@ -98,12 +61,71 @@ internal fun copyOpenedFile(
             throw if (e.isSessionGone) ClientException(e.message, e) else e
         } finally {
             if (!successful) {
-                try {
-                    targetFile.deleteOnClose()
-                } catch (e: SMBRuntimeException) {
-                    e.logWarning("ClientFileCopy", "copyOpenedFile")
-                }
+                deleteOnCloseSafe(targetFile)
             }
         }
+    }
+}
+
+@Throws(ClientException::class)
+private fun readFileAttributes(file: File): Set<FileAttributes> {
+    val fileAttributes = try {
+        file.getFileInformation(FileBasicInformation::class.java)
+    } catch (e: SMBRuntimeException) {
+        throw ClientException(e)
+    }.fileAttributes
+    return EnumWithValue.EnumUtils.toEnumSet(fileAttributes, FileAttributes::class.java)
+}
+
+@Throws(ClientException::class)
+private fun openTargetFile(
+    share: DiskShare,
+    sharePath: Path.SharePath,
+    attributes: Set<FileAttributes>
+): File = try {
+    share.openFile(
+        sharePath.path,
+        enumSetOf(
+            AccessMask.FILE_WRITE_DATA,
+            AccessMask.FILE_WRITE_ATTRIBUTES,
+            AccessMask.FILE_WRITE_EA,
+            AccessMask.DELETE
+        ),
+        attributes,
+        SMB2ShareAccess.ALL,
+        SMB2CreateDisposition.FILE_CREATE,
+        enumSetOf(SMB2CreateOptions.FILE_OPEN_REPARSE_POINT)
+    )
+} catch (e: SMBRuntimeException) {
+    throw ClientException(e)
+}
+
+/** Copies within one server with FSCTL_SRV_COPYCHUNK, so the data never leaves it. */
+@Throws(ClientException::class)
+private fun serverCopy(sourceFile: File, targetFile: File, listener: ((Long) -> Unit)?) {
+    val length = try {
+        sourceFile.getFileInformation(FileStandardInformation::class.java)
+    } catch (e: SMBRuntimeException) {
+        throw ClientException(e)
+    }.endOfFile
+    val progressListener = listener?.let {
+        var lastCopiedSize = 0L
+        ProgressListener { copiedSize, _ ->
+            it(copiedSize - lastCopiedSize)
+            lastCopiedSize = copiedSize
+        }
+    }
+    try {
+        sourceFile.serverCopy(0, targetFile, 0, length, progressListener)
+    } catch (e: SMBRuntimeException) {
+        throw ClientException(e)
+    }
+}
+
+private fun deleteOnCloseSafe(file: File) {
+    try {
+        file.deleteOnClose()
+    } catch (e: SMBRuntimeException) {
+        e.logWarning("ClientFileCopy", "copyOpenedFile")
     }
 }
