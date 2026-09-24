@@ -13,6 +13,7 @@ import android.text.style.ClickableSpan
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -86,6 +87,12 @@ class ClickableMovementMethodTest {
         text.setSpan(recordingSpan("first"), 0, 5, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         text.setSpan(recordingSpan("second"), 10, 16, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         val view = TextView(instrumentation.targetContext)
+        // A selection change makes the view check whether it must resize, which reads its layout
+        // params; a view that was never added to a parent has none.
+        view.layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
         view.setText(text, TextView.BufferType.SPANNABLE)
         view.measure(
             View.MeasureSpec.makeMeasureSpec(2000, View.MeasureSpec.EXACTLY),

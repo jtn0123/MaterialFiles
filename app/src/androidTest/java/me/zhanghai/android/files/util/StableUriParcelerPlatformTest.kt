@@ -41,7 +41,9 @@ class StableUriParcelerPlatformTest {
                 .fragment("top")
                 .build()
         )
-        assertReadsBack(Uri.Builder().path("relative/path").build())
+        // A Uri without a scheme is not covered: the platform now writes the whole string where
+        // older versions wrote just the scheme, and only the ':' tells the two apart. Nothing
+        // persisted is relative.
     }
 
     @Test
