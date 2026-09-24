@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.filejob
 
 import androidx.annotation.AnyRes
+import androidx.annotation.StringRes
 import java.io.IOException
 import java.io.InterruptedIOException
 import java8.nio.file.CopyOption
@@ -13,11 +14,12 @@ import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
 import java8.nio.file.StandardCopyOption
+import kotlin.reflect.KMutableProperty0
 import me.zhanghai.android.files.R
+import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.file.loadFileItem
 import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import me.zhanghai.android.files.provider.common.ProgressCopyOption
-import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.common.moveTo
 import me.zhanghai.android.files.util.logWarning
@@ -106,100 +108,128 @@ internal fun FileJob.copyOrMove(
     copyAttributes: Boolean,
     transferInfo: TransferInfo,
     actionAllInfo: ActionAllInfo
-): Boolean {
-    val targetParent = target.parent
-    if (targetParent.startsWith(source)) {
+): Boolean = CopyMoveOperation(
+    this,
+    source,
+    type,
+    useCopy,
+    copyAttributes,
+    transferInfo,
+    actionAllInfo
+).run(target)
+
+/** What [copyOrMove] does after an attempt: finish, or try again with a new target or option. */
+private sealed class CopyMoveStep {
+    /** @param descend whether a directory source should be descended into */
+    class Finish(val descend: Boolean) : CopyMoveStep()
+
+    class Retry(val target: Path, val replaceExisting: Boolean) : CopyMoveStep()
+}
+
+/** One [copyOrMove] call, whose target and replace option change as conflicts are resolved. */
+private class CopyMoveOperation(
+    private val job: FileJob,
+    private val source: Path,
+    private val type: CopyMoveType,
+    private val useCopy: Boolean,
+    private val copyAttributes: Boolean,
+    private val transferInfo: TransferInfo,
+    private val actionAllInfo: ActionAllInfo
+) {
+    @Throws(IOException::class)
+    fun run(target: Path): Boolean = when {
         // Don't allow copy/move into the source itself.
-        if (actionAllInfo.skipCopyMoveIntoItself) {
-            transferInfo.skipFile(source)
-            postCopyMoveNotification(transferInfo, source, type)
-            return false
-        }
-        val result = showErrorDialog(
-            getString(
-                type.getResourceId(
-                    R.string.file_job_cannot_copy_into_itself_title,
-                    R.string.file_job_cannot_extract_into_itself_title,
-                    R.string.file_job_cannot_move_into_itself_title
-                )
+        target.parent.startsWith(source) -> refuse(
+            actionAllInfo::skipCopyMoveIntoItself,
+            type.getResourceId(
+                R.string.file_job_cannot_copy_into_itself_title,
+                R.string.file_job_cannot_extract_into_itself_title,
+                R.string.file_job_cannot_move_into_itself_title
             ),
-            getString(R.string.file_job_cannot_copy_move_into_itself_message),
-            null,
-            true,
-            getString(R.string.skip),
-            getString(android.R.string.cancel),
-            null
+            R.string.file_job_cannot_copy_move_into_itself_message
         )
-        return when (result.action) {
-            FileJobErrorAction.POSITIVE -> {
-                if (result.isAll) {
-                    actionAllInfo.skipCopyMoveIntoItself = true
-                }
-                transferInfo.skipFile(source)
-                postCopyMoveNotification(transferInfo, source, type)
-                false
-            }
 
-            FileJobErrorAction.CANCELED -> {
-                transferInfo.skipFile(source)
-                postCopyMoveNotification(transferInfo, source, type)
-                false
-            }
-
-            FileJobErrorAction.NEGATIVE -> throw InterruptedIOException()
-
-            else -> throw AssertionError(result.action)
-        }
-    }
-    if (source.startsWith(target)) {
         // Don't allow copy/move over the source itself or its ancestors.
-        if (actionAllInfo.skipCopyMoveOverItself) {
-            transferInfo.skipFile(source)
-            postCopyMoveNotification(transferInfo, source, type)
-            return false
-        }
-        val result = showErrorDialog(
-            getString(
-                type.getResourceId(
-                    R.string.file_job_cannot_copy_over_itself_title,
-                    R.string.file_job_cannot_extract_over_itself_title,
-                    R.string.file_job_cannot_move_over_itself_title
-                )
+        source.startsWith(target) -> refuse(
+            actionAllInfo::skipCopyMoveOverItself,
+            type.getResourceId(
+                R.string.file_job_cannot_copy_over_itself_title,
+                R.string.file_job_cannot_extract_over_itself_title,
+                R.string.file_job_cannot_move_over_itself_title
             ),
-            getString(R.string.file_job_cannot_copy_move_over_itself_message),
-            null,
-            true,
-            getString(R.string.skip),
-            getString(android.R.string.cancel),
-            null
+            R.string.file_job_cannot_copy_move_over_itself_message
         )
-        return when (result.action) {
-            FileJobErrorAction.POSITIVE -> {
-                if (result.isAll) {
-                    actionAllInfo.skipCopyMoveOverItself = true
-                }
-                transferInfo.skipFile(source)
-                postCopyMoveNotification(transferInfo, source, type)
-                false
+
+        else -> transfer(target)
+    }
+
+    /** Skips the source, after asking whether to go on at all unless told already for all. */
+    @Throws(InterruptedIOException::class)
+    private fun refuse(
+        skipAll: KMutableProperty0<Boolean>,
+        @StringRes titleRes: Int,
+        @StringRes messageRes: Int
+    ): Boolean {
+        if (!skipAll.get()) {
+            val result = job.showErrorDialog(
+                job.getString(titleRes),
+                job.getString(messageRes),
+                null,
+                true,
+                job.getString(R.string.skip),
+                job.getString(android.R.string.cancel),
+                null
+            )
+            if (refusalDecision(result, skipAll) == ErrorDecision.CANCEL) {
+                throw InterruptedIOException()
             }
+        }
+        return skip()
+    }
 
-            FileJobErrorAction.CANCELED -> {
-                transferInfo.skipFile(source)
-                postCopyMoveNotification(transferInfo, source, type)
-                false
+    @Throws(IOException::class)
+    private fun transfer(target: Path): Boolean {
+        var retry = CopyMoveStep.Retry(target, false)
+        while (true) {
+            when (val step = attempt(retry.target, retry.replaceExisting)) {
+                is CopyMoveStep.Finish -> return step.descend
+                is CopyMoveStep.Retry -> retry = step
             }
-
-            FileJobErrorAction.NEGATIVE -> throw InterruptedIOException()
-
-            else -> throw AssertionError(result.action)
         }
     }
-    var target = target
-    var replaceExisting = false
-    var retry: Boolean
-    do {
-        retry = false
-        val options = mutableListOf<CopyOption>().apply {
+
+    @Throws(IOException::class)
+    private fun attempt(target: Path, replaceExisting: Boolean): CopyMoveStep {
+        val options = createOptions(replaceExisting)
+        return try {
+            postNotification()
+            if (useCopy) {
+                source.copyTo(target, *options)
+            } else {
+                source.moveTo(target, *options)
+            }
+            transferInfo.incrementTransferredFileCount()
+            postNotification()
+            CopyMoveStep.Finish(true)
+        } catch (e: FileAlreadyExistsException) {
+            resolveConflict(target, replaceExisting, e)
+        } catch (e: InterruptedIOException) {
+            throw e
+        } catch (e: IOException) {
+            e.logWarning("FileJobCopyMove", "copyOrMove($source)")
+            val decision = job.decideOnError(e, actionAllInfo::skipCopyMoveError) {
+                job.showCopyMoveErrorDialog(source, target, type, e)
+            }
+            when (decision) {
+                ErrorDecision.RETRY -> CopyMoveStep.Retry(target, replaceExisting)
+                ErrorDecision.SKIP -> CopyMoveStep.Finish(skip())
+                ErrorDecision.CANCEL -> throw InterruptedIOException()
+            }
+        }
+    }
+
+    private fun createOptions(replaceExisting: Boolean): Array<CopyOption> =
+        mutableListOf<CopyOption>().apply {
             this += LinkOption.NOFOLLOW_LINKS
             if (copyAttributes) {
                 this += StandardCopyOption.COPY_ATTRIBUTES
@@ -209,132 +239,106 @@ internal fun FileJob.copyOrMove(
             }
             this += ProgressCopyOption(PROGRESS_INTERVAL_MILLIS) {
                 transferInfo.addToTransferredSize(it)
-                postCopyMoveNotification(transferInfo, source, type)
+                postNotification()
             }
         }.toTypedArray()
-        try {
-            postCopyMoveNotification(transferInfo, source, type)
-            if (useCopy) {
-                source.copyTo(target, *options)
-            } else {
-                source.moveTo(target, *options)
-            }
-            transferInfo.incrementTransferredFileCount()
-            postCopyMoveNotification(transferInfo, source, type)
-        } catch (e: FileAlreadyExistsException) {
-            val sourceFile = source.loadFileItem()
-            val targetFile = target.loadFileItem()
-            val sourceIsDirectory = sourceFile.attributesNoFollowLinks.isDirectory
-            val targetIsDirectory = targetFile.attributesNoFollowLinks.isDirectory
-            if (!sourceIsDirectory && targetIsDirectory) {
-                // TODO: Don't allow replace directory with file.
-                throw e
-            }
-            val isMerge = sourceIsDirectory && targetIsDirectory
-            if (isMerge && actionAllInfo.merge) {
-                transferInfo.addTransferredFile(targetFile.attributesNoFollowLinks.size())
-                postCopyMoveNotification(transferInfo, source, type)
-                return true
-            } else if (!isMerge && actionAllInfo.replace) {
-                replaceExisting = true
-                retry = true
-                continue
-            } else if ((isMerge && actionAllInfo.skipMerge) ||
-                (!isMerge && actionAllInfo.skipReplace)
-            ) {
-                transferInfo.skipFile(source)
-                postCopyMoveNotification(transferInfo, source, type)
-                return false
-            }
-            val result = showConflictDialog(sourceFile, targetFile, type)
-            return when (copyConflictDecision(result, isMerge, actionAllInfo)) {
-                CopyConflictDecision.MERGE -> {
-                    transferInfo.addTransferredFile(targetFile.attributesNoFollowLinks.size())
-                    postCopyMoveNotification(transferInfo, source, type)
-                    true
-                }
 
-                CopyConflictDecision.REPLACE -> {
-                    replaceExisting = true
-                    retry = true
-                    continue
-                }
-
-                CopyConflictDecision.RENAME -> {
-                    target = target.resolveSibling(result.name)
-                    retry = true
-                    continue
-                }
-
-                CopyConflictDecision.SKIP -> {
-                    transferInfo.skipFile(source)
-                    postCopyMoveNotification(transferInfo, source, type)
-                    false
-                }
-
-                CopyConflictDecision.CANCEL -> throw InterruptedIOException()
-            }
-        } catch (e: InterruptedIOException) {
-            throw e
-        } catch (e: IOException) {
-            e.logWarning("FileJobCopyMove", "copyOrMove($source)")
-            if (actionAllInfo.skipCopyMoveError) {
-                recordSkippedError()
-                transferInfo.skipFile(source)
-                postCopyMoveNotification(transferInfo, source, type)
-                return false
-            }
-            if (e is UserActionRequiredException) {
-                val result = showUserAction(e)
-                if (result) {
-                    retry = true
-                    continue
-                }
-            }
-            val result = showErrorDialog(
-                getString(
-                    type.getResourceId(
-                        R.string.file_job_copy_error_title_format,
-                        R.string.file_job_extract_error_title_format,
-                        R.string.file_job_move_error_title_format
-                    ),
-                    getFileName(source)
-                ),
-                getString(
-                    type.getResourceId(
-                        R.string.file_job_copy_error_message_format,
-                        R.string.file_job_extract_error_message_format,
-                        R.string.file_job_move_error_message_format
-                    ),
-                    getFileName(targetParent),
-                    e.toUserMessage(service)
-                ),
-                getReadOnlyFileStore(target, e),
-                true,
-                // The same name fails again, so an invalid name offers skip and cancel only.
-                if (e is InvalidFileNameException) null else getString(R.string.retry),
-                getString(R.string.skip),
-                getString(android.R.string.cancel)
-            )
-            return when (copyErrorDecision(result, actionAllInfo)) {
-                CopyErrorDecision.RETRY -> {
-                    retry = true
-                    continue
-                }
-
-                CopyErrorDecision.SKIP -> {
-                    if (result.action == FileJobErrorAction.NEGATIVE) recordSkippedError()
-                    transferInfo.skipFile(source)
-                    postCopyMoveNotification(transferInfo, source, type)
-                    false
-                }
-
-                CopyErrorDecision.CANCEL -> throw InterruptedIOException()
-            }
+    @Throws(IOException::class)
+    private fun resolveConflict(
+        target: Path,
+        replaceExisting: Boolean,
+        exception: FileAlreadyExistsException
+    ): CopyMoveStep {
+        val sourceFile = source.loadFileItem()
+        val targetFile = target.loadFileItem()
+        val sourceIsDirectory = sourceFile.attributesNoFollowLinks.isDirectory
+        val targetIsDirectory = targetFile.attributesNoFollowLinks.isDirectory
+        if (!sourceIsDirectory && targetIsDirectory) {
+            // TODO: Don't allow replace directory with file.
+            throw exception
         }
-    } while (retry)
-    return true
+        val isMerge = sourceIsDirectory && targetIsDirectory
+        val rememberedDecision = rememberedConflictDecision(isMerge, actionAllInfo)
+        if (rememberedDecision != null) {
+            return applyConflictDecision(
+                rememberedDecision,
+                target,
+                targetFile,
+                replaceExisting,
+                null
+            )
+        }
+        val result = job.showConflictDialog(sourceFile, targetFile, type)
+        val decision = copyConflictDecision(result, isMerge, actionAllInfo)
+        return applyConflictDecision(decision, target, targetFile, replaceExisting, result.name)
+    }
+
+    @Throws(InterruptedIOException::class)
+    private fun applyConflictDecision(
+        decision: CopyConflictDecision,
+        target: Path,
+        targetFile: FileItem,
+        replaceExisting: Boolean,
+        newName: String?
+    ): CopyMoveStep = when (decision) {
+        CopyConflictDecision.MERGE -> {
+            transferInfo.addTransferredFile(targetFile.attributesNoFollowLinks.size())
+            postNotification()
+            CopyMoveStep.Finish(true)
+        }
+
+        CopyConflictDecision.REPLACE -> CopyMoveStep.Retry(target, true)
+
+        CopyConflictDecision.RENAME ->
+            CopyMoveStep.Retry(target.resolveSibling(newName), replaceExisting)
+
+        CopyConflictDecision.SKIP -> CopyMoveStep.Finish(skip())
+
+        CopyConflictDecision.CANCEL -> throw InterruptedIOException()
+    }
+
+    /** Leaves the source behind, which is never descended into, and returns false. */
+    private fun skip(): Boolean {
+        transferInfo.skipFile(source)
+        postNotification()
+        return false
+    }
+
+    private fun postNotification() {
+        job.postCopyMoveNotification(transferInfo, source, type)
+    }
 }
+
+private fun FileJob.showCopyMoveErrorDialog(
+    source: Path,
+    target: Path,
+    type: CopyMoveType,
+    exception: IOException
+): ErrorResult = showErrorDialog(
+    getString(
+        type.getResourceId(
+            R.string.file_job_copy_error_title_format,
+            R.string.file_job_extract_error_title_format,
+            R.string.file_job_move_error_title_format
+        ),
+        getFileName(source)
+    ),
+    getString(
+        type.getResourceId(
+            R.string.file_job_copy_error_message_format,
+            R.string.file_job_extract_error_message_format,
+            R.string.file_job_move_error_message_format
+        ),
+        getFileName(target.parent),
+        exception.toUserMessage(service)
+    ),
+    getReadOnlyFileStore(target, exception),
+    true,
+    // The same name fails again, so an invalid name offers skip and cancel only.
+    if (exception is InvalidFileNameException) null else getString(R.string.retry),
+    getString(R.string.skip),
+    getString(android.R.string.cancel)
+)
 
 private fun FileJob.postCopyMoveNotification(
     transferInfo: TransferInfo,

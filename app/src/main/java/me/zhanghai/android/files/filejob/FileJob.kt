@@ -33,7 +33,8 @@ abstract class FileJob {
         private set
 
     /** Files the user (or a "skip all") chose to leave behind after an error. */
-    private var skippedErrorCount = 0
+    internal var skippedErrorCount = 0
+        private set
 
     internal fun recordSkippedError() {
         ++skippedErrorCount

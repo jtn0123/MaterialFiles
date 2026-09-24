@@ -6,7 +6,6 @@
 package me.zhanghai.android.files.filejob
 
 import java.io.IOException
-import java.io.InterruptedIOException
 import java8.nio.file.Path
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.common.UserActionRequiredException
@@ -24,50 +23,27 @@ class CreateFileJob(private val path: Path, private val createDirectory: Boolean
 
 @Throws(IOException::class)
 private fun FileJob.create(path: Path, createDirectory: Boolean) {
-    var retry: Boolean
-    do {
-        retry = false
-        try {
-            if (createDirectory) {
-                path.createDirectory()
-            } else {
-                path.createFile()
-            }
-        } catch (e: InterruptedIOException) {
-            throw e
-        } catch (e: IOException) {
-            e.logWarning("CreateFileJob", "create($path)")
-            if (e is UserActionRequiredException) {
-                val result = showUserAction(e)
-                if (result) {
-                    retry = true
-                    continue
-                }
-            }
-            val result = showErrorDialog(
-                getString(R.string.file_job_create_error_title),
-                getString(
-                    R.string.file_job_create_error_message_format,
-                    getFileName(path),
-                    e.toUserMessage(service)
-                ),
-                getReadOnlyFileStore(path, e),
-                false,
-                getString(R.string.retry),
-                getString(android.R.string.cancel),
-                null
-            )
-            when (result.action) {
-                FileJobErrorAction.POSITIVE -> {
-                    retry = true
-                    continue
-                }
-
-                FileJobErrorAction.NEGATIVE, FileJobErrorAction.CANCELED ->
-                    throw InterruptedIOException()
-
-                else -> throw AssertionError(result.action)
-            }
+    retryUntilDecided({ if (createDirectory) path.createDirectory() else path.createFile() }) { e ->
+        e.logWarning("CreateFileJob", "create($path)")
+        if (e is UserActionRequiredException && showUserAction(e)) {
+            ErrorDecision.RETRY
+        } else {
+            retryOrCancelDecision(showCreateErrorDialog(path, e))
         }
-    } while (retry)
+    }
 }
+
+private fun FileJob.showCreateErrorDialog(path: Path, exception: IOException): ErrorResult =
+    showErrorDialog(
+        getString(R.string.file_job_create_error_title),
+        getString(
+            R.string.file_job_create_error_message_format,
+            getFileName(path),
+            exception.toUserMessage(service)
+        ),
+        getReadOnlyFileStore(path, exception),
+        false,
+        getString(R.string.retry),
+        getString(android.R.string.cancel),
+        null
+    )
