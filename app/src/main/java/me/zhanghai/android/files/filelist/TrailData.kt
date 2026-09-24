@@ -17,29 +17,31 @@ class TrailData private constructor(
 ) {
     fun navigateTo(lastState: Parcelable, path: Path): TrailData {
         val newTrail = createTrail(path)
-        val newStates = mutableListOf<Parcelable?>()
         val newIndex = newTrail.size - 1
-        var isPrefix = true
-        for (index in newTrail.indices) {
-            if (isPrefix && index < trail.size) {
-                if (newTrail[index] == trail[index]) {
-                    newStates.add(if (index != currentIndex) states[index] else lastState)
-                } else {
-                    isPrefix = false
-                    newStates.add(null)
-                }
-            } else {
-                newStates.add(null)
-            }
+        val prefixSize = getCommonPrefixSize(newTrail)
+        val newStates = MutableList<Parcelable?>(newTrail.size) { index ->
+            if (index < prefixSize) getState(index, lastState) else null
         }
-        if (isPrefix) {
+        if (prefixSize == newTrail.size) {
+            // Going up keeps the rest of the trail, so that the way back down is still there.
             for (index in newTrail.size..<trail.size) {
                 newTrail.add(trail[index])
-                newStates.add(if (index != currentIndex) states[index] else lastState)
+                newStates.add(getState(index, lastState))
             }
         }
         return TrailData(newTrail, newStates, newIndex)
     }
+
+    private fun getCommonPrefixSize(otherTrail: List<Path>): Int {
+        var size = 0
+        while (size < otherTrail.size && size < trail.size && otherTrail[size] == trail[size]) {
+            ++size
+        }
+        return size
+    }
+
+    private fun getState(index: Int, lastState: Parcelable): Parcelable? =
+        if (index != currentIndex) states[index] else lastState
 
     fun navigateUp(): TrailData? {
         if (currentIndex == 0) {

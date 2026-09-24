@@ -49,4 +49,39 @@ class TrailDataTest {
     fun withoutAStateNothingIsPending() {
         assertNull(TrailData.of(TestPath("/share/Media")).pendingState)
     }
+
+    @Test
+    fun goingDeeperKeepsTheStateOfTheFolderLeft() {
+        val left = State()
+        val trailData = TrailData.of(TestPath("/share")).navigateTo(left, TestPath("/share/Media"))
+        assertEquals(listOf("/", "/share", "/share/Media"), trailData.trail.map { it.toString() })
+        assertEquals(TestPath("/share/Media"), trailData.currentPath)
+        assertNull(trailData.pendingState)
+        assertSame(left, trailData.navigateUp()!!.pendingState)
+    }
+
+    @Test
+    fun goingUpKeepsTheWayBackDown() {
+        val photos = State()
+        val media = State()
+        val trailData = TrailData.of(TestPath("/share/Media/Photos"), photos)
+            .navigateUp()!!
+            .navigateTo(media, TestPath("/share"))
+        assertEquals(
+            listOf("/", "/share", "/share/Media", "/share/Media/Photos"),
+            trailData.trail.map { it.toString() }
+        )
+        assertEquals(TestPath("/share"), trailData.currentPath)
+        val back = trailData.navigateTo(State(), TestPath("/share/Media"))
+        assertEquals(4, back.trail.size)
+        assertSame(media, back.pendingState)
+    }
+
+    @Test
+    fun goingSidewaysDropsTheOldBranch() {
+        val trailData = TrailData.of(TestPath("/share/Media/Photos"))
+            .navigateTo(State(), TestPath("/share/Music"))
+        assertEquals(listOf("/", "/share", "/share/Music"), trailData.trail.map { it.toString() })
+        assertNull(trailData.pendingState)
+    }
 }
