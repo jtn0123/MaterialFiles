@@ -9,6 +9,7 @@ import java8.nio.file.Path
 import java8.nio.file.StandardWatchEventKinds
 import java8.nio.file.WatchEvent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -119,6 +120,9 @@ class WatchEventKindsTest {
             assertNotNull(service.poll())
             key.pollEvents()
             key.reset()
+            key.cancel()
+            assertFalse(key.isValid)
+            // Cancelling twice is harmless.
             key.cancel()
             LocalWatchService.onEntryModified(directory)
             assertNull(service.poll())

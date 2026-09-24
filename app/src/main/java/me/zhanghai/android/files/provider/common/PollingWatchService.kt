@@ -48,7 +48,8 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
     }
 
     override fun cancel(key: PollingWatchKey) {
-        val poller = synchronized(pollers) { pollers.remove(key.watchable())!! }
+        // Gone already if close() or its own failure stopped it.
+        val poller = synchronized(pollers) { pollers.remove(key.watchable()) } ?: return
         poller.interrupt()
         try {
             poller.join()

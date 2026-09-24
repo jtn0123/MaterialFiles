@@ -41,7 +41,9 @@ class LocalWatchService : AbstractWatchService<LocalWatchKey>() {
     }
 
     override fun cancel(key: LocalWatchKey) {
-        synchronized(keys) { keys.remove(key.watchable())!! }
+        synchronized(keys) { keys.remove(key.watchable()) }
+        // Keeps a second cancel() from coming back here, like the other watch services do.
+        key.setInvalid()
     }
 
     @Throws(IOException::class)
