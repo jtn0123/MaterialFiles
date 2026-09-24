@@ -5,9 +5,11 @@
 
 package me.zhanghai.android.files.provider.linux
 
+import android.app.AppOpsManager
 import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
+import android.os.Process
 import java.io.File
 import java.io.IOException
 import java8.nio.file.LinkOption
@@ -16,7 +18,11 @@ import java8.nio.file.ProviderMismatchException
 import java8.nio.file.WatchEvent
 import java8.nio.file.WatchKey
 import java8.nio.file.WatchService
+import kotlin.concurrent.Volatile
+import me.zhanghai.android.files.app.appOpsManager
 import me.zhanghai.android.files.app.application
+import me.zhanghai.android.files.compat.AppOpsManagerCompat
+import me.zhanghai.android.files.compat.checkOpRawNoThrowCompat
 import me.zhanghai.android.files.compat.isPrimaryCompat
 import me.zhanghai.android.files.compat.pathFileCompat
 import me.zhanghai.android.files.provider.common.ByteString
@@ -117,6 +123,15 @@ internal class LinuxPath :
                 startsWith(androidObbDirectory)
             }
             if (isInAndroidObbDirectory) {
+                // Note that StorageManagerService won't automatically kill and restart our process
+                // when we are granted REQUEST_INSTALL_PACKAGES for us to get access to Android/obb
+                // immediately since S, similar to it not automatically killing and restarting our
+                // process when we are granted MANAGE_EXTERNAL_STORAGE for us to get access to
+                // external storage volumes immediately. But we aren't handling the latter anyway,
+                // so let's not handle the former here either.
+                if (isRequestInstallPackagesAllowed()) {
+                    return true
+                }
                 val appObbDirectory = androidObbDirectory.resolve(appPackageName)
                 return startsWith(appObbDirectory)
             }
@@ -135,14 +150,35 @@ internal class LinuxPath :
     }
 
     companion object {
-        private val FILE_ANDROID_DATA = File("Android/data")
-        private val FILE_ANDROID_OBB = File("Android/obb")
-
         @JvmField
         val CREATOR = object : Parcelable.Creator<LinuxPath> {
             override fun createFromParcel(source: Parcel): LinuxPath = LinuxPath(source)
 
             override fun newArray(size: Int): Array<LinuxPath?> = arrayOfNulls(size)
+        }
+
+        private val FILE_ANDROID_DATA = File("Android/data")
+        private val FILE_ANDROID_OBB = File("Android/obb")
+
+        // IPC for checking the app op is expensive, and we'll be killed by StorageManagerService
+        // when losing the app op, so let's just cache the result if it was ever allowed.
+        @Volatile
+        private var wasRequestInstallPackagesAllowed = false
+        private fun isRequestInstallPackagesAllowed(): Boolean {
+            if (wasRequestInstallPackagesAllowed) {
+                return true
+            }
+            // We'll never have the signature|appop permission itself, so we only need to check the
+            // app op against MODE_ALLOWED.
+            return (
+                appOpsManager.checkOpRawNoThrowCompat(
+                    AppOpsManagerCompat.OPSTR_REQUEST_INSTALL_PACKAGES,
+                    Process.myUid(),
+                    application.opPackageName,
+                    null
+                ) == AppOpsManager.MODE_ALLOWED
+                )
+                .also { wasRequestInstallPackagesAllowed = it }
         }
     }
 }

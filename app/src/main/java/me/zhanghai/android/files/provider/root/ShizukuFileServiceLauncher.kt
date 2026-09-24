@@ -5,13 +5,16 @@
 
 package me.zhanghai.android.files.provider.root
 
+import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.Parcel
 import androidx.annotation.Keep
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.system.exitProcess
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
@@ -23,6 +26,7 @@ import me.zhanghai.android.files.provider.remote.IRemoteFileService
 import me.zhanghai.android.files.provider.remote.RemoteFileServiceInterface
 import me.zhanghai.android.files.provider.remote.RemoteFileSystemException
 import rikka.shizuku.Shizuku
+import rikka.shizuku.ShizukuApiConstants
 import rikka.sui.Sui
 
 /**
@@ -149,5 +153,26 @@ internal class ContinuationServiceConnection(
 class ShizukuFileServiceInterface : RemoteFileServiceInterface() {
     init {
         RootFileService.main()
+    }
+
+    /**
+     * Shizuku asks a user service to go away with a transaction of its own rather than killing the
+     * process, so the process lingers unless it exits here.
+     */
+    override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+        // Let super call data.enforceInterface() exactly once.
+        if (super.onTransact(code, data, reply, flags)) {
+            return true
+        }
+        if (code != TRANSACTION_DESTROY) {
+            return false
+        }
+        exitProcess(0)
+    }
+
+    companion object {
+        // The constant is library-internal, but it is the only name for Shizuku's destroy call.
+        @SuppressLint("RestrictedApi")
+        private const val TRANSACTION_DESTROY = ShizukuApiConstants.USER_SERVICE_TRANSACTION_destroy
     }
 }

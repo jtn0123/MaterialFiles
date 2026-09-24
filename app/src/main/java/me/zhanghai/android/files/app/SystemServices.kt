@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.app
 
+import android.app.AppOpsManager
 import android.content.ClipboardManager
 import android.content.ContentResolver
 import android.content.SharedPreferences
@@ -22,6 +23,10 @@ import me.zhanghai.android.files.compat.mainExecutorCompat
 import okhttp3.OkHttpClient
 
 val appClassLoader = AppProvider::class.java.classLoader
+
+val appOpsManager: AppOpsManager by lazy {
+    application.getSystemServiceCompat(AppOpsManager::class.java)
+}
 
 val clipboardManager: ClipboardManager by lazy {
     application.getSystemServiceCompat(ClipboardManager::class.java)
