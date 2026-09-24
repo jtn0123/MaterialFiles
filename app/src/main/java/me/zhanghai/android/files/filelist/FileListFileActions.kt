@@ -65,7 +65,9 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
             } else {
                 when (pickOptions.mode) {
                     PickOptions.Mode.OPEN_FILE -> fragment.pick.pickFiles(fileItemSetOf(file))
+
                     PickOptions.Mode.CREATE_FILE -> fragment.pick.confirmReplaceFile(file)
+
                     PickOptions.Mode.OPEN_DIRECTORY -> {
                         // A file isn't selectable when picking a directory, so there is nothing to do.
                     }
