@@ -6,11 +6,13 @@
 package me.zhanghai.android.files.provider.linux
 
 import android.system.OsConstants
+import java.io.FileDescriptor
 import java.io.InterruptedIOException
 import me.zhanghai.android.files.provider.common.AbstractCopyMove
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.CopyOptions
 import me.zhanghai.android.files.provider.common.replacementSiblingName
+import me.zhanghai.android.files.provider.common.runThenClose
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.linux.syscall.Constants
 import me.zhanghai.android.files.provider.linux.syscall.StructStat
@@ -69,7 +71,9 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
         } catch (e: SyscallException) {
             throw e.toFileSystemException(source.toString())
         }
-        try {
+        // A failure to close either file after a failed copy is kept as suppressed on the copy
+        // error; after a successful copy it is thrown, since the target may be missing data.
+        runThenClose({ closeFd(sourceFd, source) }) {
             val targetFlags = OsConstants.O_WRONLY or OsConstants.O_TRUNC or
                 OsConstants.O_CREAT or OsConstants.O_EXCL
             val targetFd = try {
@@ -78,45 +82,51 @@ internal object LinuxCopyMove : AbstractCopyMove<ByteString, StructStat>() {
                 e.maybeThrowInvalidFileNameException(target.toString())
                 throw e.toFileSystemException(target.toString())
             }
-            try {
-                val progressIntervalMillis = copyOptions.progressIntervalMillis
-                val progressListener = copyOptions.progressListener
-                var lastProgressMillis = System.currentTimeMillis()
-                var copiedSize = 0L
-                while (true) {
-                    val sentSize = try {
-                        Syscall.sendfile(targetFd, sourceFd, null, SEND_FILE_COUNT.toLong())
-                    } catch (e: SyscallException) {
-                        throw e.toFileSystemException(source.toString(), target.toString())
-                    }
-                    if (sentSize == 0L) {
-                        break
-                    }
-                    copiedSize += sentSize
-                    throwIfInterrupted()
-                    val currentTimeMillis = System.currentTimeMillis()
-                    if (progressListener != null &&
-                        currentTimeMillis >= lastProgressMillis + progressIntervalMillis
-                    ) {
-                        progressListener(copiedSize)
-                        lastProgressMillis = currentTimeMillis
-                        copiedSize = 0
-                    }
-                }
-                progressListener?.invoke(copiedSize)
-            } finally {
-                try {
-                    Syscall.close(targetFd)
-                } catch (e: SyscallException) {
-                    throw e.toFileSystemException(target.toString())
-                }
+            runThenClose({ closeFd(targetFd, target) }) {
+                sendFile(sourceFd, source, targetFd, target, copyOptions)
             }
-        } finally {
-            try {
-                Syscall.close(sourceFd)
+        }
+    }
+
+    private fun sendFile(
+        sourceFd: FileDescriptor,
+        source: ByteString,
+        targetFd: FileDescriptor,
+        target: ByteString,
+        copyOptions: CopyOptions
+    ) {
+        val progressIntervalMillis = copyOptions.progressIntervalMillis
+        val progressListener = copyOptions.progressListener
+        var lastProgressMillis = System.currentTimeMillis()
+        var copiedSize = 0L
+        while (true) {
+            val sentSize = try {
+                Syscall.sendfile(targetFd, sourceFd, null, SEND_FILE_COUNT.toLong())
             } catch (e: SyscallException) {
-                throw e.toFileSystemException(source.toString())
+                throw e.toFileSystemException(source.toString(), target.toString())
             }
+            if (sentSize == 0L) {
+                break
+            }
+            copiedSize += sentSize
+            throwIfInterrupted()
+            val currentTimeMillis = System.currentTimeMillis()
+            if (progressListener != null &&
+                currentTimeMillis >= lastProgressMillis + progressIntervalMillis
+            ) {
+                progressListener(copiedSize)
+                lastProgressMillis = currentTimeMillis
+                copiedSize = 0
+            }
+        }
+        progressListener?.invoke(copiedSize)
+    }
+
+    private fun closeFd(fd: FileDescriptor, path: ByteString) {
+        try {
+            Syscall.close(fd)
+        } catch (e: SyscallException) {
+            throw e.toFileSystemException(path.toString())
         }
     }
 
