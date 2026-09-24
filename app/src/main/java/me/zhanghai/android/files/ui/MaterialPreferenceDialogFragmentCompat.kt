@@ -144,7 +144,7 @@ abstract class MaterialPreferenceDialogFragmentCompat :
      * Sets the required flags on the dialog window to enable input method window to show up.
      */
     private fun requestInputMethod(dialog: Dialog) {
-        dialog.window!!.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
     }
 
     /**

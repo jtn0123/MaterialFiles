@@ -51,7 +51,7 @@ class EditDocumentTreeDialogFragment : AppCompatDialogFragment() {
             .setNeutralButton(R.string.remove) { _, _ -> remove() }
             .create()
             .apply {
-                window!!.setSoftInputMode(
+                window?.setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE or
                         WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
                 )
