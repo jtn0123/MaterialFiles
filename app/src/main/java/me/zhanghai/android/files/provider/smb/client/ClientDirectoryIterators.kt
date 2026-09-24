@@ -50,7 +50,9 @@ internal fun Client.openShareIterator(path: Path, session: Session): CloseableIt
         }
     }
     return object : CloseableIterator<Path>, Iterator<Path> by sharePaths.iterator() {
-        override fun close() {}
+        override fun close() {
+            // The shares were all fetched above, and the RPC transport has nothing to close.
+        }
     }
 }
 

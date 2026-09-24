@@ -42,14 +42,12 @@ class FileByteChannel(
         }
             .map(
                 { response ->
-                    when (response.header.statusCode) {
-                        NtStatus.STATUS_END_OF_FILE.value -> {
-                            return@map ByteBuffer::class.EMPTY
-                        }
-
-                        NtStatus.STATUS_SUCCESS.value -> {}
-
-                        else -> throw SMBApiException(response.header, "Read failed for $this")
+                    val statusCode = response.header.statusCode
+                    if (statusCode == NtStatus.STATUS_END_OF_FILE.value) {
+                        return@map ByteBuffer::class.EMPTY
+                    }
+                    if (statusCode != NtStatus.STATUS_SUCCESS.value) {
+                        throw SMBApiException(response.header, "Read failed for $this")
                             .toIOException()
                     }
                     val data = response.data
@@ -144,7 +142,9 @@ class FileByteChannel(
 
         override fun bytesLeft(): Int = buffer.remaining()
 
-        override fun prepareWrite(maxBytesToPrepare: Int) {}
+        override fun prepareWrite(maxBytesToPrepare: Int) {
+            // The bytes are already in the buffer, so there is nothing to read ahead.
+        }
 
         override fun getChunk(chunk: ByteArray): Int {
             val length = chunk.size.coerceAtMost(buffer.remaining())
