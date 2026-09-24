@@ -15,6 +15,8 @@ import me.zhanghai.android.files.provider.smb.client.Client
 import me.zhanghai.android.files.provider.smb.client.ClientException
 import me.zhanghai.android.files.provider.smb.client.FileInformation
 import me.zhanghai.android.files.provider.smb.client.ShareInformation
+import me.zhanghai.android.files.provider.smb.client.getPathInformation
+import me.zhanghai.android.files.provider.smb.client.setFileInformation
 
 internal class SmbFileAttributeView(private val path: SmbPath, private val noFollowLinks: Boolean) :
     BasicFileAttributeView {

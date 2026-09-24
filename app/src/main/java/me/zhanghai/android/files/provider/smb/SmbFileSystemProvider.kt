@@ -48,6 +48,8 @@ import me.zhanghai.android.files.provider.smb.client.Client
 import me.zhanghai.android.files.provider.smb.client.ClientException
 import me.zhanghai.android.files.provider.smb.client.FileInformation
 import me.zhanghai.android.files.provider.smb.client.SymbolicLinkReparseData
+import me.zhanghai.android.files.provider.smb.client.checkAccess
+import me.zhanghai.android.files.provider.smb.client.getPathInformation
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.takeIfNotEmpty
 
