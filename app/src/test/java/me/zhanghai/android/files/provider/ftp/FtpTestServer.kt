@@ -13,6 +13,7 @@ import me.zhanghai.android.files.provider.ftp.client.Client
 import me.zhanghai.android.files.provider.ftp.client.Mode
 import me.zhanghai.android.files.provider.ftp.client.Protocol
 import org.apache.ftpserver.FtpServerFactory
+import org.apache.ftpserver.ftplet.FileSystemFactory
 import org.apache.ftpserver.listener.ListenerFactory
 import org.apache.ftpserver.usermanager.impl.BaseUser
 import org.apache.ftpserver.usermanager.impl.WritePermission
@@ -22,7 +23,15 @@ import org.apache.ftpserver.usermanager.impl.WritePermission
  * of [FtpFileSystemProvider] for it, so that provider code is exercised against a server that
  * answers like the ones users have.
  */
-internal fun withFtpFileSystem(root: File, block: (FtpFileSystem) -> Unit) {
+internal fun withFtpFileSystem(root: File, block: (FtpFileSystem) -> Unit) =
+    withFtpFileSystem(root, null, block)
+
+/** [withFtpFileSystem] with [fileSystemFactory] replacing how the server reaches [root]. */
+internal fun withFtpFileSystem(
+    root: File,
+    fileSystemFactory: FileSystemFactory?,
+    block: (FtpFileSystem) -> Unit
+) {
     val port = ServerSocket(0).use { it.localPort }
     val factory = FtpServerFactory()
     factory.addListener(
@@ -34,6 +43,7 @@ internal fun withFtpFileSystem(root: File, block: (FtpFileSystem) -> Unit) {
             }
             .createListener()
     )
+    fileSystemFactory?.let { factory.fileSystem = it }
     factory.userManager.save(
         BaseUser().apply {
             name = "test"

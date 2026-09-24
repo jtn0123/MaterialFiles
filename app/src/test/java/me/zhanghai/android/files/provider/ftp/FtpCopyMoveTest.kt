@@ -6,10 +6,18 @@
 package me.zhanghai.android.files.provider.ftp
 
 import java.io.File
+import java.io.IOException
+import java.io.OutputStream
 import java8.nio.file.FileAlreadyExistsException
+import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.StandardCopyOption
 import me.zhanghai.android.files.provider.common.ProgressCopyOption
+import org.apache.ftpserver.filesystem.nativefs.NativeFileSystemFactory
+import org.apache.ftpserver.ftplet.FileSystemFactory
+import org.apache.ftpserver.ftplet.FileSystemView
+import org.apache.ftpserver.ftplet.FtpFile
+import org.apache.ftpserver.ftplet.User
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -114,6 +122,22 @@ class FtpCopyMoveTest {
     }
 
     @Test
+    fun anUploadTheServerCouldNotStoreFailsWhenItIsClosed() {
+        File(root, "source.txt").writeText("hello")
+        withFtpFileSystem(root, UnwritableFileSystemFactory) { fileSystem ->
+            // The server takes the data and only answers 551 once the upload is complete.
+            val exception = assertThrows(FileSystemException::class.java) {
+                FtpFileSystemProvider.copy(
+                    fileSystem.getPath("/source.txt"),
+                    fileSystem.getPath("/target.txt")
+                )
+            }
+            assertEquals("/target.txt", exception.file)
+        }
+        assertFalse(File(root, "target.txt").exists())
+    }
+
+    @Test
     fun moveRenamesOnTheServer() {
         File(root, "source.txt").writeText("hello")
         withFtpFileSystem(root) { fileSystem ->
@@ -199,5 +223,20 @@ class FtpCopyMoveTest {
                 )
             }
         }
+    }
+
+    /** A server file system on which nothing can be written, though it claims otherwise. */
+    private object UnwritableFileSystemFactory : FileSystemFactory {
+        override fun createFileSystemView(user: User): FileSystemView {
+            val view = NativeFileSystemFactory().createFileSystemView(user)
+            return object : FileSystemView by view {
+                override fun getFile(file: String): FtpFile = UnwritableFile(view.getFile(file))
+            }
+        }
+    }
+
+    private class UnwritableFile(private val file: FtpFile) : FtpFile by file {
+        override fun createOutputStream(offset: Long): OutputStream =
+            throw IOException("No space left on device")
     }
 }
