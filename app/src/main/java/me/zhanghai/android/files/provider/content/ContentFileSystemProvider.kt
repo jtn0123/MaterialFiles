@@ -70,7 +70,7 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
     @Throws(IOException::class)
     override fun newInputStream(file: Path, vararg options: OpenOption): InputStream {
         requireProviderPath<ContentPath>(file)
-        val uri = file.uri!!
+        val uri = file.requireUri()
         val openOptions = options.toOpenOptions()
         if (openOptions.write) {
             throw UnsupportedOperationException(StandardOpenOption.WRITE.toString())
@@ -89,7 +89,7 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
     @Throws(IOException::class)
     override fun newOutputStream(file: Path, vararg options: OpenOption): OutputStream {
         requireProviderPath<ContentPath>(file)
-        val uri = file.uri!!
+        val uri = file.requireUri()
         val optionsSet = mutableSetOf(*options)
         if (optionsSet.isEmpty()) {
             optionsSet += StandardOpenOption.CREATE
@@ -112,7 +112,7 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
         vararg attributes: FileAttribute<*>
     ): FileChannel {
         requireProviderPath<ContentPath>(file)
-        val uri = file.uri!!
+        val uri = file.requireUri()
         val openOptions = options.toOpenOptions()
         val mode = openOptions.toContentMode()
         if (attributes.isNotEmpty()) {
@@ -163,7 +163,7 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
     @Throws(IOException::class)
     override fun delete(path: Path) {
         requireProviderPath<ContentPath>(path)
-        val uri = path.uri!!
+        val uri = path.requireUri()
         try {
             Resolver.delete(uri)
         } catch (e: ResolverException) {
@@ -206,7 +206,7 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
         requireProviderPath<ContentPath>(path)
-        val uri = path.uri!!
+        val uri = path.requireUri()
         // This checks existence as well.
         val mimeType = try {
             Resolver.getMimeType(uri)
@@ -296,7 +296,7 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
         requireProviderPath<ContentPath>(path)
-        val uri = path.uri!!
+        val uri = path.requireUri()
         return ContentPathObservable(uri, intervalMillis)
     }
 }

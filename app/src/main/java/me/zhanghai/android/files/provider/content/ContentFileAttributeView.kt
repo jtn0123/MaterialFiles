@@ -21,7 +21,7 @@ internal class ContentFileAttributeView(private val path: ContentPath) :
 
     @Throws(IOException::class)
     override fun readAttributes(): ContentFileAttributes {
-        val uri = path.uri!!
+        val uri = path.requireUri()
         val mimeType = try {
             Resolver.getMimeType(uri)
         } catch (e: ResolverException) {

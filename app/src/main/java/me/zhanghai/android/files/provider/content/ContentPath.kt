@@ -13,6 +13,7 @@ import java.io.File
 import java.net.URI
 import java8.nio.file.FileSystem
 import java8.nio.file.LinkOption
+import java8.nio.file.NoSuchFileException
 import java8.nio.file.Path
 import java8.nio.file.WatchEvent
 import java8.nio.file.WatchKey
@@ -31,6 +32,10 @@ internal class ContentPath : ByteStringListPath<ContentPath> {
     private val fileSystem: ContentFileSystem
 
     val uri: Uri?
+
+    /** The content URI of this path; a relative path has none, so it names no file. */
+    @Throws(NoSuchFileException::class)
+    fun requireUri(): Uri = uri ?: throw NoSuchFileException(toString())
 
     constructor(fileSystem: ContentFileSystem, uri: Uri) : super(
         ContentFileSystem.SEPARATOR,
