@@ -5,6 +5,8 @@
 
 package me.zhanghai.android.files.fileproperties
 
+import android.content.Intent
+import android.location.Geocoder
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,16 +16,26 @@ import android.widget.TextView
 import androidx.annotation.StringRes
 import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewbinding.ViewBinding
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import me.zhanghai.android.files.R
 import me.zhanghai.android.files.databinding.FilePropertiesTabFragmentBinding
 import me.zhanghai.android.files.databinding.FilePropertiesTabItemBinding
 import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.autoCleared
+import me.zhanghai.android.files.util.awaitGetFromLocation
+import me.zhanghai.android.files.util.createViewLocation
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
+import me.zhanghai.android.files.util.isGeocoderPresent
 import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.showToast
+import me.zhanghai.android.files.util.startActivitySafe
+import me.zhanghai.android.files.util.userFriendlyString
 
 abstract class FilePropertiesTabFragment : Fragment() {
     protected var binding by autoCleared<FilePropertiesTabFragmentBinding>()
@@ -64,6 +76,39 @@ abstract class FilePropertiesTabFragment : Fragment() {
             ViewBuilder(binding.linearLayout).apply {
                 block(value)
                 build()
+            }
+        }
+    }
+
+    /**
+     * Adds the coordinates of a location, which open it in a map app when clicked, and its address
+     * once the geocoder finds it. Returns the job looking up the address, if there is a geocoder.
+     */
+    protected fun ViewBuilder.addLocationItemViews(
+        coordinatesText: String,
+        latitude: Double,
+        longitude: Double,
+        label: String
+    ): Job? {
+        addItemView(R.string.file_properties_media_coordinates, coordinatesText) {
+            startActivitySafe(
+                Intent::class.createViewLocation(latitude.toFloat(), longitude.toFloat(), label)
+            )
+        }
+        if (!isGeocoderPresent) {
+            return null
+        }
+        val textView =
+            addItemView(R.string.file_properties_media_address, getString(R.string.loading))
+        val geocoder = Geocoder(requireContext())
+        return viewLifecycleOwner.lifecycleScope.launch {
+            val address = try {
+                geocoder.awaitGetFromLocation(latitude, longitude, 1).first()
+            } catch (e: Exception) {
+                null
+            }
+            if (isActive) {
+                textView.text = address?.userFriendlyString ?: getString(R.string.unknown)
             }
         }
     }
@@ -113,6 +158,21 @@ abstract class FilePropertiesTabFragment : Fragment() {
             text: String,
             onClickListener: ((View) -> Unit)? = null
         ): TextView = addItemView(linearLayout.context.getString(hintRes), text, onClickListener)
+
+        /** Adds an item for [value] unless it is `null`, showing it as [format] returns. */
+        fun <T : Any> addItemViewIfNotNull(
+            @StringRes hintRes: Int,
+            value: T?,
+            format: (T) -> String
+        ) {
+            if (value != null) {
+                addItemView(hintRes, format(value))
+            }
+        }
+
+        fun addItemViewIfNotNull(@StringRes hintRes: Int, text: String?) {
+            addItemViewIfNotNull(hintRes, text) { it }
+        }
 
         fun build() {
             scrapViews.clear()
