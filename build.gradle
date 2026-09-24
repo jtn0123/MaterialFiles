@@ -119,6 +119,27 @@ sonar {
             preferenceDialog: ['kotlin:S1874', [
                 '**/src/main/java/me/zhanghai/android/files/ui/PreferenceFragmentCompat.kt'
             ]],
+            // Assigning a property to itself runs its setter again, which is the point: it
+            // re-applies the background and re-emits the LiveData value.
+            selfAssignment: ['kotlin:S1656', [
+                '**/src/main/java/me/zhanghai/android/files/filelist/TrailLiveData.kt',
+                '**/src/main/java/me/zhanghai/android/files/ui/ReadOnlyTextInputEditText.kt'
+            ]],
+            // MD5 and SHA-1 are checksums the user asks for and the fingerprint format of APK
+            // signing certificates; nothing is secured with them.
+            checksums: ['kotlin:S4790', [
+                '**/src/main/java/me/zhanghai/android/files/fileproperties/checksum/ChecksumInfo.kt',
+                '**/src/main/java/me/zhanghai/android/files/util/ByteArrayExtensions.kt'
+            ]],
+            // The branches look alike but call different constructor overloads, chosen by the
+            // smart cast.
+            layoutParamsOverloads: ['kotlin:S3923', [
+                '**/src/main/java/me/zhanghai/android/files/ui/PersistentBarLayout.kt',
+                '**/src/main/java/me/zhanghai/android/files/ui/PersistentDrawerLayout.kt'
+            ]],
+            // Cleartext is allowed on purpose by network_security_config.xml, for FTP and WebDAV
+            // servers on the local network, and minSdk 35 has no older behaviour to worry about.
+            cleartextTraffic: ['xml:S5332', ['**/src/main/AndroidManifest.xml']],
             // Replacing the deprecated soft input calls means driving the keyboard insets by
             // hand, which changes how these dialogs behave; worth its own change.
             softInput: ['kotlin:S1874', [
