@@ -14,13 +14,10 @@ import java8.nio.file.SimpleFileVisitor
 import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.archive.isArchivePath
-import me.zhanghai.android.files.provider.common.ByteString
-import me.zhanghai.android.files.provider.common.ByteStringBuilder
 import me.zhanghai.android.files.provider.common.asByteStringListPath
 import me.zhanghai.android.files.provider.common.exists
 import me.zhanghai.android.files.provider.common.isDirectory
 import me.zhanghai.android.files.provider.common.resolveForeign
-import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.util.asFileName
 
 class CopyFileJob(private val sources: List<Path>, private val targetDirectory: Path) : FileJob() {
@@ -118,60 +115,4 @@ class CopyFileJob(private val sources: List<Path>, private val targetDirectory: 
         // Just leave it to conflict handling logic.
         return source
     }
-
-    private fun getDuplicateCountInfo(fileName: ByteString, countEnd: Int): DuplicateCountInfo {
-        while (true) {
-            // /(?<=.) \(\d+\)$/
-            var index = countEnd - 1
-            // \)
-            if (index < 0 || fileName[index] != ')'.code.toByte()) {
-                break
-            }
-            --index
-            // \d+
-            val digitsEndInclusive = index
-            while (index >= 0) {
-                val b = fileName[index]
-                if (b < '0'.code.toByte() || b > '9'.code.toByte()) {
-                    break
-                }
-                --index
-            }
-            if (index == digitsEndInclusive) {
-                break
-            }
-            val countString = fileName.substring(index + 1, digitsEndInclusive + 1).toString()
-            val count = try {
-                countString.toInt()
-            } catch (e: NumberFormatException) {
-                break
-            }
-            // \(
-            if (index < 0 || fileName[index] != '('.code.toByte()) {
-                break
-            }
-            --index
-            //
-            if (index < 0 || fileName[index] != ' '.code.toByte()) {
-                break
-            }
-            // (?<=.)
-            if (index == 0) {
-                break
-            }
-            return DuplicateCountInfo(index, countEnd, count)
-        }
-        return DuplicateCountInfo(countEnd, countEnd, 0)
-    }
-
-    private fun setDuplicateCount(
-        fileName: ByteString,
-        countInfo: DuplicateCountInfo,
-        count: Int
-    ): ByteString = ByteStringBuilder(fileName.substring(0, countInfo.countStart))
-        .append(" ($count)".toByteString())
-        .append(fileName.substring(countInfo.countEnd))
-        .toByteString()
-
-    private class DuplicateCountInfo(val countStart: Int, val countEnd: Int, val count: Int)
 }
