@@ -52,6 +52,17 @@ class ByteBufferInputStreamTest {
     }
 
     @Test
+    fun aSkipBeyondTheIntRangeStillStopsAtTheEnd() {
+        val stream = stream(1, 2, 3, 4)
+        assertEquals(1, stream.read())
+        assertEquals(3, stream.skip(Long.MAX_VALUE))
+        assertEquals(-1, stream.read())
+        val other = stream(1, 2, 3, 4)
+        // 2^32 + 2 would wrap to 2 if it were cut down to an Int first.
+        assertEquals(4, other.skip((1L shl 32) + 2))
+    }
+
+    @Test
     fun aMarkedPositionCanBeReturnedTo() {
         val stream = stream(1, 2, 3)
         assertTrue(stream.markSupported())

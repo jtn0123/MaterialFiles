@@ -36,7 +36,7 @@ class ByteBufferInputStream(buffer: ByteBuffer) : InputStream() {
         if (length <= 0) {
             return 0
         }
-        val skippedLength = length.toInt().coerceAtMost(buffer.remaining())
+        val skippedLength = length.coerceAtMost(buffer.remaining().toLong()).toInt()
         buffer.position(buffer.position() + skippedLength)
         return skippedLength.toLong()
     }
