@@ -43,7 +43,8 @@ rot 1; shot list-land 2.5; u tap-desc "Open navigation drawer"; shot drawer-land
 u long-text "Clip A.mp4"; shot selection; e shell input keyevent BACK; sleep 1
 u tap-text "Clip B.mp4"; sleep 4; e shell input tap 540 1200; shot video 0.6; rot 1; sleep 2; e shell input tap 1200 540; shot video-land 0.6; rot 0; sleep 1.5; list
 u tap-text "shot.png"; sleep 3; e shell input tap 540 1200; shot image 0.6; rot 1; sleep 2; e shell input tap 1200 540; shot image-land 0.6; rot 0; sleep 1.5; list
-u tap-desc "Open navigation drawer"; sleep 1.5; u tap-text "Settings"; shot settings 2; e shell input keyevent BACK; sleep 1
+# Settings shows its scrollbar when it opens; wait for it to fade.
+u tap-desc "Open navigation drawer"; sleep 1.5; u tap-text "Settings"; shot settings 4; e shell input keyevent BACK; sleep 1
 u tap-desc "Open navigation drawer"; sleep 1.5; u tap-text "About"; shot about 2; e shell input keyevent BACK; sleep 1
 u tap-desc "Open navigation drawer"; sleep 1.5; u tap-text "FTP server"; shot ftp 2; e shell input keyevent BACK; sleep 1
 rot 0; e shell "rm -r $DIR" >/dev/null
