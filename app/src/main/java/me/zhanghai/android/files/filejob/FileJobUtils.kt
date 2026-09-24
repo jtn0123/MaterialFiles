@@ -116,9 +116,9 @@ internal fun FileJob.scan(
     actionAllInfo: ActionAllInfo = ActionAllInfo()
 ): ScanInfo {
     val scanInfo = countFiles(sources, actionAllInfo) {
-        postScanNotification(it, notificationTitleRes)
+        postScanProgress(it, notificationTitleRes)
     }
-    postScanNotification(scanInfo, notificationTitleRes)
+    postScanProgress(scanInfo, notificationTitleRes)
     return scanInfo
 }
 
@@ -171,7 +171,7 @@ internal fun FileJob.scan(
     source: Path,
     recursive: Boolean,
     @PluralsRes notificationTitleRes: Int,
-    actionAllInfo: ActionAllInfo = ActionAllInfo()
+    actionAllInfo: ActionAllInfo
 ): ScanInfo {
     if (recursive) {
         return scan(source, notificationTitleRes, actionAllInfo)
@@ -193,7 +193,7 @@ private fun FileJob.scanPath(
 ) {
     scanInfo.incrementFileCount()
     scanInfo.addToSize(attributes.size())
-    postScanNotification(scanInfo, notificationTitleRes)
+    postScanProgress(scanInfo, notificationTitleRes)
 }
 
 internal fun FileJob.getPrincipalName(principal: PosixPrincipal): String =

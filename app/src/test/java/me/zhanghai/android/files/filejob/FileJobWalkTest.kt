@@ -46,6 +46,13 @@ class FileJobWalkTest {
 
     private val decisions = ScriptedDecisions().also { job.decisions = it }
 
+    private val scanProgress = mutableListOf<Pair<Int, Int>>()
+
+    init {
+        job.postScanProgress =
+            { scanInfo, titleRes -> scanProgress += scanInfo.fileCount to titleRes }
+    }
+
     private val decided = mutableListOf<Pair<String, WalkFailure>>()
     private val visited = mutableListOf<String>()
 
@@ -71,6 +78,52 @@ class FileJobWalkTest {
         assertEquals(paths.size, scanInfo.fileCount)
         assertEquals(paths.sumOf { JavaFiles.size(file(it).toPath()) }, scanInfo.size)
         assertEquals((1..paths.size).toList(), progress)
+    }
+
+    @Test
+    fun aJobScanPostsItsProgressAndThenItsTotal() {
+        createFiles("tree/a.txt", "single.txt")
+        val scanInfo = job.scan(listOf(path("/tree"), path("/single.txt")), SCAN_TITLE)
+        assertEquals(3, scanInfo.fileCount)
+        assertEquals(listOf(1, 2, 3, 3).map { it to SCAN_TITLE }, scanProgress)
+    }
+
+    @Test
+    fun aRecursiveScanOfOnePathCountsEverythingUnderIt() {
+        createFiles("tree/a.txt", "tree/sub/b.txt")
+        val scanInfo = job.scan(path("/tree"), true, SCAN_TITLE, ActionAllInfo())
+        assertEquals(4, scanInfo.fileCount)
+        assertEquals(4 to SCAN_TITLE, scanProgress.last())
+    }
+
+    @Test
+    fun aNonRecursiveScanCountsOnlyThePath() {
+        createFiles("tree/a.txt", "tree/sub/b.txt")
+        val scanInfo = job.scan(path("/tree"), false, SCAN_TITLE, ActionAllInfo())
+        assertEquals(1, scanInfo.fileCount)
+        assertEquals(JavaFiles.size(file("tree").toPath()), scanInfo.size)
+        assertEquals(listOf(1 to SCAN_TITLE), scanProgress)
+    }
+
+    @Test
+    fun aJobSettingAnAttributeScansFirstAndCountsWhatItSets() {
+        createFiles("tree/a.txt", "tree/sub/b.txt")
+        val transferInfos = mutableSetOf<TransferInfo>()
+        job.walkSettingAttribute(path("/tree"), true, SCAN_TITLE) { file, _, transferInfo, _ ->
+            visited += file.toString()
+            transferInfo.incrementTransferredFileCount()
+            transferInfos += transferInfo
+        }
+        assertEquals(
+            listOf("/tree", "/tree/a.txt", "/tree/sub", "/tree/sub/b.txt"),
+            visited.sorted()
+        )
+        assertEquals("/tree", visited.first())
+        val transferInfo = transferInfos.single()
+        // The scan counted what the walk then set.
+        assertEquals(4, transferInfo.fileCount)
+        assertEquals(4, transferInfo.transferredFileCount)
+        assertEquals(4 to SCAN_TITLE, scanProgress.last())
     }
 
     @Test
@@ -227,6 +280,10 @@ class FileJobWalkTest {
         val scanInfo = ScanInfo()
         repeat(fileCount) { scanInfo.incrementFileCount() }
         return TransferInfo(scanInfo, null)
+    }
+
+    private companion object {
+        val SCAN_TITLE = R.plurals.file_job_copy_scan_notification_title_format
     }
 
     private class ScriptedDecisions : FileJobDecisions {
