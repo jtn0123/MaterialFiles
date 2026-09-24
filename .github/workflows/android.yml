@@ -157,9 +157,9 @@ jobs:
           adb install -r -t app/build/outputs/apk/debug/app-debug.apk
           scripts/screenshots/capture.sh emulator-5554 screenshots/current app/src/androidTest/assets/clip.mp4
     - name: Compare with the committed baseline
-      # No baseline yet: the run only uploads what it captured, so a baseline can be committed
-      # from the artifact into screenshots/baseline/api35. Runs on the same profile and renderer
-      # as here, since screenshots from other emulators do not match pixel for pixel.
+      # The baseline in screenshots/baseline/api35 comes from this job's artifact, since screenshots
+      # from other emulators do not match pixel for pixel. After an intended UI change, replace it
+      # with the artifact of the change's run (see screenshots/README.md).
       run: |
         if [ -d screenshots/baseline/api35 ]; then
           python3 scripts/screenshots/compare.py screenshots/baseline/api35 screenshots/current

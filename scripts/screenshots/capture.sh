@@ -5,8 +5,18 @@
 set -u
 SER=$1; OUT=$2; CLIP=$3; mkdir -p "$OUT"; S=$(cd "$(dirname "$0")" && pwd)
 PKG=me.zhanghai.android.files; DIR=/storage/emulated/0/Movies/ScreenshotTest
-u() { python3 "$S/ui.py" "$SER" "$@" >/dev/null || echo "ui: $* not found"; }
+# A step that can't find its target stops the run, rather than capturing the wrong screen.
+u() { python3 "$S/ui.py" "$SER" "$@" >/dev/null || { echo "ui: $* not found" >&2; exit 1; }; }
 e() { adb -s "$SER" "$@"; }
+# Presses Back until the file list is in front again; a viewer may first use Back to hide its
+# controls.
+list() {
+    for _ in 1 2 3 4; do
+        e shell dumpsys activity activities | grep -q "topResumedActivity=.*FileListActivity" && return
+        e shell input keyevent BACK; sleep 1
+    done
+    echo "capture: the file list did not come back" >&2; exit 1
+}
 shot() { sleep "${2:-1.5}"; e exec-out screencap -p > "$OUT/$1.png"; }
 open() { e shell "am force-stop $PKG; am start -W -n $PKG/.filelist.FileListActivity -a android.intent.action.VIEW -d file://$DIR -t inode/directory" >/dev/null; sleep 3; }
 rot() { e shell "settings put system accelerometer_rotation 0; settings put system user_rotation $1"; sleep 4; }
@@ -31,8 +41,8 @@ rot 0; open; open; shot list
 u tap-desc "Open navigation drawer"; shot drawer; e shell input keyevent BACK; sleep 1
 rot 1; shot list-land 2.5; u tap-desc "Open navigation drawer"; shot drawer-land; e shell input keyevent BACK; sleep 1; rot 0; sleep 2
 u long-text "Clip A.mp4"; shot selection; e shell input keyevent BACK; sleep 1
-u tap-text "Clip B.mp4"; sleep 4; e shell input tap 540 1200; shot video 0.6; rot 1; sleep 2; e shell input tap 1200 540; shot video-land 0.6; rot 0; sleep 1.5; e shell input keyevent BACK; sleep 1
-u tap-text "shot.png"; sleep 3; e shell input tap 540 1200; shot image 0.6; rot 1; sleep 2; e shell input tap 1200 540; shot image-land 0.6; rot 0; sleep 1.5; e shell input keyevent BACK; sleep 1
+u tap-text "Clip B.mp4"; sleep 4; e shell input tap 540 1200; shot video 0.6; rot 1; sleep 2; e shell input tap 1200 540; shot video-land 0.6; rot 0; sleep 1.5; list
+u tap-text "shot.png"; sleep 3; e shell input tap 540 1200; shot image 0.6; rot 1; sleep 2; e shell input tap 1200 540; shot image-land 0.6; rot 0; sleep 1.5; list
 u tap-desc "Open navigation drawer"; sleep 1.5; u tap-text "Settings"; shot settings 2; e shell input keyevent BACK; sleep 1
 u tap-desc "Open navigation drawer"; sleep 1.5; u tap-text "About"; shot about 2; e shell input keyevent BACK; sleep 1
 u tap-desc "Open navigation drawer"; sleep 1.5; u tap-text "FTP server"; shot ftp 2; e shell input keyevent BACK; sleep 1

@@ -26,7 +26,7 @@ for path in sorted(baseline.glob("*.png")):
         failed = True
         continue
     diff = ImageChops.difference(a, b).convert("L").point(lambda v: 255 if v > 24 else 0)
-    changed = sum(1 for v in diff.getdata() if v)
+    changed = diff.histogram()[255]
     percent = 100 * changed / (a.size[0] * a.size[1])
     status = "FAIL" if percent > max_percent else "ok"
     print(f"{path.name}: {percent:.2f}% differ, bbox={diff.getbbox()} {status}")
