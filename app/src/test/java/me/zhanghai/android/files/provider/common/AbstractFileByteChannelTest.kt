@@ -6,11 +6,13 @@
 package me.zhanghai.android.files.provider.common
 
 import java.net.SocketTimeoutException
+import java.nio.channels.ClosedChannelException
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -105,5 +107,15 @@ class AbstractFileByteChannelTest {
         channel.read(destination)
         assertArrayEquals(content.copyOf(16), destination.array())
         assertEquals(listOf(0L to 128 * 1024, 0L to 128 * 1024), channel.requests)
+    }
+
+    @Test
+    fun forcingAndClosingNeedNothingFromAChannelThatHoldsNoState() {
+        val channel = Channel(content)
+        channel.force(true)
+        channel.close()
+        assertFalse(channel.isOpen)
+        channel.close()
+        assertThrows(ClosedChannelException::class.java) { channel.force(false) }
     }
 }

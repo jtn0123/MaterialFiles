@@ -73,7 +73,9 @@ internal class ContentFileSystem(private val provider: ContentFileSystemProvider
 
     override fun describeContents(): Int = 0
 
-    override fun writeToParcel(dest: Parcel, flags: Int) {}
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        // There is only one content file system, which CREATOR hands back; nothing to write.
+    }
 
     companion object {
         const val SEPARATOR = '/'.code.toByte()

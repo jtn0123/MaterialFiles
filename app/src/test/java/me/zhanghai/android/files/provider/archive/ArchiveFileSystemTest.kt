@@ -11,9 +11,11 @@ import me.zhanghai.android.files.provider.common.ByteStringPath
 import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException
 import me.zhanghai.android.files.provider.common.TestPath
 import me.zhanghai.android.files.provider.common.toByteString
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** What an archive file system does before any entry is read, so without libarchive. */
@@ -57,5 +59,13 @@ class ArchiveFileSystemTest {
             ArchiveFileSystemProvider.createSymbolicLink(link, TestPath("/target"))
         }
         fileSystem.close()
+    }
+
+    @Test
+    fun anArchiveStoreIsReadOnlyAndHasNothingToRefresh() {
+        val fileStore = ArchiveFileStore(TestPath("/store.zip"))
+        fileStore.refresh()
+        assertTrue(fileStore.isReadOnly)
+        assertEquals("/store.zip", fileStore.name())
     }
 }

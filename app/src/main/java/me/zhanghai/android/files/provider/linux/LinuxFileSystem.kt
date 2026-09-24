@@ -34,7 +34,9 @@ internal class LinuxFileSystem(provider: LinuxFileSystemProvider) :
 
     override fun describeContents(): Int = 0
 
-    override fun writeToParcel(dest: Parcel, flags: Int) {}
+    override fun writeToParcel(dest: Parcel, flags: Int) {
+        // There is only one Linux file system, which CREATOR hands back; nothing to write.
+    }
 
     companion object {
         const val SEPARATOR = LocalLinuxFileSystem.SEPARATOR

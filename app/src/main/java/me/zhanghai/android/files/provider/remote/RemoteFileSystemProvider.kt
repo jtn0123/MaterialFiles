@@ -285,7 +285,9 @@ abstract class RemoteFileSystemProvider(
 
         override fun describeContents(): Int = 0
 
-        override fun writeToParcel(dest: Parcel, flags: Int) {}
+        override fun writeToParcel(dest: Parcel, flags: Int) {
+            // The filter is stateless and CREATOR hands back the one instance; nothing to write.
+        }
 
         companion object {
             val instance = ParcelableAcceptAllFilter()

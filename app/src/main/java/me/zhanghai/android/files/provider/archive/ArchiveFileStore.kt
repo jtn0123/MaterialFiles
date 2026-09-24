@@ -14,7 +14,9 @@ import me.zhanghai.android.files.provider.common.PosixFileStore
 import me.zhanghai.android.files.provider.common.size
 
 internal class ArchiveFileStore(private val archiveFile: Path) : PosixFileStore() {
-    override fun refresh() {}
+    override fun refresh() {
+        // Nothing is cached: the sizes are read from the archive file on each call.
+    }
 
     override fun name(): String = archiveFile.toString()
 

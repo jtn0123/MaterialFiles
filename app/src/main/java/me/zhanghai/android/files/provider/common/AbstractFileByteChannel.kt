@@ -188,7 +188,9 @@ abstract class AbstractFileByteChannel(
     }
 
     @Throws(IOException::class)
-    protected open fun onForce(metaData: Boolean) {}
+    protected open fun onForce(metaData: Boolean) {
+        // A channel that writes through to its file has nothing to flush by default.
+    }
 
     @Throws(ClosedChannelException::class)
     private fun ensureOpen() {
@@ -222,7 +224,9 @@ abstract class AbstractFileByteChannel(
     }
 
     @Throws(IOException::class)
-    protected open fun onClose() {}
+    protected open fun onClose() {
+        // The read buffer is closed above; a subclass closes whatever it opened.
+    }
 
     private inner class ReadBuffer : Closeable {
         private val buffer = ByteBuffer.allocate(BUFFER_SIZE).apply { limit(0) }
