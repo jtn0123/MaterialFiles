@@ -264,7 +264,9 @@ class NavigationListAdapter(private val listener: NavigationItem.Listener, conte
                 binding.subtitleText.text = item.getSubtitle(binding.subtitleText.context)
             }
 
-            ViewType.DIVIDER -> {}
+            ViewType.DIVIDER -> {
+                // A divider has nothing to bind; its padding is set once in onCreateViewHolder().
+            }
         }
     }
 

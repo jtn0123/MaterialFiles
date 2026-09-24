@@ -122,7 +122,9 @@ abstract class MaterialPreferenceDialogFragmentCompat :
      *
      * Do not [AlertDialog.Builder.create] or [AlertDialog.Builder.show].
      */
-    open fun onPrepareDialogBuilder(builder: AlertDialog.Builder) {}
+    open fun onPrepareDialogBuilder(builder: AlertDialog.Builder) {
+        // Subclasses override this when they need to; the default builder is fine as it is.
+    }
 
     /**
      * Returns whether the preference needs to display a soft input method when the dialog is

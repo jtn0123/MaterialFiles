@@ -54,5 +54,7 @@ class ProviderFileSystemView(private val user: User) : FileSystemView {
         // TODO: Better way of determining if the provider is random accessible.
         !homeDirectory.physicalFile.isArchivePath
 
-    override fun dispose() {}
+    override fun dispose() {
+        // Nothing is held open between commands; each file opens its own channel.
+    }
 }

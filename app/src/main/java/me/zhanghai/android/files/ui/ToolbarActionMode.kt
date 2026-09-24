@@ -108,7 +108,9 @@ abstract class ToolbarActionMode(private val bar: ViewGroup, private val toolbar
     protected abstract fun hide(bar: ViewGroup, animate: Boolean)
 
     interface Callback {
-        fun onToolbarActionModeStarted(toolbarActionMode: ToolbarActionMode) {}
+        fun onToolbarActionModeStarted(toolbarActionMode: ToolbarActionMode) {
+            // Optional; most callbacks only care about the menu and the finish.
+        }
 
         fun onToolbarNavigationIconClicked(toolbarActionMode: ToolbarActionMode) {
             toolbarActionMode.finish()

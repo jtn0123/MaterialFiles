@@ -66,7 +66,9 @@ class NavigationRecyclerView : RecyclerView {
             MeasureSpec.UNSPECIFIED ->
                 widthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY)
 
-            MeasureSpec.EXACTLY -> {}
+            MeasureSpec.EXACTLY -> {
+                // The parent decided the width; keep it.
+            }
         }
         super.onMeasure(widthSpec, heightSpec)
     }

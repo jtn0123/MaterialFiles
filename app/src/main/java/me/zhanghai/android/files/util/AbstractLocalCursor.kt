@@ -167,7 +167,9 @@ abstract class AbstractLocalCursor : Cursor {
 
     override fun isNull(columnIndex: Int): Boolean = getObjectChecked(columnIndex) == null
 
-    override fun deactivate() {}
+    override fun deactivate() {
+        // Deprecated in the framework; the rows are in memory and there is nothing to release.
+    }
 
     override fun requery(): Boolean = true
 
@@ -177,13 +179,21 @@ abstract class AbstractLocalCursor : Cursor {
 
     override fun isClosed(): Boolean = closed
 
-    override fun registerContentObserver(observer: ContentObserver) {}
+    override fun registerContentObserver(observer: ContentObserver) {
+        // The rows never change after the cursor is built, so observers are never notified.
+    }
 
-    override fun unregisterContentObserver(observer: ContentObserver) {}
+    override fun unregisterContentObserver(observer: ContentObserver) {
+        // The rows never change after the cursor is built, so observers are never notified.
+    }
 
-    override fun registerDataSetObserver(observer: DataSetObserver) {}
+    override fun registerDataSetObserver(observer: DataSetObserver) {
+        // The rows never change after the cursor is built, so observers are never notified.
+    }
 
-    override fun unregisterDataSetObserver(observer: DataSetObserver) {}
+    override fun unregisterDataSetObserver(observer: DataSetObserver) {
+        // The rows never change after the cursor is built, so observers are never notified.
+    }
 
     override fun setNotificationUri(resolver: ContentResolver, uri: Uri): Unit =
         throw UnsupportedOperationException()

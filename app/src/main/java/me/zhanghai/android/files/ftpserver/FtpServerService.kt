@@ -155,9 +155,14 @@ class FtpServerService : Service() {
 
         fun toggle(context: Context) {
             when (val state = _stateLiveData.valueCompat) {
-                State.STARTING, State.STOPPING -> {}
+                State.STARTING, State.STOPPING -> {
+                    // Already on its way to the other state; a toggle now would be lost.
+                }
+
                 State.RUNNING -> stop(context)
+
                 State.STOPPED -> start(context)
+
                 else -> throw AssertionError(state)
             }
         }
