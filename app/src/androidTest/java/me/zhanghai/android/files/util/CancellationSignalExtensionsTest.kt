@@ -36,6 +36,16 @@ class CancellationSignalExtensionsTest {
     }
 
     @Test
+    fun anExceptionFromTheBlockReachesTheCaller() = runBlocking {
+        try {
+            runWithCancellationSignal<String> { throw IllegalStateException("thrown") }
+            fail("expected IllegalStateException")
+        } catch (e: IllegalStateException) {
+            assertEquals("thrown", e.message)
+        }
+    }
+
+    @Test
     fun cancellingTheCoroutineCancelsTheSignal() = runBlocking {
         val started = CountDownLatch(1)
         val cancelled = CountDownLatch(1)
