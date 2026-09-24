@@ -148,9 +148,8 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
         requireProviderPath<ContentPath>(link)
-        when (target) {
-            is ContentPath, is ByteStringPath -> {}
-            else -> throw ProviderMismatchException(target.toString())
+        if (target !is ContentPath && target !is ByteStringPath) {
+            throw ProviderMismatchException(target.toString())
         }
         throw UnsupportedOperationException()
     }

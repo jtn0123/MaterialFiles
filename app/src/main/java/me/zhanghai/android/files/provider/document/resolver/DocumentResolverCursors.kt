@@ -28,9 +28,11 @@ internal fun Cursor.waitUntilChanged() {
                 continuation.invokeOnCancellation {
                     try {
                         unregisterContentObserver(observer)
+                    } catch (ignored: IllegalStateException) {
                         // This may be invoked when continuation is resumed but still cancelled
-                        // while waiting to be dispatched.
-                    } catch (ignored: IllegalStateException) {}
+                        // while waiting to be dispatched, and onChange() has already unregistered
+                        // the observer.
+                    }
                 }
             }
         }

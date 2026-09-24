@@ -7,7 +7,6 @@ package me.zhanghai.android.files.provider.document
 
 import android.net.Uri
 import android.os.Build
-import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
 import java.io.IOException
 import java.io.InputStream
@@ -130,30 +129,13 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
             throw UnsupportedOperationException(StandardOpenOption.APPEND.toString())
         }
         val mode = openOptions.toDocumentMode()
-        if (create || createNew) {
-            val exists = DocumentResolver.exists(file)
-            if (createNew && exists) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (!exists) {
-                val uri = try {
-                    // TODO: Allow passing in a mime type?
-                    DocumentResolver.create(file, MimeType.GENERIC.value)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(file.toString())
-                }
-                return try {
-                    Resolver.openInputStream(uri, mode)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(uri.toString())
-                }
-            }
-        }
-        return try {
-            DocumentResolver.openInputStream(file, mode)
-        } catch (e: ResolverException) {
-            throw e.toFileSystemException(file.toString())
-        }
+        return openCreatingIfRequested(
+            file,
+            create,
+            createNew,
+            { Resolver.openInputStream(it, mode) },
+            { DocumentResolver.openInputStream(it, mode) }
+        )
     }
 
     @Throws(IOException::class)
@@ -169,30 +151,13 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         val createNew = optionsSet.remove(StandardOpenOption.CREATE_NEW)
         val openOptions = optionsSet.toOpenOptions()
         val mode = openOptions.toDocumentMode()
-        if (create || createNew) {
-            val exists = DocumentResolver.exists(file)
-            if (createNew && exists) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (!exists) {
-                val uri = try {
-                    // TODO: Allow passing in a mime type?
-                    DocumentResolver.create(file, MimeType.GENERIC.value)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(file.toString())
-                }
-                return try {
-                    Resolver.openOutputStream(uri, mode)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(uri.toString())
-                }
-            }
-        }
-        return try {
-            DocumentResolver.openOutputStream(file, mode)
-        } catch (e: ResolverException) {
-            throw e.toFileSystemException(file.toString())
-        }
+        return openCreatingIfRequested(
+            file,
+            create,
+            createNew,
+            { Resolver.openOutputStream(it, mode) },
+            { DocumentResolver.openOutputStream(it, mode) }
+        )
     }
 
     @Throws(IOException::class)
@@ -210,37 +175,60 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
         }
-        var pfd: ParcelFileDescriptor? = null
-        if (hasCreate || hasCreateNew) {
-            val exists = DocumentResolver.exists(file)
-            if (hasCreateNew && exists) {
-                throw FileAlreadyExistsException(file.toString())
+        val pfd = openCreatingIfRequested(
+            file,
+            hasCreate,
+            hasCreateNew,
+            { Resolver.openParcelFileDescriptor(it, mode) },
+            { DocumentResolver.openParcelFileDescriptor(it, mode) }
+        )
+        return FileChannel::class.open(pfd, mode)
+    }
+
+    /**
+     * Opens [file] with [openPath], or when [create] or [createNew] asks for it and the file does
+     * not exist yet, creates it and opens the new document with [openUri].
+     */
+    @Throws(IOException::class)
+    private fun <T> openCreatingIfRequested(
+        file: DocumentPath,
+        create: Boolean,
+        createNew: Boolean,
+        openUri: (Uri) -> T,
+        openPath: (DocumentPath) -> T
+    ): T {
+        val createdUri = if (create || createNew) createIfMissing(file, createNew) else null
+        return if (createdUri != null) {
+            try {
+                openUri(createdUri)
+            } catch (e: ResolverException) {
+                throw e.toFileSystemException(createdUri.toString())
             }
-            if (!exists) {
-                val uri = try {
-                    // TODO: Allow passing in a mime type?
-                    DocumentResolver.create(file, MimeType.GENERIC.value)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(file.toString())
-                }
-                pfd = try {
-                    Resolver.openParcelFileDescriptor(uri, mode)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(uri.toString())
-                }
-            }
-        }
-        if (pfd == null) {
-            pfd = try {
-                DocumentResolver.openParcelFileDescriptor(file, mode)
+        } else {
+            try {
+                openPath(file)
             } catch (e: ResolverException) {
                 throw e.toFileSystemException(file.toString())
             }
         }
-        // TODO: kotlinc: Type mismatch: inferred type is ParcelFileDescriptor? but
-        //  ParcelFileDescriptor was expected
-        //return FileChannel::class.open(pfd, mode)
-        return FileChannel::class.open(pfd!!, mode)
+    }
+
+    /** Returns the URI of the document created for [file], or null if it already existed. */
+    @Throws(IOException::class)
+    private fun createIfMissing(file: DocumentPath, createNew: Boolean): Uri? {
+        val exists = DocumentResolver.exists(file)
+        if (createNew && exists) {
+            throw FileAlreadyExistsException(file.toString())
+        }
+        if (exists) {
+            return null
+        }
+        return try {
+            // TODO: Allow passing in a mime type?
+            DocumentResolver.create(file, MimeType.GENERIC.value)
+        } catch (e: ResolverException) {
+            throw e.toFileSystemException(file.toString())
+        }
     }
 
     @Throws(IOException::class)
@@ -284,9 +272,8 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
         requireProviderPath<DocumentPath>(link)
-        when (target) {
-            is DocumentPath, is ByteStringPath -> {}
-            else -> throw ProviderMismatchException(target.toString())
+        if (target !is DocumentPath && target !is ByteStringPath) {
+            throw ProviderMismatchException(target.toString())
         }
         throw UnsupportedOperationException()
     }
