@@ -47,7 +47,7 @@ class FileListNavigateToTest {
     fun setUp() {
         shell("appops set ${context.packageName} MANAGE_EXTERNAL_STORAGE allow")
         shell("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS")
-        directory = File(context.cacheDir, "navigate-${UUID.randomUUID()}").apply { mkdirs() }
+        directory = File(context.filesDir, "navigate-${UUID.randomUUID()}").apply { mkdirs() }
         subdirectory = File(directory, "Docs").apply { mkdirs() }
         File(directory, "Outside.txt").writeText("Nothing to see")
         File(subdirectory, "Inside.txt").writeText("Nothing to see either")

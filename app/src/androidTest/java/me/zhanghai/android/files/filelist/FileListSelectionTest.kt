@@ -47,7 +47,7 @@ class FileListSelectionTest {
     fun setUp() {
         shell("appops set ${context.packageName} MANAGE_EXTERNAL_STORAGE allow")
         shell("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS")
-        directory = File(context.cacheDir, "selection-${UUID.randomUUID()}").apply { mkdirs() }
+        directory = File(context.filesDir, "selection-${UUID.randomUUID()}").apply { mkdirs() }
         files = listOf("A note.txt", "B note.txt", "C note.txt").map { name ->
             File(directory, name).apply { writeText("Nothing to see") }
         }

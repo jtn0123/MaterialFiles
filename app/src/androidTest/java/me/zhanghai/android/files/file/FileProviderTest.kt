@@ -38,7 +38,7 @@ class FileProviderTest {
 
     @Before
     fun setUp() {
-        directory = File(context.cacheDir, "file-provider-${UUID.randomUUID()}")
+        directory = File(context.filesDir, "file-provider-${UUID.randomUUID()}")
             .apply { mkdirs() }
         file = File(directory, "Shared photo.jpg").apply { writeBytes(contents) }
     }

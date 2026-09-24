@@ -20,7 +20,7 @@ class TextEditorDraftRecoveryTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val device = UiDevice.getInstance(instrumentation)
-        val file = File(context.cacheDir, "Trip notes.txt").apply {
+        val file = File(context.filesDir, "Trip notes.txt").apply {
             writeText("Trip notes\n\nRemember to book the train.")
         }
         var previous: RootStrategy? = null
@@ -98,7 +98,7 @@ class TextEditorDraftRecoveryTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val device = UiDevice.getInstance(instrumentation)
-        val file = File(context.cacheDir, "Missing notes.txt")
+        val file = File(context.filesDir, "Missing notes.txt")
         val store = TextDraftStore(
             File(context.noBackupFilesDir, "editor-drafts"),
             java8.nio.file.Paths.get(file.path).toUri().toString()

@@ -48,7 +48,7 @@ class ProviderFtpFileTest {
             rootStrategy = Settings.ROOT_STRATEGY.valueCompat
             Settings.ROOT_STRATEGY.putValue(RootStrategy.NEVER)
         }
-        root = Paths.get(context.cacheDir.path).resolve("ftp-file-test")
+        root = Paths.get(context.filesDir.path).resolve("ftp-file-test")
         deleteRecursively(root)
         java.io.File(root.toString()).mkdirs()
     }

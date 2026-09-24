@@ -38,7 +38,7 @@ class FtpServerRunTest {
 
     @Before
     fun setUp() {
-        homeDirectory = File(context.cacheDir, "ftp-server-test").apply {
+        homeDirectory = File(context.filesDir, "ftp-server-test").apply {
             deleteRecursively()
             mkdirs()
         }

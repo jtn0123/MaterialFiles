@@ -36,7 +36,7 @@ class RemoteThumbnailTest {
     @Before
     fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        directory = File(context.cacheDir, "thumbnails-${UUID.randomUUID()}").apply { mkdirs() }
+        directory = File(context.filesDir, "thumbnails-${UUID.randomUUID()}").apply { mkdirs() }
         loading = ThumbnailLoading(directory)
     }
 

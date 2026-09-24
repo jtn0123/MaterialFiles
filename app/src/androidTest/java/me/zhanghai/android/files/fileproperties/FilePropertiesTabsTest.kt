@@ -46,7 +46,7 @@ class FilePropertiesTabsTest {
         executeShellCommand(
             "pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS"
         )
-        directory = File(context.cacheDir, "properties-${UUID.randomUUID()}").apply { mkdirs() }
+        directory = File(context.filesDir, "properties-${UUID.randomUUID()}").apply { mkdirs() }
         properties = PropertiesDialogTesting(directory)
     }
 

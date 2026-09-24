@@ -47,7 +47,7 @@ class SaveAsActivityTest {
         executeShellCommand(
             "pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS"
         )
-        directory = File(context.cacheDir, "save-as-${UUID.randomUUID()}").apply { mkdirs() }
+        directory = File(context.filesDir, "save-as-${UUID.randomUUID()}").apply { mkdirs() }
     }
 
     @After

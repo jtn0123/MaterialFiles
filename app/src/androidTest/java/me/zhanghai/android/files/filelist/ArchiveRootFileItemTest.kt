@@ -39,7 +39,7 @@ class ArchiveRootFileItemTest {
 
     @Before
     fun setUp() {
-        directory = File(context.cacheDir, "archive-root-${UUID.randomUUID()}")
+        directory = File(context.filesDir, "archive-root-${UUID.randomUUID()}")
             .apply { mkdirs() }
         archive = File(directory, "Album.zip")
         ZipOutputStream(archive.outputStream()).use { zip ->
