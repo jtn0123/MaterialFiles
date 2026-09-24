@@ -149,6 +149,16 @@ sonar {
             // Cleartext is allowed on purpose by network_security_config.xml, for FTP and WebDAV
             // servers on the local network, and minSdk 35 has no older behaviour to worry about.
             cleartextTraffic: ['xml:S5332', ['**/src/main/AndroidManifest.xml']],
+            // Stored server passwords are decrypted for background jobs and thumbnails, so their key
+            // cannot wait for the user to authenticate.
+            credentialKey: ['kotlin:S6288', [
+                '**/src/main/java/me/zhanghai/android/files/util/CredentialCipher.kt'
+            ]],
+            // A remote file is staged in the app's own external cache directory to be opened, which
+            // other apps cannot read since scoped storage.
+            openFileStaging: ['kotlin:S5324', [
+                '**/src/main/java/me/zhanghai/android/files/filejob/OpenFileJob.kt'
+            ]],
             // Replacing the deprecated soft input calls means driving the keyboard insets by
             // hand, which changes how these dialogs behave; worth its own change.
             softInput: ['kotlin:S1874', [
