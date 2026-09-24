@@ -41,8 +41,9 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
                 StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
                 StandardWatchEventKinds.ENTRY_MODIFY -> kindSet += kind
 
-                // Ignored.
-                StandardWatchEventKinds.OVERFLOW -> {}
+                StandardWatchEventKinds.OVERFLOW -> {
+                    // Ignored, because an overflow is always reported whether asked for or not.
+                }
 
                 else -> throw UnsupportedOperationException(kind.name())
             }
@@ -125,36 +126,39 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
             }
         }
 
+        private fun onResponse(response: SMB2ChangeNotifyResponse) {
+            when (response.header.statusCode) {
+                NtStatus.STATUS_NOTIFY_ENUM_DIR.value ->
+                    key.addEvent(StandardWatchEventKinds.OVERFLOW, null)
+
+                NtStatus.STATUS_SUCCESS.value -> {
+                    if (FileSystemProviders.overflowWatchEvents) {
+                        key.addEvent(StandardWatchEventKinds.OVERFLOW, null)
+                    } else {
+                        for (fileNotifyInfo in response.fileNotifyInfoList) {
+                            val kind = fileNotifyInfo.action.toEventKind()
+                            if (kind !in kinds) {
+                                continue
+                            }
+                            val name = key.watchable().fileSystem
+                                .getPath(fileNotifyInfo.fileName)
+                            key.addEvent(kind, name)
+                        }
+                    }
+                }
+
+                else ->
+                    throw SMBApiException(
+                        response.header,
+                        "Change notify failed for ${key.watchable()}"
+                    )
+            }
+        }
+
         override fun run() {
             try {
-                loop@ while (true) {
-                    val response = future.get()
-                    when (response.header.statusCode) {
-                        NtStatus.STATUS_NOTIFY_ENUM_DIR.value ->
-                            key.addEvent(StandardWatchEventKinds.OVERFLOW, null)
-
-                        NtStatus.STATUS_SUCCESS.value -> {
-                            if (FileSystemProviders.overflowWatchEvents) {
-                                key.addEvent(StandardWatchEventKinds.OVERFLOW, null)
-                            } else {
-                                for (fileNotifyInfo in response.fileNotifyInfoList) {
-                                    val kind = fileNotifyInfo.action.toEventKind()
-                                    if (kind !in kinds) {
-                                        continue
-                                    }
-                                    val name = key.watchable().fileSystem
-                                        .getPath(fileNotifyInfo.fileName)
-                                    key.addEvent(kind, name)
-                                }
-                            }
-                        }
-
-                        else ->
-                            throw SMBApiException(
-                                response.header,
-                                "Change notify failed for ${key.watchable()}"
-                            )
-                    }
+                while (true) {
+                    onResponse(future.get())
                     future = client.requestDirectoryChangeNotification(directory, COMPLETION_FILTER)
                 }
             } catch (e: Exception) {
