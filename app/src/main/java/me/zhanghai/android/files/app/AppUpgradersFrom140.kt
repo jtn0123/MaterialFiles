@@ -288,50 +288,7 @@ private fun migrateDocumentManagerShortcutSetting1_7_2() {
                 Parcel.obtain().use { oldParcel ->
                     oldParcel.unmarshall(oldBytes, 0, oldBytes.size)
                     oldParcel.setDataPosition(0)
-                    newParcel.writeInt(oldParcel.readInt())
-                    readWriteLengthPrefixedValue(oldParcel, newParcel) {
-                        val size = oldParcel.readInt()
-                        newParcel.writeInt(size)
-                        repeat(size) {
-                            val oldPosition = oldParcel.dataPosition()
-                            oldParcel.readInt()
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                // Skip prefix length.
-                                oldParcel.readInt()
-                            }
-                            val className = oldParcel.readString()
-                            oldParcel.setDataPosition(oldPosition)
-                            when (className) {
-                                "me.zhanghai.android.files.storage.DocumentManagerShortcut" -> {
-                                    newParcel.writeInt(oldParcel.readInt())
-                                    readWriteLengthPrefixedValue(oldParcel, newParcel) {
-                                        oldParcel.readString()
-                                        newParcel.writeString(
-                                            "me.zhanghai.android.files.storage" +
-                                                ".ExternalStorageShortcut"
-                                        )
-                                        val id = oldParcel.readLong()
-                                        newParcel.writeLong(id)
-                                        val customName = oldParcel.readString()
-                                        newParcel.writeString(customName)
-                                        var uri = StableUriParceler.create(oldParcel)!!
-                                        if (uri.asExternalStorageUriOrNull() == null) {
-                                            // Reset to a valid external storage URI.
-                                            uri =
-                                                ExternalStorageProviderHacks
-                                                    .DOCUMENT_URI_ANDROID_DATA
-                                        }
-                                        with(StableUriParceler) { uri.write(newParcel, 0) }
-                                    }
-                                }
-
-                                else -> {
-                                    val storage = oldParcel.readValue(appClassLoader)
-                                    newParcel.writeValue(storage)
-                                }
-                            }
-                        }
-                    }
+                    migrateStorages1_7_2(oldParcel, newParcel)
                 }
                 newParcel.marshall()
             }
@@ -340,6 +297,53 @@ private fun migrateDocumentManagerShortcutSetting1_7_2() {
             null
         }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
+}
+
+private fun migrateStorages1_7_2(oldParcel: Parcel, newParcel: Parcel) {
+    newParcel.writeInt(oldParcel.readInt())
+    readWriteLengthPrefixedValue(oldParcel, newParcel) {
+        val size = oldParcel.readInt()
+        newParcel.writeInt(size)
+        repeat(size) { migrateStorage1_7_2(oldParcel, newParcel) }
+    }
+}
+
+private fun migrateStorage1_7_2(oldParcel: Parcel, newParcel: Parcel) {
+    val oldPosition = oldParcel.dataPosition()
+    oldParcel.readInt()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        // Skip prefix length.
+        oldParcel.readInt()
+    }
+    val className = oldParcel.readString()
+    oldParcel.setDataPosition(oldPosition)
+    when (className) {
+        "me.zhanghai.android.files.storage.DocumentManagerShortcut" ->
+            migrateDocumentManagerShortcut1_7_2(oldParcel, newParcel)
+
+        else -> {
+            val storage = oldParcel.readValue(appClassLoader)
+            newParcel.writeValue(storage)
+        }
+    }
+}
+
+private fun migrateDocumentManagerShortcut1_7_2(oldParcel: Parcel, newParcel: Parcel) {
+    newParcel.writeInt(oldParcel.readInt())
+    readWriteLengthPrefixedValue(oldParcel, newParcel) {
+        oldParcel.readString()
+        newParcel.writeString("me.zhanghai.android.files.storage.ExternalStorageShortcut")
+        val id = oldParcel.readLong()
+        newParcel.writeLong(id)
+        val customName = oldParcel.readString()
+        newParcel.writeString(customName)
+        var uri = StableUriParceler.create(oldParcel)!!
+        if (uri.asExternalStorageUriOrNull() == null) {
+            // Reset to a valid external storage URI.
+            uri = ExternalStorageProviderHacks.DOCUMENT_URI_ANDROID_DATA
+        }
+        with(StableUriParceler) { uri.write(newParcel, 0) }
+    }
 }
 
 private fun readWriteLengthPrefixedValue(oldParcel: Parcel, newParcel: Parcel, block: () -> Unit) {
