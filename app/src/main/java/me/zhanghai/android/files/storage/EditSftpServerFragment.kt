@@ -10,15 +10,12 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.withCreated
-import com.google.android.material.textfield.TextInputEditText
 import com.hierynomus.sshj.common.KeyDecryptionFailedException
 import java.net.URI
 import java8.nio.file.Path
@@ -88,21 +85,22 @@ class EditSftpServerFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val activity = requireActivity() as AppCompatActivity
-        activity.lifecycleScope.launch {
-            activity.withCreated {
-                activity.setSupportActionBar(binding.toolbar)
-                activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-                activity.setTitle(
-                    if (args.server != null) {
-                        R.string.storage_edit_sftp_server_title_edit
-                    } else {
-                        R.string.storage_edit_sftp_server_title_add
-                    }
-                )
+        setUpServerFormToolbar(
+            binding.toolbar,
+            if (args.server != null) {
+                R.string.storage_edit_sftp_server_title_edit
+            } else {
+                R.string.storage_edit_sftp_server_title_add
             }
+        )
+        setUpFields()
+        setUpButtons()
+        if (savedInstanceState == null) {
+            args.server?.let { fillIn(it) }
         }
+    }
 
+    private fun setUpFields() {
         binding.hostEdit.hideTextInputLayoutErrorOnTextChange(binding.hostLayout)
         binding.hostEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.portEdit.hideTextInputLayoutErrorOnTextChange(binding.portLayout)
@@ -130,6 +128,9 @@ class EditSftpServerFragment :
             binding.privateKeyLayout,
             binding.privateKeyPasswordLayout
         )
+    }
+
+    private fun setUpButtons() {
         binding.saveOrConnectAndAddButton.setText(
             if (args.server != null) {
                 R.string.save
@@ -155,32 +156,29 @@ class EditSftpServerFragment :
                 saveOrAdd()
             }
         }
+    }
 
-        if (savedInstanceState == null) {
-            val server = args.server
-            if (server != null) {
-                val authority = server.authority
-                binding.hostEdit.setText(authority.host)
-                if (authority.port != Authority.DEFAULT_PORT) {
-                    binding.portEdit.setText(authority.port.toString())
-                }
-                binding.usernameEdit.setText(authority.username)
-                when (val authentication = server.authentication) {
-                    is PasswordAuthentication -> {
-                        authenticationType = AuthenticationType.PASSWORD
-                        binding.passwordEdit.setText(authentication.password)
-                    }
+    private fun fillIn(server: SftpServer) {
+        val authority = server.authority
+        binding.hostEdit.setText(authority.host)
+        if (authority.port != Authority.DEFAULT_PORT) {
+            binding.portEdit.setText(authority.port.toString())
+        }
+        binding.usernameEdit.setText(authority.username)
+        when (val authentication = server.authentication) {
+            is PasswordAuthentication -> {
+                authenticationType = AuthenticationType.PASSWORD
+                binding.passwordEdit.setText(authentication.password)
+            }
 
-                    is PublicKeyAuthentication -> {
-                        authenticationType = AuthenticationType.PUBLIC_KEY
-                        binding.privateKeyEdit.setText(authentication.privateKey)
-                        binding.privateKeyPasswordEdit.setText(authentication.privateKeyPassword)
-                    }
-                }
-                binding.pathEdit.setText(server.relativePath)
-                binding.nameEdit.setText(server.customName)
+            is PublicKeyAuthentication -> {
+                authenticationType = AuthenticationType.PUBLIC_KEY
+                binding.privateKeyEdit.setText(authentication.privateKey)
+                binding.privateKeyPasswordEdit.setText(authentication.privateKeyPassword)
             }
         }
+        binding.pathEdit.setText(server.relativePath)
+        binding.nameEdit.setText(server.customName)
     }
 
     private fun updateNamePlaceholder() {
@@ -304,96 +302,76 @@ class EditSftpServerFragment :
     }
 
     private fun remove() {
-        Storages.remove(args.server!!)
+        Storages.remove(args.server ?: return)
         finish()
     }
 
     private fun getServerOrSetError(): SftpServer? {
-        var errorEdit: TextInputEditText? = null
-        val host = binding.hostEdit.text.toString().takeIfNotEmpty()
-            ?.let { URI::class.canonicalizeHost(it) }
-        if (host == null) {
-            binding.hostLayout.error =
-                getString(R.string.storage_edit_sftp_server_host_error_empty)
-            if (errorEdit == null) {
-                errorEdit = binding.hostEdit
-            }
-        } else if (!URI::class.isValidHost(host)) {
-            binding.hostLayout.error =
-                getString(R.string.storage_edit_sftp_server_host_error_invalid)
-            if (errorEdit == null) {
-                errorEdit = binding.hostEdit
-            }
-        }
-        val port = binding.portEdit.text.toString().takeIfNotEmpty()
-            .let { if (it != null) it.toIntOrNull() else Authority.DEFAULT_PORT }
-        if (port == null) {
-            binding.portLayout.error =
-                getString(R.string.storage_edit_sftp_server_port_error_invalid)
-            if (errorEdit == null) {
-                errorEdit = binding.portEdit
-            }
-        }
+        val errors = ServerFormErrors<ServerFormField>()
+        val host = errors.checkHost(
+            binding.hostEdit.text.toString(),
+            ServerFormField(binding.hostLayout, binding.hostEdit),
+            R.string.storage_edit_sftp_server_host_error_empty,
+            R.string.storage_edit_sftp_server_host_error_invalid
+        )
+        val port = errors.checkPort(
+            binding.portEdit.text.toString(),
+            Authority.DEFAULT_PORT,
+            ServerFormField(binding.portLayout, binding.portEdit),
+            R.string.storage_edit_sftp_server_port_error_invalid
+        )
         val path = binding.pathEdit.text.toString().trim()
         val name = binding.nameEdit.text.toString().takeIfNotEmpty()
-        val username = binding.usernameEdit.text.toString().takeIfNotEmpty()
-        if (username == null) {
-            binding.usernameLayout.error =
-                getString(R.string.storage_edit_sftp_server_username_error_empty)
-            if (errorEdit == null) {
-                errorEdit = binding.usernameEdit
-            }
-        }
+        val username = errors.checkNotEmpty(
+            binding.usernameEdit.text.toString(),
+            ServerFormField(binding.usernameLayout, binding.usernameEdit),
+            R.string.storage_edit_sftp_server_username_error_empty
+        )
         val authentication = when (authenticationType) {
-            AuthenticationType.PASSWORD -> {
-                val password = binding.passwordEdit.text.toString()
-                PasswordAuthentication(password)
-            }
+            AuthenticationType.PASSWORD ->
+                PasswordAuthentication(binding.passwordEdit.text.toString())
 
-            AuthenticationType.PUBLIC_KEY -> {
-                val privateKey = binding.privateKeyEdit.text.toString().takeIfNotEmpty()
-                val privateKeyPassword =
-                    binding.privateKeyPasswordEdit.text.toString().takeIfNotEmpty()
-                if (privateKey == null) {
-                    binding.privateKeyLayout.error =
-                        getString(R.string.storage_edit_sftp_server_private_key_error_empty)
-                    if (errorEdit == null) {
-                        errorEdit = binding.privateKeyEdit
-                    }
-                } else {
-                    val exception = PublicKeyAuthentication.validate(privateKey, privateKeyPassword)
-                    if (exception != null) {
-                        exception.printStackTrace()
-                        if (exception is KeyDecryptionFailedException) {
-                            binding.privateKeyPasswordLayout.error = getString(
-                                R.string.storage_edit_sftp_server_private_key_password_error_invalid
-                            )
-                            if (errorEdit == null) {
-                                errorEdit = binding.privateKeyPasswordEdit
-                            }
-                        } else {
-                            binding.privateKeyLayout.error = getString(
-                                R.string.storage_edit_sftp_server_private_key_error_invalid
-                            )
-                            if (errorEdit == null) {
-                                errorEdit = binding.privateKeyEdit
-                            }
-                        }
-                    }
-                }
-                if (errorEdit == null) {
-                    PublicKeyAuthentication(privateKey!!, privateKeyPassword)
-                } else {
-                    null
-                }
-            }
+            AuthenticationType.PUBLIC_KEY -> getPublicKeyAuthenticationOrSetError(errors)
         }
-        if (errorEdit != null) {
-            errorEdit.requestFocus()
+        if (!errors.showOnForm() || host == null || port == null || username == null ||
+            authentication == null
+        ) {
             return null
         }
-        val authority = Authority(host!!, port!!, username!!)
-        return SftpServer(args.server?.id, name, authority, authentication!!, path)
+        val authority = Authority(host, port, username)
+        return SftpServer(args.server?.id, name, authority, authentication, path)
+    }
+
+    private fun getPublicKeyAuthenticationOrSetError(
+        errors: ServerFormErrors<ServerFormField>
+    ): PublicKeyAuthentication? {
+        val privateKeyField = ServerFormField(binding.privateKeyLayout, binding.privateKeyEdit)
+        val privateKey = errors.checkNotEmpty(
+            binding.privateKeyEdit.text.toString(),
+            privateKeyField,
+            R.string.storage_edit_sftp_server_private_key_error_empty
+        ) ?: return null
+        val privateKeyPassword = binding.privateKeyPasswordEdit.text.toString().takeIfNotEmpty()
+        val exception = PublicKeyAuthentication.validate(privateKey, privateKeyPassword)
+        if (exception != null) {
+            exception.printStackTrace()
+            if (exception is KeyDecryptionFailedException) {
+                errors.add(
+                    ServerFormField(
+                        binding.privateKeyPasswordLayout,
+                        binding.privateKeyPasswordEdit
+                    ),
+                    R.string.storage_edit_sftp_server_private_key_password_error_invalid
+                )
+            } else {
+                errors.add(
+                    privateKeyField,
+                    R.string.storage_edit_sftp_server_private_key_error_invalid
+                )
+            }
+            return null
+        }
+        return PublicKeyAuthentication(privateKey, privateKeyPassword)
     }
 
     @Parcelize
