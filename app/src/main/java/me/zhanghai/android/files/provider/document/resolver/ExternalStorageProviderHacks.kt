@@ -62,7 +62,8 @@ object ExternalStorageProviderHacks {
             mutableListOf(DOCUMENT_ID_PRIMARY_ANDROID_DATA, DOCUMENT_ID_PRIMARY_ANDROID_OBB)
         try {
             while (missingDocumentIds.isNotEmpty() && cursor.moveToNext()) {
-                missingDocumentIds -= cursor.requireString(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+                missingDocumentIds -=
+                    cursor.requireString(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
             }
         } finally {
             cursor.moveToPosition(-1)

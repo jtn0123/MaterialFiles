@@ -6,8 +6,8 @@
 package me.zhanghai.android.files.provider.common
 
 import java.net.SocketTimeoutException
-import java.nio.channels.ClosedChannelException
 import java.nio.ByteBuffer
+import java.nio.channels.ClosedChannelException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import org.junit.Assert.assertArrayEquals

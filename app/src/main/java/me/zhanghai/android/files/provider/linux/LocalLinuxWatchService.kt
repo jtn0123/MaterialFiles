@@ -46,9 +46,7 @@ internal class LocalLinuxWatchService : AbstractWatchService<LocalLinuxWatchKey>
         path: LinuxPath,
         kinds: Array<WatchEvent.Kind<*>>,
         vararg modifiers: WatchEvent.Modifier
-    ): LocalLinuxWatchKey {
-        return poller.register(path, watchEventKindSetOf(kinds, modifiers))
-    }
+    ): LocalLinuxWatchKey = poller.register(path, watchEventKindSetOf(kinds, modifiers))
 
     override fun cancel(key: LocalLinuxWatchKey) {
         poller.cancel(key)
