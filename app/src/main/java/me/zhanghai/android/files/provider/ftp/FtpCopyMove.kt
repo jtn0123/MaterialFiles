@@ -13,6 +13,7 @@ import me.zhanghai.android.files.provider.common.copyTo
 import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.ftp.client.Client
 import me.zhanghai.android.files.util.logWarning
+import me.zhanghai.android.files.util.useMappingCloseFailure
 import org.apache.commons.net.ftp.FTPFile
 
 internal object FtpCopyMove : AbstractCopyMove<FtpPath, FTPFile>() {
@@ -54,33 +55,24 @@ internal object FtpCopyMove : AbstractCopyMove<FtpPath, FTPFile>() {
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(source.toString())
         }
-        try {
+        sourceInputStream.useMappingCloseFailure({ it.toCloseFailure(source) }) {
             val targetOutputStream = try {
                 client.storeFile(target)
             } catch (e: IOException) {
                 throw e.toFileSystemExceptionForFtp(target.toString())
             }
-            try {
+            targetOutputStream.useMappingCloseFailure({ it.toCloseFailure(target) }) {
                 sourceInputStream.copyTo(
                     targetOutputStream,
                     copyOptions.progressIntervalMillis,
                     copyOptions.progressListener
                 )
-            } finally {
-                try {
-                    targetOutputStream.close()
-                } catch (e: IOException) {
-                    throw e.toFileSystemExceptionForFtp(target.toString())
-                }
-            }
-        } finally {
-            try {
-                sourceInputStream.close()
-            } catch (e: IOException) {
-                throw e.toFileSystemExceptionForFtp(source.toString())
             }
         }
     }
+
+    private fun Exception.toCloseFailure(path: FtpPath): Exception =
+        if (this is IOException) toFileSystemExceptionForFtp(path.toString()) else this
 
     override fun createDirectory(
         target: FtpPath,
