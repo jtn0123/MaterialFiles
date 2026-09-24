@@ -54,7 +54,11 @@ internal class ArchiveDataOutputStream(private val writeData: (ByteBuffer) -> Un
     override fun write(b: Int) {
         oneByteBuffer.clear()
         oneByteBuffer.put(b.toByte())
-        writeData(oneByteBuffer)
+        // Flipped, or the buffer would be written from after the byte, which is nothing.
+        oneByteBuffer.flip()
+        while (oneByteBuffer.hasRemaining()) {
+            writeData(oneByteBuffer)
+        }
     }
 
     @Throws(IOException::class)

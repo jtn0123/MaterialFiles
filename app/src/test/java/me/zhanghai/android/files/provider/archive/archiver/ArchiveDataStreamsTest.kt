@@ -103,6 +103,16 @@ class ArchiveDataStreamsTest {
     }
 
     @Test
+    fun aSingleByteIsWritten() {
+        val stream = ArchiveDataOutputStream(::writeData)
+
+        stream.write(0x41)
+        stream.write(0x1FF)
+
+        assertArrayEquals(byteArrayOf(0x41, 0xFF.toByte()), written.toByteArray())
+    }
+
+    @Test
     fun whatLibarchiveThrowsWhileReadingIsPassedOn() {
         val failure = ArchiveException(Archive.ERRNO_FATAL, "Truncated input")
         val stream = ArchiveDataInputStream { throw failure }
