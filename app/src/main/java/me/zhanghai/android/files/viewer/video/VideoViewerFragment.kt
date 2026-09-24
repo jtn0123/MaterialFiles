@@ -6,8 +6,6 @@
 package me.zhanghai.android.files.viewer.video
 
 import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -19,7 +17,6 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -30,13 +27,9 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import java.io.IOException
 import java8.nio.file.Path
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.WriteWith
 import me.zhanghai.android.files.R
@@ -44,19 +37,16 @@ import me.zhanghai.android.files.databinding.VideoViewerFragmentBinding
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.fileProviderUri
 import me.zhanghai.android.files.file.guessFromPath
-import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.provider.common.delete
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableListParceler
 import me.zhanghai.android.files.util.ParcelableState
-import me.zhanghai.android.files.util.applySystemWindowInsetsToPadding
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.createSendStreamIntent
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
-import me.zhanghai.android.files.util.mediumAnimTime
 import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
@@ -93,8 +83,7 @@ class VideoViewerFragment :
 
     private lateinit var playbackPosition: VideoViewerPlaybackPosition
 
-    private var screenOrientationIndex = 0
-    private var resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+    private lateinit var displayMode: VideoViewerDisplayMode
 
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -146,8 +135,10 @@ class VideoViewerFragment :
                 ?: args.position.coerceIn(0, paths.lastIndex.coerceAtLeast(0))
             positionMillis = state?.positionMillis ?: C.TIME_UNSET
         }
-        screenOrientationIndex = state?.screenOrientationIndex ?: 0
-        resizeMode = state?.resizeMode ?: AspectRatioFrameLayout.RESIZE_MODE_FIT
+        displayMode = VideoViewerDisplayMode(
+            state?.screenOrientationIndex ?: 0,
+            state?.resizeMode ?: AspectRatioFrameLayout.RESIZE_MODE_FIT
+        )
     }
 
     override fun onCreateView(
@@ -170,41 +161,11 @@ class VideoViewerFragment :
         }
 
         requireActivity().addMenuProvider(this, viewLifecycleOwner)
-        val activity = activity as AppCompatActivity
-        activity.setSupportActionBar(binding.toolbar)
-        activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        // Our app bar will draw the status bar background.
-        activity.window.statusBarColor = Color.TRANSPARENT
-        binding.appBarLayout.applySystemWindowInsetsToPadding(left = true, top = true, right = true)
-        systemUiHelper = SystemUiHelper(
-            activity,
-            SystemUiHelper.LEVEL_IMMERSIVE,
-            SystemUiHelper.FLAG_IMMERSIVE_STICKY
-        ) { visible: Boolean ->
-            binding.appBarLayout.animate()
-                .alpha(if (visible) 1f else 0f)
-                .translationY(if (visible) 0f else -binding.appBarLayout.bottom.toFloat())
-                .setDuration(mediumAnimTime.toLong())
-                .setInterpolator(FastOutSlowInInterpolator())
-                .start()
-        }
-        // This will set up window flags.
-        systemUiHelper.show()
-        binding.playerView.apply {
-            resizeMode = this@VideoViewerFragment.resizeMode
-            // The player fills the screen already, so let the button toggle filling it entirely.
-            setFullscreenButtonClickListener { toggleResizeMode() }
-            // Keep our app bar in sync with the playback controls.
-            setControllerVisibilityListener(
-                PlayerView.ControllerVisibilityListener { visibility ->
-                    if (visibility == View.VISIBLE) systemUiHelper.show() else systemUiHelper.hide()
-                }
-            )
-            // The playback controls are at the bottom, so they need to avoid the navigation bar.
-            findViewById<View>(androidx.media3.ui.R.id.exo_bottom_bar)
-                ?.applySystemWindowInsetsToPadding(left = true, right = true, bottom = true)
-        }
-        applyScreenOrientation()
+        systemUiHelper = binding.setUpChrome(
+            activity as AppCompatActivity,
+            displayMode.resizeMode
+        ) { displayMode.toggleResizeMode(binding.playerView) }
+        displayMode.applyScreenOrientation(requireActivity())
         updateTitle()
 
         viewLifecycleOwner.lifecycleScope.launch { loadSubtitles() }
@@ -253,8 +214,8 @@ class VideoViewerFragment :
                 deletedPaths,
                 playbackPosition.mediaItemIndex,
                 playbackPosition.positionMillis,
-                screenOrientationIndex,
-                resizeMode
+                displayMode.screenOrientationIndex,
+                displayMode.resizeMode
             )
         )
     }
@@ -272,7 +233,7 @@ class VideoViewerFragment :
         }
 
         R.id.action_screen_orientation -> {
-            cycleScreenOrientation()
+            showToast(getString(displayMode.cycleScreenOrientation(requireActivity())))
             true
         }
 
@@ -295,19 +256,8 @@ class VideoViewerFragment :
     }
 
     private suspend fun loadSubtitles() {
-        val knownSubtitlePaths = VideoViewerActivity.getSubtitlePathsExtra(args.intent)
-        subtitlesByPath = when {
-            // Our file list already listed the directory and told us what it found.
-            knownSubtitlePaths != null -> VideoSubtitles.findForAll(paths, knownSubtitlePaths)
-
-            // Listing a remote directory just for subtitles is slower than it is worth, so only
-            // scan when we were opened from elsewhere with local files.
-            paths.any { it.isRemotePath } -> emptyMap()
-
-            else -> withTimeoutOrNull(SUBTITLE_TIMEOUT_MILLIS) {
-                runInterruptible(Dispatchers.IO) { VideoSubtitles.findForAll(paths) }
-            } ?: emptyMap()
-        }
+        subtitlesByPath =
+            VideoSubtitles.load(paths, VideoViewerActivity.getSubtitlePathsExtra(args.intent))
         // Re-preparing the player interrupts playback, so only do it if we found anything.
         if (subtitlesByPath.values.any { it.isNotEmpty() }) {
             setMediaItems()
@@ -361,25 +311,6 @@ class VideoViewerFragment :
         player.release()
         this.player = null
         pictureInPicture.updatePictureInPictureParams()
-    }
-
-    private fun toggleResizeMode() {
-        resizeMode = if (resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT) {
-            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-        } else {
-            AspectRatioFrameLayout.RESIZE_MODE_FIT
-        }
-        binding.playerView.resizeMode = resizeMode
-    }
-
-    private fun cycleScreenOrientation() {
-        screenOrientationIndex = (screenOrientationIndex + 1) % SCREEN_ORIENTATIONS.size
-        applyScreenOrientation()
-        showToast(getString(SCREEN_ORIENTATION_TITLE_RESOURCES[screenOrientationIndex]))
-    }
-
-    private fun applyScreenOrientation() {
-        requireActivity().requestedOrientation = SCREEN_ORIENTATIONS[screenOrientationIndex]
     }
 
     fun onUserLeaveHint() {
@@ -468,20 +399,4 @@ class VideoViewerFragment :
         val screenOrientationIndex: Int,
         val resizeMode: Int
     ) : ParcelableState
-
-    companion object {
-        private const val SUBTITLE_TIMEOUT_MILLIS = 5_000L
-
-        private val SCREEN_ORIENTATIONS = intArrayOf(
-            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        )
-
-        private val SCREEN_ORIENTATION_TITLE_RESOURCES = intArrayOf(
-            R.string.video_viewer_screen_orientation_auto,
-            R.string.video_viewer_screen_orientation_landscape,
-            R.string.video_viewer_screen_orientation_portrait
-        )
-    }
 }
