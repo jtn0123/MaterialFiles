@@ -7,7 +7,6 @@ package me.zhanghai.android.files.provider.webdav.client
 
 import at.bitfire.dav4jvm.DavCollection
 import at.bitfire.dav4jvm.DavResource
-import at.bitfire.dav4jvm.HttpUtils
 import at.bitfire.dav4jvm.Property
 import at.bitfire.dav4jvm.Response
 import at.bitfire.dav4jvm.exception.ConflictException
@@ -26,7 +25,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
-import java.time.Instant
 import java.util.Collections
 import java.util.WeakHashMap
 import java8.nio.channels.SeekableByteChannel
@@ -218,24 +216,6 @@ class Client(internal val authenticator: Authenticator) {
         } catch (e: IOException) {
             throw e.toDavException()
         }
-    }
-
-    @Throws(DavException::class)
-    fun setLastModifiedTime(path: Path, lastModifiedTime: Instant) {
-        if (true) {
-            return
-        }
-        // The following doesn't work on most servers. See also
-        // https://github.com/sabre-io/dav/issues/1277
-        try {
-            DavResource(getClient(path.authority), path.url).proppatch(
-                mapOf(GetLastModified.NAME to HttpUtils.formatDate(lastModifiedTime)),
-                emptyList()
-            ) { response, _ -> response.checkSuccess() }
-        } catch (e: IOException) {
-            throw e.toDavException()
-        }
-        LocalWatchService.onEntryModified(path as Java8Path)
     }
 
     @Throws(DavException::class)

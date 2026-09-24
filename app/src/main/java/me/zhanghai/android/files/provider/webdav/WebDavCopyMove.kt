@@ -15,9 +15,7 @@ import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.webdav.client.Client
 import me.zhanghai.android.files.provider.webdav.client.isDirectory
 import me.zhanghai.android.files.provider.webdav.client.isSymbolicLink
-import me.zhanghai.android.files.provider.webdav.client.lastModifiedTime
 import me.zhanghai.android.files.provider.webdav.client.size
-import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.useMappingCloseFailure
 
 internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
@@ -138,11 +136,7 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
         target: WebDavPath,
         copyOptions: CopyOptions
     ) {
-        val lastModifiedTime = sourceAttributes.lastModifiedTime ?: return
-        try {
-            client.setLastModifiedTime(target, lastModifiedTime)
-        } catch (e: DavException) {
-            e.logWarning("WebDavCopyMove", "copyAttributes($source)")
-        }
+        // Most servers refuse a PROPPATCH of getlastmodified, so the copy keeps the time the
+        // server gave it. See also https://github.com/sabre-io/dav/issues/1277
     }
 }
