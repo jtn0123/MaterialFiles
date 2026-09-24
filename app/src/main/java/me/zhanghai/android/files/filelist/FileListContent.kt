@@ -24,6 +24,7 @@ import me.zhanghai.android.files.util.Success
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.getDimensionDp
 import me.zhanghai.android.files.util.getQuantityString
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.valueCompat
@@ -48,36 +49,47 @@ internal class FileListContent(private val fragment: FileListFragment) {
     fun onFileListChanged(stateful: Stateful<List<FileItem>>) {
         val files = stateful.value
         val isSearching = viewModel.searchState.isSearching
-        when {
-            stateful is Failure -> binding.toolbar.setSubtitle(R.string.error)
-            stateful is Loading && !isSearching -> binding.toolbar.setSubtitle(R.string.loading)
-            else -> binding.toolbar.subtitle = getSubtitle(files!!)
+        updateSubtitle(stateful, isSearching)
+        val visibility = FileListStateVisibility.of(stateful, isSearching)
+        binding.swipeRefreshLayout.isRefreshing = visibility.isRefreshing
+        binding.progress.fadeToVisibilityUnsafe(visibility.isProgressVisible)
+        binding.errorText.fadeToVisibilityUnsafe(visibility.isErrorVisible)
+        if (stateful is Failure) {
+            showError(stateful.throwable, visibility.hasFiles)
         }
-        val hasFiles = !files.isNullOrEmpty()
-        binding.swipeRefreshLayout.isRefreshing = stateful is Loading && (hasFiles || isSearching)
-        binding.progress.fadeToVisibilityUnsafe(stateful is Loading && !(hasFiles || isSearching))
-        binding.errorText.fadeToVisibilityUnsafe(stateful is Failure && !hasFiles)
-        val throwable = (stateful as? Failure)?.throwable
-        if (throwable != null) {
-            throwable.printStackTrace()
-            val error = throwable.toUserMessage(fragment.requireContext())
-            if (hasFiles) {
-                fragment.showToast(error)
-            } else {
-                binding.errorText.text = error
-            }
-            val hostKeyChange = throwable.hostKeyChange
-            if (hostKeyChange != null && !SftpHostKeyChangedDialogFragment.isShowing(fragment)) {
-                SftpHostKeyChangedDialogFragment.show(hostKeyChange, fragment)
-            }
-        }
-        binding.emptyView.fadeToVisibilityUnsafe(stateful is Success && !hasFiles)
+        binding.emptyView.fadeToVisibilityUnsafe(visibility.isEmptyVisible)
         if (files != null) {
             updateAdapterFileList(restorePendingState = stateful is Success)
         } else {
             // This resets animation as well.
             adapter.clear()
             ++adapterFileListUpdateGeneration
+        }
+    }
+
+    private fun updateSubtitle(stateful: Stateful<List<FileItem>>, isSearching: Boolean) {
+        val files = stateful.value
+        when {
+            stateful is Failure -> binding.toolbar.setSubtitle(R.string.error)
+
+            stateful is Loading && !isSearching -> binding.toolbar.setSubtitle(R.string.loading)
+
+            // A search always carries its (possibly empty) results, and so does a success.
+            files != null -> binding.toolbar.subtitle = getSubtitle(files)
+        }
+    }
+
+    private fun showError(throwable: Throwable, hasFiles: Boolean) {
+        throwable.logWarning("FileListContent", "list(${viewModel.currentPath})")
+        val error = throwable.toUserMessage(fragment.requireContext())
+        if (hasFiles) {
+            fragment.showToast(error)
+        } else {
+            binding.errorText.text = error
+        }
+        val hostKeyChange = throwable.hostKeyChange
+        if (hostKeyChange != null && !SftpHostKeyChangedDialogFragment.isShowing(fragment)) {
+            SftpHostKeyChangedDialogFragment.show(hostKeyChange, fragment)
         }
     }
 
@@ -174,13 +186,24 @@ internal class FileListContent(private val fragment: FileListFragment) {
             if (generation != adapterFileListUpdateGeneration) {
                 return@launch
             }
+            val wasAtTop = !binding.recyclerView.canScrollVertically(-1)
             adapter.replaceListAndIsSearching(visibleFiles, isSearching) {
-                if (restorePendingState && generation == adapterFileListUpdateGeneration) {
-                    viewModel.pendingState?.let {
-                        fragment.layoutManager.onRestoreInstanceState(it)
-                    }
+                if (generation == adapterFileListUpdateGeneration) {
+                    restoreScrollPosition(restorePendingState, wasAtTop)
                 }
             }
+        }
+    }
+
+    private fun restoreScrollPosition(restorePendingState: Boolean, wasAtTop: Boolean) {
+        val pendingState = if (restorePendingState) viewModel.pendingState else null
+        if (pendingState != null) {
+            fragment.layoutManager.onRestoreInstanceState(pendingState)
+        } else if (wasAtTop) {
+            // Entries of a folder still loading arrive in batches, and the ones sorting first are
+            // then inserted above the top row, where the list would otherwise keep them out of
+            // sight.
+            fragment.layoutManager.scrollToPosition(0)
         }
     }
 

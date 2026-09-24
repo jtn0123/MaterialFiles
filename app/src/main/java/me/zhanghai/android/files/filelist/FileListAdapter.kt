@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.filelist
 
+import android.content.Context
 import android.text.TextUtils
 import android.view.View
 import android.view.ViewGroup
@@ -123,6 +124,19 @@ class FileListAdapter(private val listener: Listener) :
         listener.selectFiles(files, true)
     }
 
+    /** Selects everything between the first and the last selected file. */
+    fun selectFileRange() {
+        val range = selectionRange(itemCount) { getItem(it) in selectedFiles } ?: return
+        val files = fileItemSetOf()
+        for (index in range) {
+            val file = getItem(index)
+            if (isFileSelectable(file)) {
+                files.add(file)
+            }
+        }
+        listener.selectFiles(files, true)
+    }
+
     private fun isFileSelectable(file: FileItem): Boolean {
         val pickOptions = pickOptions ?: return true
         return when (pickOptions.mode) {
@@ -207,18 +221,36 @@ class FileListAdapter(private val listener: Listener) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: List<Any>) {
         val file = getItem(position)
-        val isDirectory = file.attributes.isDirectory
-        val isEnabled = isFileSelectable(file) || isDirectory
+        bindViewHolderState(holder, file)
+        if (payloads.isNotEmpty()) {
+            return
+        }
+        bindViewHolderAnimation(holder)
+        holder.itemLayout.apply {
+            setOnClickListener { onItemClick(holder.currentFile(file)) }
+            setOnLongClickListener {
+                onItemLongClick(holder.currentFile(file))
+                true
+            }
+        }
+        holder.iconLayout.setOnClickListener { selectFile(holder.currentFile(file)) }
+        holder.bindIcons(file)
+        holder.nameText.text = file.name
+        holder.descriptionText?.let { it.text = getDescription(file, it.context) }
+        bindViewHolderMenu(holder, file)
+    }
+
+    /** Binds what a change of the selection or the pick options can change. */
+    private fun bindViewHolderState(holder: ViewHolder, file: FileItem) {
+        val isEnabled = isFileSelectable(file) || file.attributes.isDirectory
         holder.itemLayout.isEnabled = isEnabled
         holder.menuButton.isEnabled = isEnabled
         val menu = holder.popupMenu.menu
-        val path = file.path
         val hasPickOptions = pickOptions != null
-        val isReadOnly = path.fileSystem.isReadOnly
+        val isReadOnly = file.path.fileSystem.isReadOnly
         menu.findItem(R.id.action_cut).isVisible = !hasPickOptions && !isReadOnly
         menu.findItem(R.id.action_copy).isVisible = !hasPickOptions
-        val checked = file in selectedFiles
-        holder.itemLayout.isChecked = checked
+        holder.itemLayout.isChecked = file in selectedFiles
         holder.nameText.apply {
             if (isSingleLineCompat) {
                 val nameEllipsize = nameEllipsize
@@ -226,102 +258,39 @@ class FileListAdapter(private val listener: Listener) :
                 isSelected = nameEllipsize == TextUtils.TruncateAt.MARQUEE
             }
         }
-        if (payloads.isNotEmpty()) {
-            return
-        }
-        bindViewHolderAnimation(holder)
-        holder.itemLayout.apply {
-            setOnClickListener {
-                if (selectedFiles.isEmpty()) {
-                    listener.openFile(file)
-                } else {
-                    selectFile(file)
-                }
-            }
-            setOnLongClickListener {
-                if (selectedFiles.isEmpty()) {
-                    selectFile(file)
-                } else {
-                    listener.openFile(file)
-                }
-                true
-            }
-        }
-        holder.iconLayout.setOnClickListener { selectFile(file) }
-        val iconRes = file.mimeType.iconRes
-        holder.iconImage.apply {
-            isVisible = true
-            setImageResource(iconRes)
-        }
-        holder.directoryThumbnailImage?.isVisible = isDirectory
-        holder.thumbnailOutlineView?.isVisible = !isDirectory
-        val supportsThumbnail = file.supportsThumbnail
-        val shouldLoadThumbnailIcon = supportsThumbnail && holder.thumbnailIconImage != null &&
-            file.mimeType.isApk
-        val attributes = file.attributes
-        holder.thumbnailIconImage?.apply {
-            dispose()
-            isVisible = !isDirectory
-            setImageResource(iconRes)
-            if (shouldLoadThumbnailIcon) {
-                load(path to attributes)
-            }
-        }
-        holder.thumbnailImage.apply {
-            dispose()
-            setImageDrawable(null)
-            val shouldLoadThumbnail = supportsThumbnail && !shouldLoadThumbnailIcon
-            isVisible = shouldLoadThumbnail
-            if (shouldLoadThumbnail) {
-                load(path to attributes) {
-                    listener { _, _ ->
-                        val iconImage = holder.thumbnailIconImage ?: holder.iconImage
-                        iconImage.isVisible = false
-                    }
-                }
-            }
-        }
-        holder.appIconBadgeImage.apply {
-            dispose()
-            setImageDrawable(null)
-            val appDirectoryPackageName = file.appDirectoryPackageName
-            val hasAppIconBadge = appDirectoryPackageName != null
-            isVisible = hasAppIconBadge
-            if (hasAppIconBadge) {
-                load(AppIconPackageName(appDirectoryPackageName))
-            }
-        }
-        holder.badgeImage.apply {
-            val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
-                if (file.isSymbolicLinkBroken) {
-                    R.drawable.error_badge_icon_18dp
-                } else {
-                    R.drawable.symbolic_link_badge_icon_18dp
-                }
-            } else if (file.attributesNoFollowLinks.isEncrypted()) {
-                R.drawable.encrypted_badge_icon_18dp
-            } else {
-                null
-            }
-            val hasBadge = badgeIconRes != null
-            isVisible = hasBadge
-            if (hasBadge) {
-                setImageResource(badgeIconRes)
-            } else {
-                setImageDrawable(null)
-            }
-        }
-        holder.nameText.text = file.name
-        holder.descriptionText?.text = if (isDirectory) {
-            null
+    }
+
+    private fun onItemClick(file: FileItem) {
+        if (selectedFiles.isEmpty()) {
+            listener.openFile(file)
         } else {
-            val context = holder.descriptionText.context
-            val lastModificationTime = attributes.lastModifiedTime().toInstant()
-                .formatShort(context)
-            val size = attributes.fileSize.formatHumanReadable(context)
-            val descriptionSeparator = context.getString(R.string.file_item_description_separator)
-            listOf(lastModificationTime, size).joinToString(descriptionSeparator)
+            selectFile(file)
         }
+    }
+
+    private fun onItemLongClick(file: FileItem) {
+        if (selectedFiles.isEmpty()) {
+            selectFile(file)
+        } else {
+            listener.openFile(file)
+        }
+    }
+
+    private fun getDescription(file: FileItem, context: Context): String? {
+        if (file.attributes.isDirectory) {
+            return null
+        }
+        val attributes = file.attributes
+        val lastModificationTime = attributes.lastModifiedTime().toInstant().formatShort(context)
+        val size = attributes.fileSize.formatHumanReadable(context)
+        val descriptionSeparator = context.getString(R.string.file_item_description_separator)
+        return listOf(lastModificationTime, size).joinToString(descriptionSeparator)
+    }
+
+    private fun bindViewHolderMenu(holder: ViewHolder, file: FileItem) {
+        val menu = holder.popupMenu.menu
+        val path = file.path
+        val isReadOnly = path.fileSystem.isReadOnly
         val isArchivePath = path.isArchivePath
         menu.findItem(R.id.action_copy)
             .setTitle(if (isArchivePath) R.string.file_item_action_extract else R.string.copy)
@@ -329,72 +298,19 @@ class FileListAdapter(private val listener: Listener) :
         menu.findItem(R.id.action_rename).isVisible = !isReadOnly
         menu.findItem(R.id.action_extract).isVisible = file.isArchiveFile
         menu.findItem(R.id.action_archive).isVisible = !isArchivePath
-        menu.findItem(R.id.action_add_bookmark).isVisible = isDirectory
+        menu.findItem(R.id.action_add_bookmark).isVisible = file.attributes.isDirectory
         holder.popupMenu.setOnMenuItemClickListener {
-            when (it.itemId) {
-                R.id.action_open_with -> {
-                    listener.openFileWith(file)
-                    true
-                }
-
-                R.id.action_cut -> {
-                    listener.cutFile(file)
-                    true
-                }
-
-                R.id.action_copy -> {
-                    listener.copyFile(file)
-                    true
-                }
-
-                R.id.action_delete -> {
-                    listener.confirmDeleteFile(file)
-                    true
-                }
-
-                R.id.action_rename -> {
-                    listener.showRenameFileDialog(file)
-                    true
-                }
-
-                R.id.action_extract -> {
-                    listener.extractFile(file)
-                    true
-                }
-
-                R.id.action_archive -> {
-                    listener.showCreateArchiveDialog(file)
-                    true
-                }
-
-                R.id.action_share -> {
-                    listener.shareFile(file)
-                    true
-                }
-
-                R.id.action_copy_path -> {
-                    listener.copyPath(file)
-                    true
-                }
-
-                R.id.action_add_bookmark -> {
-                    listener.addBookmark(file)
-                    true
-                }
-
-                R.id.action_create_shortcut -> {
-                    listener.createShortcut(file)
-                    true
-                }
-
-                R.id.action_properties -> {
-                    listener.showPropertiesDialog(file)
-                    true
-                }
-
-                else -> false
-            }
+            listener.onFileItemMenuItemClick(it.itemId, holder.currentFile(file))
         }
+    }
+
+    /**
+     * Rows whose shown contents didn't change keep their binding across a re-list, so listeners
+     * look up the current item instead of using the one captured when the row was bound.
+     */
+    private fun ViewHolder.currentFile(boundFile: FileItem): FileItem {
+        val position = bindingAdapterPosition
+        return if (position != RecyclerView.NO_POSITION) getItem(position) else boundFile
     }
 
     override fun getPopupText(view: View, position: Int): CharSequence {
@@ -422,7 +338,7 @@ class FileListAdapter(private val listener: Listener) :
                 oldItem.path == newItem.path
 
             override fun areContentsTheSame(oldItem: FileItem, newItem: FileItem): Boolean =
-                oldItem == newItem
+                oldItem.hasSameListContentsAs(newItem)
         }
     }
 

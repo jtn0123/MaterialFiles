@@ -68,6 +68,8 @@ class FileByteChannel(
                     source.arrayOffset() + source.position(),
                     remaining
                 )
+                // The caller counts what was written by how far the buffer moved.
+                source.position(source.limit())
                 nextSequentialWritePosition += remaining
             }
         }

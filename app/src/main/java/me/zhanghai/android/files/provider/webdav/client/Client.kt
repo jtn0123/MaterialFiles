@@ -7,7 +7,6 @@ package me.zhanghai.android.files.provider.webdav.client
 
 import at.bitfire.dav4jvm.DavCollection
 import at.bitfire.dav4jvm.DavResource
-import at.bitfire.dav4jvm.HttpUtils
 import at.bitfire.dav4jvm.Property
 import at.bitfire.dav4jvm.Response
 import at.bitfire.dav4jvm.exception.ConflictException
@@ -26,7 +25,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
-import java.time.Instant
 import java.util.Collections
 import java.util.WeakHashMap
 import java8.nio.channels.SeekableByteChannel
@@ -99,10 +97,14 @@ class Client(internal val authenticator: Authenticator) {
         LocalWatchService.onEntryCreated(path as Java8Path)
     }
 
+    /**
+     * RFC 4918 says a collection SHOULD be addressed with a trailing slash; nginx returns 409
+     * for a DELETE or MOVE without it, so [isCollection] picks the URL shape.
+     */
     @Throws(DavException::class)
-    fun delete(path: Path) {
+    fun delete(path: Path, isCollection: Boolean = false) {
         try {
-            DavResource(getClient(path.authority), path.url).delete {}
+            DavResource(getClient(path.authority), path.url(isCollection)).delete {}
         } catch (e: IOException) {
             throw e.toDavException()
         }
@@ -111,12 +113,18 @@ class Client(internal val authenticator: Authenticator) {
     }
 
     @Throws(DavException::class)
-    fun move(source: Path, target: Path, overwrite: Boolean = false) {
+    fun move(
+        source: Path,
+        target: Path,
+        overwrite: Boolean = false,
+        isCollection: Boolean = false
+    ) {
         if (source.authority != target.authority) {
             throw IOException("Paths aren't on the same authority")
         }
         try {
-            DavResource(getClient(source.authority), source.url).move(target.url, overwrite) {}
+            DavResource(getClient(source.authority), source.url(isCollection))
+                .move(target.url(isCollection), overwrite) {}
         } catch (e: IOException) {
             throw e.toDavException()
         }
@@ -211,24 +219,6 @@ class Client(internal val authenticator: Authenticator) {
     }
 
     @Throws(DavException::class)
-    fun setLastModifiedTime(path: Path, lastModifiedTime: Instant) {
-        if (true) {
-            return
-        }
-        // The following doesn't work on most servers. See also
-        // https://github.com/sabre-io/dav/issues/1277
-        try {
-            DavResource(getClient(path.authority), path.url).proppatch(
-                mapOf(GetLastModified.NAME to HttpUtils.formatDate(lastModifiedTime)),
-                emptyList()
-            ) { response, _ -> response.checkSuccess() }
-        } catch (e: IOException) {
-            throw e.toDavException()
-        }
-        LocalWatchService.onEntryModified(path as Java8Path)
-    }
-
-    @Throws(DavException::class)
     fun put(path: Path): OutputStream = try {
         NotifyEntryModifiedOutputStream(
             DavResource(getClient(path.authority), path.url).putCompat(),
@@ -260,6 +250,9 @@ class Client(internal val authenticator: Authenticator) {
         val url: HttpUrl
         fun resolve(other: String): Path
     }
+
+    private fun Path.url(isCollection: Boolean): HttpUrl =
+        if (isCollection) url.toCollectionUrl() else url
 
     private class OkHttpAuthenticatorInterceptor(
         private val authenticator: Authenticator,

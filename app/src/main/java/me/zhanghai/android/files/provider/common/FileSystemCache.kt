@@ -5,10 +5,10 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.lang.ref.WeakReference
 import java8.nio.file.FileSystem
 import java8.nio.file.FileSystemAlreadyExistsException
 import java8.nio.file.FileSystemNotFoundException
-import java.lang.ref.WeakReference
 
 class FileSystemCache<K : Any, FS : FileSystem?> {
     private val fileSystems: MutableMap<K, WeakReference<FS>> = HashMap()

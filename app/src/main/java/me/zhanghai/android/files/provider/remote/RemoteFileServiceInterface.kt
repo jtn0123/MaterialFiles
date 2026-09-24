@@ -20,6 +20,5 @@ open class RemoteFileServiceInterface : IRemoteFileService.Stub() {
 
     override fun getRemotePosixFileAttributeViewInterface(
         attributeView: ParcelableObject
-    ): IRemotePosixFileAttributeView =
-        RemotePosixFileAttributeViewInterface(attributeView.value())
+    ): IRemotePosixFileAttributeView = RemotePosixFileAttributeViewInterface(attributeView.value())
 }

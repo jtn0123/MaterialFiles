@@ -82,11 +82,7 @@ abstract class SimpleAdapter<T, VH : RecyclerView.ViewHolder> : RecyclerView.Ada
         }
     }
 
-    fun getItem(position: Int): T {
-        return _list[position]
-    }
+    fun getItem(position: Int): T = _list[position]
 
-    override fun getItemCount(): Int {
-        return _list.size
-    }
+    override fun getItemCount(): Int = _list.size
 }

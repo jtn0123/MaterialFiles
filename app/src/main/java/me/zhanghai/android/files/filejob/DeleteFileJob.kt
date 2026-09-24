@@ -6,15 +6,14 @@
 package me.zhanghai.android.files.filejob
 
 import java.io.IOException
-import java.io.InterruptedIOException
 import java8.nio.file.FileVisitResult
 import java8.nio.file.Files
 import java8.nio.file.Path
 import java8.nio.file.SimpleFileVisitor
 import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.R
-import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.delete
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class DeleteFileJob(private val paths: List<Path>) : FileJob() {
@@ -74,79 +73,21 @@ class DeleteFileJob(private val paths: List<Path>) : FileJob() {
 
 @Throws(IOException::class)
 internal fun FileJob.delete(path: Path, transferInfo: TransferInfo?, actionAllInfo: ActionAllInfo) {
-    var retry: Boolean
-    do {
-        retry = false
-        try {
-            path.delete()
-            if (transferInfo != null) {
-                transferInfo.incrementTransferredFileCount()
-                postDeleteNotification(transferInfo, path)
-            }
-        } catch (e: InterruptedIOException) {
-            throw e
-        } catch (e: IOException) {
-            e.printStackTrace()
-            if (actionAllInfo.skipDeleteError) {
-                recordSkippedError()
-                if (transferInfo != null) {
-                    transferInfo.skipFileIgnoringSize()
-                    postDeleteNotification(transferInfo, path)
-                }
-                return
-            }
-            if (e is UserActionRequiredException) {
-                val result = showUserAction(e)
-                if (result) {
-                    retry = true
-                    continue
-                }
-            }
-            val result = showErrorDialog(
+    runCountedStep(path, transferInfo, FileJob::postDeleteNotification, { path.delete() }) { e ->
+        e.logWarning("DeleteFileJob", "delete($path)")
+        decideOnError(e, actionAllInfo::skipDeleteError) {
+            showRetrySkipCancelDialog(
                 getString(R.string.file_job_delete_error_title),
                 getString(
                     R.string.file_job_delete_error_message_format,
                     getFileName(path),
                     e.toUserMessage(service)
                 ),
-                getReadOnlyFileStore(path, e),
-                true,
-                getString(R.string.retry),
-                getString(R.string.skip),
-                getString(android.R.string.cancel)
+                path,
+                e
             )
-            when (result.action) {
-                FileJobErrorAction.POSITIVE -> {
-                    retry = true
-                    continue
-                }
-
-                FileJobErrorAction.NEGATIVE -> {
-                    recordSkippedError()
-                    if (result.isAll) {
-                        actionAllInfo.skipDeleteError = true
-                    }
-                    if (transferInfo != null) {
-                        transferInfo.skipFileIgnoringSize()
-                        postDeleteNotification(transferInfo, path)
-                    }
-                    return
-                }
-
-                FileJobErrorAction.CANCELED -> {
-                    if (transferInfo != null) {
-                        transferInfo.skipFileIgnoringSize()
-                        postDeleteNotification(transferInfo, path)
-                    }
-                    return
-                }
-
-                FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
-
-                else -> throw AssertionError(result.action)
-            }
         }
-    } while (retry)
+    }
 }
 
 private fun FileJob.postDeleteNotification(transferInfo: TransferInfo, currentPath: Path) {

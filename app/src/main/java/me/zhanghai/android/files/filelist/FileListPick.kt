@@ -9,6 +9,7 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
 import android.os.Environment
+import android.os.Parcelable
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import me.zhanghai.android.files.R
@@ -34,71 +35,37 @@ internal class FileListPick(private val fragment: FileListFragment) {
     private val viewModel: FileListViewModel
         get() = fragment.viewModel
 
-    /** Resets the trail to the path and pick options requested by the intent that started us. */
-    fun resetTrailFromIntent(intent: Intent, argsPath: Path?) {
-        var path = argsPath
-        var pickOptions: PickOptions? = null
-        when (val action = intent.action) {
-            Intent.ACTION_GET_CONTENT, Intent.ACTION_OPEN_DOCUMENT,
-            Intent.ACTION_CREATE_DOCUMENT -> {
-                val mode = if (action == Intent.ACTION_CREATE_DOCUMENT) {
-                    PickOptions.Mode.CREATE_FILE
-                } else {
-                    PickOptions.Mode.OPEN_FILE
-                }
-                val mimeType = intent.type?.asMimeTypeOrNull() ?: MimeType.ANY
-                val fileName = if (mode == PickOptions.Mode.CREATE_FILE) {
-                    intent.getStringExtra(Intent.EXTRA_TITLE)?.asFileNameOrNull()?.value
-                        ?: mimeType.extension?.let { "file.$it" } ?: "file"
-                } else {
-                    null
-                }
-                val readOnly = action == Intent.ACTION_GET_CONTENT
-                val extraMimeTypes = if (mode == PickOptions.Mode.OPEN_FILE) {
-                    intent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES)
-                        ?.mapNotNull { it.asMimeTypeOrNull() }?.takeIfNotEmpty()
-                } else {
-                    null
-                }
-                val mimeTypes = extraMimeTypes ?: listOf(mimeType)
-                val localOnly = intent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false)
-                val allowMultiple = mode != PickOptions.Mode.CREATE_FILE &&
-                    intent.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
-                pickOptions =
-                    PickOptions(mode, fileName, readOnly, mimeTypes, localOnly, allowMultiple)
-            }
-
-            Intent.ACTION_OPEN_DOCUMENT_TREE -> {
-                val localOnly = intent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false)
-                pickOptions = PickOptions(
-                    PickOptions.Mode.OPEN_DIRECTORY,
-                    null,
-                    false,
-                    emptyList(),
-                    localOnly,
-                    false
-                )
-            }
-
-            ACTION_VIEW_DOWNLOADS ->
-                path = Paths.get(
-                    Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DOWNLOADS
-                    ).path
-                )
-
-            else ->
-                if (path != null) {
-                    val mimeType = intent.type?.asMimeTypeOrNull()
-                    if (mimeType != null && path.isArchiveFile(mimeType)) {
-                        path = path.createArchiveRootPath()
-                    }
-                }
-        }
+    /**
+     * Resets the trail to the path and pick options requested by the intent that started us.
+     *
+     * @param restoredLocation where this instance was before the system destroyed it, if it did
+     */
+    fun resetTrailFromIntent(
+        intent: Intent,
+        argsPath: Path?,
+        restoredLocation: FileListLastLocation?
+    ) {
+        val pickOptions = intent.toPickOptions()
+        var path = intent.getPathToShow(argsPath)
+        var state: Parcelable? = null
         if (path == null) {
-            path = Settings.FILE_LIST_DEFAULT_DIRECTORY.valueCompat
+            // Only the plain launcher start reopens where the user left off.
+            val lastLocation = if (pickOptions == null) {
+                viewModel.remembersLastLocation = true
+                fragment.navigation.lastLocation
+            } else {
+                null
+            }
+            path = lastLocation?.path ?: Settings.FILE_LIST_DEFAULT_DIRECTORY.valueCompat
+            state = lastLocation?.state
         }
-        viewModel.resetTo(path)
+        // An instance that the system destroyed and recreated goes back to where it was, whatever
+        // it was started for.
+        if (restoredLocation != null) {
+            path = restoredLocation.path
+            state = restoredLocation.state
+        }
+        viewModel.resetTo(path, state)
         if (pickOptions != null) {
             viewModel.pickOptions = pickOptions
         }
@@ -179,9 +146,83 @@ internal class FileListPick(private val fragment: FileListFragment) {
     fun replaceFile(file: FileItem) {
         pickFiles(fileItemSetOf(file))
     }
+}
 
-    companion object {
-        private const val ACTION_VIEW_DOWNLOADS =
-            "me.zhanghai.android.files.intent.action.VIEW_DOWNLOADS"
+private const val ACTION_VIEW_DOWNLOADS = "me.zhanghai.android.files.intent.action.VIEW_DOWNLOADS"
+
+/** The pick options the intent asks for, or `null` when it only wants a folder shown. */
+internal fun Intent.toPickOptions(): PickOptions? = when (action) {
+    Intent.ACTION_GET_CONTENT, Intent.ACTION_OPEN_DOCUMENT, Intent.ACTION_CREATE_DOCUMENT ->
+        toFilePickOptions()
+
+    Intent.ACTION_OPEN_DOCUMENT_TREE ->
+        PickOptions(
+            PickOptions.Mode.OPEN_DIRECTORY,
+            null,
+            false,
+            emptyList(),
+            getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false),
+            false
+        )
+
+    else -> null
+}
+
+private fun Intent.toFilePickOptions(): PickOptions {
+    val mode = if (action == Intent.ACTION_CREATE_DOCUMENT) {
+        PickOptions.Mode.CREATE_FILE
+    } else {
+        PickOptions.Mode.OPEN_FILE
+    }
+    val mimeType = type?.asMimeTypeOrNull() ?: MimeType.ANY
+    val fileName = if (mode == PickOptions.Mode.CREATE_FILE) {
+        getStringExtra(Intent.EXTRA_TITLE)?.asFileNameOrNull()?.value
+            ?: mimeType.extension?.let { "file.$it" } ?: "file"
+    } else {
+        null
+    }
+    // Only a file that is taken away for good may be written to.
+    val readOnly = action == Intent.ACTION_GET_CONTENT
+    val extraMimeTypes = if (mode == PickOptions.Mode.OPEN_FILE) {
+        getStringArrayExtra(Intent.EXTRA_MIME_TYPES)
+            ?.mapNotNull { it.asMimeTypeOrNull() }?.takeIfNotEmpty()
+    } else {
+        null
+    }
+    val allowMultiple = mode != PickOptions.Mode.CREATE_FILE &&
+        getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+    return PickOptions(
+        mode,
+        fileName,
+        readOnly,
+        extraMimeTypes ?: listOf(mimeType),
+        getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false),
+        allowMultiple
+    )
+}
+
+/**
+ * The path the intent asks to show, or `null` when it doesn't name one and the last or the default
+ * location should be shown instead.
+ */
+internal fun Intent.getPathToShow(argsPath: Path?): Path? = when (action) {
+    ACTION_VIEW_DOWNLOADS ->
+        Paths.get(
+            Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS
+            ).path
+        )
+
+    Intent.ACTION_GET_CONTENT, Intent.ACTION_OPEN_DOCUMENT, Intent.ACTION_CREATE_DOCUMENT,
+    Intent.ACTION_OPEN_DOCUMENT_TREE -> argsPath
+
+    // An archive is shown as the folder it stands for.
+    else -> {
+        val mimeType = type?.asMimeTypeOrNull()
+        if (argsPath != null && mimeType != null && argsPath.isArchiveFile(mimeType)) {
+            argsPath.createArchiveRootPath()
+        } else {
+            argsPath
+        }
     }
 }

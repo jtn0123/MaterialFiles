@@ -5,11 +5,11 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
 import java8.nio.file.attribute.GroupPrincipal
 import java8.nio.file.attribute.PosixFileAttributeView
 import java8.nio.file.attribute.PosixFilePermission
 import java8.nio.file.attribute.UserPrincipal
-import java.io.IOException
 
 interface PosixFileAttributeView : PosixFileAttributeView {
     @Throws(IOException::class)

@@ -5,6 +5,16 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.InterruptedIOException
+import java.io.OutputStream
+import java.io.OutputStreamWriter
+import java.nio.channels.ClosedByInterruptException
+import java.nio.charset.Charset
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
 import java8.nio.file.CopyOption
@@ -22,21 +32,11 @@ import java8.nio.file.attribute.FileAttributeView
 import java8.nio.file.attribute.FileOwnerAttributeView
 import java8.nio.file.attribute.FileTime
 import java8.nio.file.attribute.GroupPrincipal
+import java8.nio.file.attribute.PosixFileAttributeView as Java8PosixFileAttributeView
 import java8.nio.file.attribute.UserPrincipal
 import java8.nio.file.spi.FileSystemProvider
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.io.IOException
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.InterruptedIOException
-import java.io.OutputStream
-import java.io.OutputStreamWriter
-import java.nio.channels.ClosedByInterruptException
-import java.nio.charset.Charset
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
-import java8.nio.file.attribute.PosixFileAttributeView as Java8PosixFileAttributeView
 
 @Throws(IOException::class)
 fun Path.checkAccess(vararg modes: AccessMode) {
@@ -63,14 +63,13 @@ fun Path.createDirectories(vararg attributes: FileAttribute<*>): Path =
     Files.createDirectories(this, *attributes)
 
 @Throws(IOException::class)
-fun Path.createFile(vararg attributes: FileAttribute<*>): Path =
-    try {
-        // This uses newByteChannel() under the hood, which may not be supported.
-        Files.createFile(this, *attributes)
-    } catch (e: UnsupportedOperationException) {
-        Files.newOutputStream(this, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).close()
-        this
-    }
+fun Path.createFile(vararg attributes: FileAttribute<*>): Path = try {
+    // This uses newByteChannel() under the hood, which may not be supported.
+    Files.createFile(this, *attributes)
+} catch (e: UnsupportedOperationException) {
+    Files.newOutputStream(this, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).close()
+    this
+}
 
 @Throws(IOException::class)
 fun Path.createSymbolicLink(target: Path, vararg attributes: FileAttribute<*>): Path =
@@ -133,20 +132,18 @@ fun Path.newBufferedWriter(charset: Charset, vararg options: OpenOption): Buffer
 fun Path.newByteChannel(
     options: Set<OpenOption>,
     vararg attributes: FileAttribute<*>
-): SeekableByteChannel =
-    try {
-        Files.newByteChannel(this, options, *attributes)
-    } catch (e: UnsupportedOperationException) {
-        throw IOException(e)
-    }
+): SeekableByteChannel = try {
+    Files.newByteChannel(this, options, *attributes)
+} catch (e: UnsupportedOperationException) {
+    throw IOException(e)
+}
 
 @Throws(IOException::class)
-fun Path.newByteChannel(vararg options: OpenOption): SeekableByteChannel =
-    try {
-        Files.newByteChannel(this, *options)
-    } catch (e: UnsupportedOperationException) {
-        throw IOException(e)
-    }
+fun Path.newByteChannel(vararg options: OpenOption): SeekableByteChannel = try {
+    Files.newByteChannel(this, *options)
+} catch (e: UnsupportedOperationException) {
+    throw IOException(e)
+}
 
 @Throws(IOException::class)
 fun Path.newDirectoryStream(): DirectoryStream<Path> = Files.newDirectoryStream(this)
@@ -155,47 +152,42 @@ fun Path.newDirectoryStream(): DirectoryStream<Path> = Files.newDirectoryStream(
 fun Path.newInputStream(vararg options: OpenOption): InputStream =
     InterruptedIOExceptionInputStream(Files.newInputStream(this, *options))
 
-private class InterruptedIOExceptionInputStream(
-    inputStream: InputStream
-) : DelegateInputStream(inputStream) {
+private class InterruptedIOExceptionInputStream(inputStream: InputStream) :
+    DelegateInputStream(inputStream) {
     @Throws(IOException::class)
-    override fun read(): Int =
-        try {
-            super.read()
-        } catch (e: ClosedByInterruptException) {
-            throw e.toInterruptedIOException()
-        }
+    override fun read(): Int = try {
+        super.read()
+    } catch (e: ClosedByInterruptException) {
+        throw e.toInterruptedIOException()
+    }
 
     @Throws(IOException::class)
-    override fun read(b: ByteArray): Int =
-        try {
-            super.read(b)
-        } catch (e: ClosedByInterruptException) {
-            throw e.toInterruptedIOException()
-        }
+    override fun read(b: ByteArray): Int = try {
+        super.read(b)
+    } catch (e: ClosedByInterruptException) {
+        throw e.toInterruptedIOException()
+    }
 
     @Throws(IOException::class)
-    override fun read(b: ByteArray, off: Int, len: Int): Int =
-        try {
-            super.read(b, off, len)
-        } catch (e: ClosedByInterruptException) {
-            throw e.toInterruptedIOException()
-        }
+    override fun read(b: ByteArray, off: Int, len: Int): Int = try {
+        super.read(b, off, len)
+    } catch (e: ClosedByInterruptException) {
+        throw e.toInterruptedIOException()
+    }
 
     @Throws(IOException::class)
     override fun skip(n: Long): Long = try {
-            super.skip(n)
-        } catch (e: ClosedByInterruptException) {
-            throw e.toInterruptedIOException()
-        }
+        super.skip(n)
+    } catch (e: ClosedByInterruptException) {
+        throw e.toInterruptedIOException()
+    }
 
     @Throws(IOException::class)
-    override fun available(): Int =
-        try {
-            super.available()
-        } catch (e: ClosedByInterruptException) {
-            throw e.toInterruptedIOException()
-        }
+    override fun available(): Int = try {
+        super.available()
+    } catch (e: ClosedByInterruptException) {
+        throw e.toInterruptedIOException()
+    }
 
     @Throws(IOException::class)
     override fun close() {
@@ -220,9 +212,8 @@ private class InterruptedIOExceptionInputStream(
 fun Path.newOutputStream(vararg options: OpenOption): OutputStream =
     InterruptedIOExceptionOutputStream(Files.newOutputStream(this, *options))
 
-private class InterruptedIOExceptionOutputStream(
-    outputStream: OutputStream
-) : DelegateOutputStream(outputStream) {
+private class InterruptedIOExceptionOutputStream(outputStream: OutputStream) :
+    DelegateOutputStream(outputStream) {
     @Throws(IOException::class)
     override fun write(b: Int) {
         try {
@@ -313,7 +304,7 @@ fun Path.readSymbolicLink(): Path = Files.readSymbolicLink(this)
 
 fun Path.readSymbolicLinkByteString(): ByteString {
     val target = readSymbolicLink()
-    target as? ByteStringPath ?: throw ProviderMismatchException(target.toString())
+    requireProviderPath<ByteStringPath>(target)
     return target.toByteString()
 }
 
@@ -321,8 +312,9 @@ fun Path.readSymbolicLinkByteString(): ByteString {
 fun Path.resolveForeign(other: Path): Path {
     asByteStringListPath()
     other.asByteStringListPath()
-    if (javaClass == other.javaClass && provider == other.provider
-        && fileSystem == other.fileSystem) {
+    if (javaClass == other.javaClass && provider == other.provider &&
+        fileSystem == other.fileSystem
+    ) {
         return resolve(other)
     }
     if (other.isAbsolute) {
@@ -393,6 +385,6 @@ fun Path.asByteStringListPath(): ByteStringListPath<*> {
     contract {
         returns() implies (this@asByteStringListPath is ByteStringListPath<*>)
     }
-    this as? ByteStringListPath<*> ?: throw ProviderMismatchException(toString())
+    requireProviderPath<ByteStringListPath<*>>(this)
     return this
 }

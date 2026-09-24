@@ -12,11 +12,7 @@ import me.zhanghai.android.files.util.takeIfNotEmpty
 import net.schmizz.sshj.SSHClient
 
 @Parcelize
-data class Authority(
-    val host: String,
-    val port: Int,
-    val username: String
-) : Parcelable {
+data class Authority(val host: String, val port: Int, val username: String) : Parcelable {
     fun toUriAuthority(): UriAuthority {
         val userInfo = username.takeIfNotEmpty()
         val uriPort = port.takeIf { it != DEFAULT_PORT }

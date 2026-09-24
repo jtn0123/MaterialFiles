@@ -23,10 +23,6 @@ class ColorSwatchView : CheckableView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    )
-
     constructor(
         context: Context,
         attrs: AttributeSet?,
@@ -36,7 +32,8 @@ class ColorSwatchView : CheckableView {
 
     init {
         val background = AppCompatResources.getDrawable(
-            context, R.drawable.color_swatch_view_background
+            context,
+            R.drawable.color_swatch_view_background
         ) as LayerDrawable
         gradientDrawable = background.getDrawable(0) as GradientDrawable
         setBackground(background)

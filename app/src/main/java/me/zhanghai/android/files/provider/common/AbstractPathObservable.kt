@@ -7,8 +7,8 @@ package me.zhanghai.android.files.provider.common
 
 import android.os.Handler
 import android.os.HandlerThread
-import me.zhanghai.android.files.util.ThrottledRunnable
 import java.io.IOException
+import me.zhanghai.android.files.util.ThrottledRunnable
 
 abstract class AbstractPathObservable(private val intervalMillis: Long) : PathObservable {
     private val observers = mutableMapOf<() -> Unit, ThrottledRunnable>()

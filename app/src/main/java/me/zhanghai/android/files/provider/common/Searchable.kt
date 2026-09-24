@@ -5,8 +5,8 @@
 
 package me.zhanghai.android.files.provider.common
 
-import java8.nio.file.Path
 import java.io.IOException
+import java8.nio.file.Path
 
 interface Searchable {
     @Throws(IOException::class)

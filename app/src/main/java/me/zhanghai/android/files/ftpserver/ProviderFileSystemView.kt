@@ -5,11 +5,11 @@
 
 package me.zhanghai.android.files.ftpserver
 
+import java.net.URI
 import java8.nio.file.Paths
 import me.zhanghai.android.files.provider.archive.isArchivePath
 import org.apache.ftpserver.ftplet.FileSystemView
 import org.apache.ftpserver.ftplet.User
-import java.net.URI
 
 class ProviderFileSystemView(private val user: User) : FileSystemView {
     private val homeDirectory: ProviderFtpFile
@@ -18,7 +18,9 @@ class ProviderFileSystemView(private val user: User) : FileSystemView {
     init {
         val homeDirectoryPath = Paths.get(URI.create(user.homeDirectory))
         homeDirectory = ProviderFtpFile(
-            homeDirectoryPath, homeDirectoryPath.relativize(homeDirectoryPath), user
+            homeDirectoryPath,
+            homeDirectoryPath.relativize(homeDirectoryPath),
+            user
         )
         workingDirectory = homeDirectory
     }
@@ -52,5 +54,7 @@ class ProviderFileSystemView(private val user: User) : FileSystemView {
         // TODO: Better way of determining if the provider is random accessible.
         !homeDirectory.physicalFile.isArchivePath
 
-    override fun dispose() {}
+    override fun dispose() {
+        // Nothing is held open between commands; each file opens its own channel.
+    }
 }

@@ -5,14 +5,14 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import java8.nio.file.ClosedWatchServiceException
 import java8.nio.file.WatchEvent
 import java8.nio.file.WatchKey
 import java8.nio.file.WatchService
 import java8.nio.file.Watchable
-import java.io.IOException
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 
 abstract class AbstractWatchService<K : AbstractWatchKey<K, *>> : WatchService {
     private val queue = LinkedBlockingQueue<WatchKey>()
@@ -81,24 +81,14 @@ abstract class AbstractWatchService<K : AbstractWatchKey<K, *>> : WatchService {
     }
 
     private class DummyKey : WatchKey {
-        override fun isValid(): Boolean {
-            throw AssertionError()
-        }
+        override fun isValid(): Boolean = throw AssertionError()
 
-        override fun pollEvents(): List<WatchEvent<*>> {
-            throw AssertionError()
-        }
+        override fun pollEvents(): List<WatchEvent<*>> = throw AssertionError()
 
-        override fun reset(): Boolean {
-            throw AssertionError()
-        }
+        override fun reset(): Boolean = throw AssertionError()
 
-        override fun cancel() {
-            throw AssertionError()
-        }
+        override fun cancel(): Unit = throw AssertionError()
 
-        override fun watchable(): Watchable {
-            throw AssertionError()
-        }
+        override fun watchable(): Watchable = throw AssertionError()
     }
 }

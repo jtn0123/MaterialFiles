@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.app
 
+import android.os.Looper
 import android.os.StrictMode
 import android.webkit.WebView
 import java.util.Properties
@@ -36,6 +37,7 @@ import me.zhanghai.android.files.util.backgroundExecutor
 
 val appInitializers = listOf(
     ::disableHiddenApiChecks,
+    ::preloadSharedPreferences,
     ::initializeWebViewDebugging,
     ::initializeStrictMode,
     ::initializeCoil,
@@ -51,9 +53,27 @@ private fun disableHiddenApiChecks() {
     HiddenApi.disableHiddenApiChecks()
 }
 
+/**
+ * The first read of a preferences file loads it from disk on the reading thread, and the first
+ * reads happen on the main thread while [Settings] initializes. Kicking the loads off here lets
+ * them finish on a worker; a main-thread read that arrives earlier merely waits for the load
+ * instead of doing it.
+ */
+private fun preloadSharedPreferences() {
+    backgroundExecutor.execute {
+        defaultSharedPreferences.all
+        noBackupSharedPreferences.all
+    }
+}
+
 private fun initializeWebViewDebugging() {
     if (BuildConfig.DEBUG) {
-        WebView.setWebContentsDebuggingEnabled(true)
+        // Loads the WebView provider, a few hundred milliseconds; nothing needs it before the
+        // first screen is up.
+        Looper.getMainLooper().queue.addIdleHandler {
+            WebView.setWebContentsDebuggingEnabled(true)
+            false
+        }
     }
 }
 

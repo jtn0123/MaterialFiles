@@ -7,19 +7,23 @@ package me.zhanghai.android.files.provider.remote
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.Serializable
 import java8.nio.file.CopyOption
 import java8.nio.file.LinkOption
 import me.zhanghai.android.files.compat.readSerializableCompat
-import java.io.Serializable
 
 class ParcelableCopyOptions(val value: Array<out CopyOption>) : Parcelable {
     private constructor(source: Parcel) : this(
         Array(source.readInt()) {
             when (val type = source.readInt()) {
                 0 ->
-                    source.readParcelable<Parcelable>(CopyOption::class.java.classLoader)!!
-                        as CopyOption
+                    source.readParcelable(
+                        CopyOption::class.java.classLoader,
+                        CopyOption::class.java
+                    )!!
+
                 1 -> source.readSerializableCompat()!!
+
                 else -> throw AssertionError(type)
             }
         }
@@ -35,10 +39,12 @@ class ParcelableCopyOptions(val value: Array<out CopyOption>) : Parcelable {
                     dest.writeInt(0)
                     dest.writeParcelable(option as Parcelable, flags)
                 }
+
                 is Serializable -> {
                     dest.writeInt(1)
                     dest.writeSerializable(option as Serializable)
                 }
+
                 else -> throw UnsupportedOperationException(option.toString())
             }
         }

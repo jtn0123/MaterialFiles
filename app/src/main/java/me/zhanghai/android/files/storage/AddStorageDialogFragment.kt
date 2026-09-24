@@ -42,24 +42,28 @@ class AddStorageDialogFragment : AppCompatDialogFragment() {
         private val STORAGE_TYPES = listOfNotNull(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 R.string.storage_add_storage_android_data to
-                    AddExternalStorageShortcutActivity ::class.createIntent().putArgs(
+                    AddExternalStorageShortcutActivity::class.createIntent().putArgs(
                         AddExternalStorageShortcutFragment.Args(
                             R.string.storage_add_storage_android_data,
                             ExternalStorageProviderHacks.DOCUMENT_URI_ANDROID_DATA
                                 .asExternalStorageUri()
                         )
                     )
-            } else null,
+            } else {
+                null
+            },
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 R.string.storage_add_storage_android_obb to
-                    AddExternalStorageShortcutActivity ::class.createIntent().putArgs(
+                    AddExternalStorageShortcutActivity::class.createIntent().putArgs(
                         AddExternalStorageShortcutFragment.Args(
                             R.string.storage_add_storage_android_obb,
                             ExternalStorageProviderHacks.DOCUMENT_URI_ANDROID_OBB
                                 .asExternalStorageUri()
                         )
                     )
-            } else null,
+            } else {
+                null
+            },
             R.string.storage_add_storage_document_tree to
                 AddDocumentTreeActivity::class.createIntent(),
             R.string.storage_add_storage_ftp_server to
@@ -70,7 +74,7 @@ class AddStorageDialogFragment : AppCompatDialogFragment() {
                 AddLanSmbServerActivity::class.createIntent(),
             R.string.storage_add_storage_webdav_server to
                 EditWebDavServerActivity::class.createIntent()
-                    .putArgs(EditWebDavServerFragment.Args()),
+                    .putArgs(EditWebDavServerFragment.Args())
         )
     }
 }

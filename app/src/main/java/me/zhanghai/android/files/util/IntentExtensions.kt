@@ -12,6 +12,7 @@ import android.os.Parcelable
 import android.provider.MediaStore
 import android.provider.Settings
 import androidx.core.app.ShareCompat
+import kotlin.reflect.KClass
 import me.zhanghai.android.files.app.appClassLoader
 import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.app.packageManager
@@ -19,7 +20,6 @@ import me.zhanghai.android.files.compat.DocumentsContractCompat
 import me.zhanghai.android.files.compat.removeFlagsCompat
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.intentType
-import kotlin.reflect.KClass
 
 fun <T : Context> KClass<T>.createIntent(): Intent = Intent(application, java)
 
@@ -46,22 +46,20 @@ fun KClass<Intent>.createPickImage(allowMultiple: Boolean = false): Intent =
 fun KClass<Intent>.createPickOrCaptureImageWithChooser(
     allowPickMultiple: Boolean = false,
     captureOutputUri: Uri
-): Intent =
-    createPickImage(allowPickMultiple)
-        .withChooser(captureOutputUri.createCaptureImage())
+): Intent = createPickImage(allowPickMultiple)
+    .withChooser(captureOutputUri.createCaptureImage())
 
 fun KClass<Intent>.createSyncSettings(
     authorities: Array<out String>? = null,
     accountTypes: Array<out String>? = null
-): Intent =
-    Intent(Settings.ACTION_SYNC_SETTINGS).apply {
-        if (!authorities.isNullOrEmpty()) {
-            putExtra(Settings.EXTRA_AUTHORITIES, authorities)
-        }
-        if (!accountTypes.isNullOrEmpty()) {
-            putExtra(Settings.EXTRA_ACCOUNT_TYPES, accountTypes)
-        }
+): Intent = Intent(Settings.ACTION_SYNC_SETTINGS).apply {
+    if (!authorities.isNullOrEmpty()) {
+        putExtra(Settings.EXTRA_AUTHORITIES, authorities)
     }
+    if (!accountTypes.isNullOrEmpty()) {
+        putExtra(Settings.EXTRA_ACCOUNT_TYPES, accountTypes)
+    }
+}
 
 fun KClass<Intent>.createSyncSettingsWithAuthorities(vararg authorities: String) =
     createSyncSettings(authorities = authorities)
@@ -77,19 +75,21 @@ fun KClass<Intent>.createViewAppInMarket(packageName: String): Intent =
 fun KClass<Intent>.createViewLocation(latitude: Float, longitude: Float, label: String): Intent =
     Uri.parse("geo:0,0?q=$latitude,$longitude(${Uri.encode(label)})").createViewIntent()
 
-fun <T : Parcelable> Intent.getParcelableExtraSafe(key: String?): T? {
+inline fun <reified T : Parcelable> Intent.getParcelableExtraSafe(key: String?): T? {
     setExtrasClassLoader(appClassLoader)
-    return getParcelableExtra(key)
+    return getParcelableExtra(key, T::class.java)
 }
 
 fun Intent.getParcelableArrayExtraSafe(key: String?): Array<Parcelable>? {
     setExtrasClassLoader(appClassLoader)
-    return getParcelableArrayExtra(key)
+    return getParcelableArrayExtra(key, Parcelable::class.java)
 }
 
-fun <T : Parcelable?> Intent.getParcelableArrayListExtraSafe(key: String?): ArrayList<T>? {
+inline fun <reified T : Parcelable> Intent.getParcelableArrayListExtraSafe(
+    key: String?
+): ArrayList<T>? {
     setExtrasClassLoader(appClassLoader)
-    return getParcelableArrayListExtra(key)
+    return getParcelableArrayListExtra(key, T::class.java)
 }
 
 fun Intent.withChooser(title: CharSequence? = null, vararg initialIntents: Intent): Intent =
@@ -99,11 +99,10 @@ fun Intent.withChooser(title: CharSequence? = null, vararg initialIntents: Inten
 
 fun Intent.withChooser(vararg initialIntents: Intent) = withChooser(null, *initialIntents)
 
-fun Uri.createEditIntent(mimeType: MimeType): Intent =
-    Intent(Intent.ACTION_EDIT)
-        // Calling setType() will clear data.
-        .setDataAndType(this, mimeType.intentType)
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+fun Uri.createEditIntent(mimeType: MimeType): Intent = Intent(Intent.ACTION_EDIT)
+    // Calling setType() will clear data.
+    .setDataAndType(this, mimeType.intentType)
+    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
 
 fun MimeType.createPickFileIntent(allowMultiple: Boolean = false) =
     Intent(Intent.ACTION_OPEN_DOCUMENT)
@@ -154,24 +153,20 @@ fun Collection<Uri>.createSendStreamIntent(mimeTypes: Collection<MimeType>): Int
             removeFlagsCompat(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET)
         }
 
-fun Uri.createDocumentsUiViewDirectoryIntent(): Intent =
-    createViewIntent(MimeType.DIRECTORY)
-        .apply { DocumentsContractCompat.getDocumentsUiPackage()?.let { setPackage(it) } }
+fun Uri.createDocumentsUiViewDirectoryIntent(): Intent = createViewIntent(MimeType.DIRECTORY)
+    .apply { DocumentsContractCompat.getDocumentsUiPackage()?.let { setPackage(it) } }
 
 fun Uri.createViewIntent(): Intent = Intent(Intent.ACTION_VIEW, this)
 
-fun Uri.createViewIntent(mimeType: MimeType): Intent =
-    Intent(Intent.ACTION_VIEW)
-        // Calling setType() will clear data.
-        .setDataAndType(this, mimeType.intentType)
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+fun Uri.createViewIntent(mimeType: MimeType): Intent = Intent(Intent.ACTION_VIEW)
+    // Calling setType() will clear data.
+    .setDataAndType(this, mimeType.intentType)
+    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
 @Suppress("DEPRECATION")
-fun Uri.createInstallPackageIntent(): Intent =
-    Intent(Intent.ACTION_INSTALL_PACKAGE)
-        .setDataAndType(this, MimeType.APK.value)
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+fun Uri.createInstallPackageIntent(): Intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
+    .setDataAndType(this, MimeType.APK.value)
+    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-fun Uri.createCaptureImage(): Intent =
-    Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        .putExtra(MediaStore.EXTRA_OUTPUT, this)
+fun Uri.createCaptureImage(): Intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+    .putExtra(MediaStore.EXTRA_OUTPUT, this)

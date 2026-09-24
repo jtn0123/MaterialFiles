@@ -16,6 +16,7 @@ import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.file.asFileSize
 import me.zhanghai.android.files.provider.common.readAttributes
+import me.zhanghai.android.files.util.logWarning
 
 internal fun FileJob.postNotification(
     title: CharSequence,
@@ -218,7 +219,7 @@ internal class TransferInfo(scanInfo: ScanInfo, val target: Path?) {
                 LinkOption.NOFOLLOW_LINKS
             ).size()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("TransferInfo", "skipFile($path)")
         }
     }
 

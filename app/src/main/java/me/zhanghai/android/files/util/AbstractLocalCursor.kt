@@ -12,7 +12,7 @@ import android.os.Bundle
 abstract class AbstractLocalCursor : Cursor {
     private var _position: Int = -1
 
-    private var _isClosed: Boolean = false
+    private var closed: Boolean = false
 
     private var _extras = Bundle.EMPTY
 
@@ -27,10 +27,12 @@ abstract class AbstractLocalCursor : Cursor {
                 _position = count
                 false
             }
+
             position < 0 -> {
                 _position = -1
                 false
             }
+
             else -> {
                 _position = position
                 true
@@ -75,13 +77,12 @@ abstract class AbstractLocalCursor : Cursor {
         return -1
     }
 
-    override fun getColumnIndexOrThrow(columnName: String): Int =
-        getColumnIndex(columnName).also {
-            require(it != -1) {
-                "Column '$columnName' does not exist, available columns: ${
-                    columnNames.contentToString()}"
-            }
+    override fun getColumnIndexOrThrow(columnName: String): Int = getColumnIndex(columnName).also {
+        require(it != -1) {
+            "Column '$columnName' does not exist, available columns: ${
+                columnNames.contentToString()}"
         }
+    }
 
     override fun getColumnName(columnIndex: Int): String = columnNames[columnIndex]
 
@@ -129,12 +130,11 @@ abstract class AbstractLocalCursor : Cursor {
             else -> value.toString().toShort()
         }
 
-    override fun getInt(columnIndex: Int): Int =
-        when (val value = getObjectChecked(columnIndex)) {
-            null -> 0
-            is Number -> value.toInt()
-            else -> value.toString().toInt()
-        }
+    override fun getInt(columnIndex: Int): Int = when (val value = getObjectChecked(columnIndex)) {
+        null -> 0
+        is Number -> value.toInt()
+        else -> value.toString().toInt()
+    }
 
     override fun getLong(columnIndex: Int): Long =
         when (val value = getObjectChecked(columnIndex)) {
@@ -157,38 +157,46 @@ abstract class AbstractLocalCursor : Cursor {
             else -> value.toString().toDouble()
         }
 
-    override fun getType(columnIndex: Int): Int =
-        when (getObjectChecked(columnIndex)) {
-            null -> Cursor.FIELD_TYPE_NULL
-            is Byte, is Short, is Int, is Long -> Cursor.FIELD_TYPE_INTEGER
-            is Float, is Double -> Cursor.FIELD_TYPE_FLOAT
-            is ByteArray -> Cursor.FIELD_TYPE_BLOB
-            else -> Cursor.FIELD_TYPE_STRING
-        }
+    override fun getType(columnIndex: Int): Int = when (getObjectChecked(columnIndex)) {
+        null -> Cursor.FIELD_TYPE_NULL
+        is Byte, is Short, is Int, is Long -> Cursor.FIELD_TYPE_INTEGER
+        is Float, is Double -> Cursor.FIELD_TYPE_FLOAT
+        is ByteArray -> Cursor.FIELD_TYPE_BLOB
+        else -> Cursor.FIELD_TYPE_STRING
+    }
 
     override fun isNull(columnIndex: Int): Boolean = getObjectChecked(columnIndex) == null
 
-    override fun deactivate() {}
+    override fun deactivate() {
+        // Deprecated in the framework; the rows are in memory and there is nothing to release.
+    }
 
     override fun requery(): Boolean = true
 
     override fun close() {
-        _isClosed = true
+        closed = true
     }
 
-    override fun isClosed(): Boolean = _isClosed
+    override fun isClosed(): Boolean = closed
 
-    override fun registerContentObserver(observer: ContentObserver) {}
+    override fun registerContentObserver(observer: ContentObserver) {
+        // The rows never change after the cursor is built, so observers are never notified.
+    }
 
-    override fun unregisterContentObserver(observer: ContentObserver) {}
+    override fun unregisterContentObserver(observer: ContentObserver) {
+        // The rows never change after the cursor is built, so observers are never notified.
+    }
 
-    override fun registerDataSetObserver(observer: DataSetObserver) {}
+    override fun registerDataSetObserver(observer: DataSetObserver) {
+        // The rows never change after the cursor is built, so observers are never notified.
+    }
 
-    override fun unregisterDataSetObserver(observer: DataSetObserver) {}
+    override fun unregisterDataSetObserver(observer: DataSetObserver) {
+        // The rows never change after the cursor is built, so observers are never notified.
+    }
 
-    override fun setNotificationUri(resolver: ContentResolver, uri: Uri) {
+    override fun setNotificationUri(resolver: ContentResolver, uri: Uri): Unit =
         throw UnsupportedOperationException()
-    }
 
     override fun getNotificationUri(): Uri? = null
 

@@ -6,11 +6,14 @@
 package me.zhanghai.android.files.provider.sftp.client
 
 import java.io.IOException
+import java.io.OutputStream
 import java.util.Collections
 import java.util.WeakHashMap
+import java.util.concurrent.ConcurrentHashMap
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.provider.common.LocalWatchService
+import me.zhanghai.android.files.provider.common.NotifyEntryModifiedOutputStream
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedSeekableByteChannel
 import me.zhanghai.android.files.util.closeSafe
 import net.schmizz.sshj.SSHClient
@@ -18,6 +21,7 @@ import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.FileMode
 import net.schmizz.sshj.sftp.OpenMode
 import net.schmizz.sshj.sftp.RemoteFile
+import net.schmizz.sshj.sftp.RemoteResourceInfo
 import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPClient
 import net.schmizz.sshj.sftp.SFTPException
@@ -30,10 +34,18 @@ import net.schmizz.sshj.userauth.UserAuthException
  * provider; a test constructs its own with fakes.
  */
 class Client(internal val authenticator: Authenticator, internal val hostKeyStore: HostKeyStore) {
-    private val clients = mutableMapOf<Authority, SFTPClient>()
+    private val clients = ConcurrentHashMap<Authority, SFTPClient>()
+
+    // One lock per authority: connecting and authenticating to a host that does not answer
+    // takes until the timeout, and must not hold up the sessions to every other host.
+    private val clientLocks = ConcurrentHashMap<Authority, Any>()
 
     private val directoryFileAttributesCache =
         Collections.synchronizedMap(WeakHashMap<Path, FileAttributes>())
+
+    // Whether the server at an authority takes the arguments of a symbolic link the other way
+    // round, filled in when the session to it is opened.
+    private val reversedSymlinkArguments = ConcurrentHashMap<Authority, Boolean>()
 
     @Throws(ClientException::class)
     fun access(path: Path, flags: Set<OpenMode>) {
@@ -79,6 +91,23 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
         } catch (e: IOException) {
             throw ClientException(e)
         }
+    }
+
+    /**
+     * A write-only stream that pipelines its writes; use it instead of
+     * [openByteChannel]`.newOutputStream()` when the file is only written from start to end.
+     */
+    @Throws(ClientException::class)
+    fun openOutputStream(
+        path: Path,
+        flags: Set<OpenMode>,
+        attributes: FileAttributes
+    ): OutputStream {
+        val file = open(path, flags, attributes)
+        return NotifyEntryModifiedOutputStream(
+            PipelinedOutputStream(RemoteFileWriteTarget(file)),
+            path as Java8Path
+        )
     }
 
     @Throws(ClientException::class)
@@ -161,7 +190,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
     @Throws(ClientException::class)
     fun scandir(path: Path): List<Path> {
         val client = getClient(path.authority)
-        val files = try {
+        val files: List<RemoteResourceInfo> = try {
             client.ls(path.remotePath)
         } catch (e: IOException) {
             throw ClientException(e)
@@ -204,9 +233,14 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
 
     @Throws(ClientException::class)
     fun symlink(link: Path, target: String) {
-        val client = getClient(link.authority)
+        val authority = link.authority
+        val client = getClient(authority)
         try {
-            client.symlink(link.remotePath, target)
+            if (reversedSymlinkArguments[authority] == true) {
+                client.symlink(target, link.remotePath)
+            } else {
+                client.symlink(link.remotePath, target)
+            }
         } catch (e: IOException) {
             throw ClientException(e)
         }
@@ -227,7 +261,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
 
     @Throws(ClientException::class)
     private fun getClient(authority: Authority): SFTPClient {
-        synchronized(clients) {
+        synchronized(clientLocks.getOrPut(authority) { Any() }) {
             var client = clients[authority]
             if (client != null) {
                 if (client.sftpEngine.subsystem.isOpen) {
@@ -241,6 +275,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
                 ?: throw ClientException("No authentication found for $authority")
             val hostKeyVerifier =
                 TrustOnFirstUseHostKeyVerifier(authority.host, authority.port, hostKeyStore)
+            SecurityProviderHelper.ensureInitialized()
             val sshClient = SSHClient().apply { addHostKeyVerifier(hostKeyVerifier) }
             try {
                 sshClient.connect(authority.host, authority.port)
@@ -259,10 +294,21 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
                 sshClient.closeSafe()
                 throw ClientException(e)
             }
+            // OpenSSH reads the two paths of a symbolic link in the order opposite to the one
+            // the draft everything else here follows asks for, and says so in its own PROTOCOL
+            // file; sshj sends what the draft says. Almost every SFTP server is OpenSSH, and on
+            // one the link would otherwise be created where its target should be, pointing back
+            // at it.
+            reversedSymlinkArguments[authority] =
+                OPENSSH_IDENTIFICATION in sshClient.transport.serverVersion
             client = sshClient.newSFTPClient()
             clients[authority] = client
             return client
         }
+    }
+
+    private companion object {
+        const val OPENSSH_IDENTIFICATION = "OpenSSH"
     }
 
     interface Path {

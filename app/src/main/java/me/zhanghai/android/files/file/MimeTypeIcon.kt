@@ -39,7 +39,7 @@ enum class MimeTypeIcon(val resourceId: Int) {
 val MimeType.icon: MimeTypeIcon
     get() =
         mimeTypeToIconMap[this] ?: typeToIconMap[type] ?: suffix?.let { suffixToIconMap[it] }
-        ?: MimeTypeIcon.GENERIC
+            ?: MimeTypeIcon.GENERIC
 
 // See also https://mimesniff.spec.whatwg.org/#mime-type-groups
 private val mimeTypeToIconMap = mapOf(

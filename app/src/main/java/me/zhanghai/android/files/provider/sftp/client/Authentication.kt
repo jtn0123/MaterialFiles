@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.provider.sftp.client
 
 import android.os.Parcelable
+import java.io.IOException
 import kotlinx.parcelize.Parcelize
 import net.schmizz.sshj.DefaultConfig
 import net.schmizz.sshj.common.Factory
@@ -15,38 +16,32 @@ import net.schmizz.sshj.userauth.method.AuthMethod
 import net.schmizz.sshj.userauth.method.AuthPassword
 import net.schmizz.sshj.userauth.method.AuthPublickey
 import net.schmizz.sshj.userauth.password.PasswordUtils
-import java.io.IOException
 
 sealed class Authentication : Parcelable {
     abstract fun toAuthMethod(): AuthMethod
 }
 
 @Parcelize
-data class PasswordAuthentication(
-    val password: String
-) : Authentication() {
+data class PasswordAuthentication(val password: String) : Authentication() {
     override fun toAuthMethod(): AuthMethod =
         AuthPassword(PasswordUtils.createOneOff(password.toCharArray()))
 }
 
 @Parcelize
-data class PublicKeyAuthentication(
-    val privateKey: String,
-    val privateKeyPassword: String?
-) : Authentication() {
+data class PublicKeyAuthentication(val privateKey: String, val privateKeyPassword: String?) :
+    Authentication() {
     override fun toAuthMethod(): AuthMethod =
         AuthPublickey(createKeyProvider(privateKey, privateKeyPassword))
 
     companion object {
         private val KEY_PROVIDER_FACTORIES = DefaultConfig().fileKeyProviderFactories
 
-        fun validate(privateKey: String, privateKeyPassword: String?): IOException? =
-            try {
-                createKeyProvider(privateKey, privateKeyPassword).private
-                null
-            } catch (e: IOException) {
-                e
-            }
+        fun validate(privateKey: String, privateKeyPassword: String?): IOException? = try {
+            createKeyProvider(privateKey, privateKeyPassword).private
+            null
+        } catch (e: IOException) {
+            e
+        }
 
         /**
          * @see net.schmizz.sshj.SSHClient.loadKeys
@@ -60,7 +55,8 @@ data class PublicKeyAuthentication(
             val keyProvider = Factory.Named.Util.create(KEY_PROVIDER_FACTORIES, format.toString())
                 ?: throw IOException("No key provider factory found for $format")
             keyProvider.init(
-                privateKey, null,
+                privateKey,
+                null,
                 privateKeyPassword?.let { PasswordUtils.createOneOff(it.toCharArray()) }
             )
             return keyProvider

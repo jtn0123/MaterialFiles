@@ -19,14 +19,11 @@ abstract class SettingLiveData<T>(
     @StringRes keyRes: Int,
     keySuffix: String?,
     @AnyRes private val defaultValueRes: Int
-) : LiveData<T>(), OnSharedPreferenceChangeListener {
+) : LiveData<T>(),
+    OnSharedPreferenceChangeListener {
     private val sharedPreferences = getSharedPreferences(nameSuffix)
     private val key = getKey(keyRes, keySuffix)
     private var defaultValue: T? = null
-
-    constructor(@StringRes keyRes: Int, @AnyRes defaultValueRes: Int) : this(
-        null, keyRes, null, defaultValueRes
-    )
 
     protected fun init() {
         defaultValue = getDefaultValue(defaultValueRes)

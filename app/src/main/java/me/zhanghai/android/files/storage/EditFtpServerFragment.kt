@@ -11,12 +11,12 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.textfield.TextInputEditText
+import androidx.lifecycle.repeatOnLifecycle
 import java.net.URI
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -50,8 +50,10 @@ class EditFtpServerFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        lifecycleScope.launchWhenStarted {
-            launch { viewModel.connectState.collect { onConnectStateChanged(it) } }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.connectState.collect { onConnectStateChanged(it) }
+            }
         }
     }
 
@@ -66,19 +68,27 @@ class EditFtpServerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val activity = requireActivity() as AppCompatActivity
-        activity.lifecycleScope.launchWhenCreated {
-            activity.setSupportActionBar(binding.toolbar)
-            activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-            activity.setTitle(
-                if (args.server != null) {
-                    R.string.storage_edit_ftp_server_title_edit
-                } else {
-                    R.string.storage_edit_ftp_server_title_add
-                }
-            )
+        setUpServerFormToolbar(
+            binding.toolbar,
+            if (args.server != null) {
+                R.string.storage_edit_ftp_server_title_edit
+            } else {
+                R.string.storage_edit_ftp_server_title_add
+            }
+        )
+        setUpFields()
+        setUpButtons()
+        if (savedInstanceState == null) {
+            val server = args.server
+            if (server != null) {
+                fillIn(server)
+            } else {
+                args.host?.let { binding.hostEdit.setText(it) }
+            }
         }
+    }
 
+    private fun setUpFields() {
         binding.hostEdit.hideTextInputLayoutErrorOnTextChange(binding.hostLayout)
         binding.hostEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.portEdit.hideTextInputLayoutErrorOnTextChange(binding.portLayout)
@@ -126,6 +136,9 @@ class EditFtpServerFragment : Fragment() {
             )
         )
         encoding = Authority.DEFAULT_ENCODING
+    }
+
+    private fun setUpButtons() {
         binding.saveOrConnectAndAddButton.setText(
             if (args.server != null) {
                 R.string.save
@@ -151,38 +164,30 @@ class EditFtpServerFragment : Fragment() {
                 saveOrAdd()
             }
         }
+    }
 
-        if (savedInstanceState == null) {
-            val server = args.server
-            if (server != null) {
-                val authority = server.authority
-                binding.hostEdit.setText(authority.host)
-                protocol = authority.protocol
-                if (authority.port != protocol.defaultPort) {
-                    binding.portEdit.setText(authority.port.toString())
-                }
-                when {
-                    authority.username == Authority.ANONYMOUS_USERNAME &&
-                        server.password == Authority.ANONYMOUS_PASSWORD ->
-                        authenticationType = AuthenticationType.ANONYMOUS
+    private fun fillIn(server: FtpServer) {
+        val authority = server.authority
+        binding.hostEdit.setText(authority.host)
+        protocol = authority.protocol
+        if (authority.port != protocol.defaultPort) {
+            binding.portEdit.setText(authority.port.toString())
+        }
+        when {
+            authority.username == Authority.ANONYMOUS_USERNAME &&
+                server.password == Authority.ANONYMOUS_PASSWORD ->
+                authenticationType = AuthenticationType.ANONYMOUS
 
-                    else -> {
-                        authenticationType = AuthenticationType.PASSWORD
-                        binding.usernameEdit.setText(authority.username)
-                        binding.passwordEdit.setText(server.password)
-                    }
-                }
-                binding.pathEdit.setText(server.relativePath)
-                binding.nameEdit.setText(server.customName)
-                mode = authority.mode
-                encoding = authority.encoding
-            } else {
-                val host = args.host
-                if (host != null) {
-                    binding.hostEdit.setText(host)
-                }
+            else -> {
+                authenticationType = AuthenticationType.PASSWORD
+                binding.usernameEdit.setText(authority.username)
+                binding.passwordEdit.setText(server.password)
             }
         }
+        binding.pathEdit.setText(server.relativePath)
+        binding.nameEdit.setText(server.customName)
+        mode = authority.mode
+        encoding = authority.encoding
     }
 
     private fun updateNamePlaceholder() {
@@ -310,50 +315,36 @@ class EditFtpServerFragment : Fragment() {
     }
 
     private fun remove() {
-        Storages.remove(args.server!!)
+        Storages.remove(args.server ?: return)
         setResult(Activity.RESULT_OK)
         finish()
     }
 
     private fun getServerOrSetError(): FtpServer? {
-        var errorEdit: TextInputEditText? = null
-        val host = binding.hostEdit.text.toString().takeIfNotEmpty()
-            ?.let { URI::class.canonicalizeHost(it) }
-        if (host == null) {
-            binding.hostLayout.error = getString(R.string.storage_edit_ftp_server_host_error_empty)
-            if (errorEdit == null) {
-                errorEdit = binding.hostEdit
-            }
-        } else if (!URI::class.isValidHost(host)) {
-            binding.hostLayout.error =
-                getString(R.string.storage_edit_ftp_server_host_error_invalid)
-            if (errorEdit == null) {
-                errorEdit = binding.hostEdit
-            }
-        }
-        val port = binding.portEdit.text.toString().takeIfNotEmpty()
-            .let { if (it != null) it.toIntOrNull() else protocol.defaultPort }
-        if (port == null) {
-            binding.portLayout.error =
-                getString(R.string.storage_edit_ftp_server_port_error_invalid)
-            if (errorEdit == null) {
-                errorEdit = binding.portEdit
-            }
-        }
+        val errors = ServerFormErrors<ServerFormField>()
+        val host = errors.checkHost(
+            binding.hostEdit.text.toString(),
+            ServerFormField(binding.hostLayout, binding.hostEdit),
+            R.string.storage_edit_ftp_server_host_error_empty,
+            R.string.storage_edit_ftp_server_host_error_invalid
+        )
+        val port = errors.checkPort(
+            binding.portEdit.text.toString(),
+            protocol.defaultPort,
+            ServerFormField(binding.portLayout, binding.portEdit),
+            R.string.storage_edit_ftp_server_port_error_invalid
+        )
         val path = binding.pathEdit.text.toString().trim()
         val name = binding.nameEdit.text.toString().takeIfNotEmpty()
         val username: String?
         val password: String
         when (authenticationType) {
             AuthenticationType.PASSWORD -> {
-                username = binding.usernameEdit.text.toString().takeIfNotEmpty()
-                if (username == null) {
-                    binding.usernameLayout.error =
-                        getString(R.string.storage_edit_ftp_server_username_error_empty)
-                    if (errorEdit == null) {
-                        errorEdit = binding.usernameEdit
-                    }
-                }
+                username = errors.checkNotEmpty(
+                    binding.usernameEdit.text.toString(),
+                    ServerFormField(binding.usernameLayout, binding.usernameEdit),
+                    R.string.storage_edit_ftp_server_username_error_empty
+                )
                 password = binding.passwordEdit.text.toString()
             }
 
@@ -362,11 +353,10 @@ class EditFtpServerFragment : Fragment() {
                 password = Authority.ANONYMOUS_PASSWORD
             }
         }
-        if (errorEdit != null) {
-            errorEdit.requestFocus()
+        if (!errors.showOnForm() || host == null || port == null || username == null) {
             return null
         }
-        val authority = Authority(protocol, host!!, port!!, username!!, mode, encoding)
+        val authority = Authority(protocol, host, port, username, mode, encoding)
         return FtpServer(args.server?.id, name, authority, password, path)
     }
 

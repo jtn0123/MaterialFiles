@@ -7,13 +7,16 @@ package me.zhanghai.android.files.provider.remote
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.IOException
+import java.nio.ByteBuffer
 import java8.nio.channels.SeekableByteChannel
 import me.zhanghai.android.files.provider.common.ForceableChannel
 import me.zhanghai.android.files.provider.common.force
-import java.io.IOException
-import java.nio.ByteBuffer
 
-class RemoteSeekableByteChannel : ForceableChannel, SeekableByteChannel, Parcelable {
+class RemoteSeekableByteChannel :
+    ForceableChannel,
+    SeekableByteChannel,
+    Parcelable {
     private val localChannel: SeekableByteChannel?
     private val remoteChannel: IRemoteSeekableByteChannel?
 
@@ -26,39 +29,36 @@ class RemoteSeekableByteChannel : ForceableChannel, SeekableByteChannel, Parcela
     }
 
     @Throws(IOException::class)
-    override fun read(destination: ByteBuffer): Int =
-        if (remoteChannel != null) {
-            val destinationBytes = ByteArray(destination.remaining())
-            val size = remoteChannel.call { exception -> read(destinationBytes, exception) }
-            if (size > 0) {
-                destination.put(destinationBytes, 0, size)
-            }
-            size
-        } else {
-            localChannel!!.read(destination)
+    override fun read(destination: ByteBuffer): Int = if (remoteChannel != null) {
+        val destinationBytes = ByteArray(destination.remaining())
+        val size = remoteChannel.call { exception -> read(destinationBytes, exception) }
+        if (size > 0) {
+            destination.put(destinationBytes, 0, size)
         }
+        size
+    } else {
+        localChannel!!.read(destination)
+    }
 
     @Throws(IOException::class)
-    override fun write(source: ByteBuffer): Int =
-        if (remoteChannel != null) {
-            val oldPosition = source.position()
-            val sourceBytes = ByteArray(source.remaining())
-            source.get(sourceBytes)
-            source.position(oldPosition)
-            val size = remoteChannel.call { exception -> write(sourceBytes, exception) }
-            source.position(oldPosition + size)
-            size
-        } else {
-            localChannel!!.write(source)
-        }
+    override fun write(source: ByteBuffer): Int = if (remoteChannel != null) {
+        val oldPosition = source.position()
+        val sourceBytes = ByteArray(source.remaining())
+        source.get(sourceBytes)
+        source.position(oldPosition)
+        val size = remoteChannel.call { exception -> write(sourceBytes, exception) }
+        source.position(oldPosition + size)
+        size
+    } else {
+        localChannel!!.write(source)
+    }
 
     @Throws(IOException::class)
-    override fun position(): Long =
-        if (remoteChannel != null) {
-            remoteChannel.call { exception -> position(exception) }
-        } else {
-            localChannel!!.position()
-        }
+    override fun position(): Long = if (remoteChannel != null) {
+        remoteChannel.call { exception -> position(exception) }
+    } else {
+        localChannel!!.position()
+    }
 
     @Throws(IOException::class)
     override fun position(newPosition: Long): SeekableByteChannel {
@@ -71,12 +71,11 @@ class RemoteSeekableByteChannel : ForceableChannel, SeekableByteChannel, Parcela
     }
 
     @Throws(IOException::class)
-    override fun size(): Long =
-        if (remoteChannel != null) {
-            remoteChannel.call { exception -> size(exception) }
-        } else {
-            localChannel!!.size()
-        }
+    override fun size(): Long = if (remoteChannel != null) {
+        remoteChannel.call { exception -> size(exception) }
+    } else {
+        localChannel!!.size()
+    }
 
     @Throws(IOException::class)
     override fun truncate(size: Long): SeekableByteChannel {
@@ -97,12 +96,11 @@ class RemoteSeekableByteChannel : ForceableChannel, SeekableByteChannel, Parcela
         }
     }
 
-    override fun isOpen(): Boolean =
-        if (remoteChannel != null) {
-            !isRemoteClosed
-        } else {
-            localChannel!!.isOpen
-        }
+    override fun isOpen(): Boolean = if (remoteChannel != null) {
+        !isRemoteClosed
+    } else {
+        localChannel!!.isOpen
+    }
 
     @Throws(IOException::class)
     override fun close() {
@@ -114,9 +112,8 @@ class RemoteSeekableByteChannel : ForceableChannel, SeekableByteChannel, Parcela
         }
     }
 
-    private class Stub(
-        private val channel: SeekableByteChannel
-    ) : IRemoteSeekableByteChannel.Stub() {
+    private class Stub(private val channel: SeekableByteChannel) :
+        IRemoteSeekableByteChannel.Stub() {
         override fun read(destination: ByteArray, exception: ParcelableException): Int =
             tryRun(exception) { channel.read(ByteBuffer.wrap(destination)) } ?: 0
 

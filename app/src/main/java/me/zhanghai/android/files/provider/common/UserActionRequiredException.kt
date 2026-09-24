@@ -18,8 +18,4 @@ abstract class UserActionRequiredException : FileSystemException {
     abstract fun getUserAction(continuation: Continuation<Boolean>, context: Context): UserAction
 }
 
-class UserAction(
-    val intent: Intent,
-    val title: String,
-    val message: String?
-)
+class UserAction(val intent: Intent, val title: String, val message: String?)

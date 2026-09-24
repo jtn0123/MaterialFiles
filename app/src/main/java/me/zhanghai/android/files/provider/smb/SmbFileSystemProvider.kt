@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.smb
 
+import android.net.Uri
 import com.hierynomus.msdtyp.AccessMask
 import java.io.IOException
 import java.net.URI
@@ -35,6 +36,8 @@ import me.zhanghai.android.files.provider.common.Searchable
 import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
 import me.zhanghai.android.files.provider.common.WatchServicePathObservable
 import me.zhanghai.android.files.provider.common.decodedPathByteString
+import me.zhanghai.android.files.provider.common.decodedQueryByteString
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.common.toCopyOptions
@@ -122,7 +125,10 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
                 username = userInfo
                 domain = null
             }
-            return Authority(host, port, username, domain)
+            val encrypt = decodedQueryByteString?.toString()
+                ?.let { Uri.parse("?$it").getQueryParameter(SmbPath.QUERY_PARAMETER_ENCRYPT) }
+                ?.toBoolean() ?: Authority.DEFAULT_ENCRYPT
+            return Authority(host, port, username, domain, encrypt)
         }
 
     @Throws(IOException::class)
@@ -131,7 +137,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): FileChannel {
-        file as? SmbPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<SmbPath>(file)
         throw UnsupportedOperationException()
     }
 
@@ -141,7 +147,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): SeekableByteChannel {
-        file as? SmbPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<SmbPath>(file)
         val openOptions = options.toOpenOptions()
         val desiredAccess = openOptions.toSmbDesiredAccess()
         val fileAttributes = openOptions.toSmbFileAttributes()
@@ -171,7 +177,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         directory: Path,
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
-        directory as? SmbPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<SmbPath>(directory)
         val iterator = try {
             @Suppress("UNCHECKED_CAST")
             client.openDirectoryIterator(directory) as CloseableIterator<Path>
@@ -183,7 +189,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
 
     @Throws(IOException::class)
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
-        directory as? SmbPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<SmbPath>(directory)
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
         }
@@ -195,7 +201,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
-        link as? SmbPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<SmbPath>(link)
         val targetString: String
         val isRelative: Boolean
         when (target) {
@@ -233,8 +239,8 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     override fun createLink(link: Path, existing: Path) {
-        link as? SmbPath ?: throw ProviderMismatchException(link.toString())
-        existing as? SmbPath ?: throw ProviderMismatchException(existing.toString())
+        requireProviderPath<SmbPath>(link)
+        requireProviderPath<SmbPath>(existing)
         try {
             client.createLink(existing, link, true)
         } catch (e: ClientException) {
@@ -245,7 +251,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
 
     @Throws(IOException::class)
     override fun delete(path: Path) {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         try {
             client.delete(path)
         } catch (e: ClientException) {
@@ -254,7 +260,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     override fun readSymbolicLink(link: Path): Path {
-        link as? SmbPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<SmbPath>(link)
         val reparseData = try {
             client.readSymbolicLink(link)
         } catch (e: ClientException) {
@@ -266,22 +272,22 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
 
     @Throws(IOException::class)
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        source as? SmbPath ?: throw ProviderMismatchException(source.toString())
-        target as? SmbPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<SmbPath>(source)
+        requireProviderPath<SmbPath>(target)
         val copyOptions = options.toCopyOptions()
         SmbCopyMove.copy(source, target, copyOptions)
     }
 
     @Throws(IOException::class)
     override fun move(source: Path, target: Path, vararg options: CopyOption) {
-        source as? SmbPath ?: throw ProviderMismatchException(source.toString())
-        target as? SmbPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<SmbPath>(source)
+        requireProviderPath<SmbPath>(target)
         val copyOptions = options.toCopyOptions()
         SmbCopyMove.move(source, target, copyOptions)
     }
 
     override fun isSameFile(path: Path, path2: Path): Boolean {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         if (path == path2) {
             return true
         }
@@ -315,19 +321,19 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     override fun isHidden(path: Path): Boolean {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         val fileName = path.fileNameByteString ?: return false
         return fileName.startsWith(HIDDEN_FILE_NAME_PREFIX)
     }
 
     override fun getFileStore(path: Path): FileStore {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         val accessModes = modes.toAccessModes()
         val desiredAccess = enumSetOf<AccessMask>()
         if (accessModes.read) {
@@ -375,7 +381,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     private fun getFileAttributeView(path: Path, vararg options: LinkOption): SmbFileAttributeView {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         val linkOptions = options.toLinkOptions()
         return SmbFileAttributeView(path, linkOptions.noFollowLinks)
     }
@@ -385,7 +391,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any> {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -395,13 +401,13 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         value: Any,
         vararg options: LinkOption
     ) {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
-        path as? SmbPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<SmbPath>(path)
         return WatchServicePathObservable(path, intervalMillis)
     }
 
@@ -412,7 +418,7 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         intervalMillis: Long,
         listener: (List<Path>) -> Unit
     ) {
-        directory as? SmbPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<SmbPath>(directory)
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 }

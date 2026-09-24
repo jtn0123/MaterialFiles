@@ -8,6 +8,7 @@ package me.zhanghai.android.files.filelist
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.MenuItem
+import androidx.annotation.StringRes
 import androidx.core.view.isVisible
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.navigation.NavigationRootMapLiveData
@@ -39,7 +40,12 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
         get() = fragment.binding
 
     fun onViewCreated(binding: FileListBinding) {
-        overlayActionMode = OverlayToolbarActionMode(binding.overlayToolbar)
+        overlayActionMode =
+            OverlayToolbarActionMode(
+                binding.overlayToolbar,
+                binding.overlayToolbar,
+                binding.toolbar
+            )
         bottomActionMode = PersistentBarLayoutToolbarActionMode(
             binding.persistentBarLayout,
             binding.bottomBarLayout,
@@ -107,6 +113,7 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
             val menu = overlayActionMode.menu
             val isAnyFileReadOnly = files.any { it.path.fileSystem.isReadOnly }
             menu.findItem(R.id.action_cut).isVisible = !isAnyFileReadOnly
+            menu.findItem(R.id.action_select_range).isVisible = files.size >= 2
             val areAllFilesArchivePaths = files.all { it.path.isArchivePath }
             menu.findItem(R.id.action_copy)
                 .setIcon(
@@ -195,6 +202,11 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
                 true
             }
 
+            R.id.action_select_range -> {
+                fragment.adapter.selectFileRange()
+                true
+            }
+
             else -> false
         }
     }
@@ -213,83 +225,16 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
 
     fun updateBottomToolbar() {
         val pickOptions = viewModel.pickOptions
-        if (pickOptions != null) {
-            bottomActionMode.setMenuResource(R.menu.file_list_pick_bottom)
-            val menu = bottomActionMode.menu
-            when (pickOptions.mode) {
-                PickOptions.Mode.CREATE_FILE -> {
-                    bottomActionMode.title = null
-                    binding.bottomCreateFileNameEdit.isVisible = true
-                    val createMenuItem = menu.findItem(R.id.action_create)
-                    binding.bottomCreateFileNameEdit.setOnEditorConfirmActionListener {
-                        onBottomActionModeMenuItemClicked(createMenuItem)
-                    }
-                    if (!viewModel.isCreateFileNameEditInitialized) {
-                        val fileName = pickOptions.fileName!!
-                        binding.bottomCreateFileNameEdit.setText(fileName)
-                        binding.bottomCreateFileNameEdit.setSelection(
-                            0,
-                            fileName.asFileName().baseName.length
-                        )
-                        binding.bottomCreateFileNameEdit.requestFocus()
-                        viewModel.isCreateFileNameEditInitialized = true
-                    }
-                    menu.findItem(R.id.action_open).isVisible = false
-                    createMenuItem.isVisible = true
-                }
-
-                PickOptions.Mode.OPEN_DIRECTORY -> {
-                    val path = viewModel.currentPath
-                    val navigationRoot = NavigationRootMapLiveData.valueCompat[path]
-                    val name = navigationRoot?.getName(fragment.requireContext()) ?: path.name
-                    bottomActionMode.title =
-                        fragment.getString(R.string.file_list_open_current_directory_format, name)
-                    binding.bottomCreateFileNameEdit.isVisible = false
-                    menu.findItem(R.id.action_open).isVisible = true
-                    menu.findItem(R.id.action_create).isVisible = false
-                }
-
-                else -> {
-                    if (bottomActionMode.isActive) {
-                        bottomActionMode.finish()
-                    }
-                    return
-                }
-            }
+        val isShown = if (pickOptions != null) {
+            updatePickBottomToolbar(pickOptions)
         } else {
-            val pasteState = viewModel.pasteState
-            val files = pasteState.files
-            if (files.isEmpty()) {
-                if (bottomActionMode.isActive) {
-                    bottomActionMode.finish()
-                }
-                return
+            updatePasteBottomToolbar()
+        }
+        if (!isShown) {
+            if (bottomActionMode.isActive) {
+                bottomActionMode.finish()
             }
-            val areAllFilesArchivePaths = files.all { it.path.isArchivePath }
-            bottomActionMode.title = fragment.getString(
-                if (pasteState.copy) {
-                    if (areAllFilesArchivePaths) {
-                        R.string.file_list_paste_extract_title_format
-                    } else {
-                        R.string.file_list_paste_copy_title_format
-                    }
-                } else {
-                    R.string.file_list_paste_move_title_format
-                },
-                files.size
-            )
-            binding.bottomCreateFileNameEdit.isVisible = false
-            bottomActionMode.setMenuResource(R.menu.file_list_paste)
-            val isCurrentPathReadOnly = viewModel.currentPath.fileSystem.isReadOnly
-            bottomActionMode.menu.findItem(R.id.action_paste)
-                .setTitle(
-                    if (areAllFilesArchivePaths) {
-                        R.string.file_list_paste_action_extract_here
-                    } else {
-                        R.string.paste
-                    }
-                )
-                .isEnabled = !isCurrentPathReadOnly
+            return
         }
         if (!bottomActionMode.isActive) {
             bottomActionMode.start(object : ToolbarActionMode.Callback {
@@ -307,6 +252,78 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
                 }
             })
         }
+    }
+
+    /** Returns whether the bottom toolbar has anything to show for [pickOptions]. */
+    private fun updatePickBottomToolbar(pickOptions: PickOptions): Boolean {
+        bottomActionMode.setMenuResource(R.menu.file_list_pick_bottom)
+        val menu = bottomActionMode.menu
+        when (pickOptions.mode) {
+            PickOptions.Mode.CREATE_FILE -> {
+                bottomActionMode.title = null
+                binding.bottomCreateFileNameEdit.isVisible = true
+                val createMenuItem = menu.findItem(R.id.action_create)
+                binding.bottomCreateFileNameEdit.setOnEditorConfirmActionListener {
+                    onBottomActionModeMenuItemClicked(createMenuItem)
+                }
+                initializeCreateFileNameEdit(pickOptions)
+                menu.findItem(R.id.action_open).isVisible = false
+                createMenuItem.isVisible = true
+            }
+
+            PickOptions.Mode.OPEN_DIRECTORY -> {
+                val path = viewModel.currentPath
+                val navigationRoot = NavigationRootMapLiveData.valueCompat[path]
+                val name = navigationRoot?.getName(fragment.requireContext()) ?: path.name
+                bottomActionMode.title =
+                    fragment.getString(R.string.file_list_open_current_directory_format, name)
+                binding.bottomCreateFileNameEdit.isVisible = false
+                menu.findItem(R.id.action_open).isVisible = true
+                menu.findItem(R.id.action_create).isVisible = false
+            }
+
+            else -> return false
+        }
+        return true
+    }
+
+    /** Fills in the name asked for, once, so that the user's edits survive later updates. */
+    private fun initializeCreateFileNameEdit(pickOptions: PickOptions) {
+        if (viewModel.isCreateFileNameEditInitialized) {
+            return
+        }
+        val fileName = pickOptions.fileName!!
+        binding.bottomCreateFileNameEdit.setText(fileName)
+        binding.bottomCreateFileNameEdit.setSelection(0, fileName.asFileName().baseName.length)
+        binding.bottomCreateFileNameEdit.requestFocus()
+        viewModel.isCreateFileNameEditInitialized = true
+    }
+
+    /** Returns whether there are files to paste, for the bottom toolbar to show. */
+    private fun updatePasteBottomToolbar(): Boolean {
+        val pasteState = viewModel.pasteState
+        val files = pasteState.files
+        if (files.isEmpty()) {
+            return false
+        }
+        val areAllFilesArchivePaths = files.all { it.path.isArchivePath }
+        bottomActionMode.title = fragment.getString(
+            getPasteTitleRes(pasteState.copy, areAllFilesArchivePaths),
+            files.size
+        )
+        binding.bottomCreateFileNameEdit.isVisible = false
+        bottomActionMode.setMenuResource(R.menu.file_list_paste)
+        val isCurrentPathReadOnly = viewModel.currentPath.fileSystem.isReadOnly
+        bottomActionMode.menu.findItem(R.id.action_paste)
+            .setTitle(
+                if (areAllFilesArchivePaths) {
+                    R.string.file_list_paste_action_extract_here
+                } else {
+                    R.string.paste
+                }
+            )
+            .isEnabled = !isCurrentPathReadOnly
+        return true
     }
 
     private fun onBottomToolbarNavigationIconClicked() {
@@ -356,4 +373,12 @@ internal class FileListActionModes(private val fragment: FileListFragment) {
             viewModel.clearPasteState()
         }
     }
+}
+
+/** Copying out of an archive is extracting, and says so. */
+@StringRes
+internal fun getPasteTitleRes(isCopy: Boolean, areAllFilesArchivePaths: Boolean): Int = when {
+    !isCopy -> R.string.file_list_paste_move_title_format
+    areAllFilesArchivePaths -> R.string.file_list_paste_extract_title_format
+    else -> R.string.file_list_paste_copy_title_format
 }

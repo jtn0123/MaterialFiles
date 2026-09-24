@@ -7,6 +7,8 @@ package me.zhanghai.android.files.provider.sftp
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.File
+import java.io.IOException
 import java8.nio.file.FileSystem
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
@@ -21,10 +23,10 @@ import me.zhanghai.android.files.provider.common.UriAuthority
 import me.zhanghai.android.files.provider.sftp.client.Authority
 import me.zhanghai.android.files.provider.sftp.client.Client
 import me.zhanghai.android.files.util.readParcelable
-import java.io.File
-import java.io.IOException
 
-internal class SftpPath : ByteStringListPath<SftpPath>, Client.Path {
+internal class SftpPath :
+    ByteStringListPath<SftpPath>,
+    Client.Path {
     private val fileSystem: SftpFileSystem
 
     constructor(
@@ -61,13 +63,10 @@ internal class SftpPath : ByteStringListPath<SftpPath>, Client.Path {
     override fun getRoot(): SftpPath? = if (isAbsolute) fileSystem.rootDirectory else null
 
     @Throws(IOException::class)
-    override fun toRealPath(vararg options: LinkOption): SftpPath {
+    override fun toRealPath(vararg options: LinkOption): SftpPath =
         throw UnsupportedOperationException()
-    }
 
-    override fun toFile(): File {
-        throw UnsupportedOperationException()
-    }
+    override fun toFile(): File = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun register(

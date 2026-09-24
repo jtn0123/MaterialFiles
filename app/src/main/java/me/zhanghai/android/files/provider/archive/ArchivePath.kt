@@ -7,6 +7,8 @@ package me.zhanghai.android.files.provider.archive
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.File
+import java.io.IOException
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
 import java8.nio.file.WatchEvent
@@ -17,14 +19,15 @@ import me.zhanghai.android.files.provider.common.ByteStringListPath
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.root.RootablePath
 import me.zhanghai.android.files.util.readParcelable
-import java.io.File
-import java.io.IOException
 
-internal class ArchivePath : ByteStringListPath<ArchivePath>, RootablePath {
+internal class ArchivePath :
+    ByteStringListPath<ArchivePath>,
+    RootablePath {
     private val fileSystem: ArchiveFileSystem
 
     constructor(fileSystem: ArchiveFileSystem, path: ByteString) : super(
-        ArchiveFileSystem.SEPARATOR, path
+        ArchiveFileSystem.SEPARATOR,
+        path
     ) {
         this.fileSystem = fileSystem
     }
@@ -61,22 +64,17 @@ internal class ArchivePath : ByteStringListPath<ArchivePath>, RootablePath {
     override fun getRoot(): ArchivePath? = if (isAbsolute) fileSystem.rootDirectory else null
 
     @Throws(IOException::class)
-    override fun toRealPath(vararg options: LinkOption): ArchivePath {
+    override fun toRealPath(vararg options: LinkOption): ArchivePath =
         throw UnsupportedOperationException()
-    }
 
-    override fun toFile(): File {
-        throw UnsupportedOperationException()
-    }
+    override fun toFile(): File = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun register(
         watcher: WatchService,
         events: Array<WatchEvent.Kind<*>>,
         vararg modifiers: WatchEvent.Modifier
-    ): WatchKey {
-        throw UnsupportedOperationException()
-    }
+    ): WatchKey = throw UnsupportedOperationException()
 
     override fun isRootRequired(isAttributeAccess: Boolean): Boolean {
         val archiveFile = fileSystem.archiveFile

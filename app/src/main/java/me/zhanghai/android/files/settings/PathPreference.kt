@@ -14,16 +14,16 @@ import androidx.annotation.StyleRes
 import androidx.core.content.res.TypedArrayUtils
 import androidx.core.content.res.use
 import androidx.preference.Preference
-import com.takisoft.preferencex.PreferenceActivityResultListener
-import com.takisoft.preferencex.PreferenceFragmentCompat
 import java8.nio.file.Path
 import me.zhanghai.android.files.filelist.FileListActivity
 import me.zhanghai.android.files.filelist.toUserFriendlyString
 import me.zhanghai.android.files.navigation.NavigationRootMapLiveData
-import me.zhanghai.android.files.util.startActivityForResultSafe
+import me.zhanghai.android.files.ui.ActivityResultPreference
 import me.zhanghai.android.files.util.valueCompat
 
-abstract class PathPreference : Preference, PreferenceActivityResultListener {
+abstract class PathPreference :
+    Preference,
+    ActivityResultPreference {
     private val openPathContract = FileListActivity.OpenDirectoryContract()
 
     var path: Path = persistedPath
@@ -44,12 +44,6 @@ abstract class PathPreference : Preference, PreferenceActivityResultListener {
         init(attrs, 0, 0)
     }
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    ) {
-        init(attrs, defStyleAttr, 0)
-    }
-
     constructor(
         context: Context,
         attrs: AttributeSet?,
@@ -63,43 +57,38 @@ abstract class PathPreference : Preference, PreferenceActivityResultListener {
     private fun init(attrs: AttributeSet?, @AttrRes defStyleAttr: Int, @StyleRes defStyleRes: Int) {
         isPersistent = false
         context.obtainStyledAttributes(
-            attrs, androidx.preference.R.styleable.EditTextPreference, defStyleAttr, defStyleRes
+            attrs,
+            androidx.preference.R.styleable.EditTextPreference,
+            defStyleAttr,
+            defStyleRes
         ).use {
             if (TypedArrayUtils.getBoolean(
-                it, androidx.preference.R.styleable.EditTextPreference_useSimpleSummaryProvider,
-                androidx.preference.R.styleable.EditTextPreference_useSimpleSummaryProvider, false
-            )) {
+                    it,
+                    androidx.preference.R.styleable.EditTextPreference_useSimpleSummaryProvider,
+                    androidx.preference.R.styleable.EditTextPreference_useSimpleSummaryProvider,
+                    false
+                )
+            ) {
                 summaryProvider = SimpleSummaryProvider
             }
         }
     }
 
-    override fun onPreferenceClick(fragment: PreferenceFragmentCompat, preference: Preference) {
-        fragment.startActivityForResultSafe(
-            openPathContract.createIntent(fragment.requireContext(), path), requestCode
-        )
-    }
+    override fun createIntent(context: Context): Intent =
+        openPathContract.createIntent(context, path)
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == this.requestCode) {
-            val result = openPathContract.parseResult(resultCode, data)
-            if (result != null) {
-                path = result
-            }
-        }
+    override fun onActivityResult(resultCode: Int, data: Intent?) {
+        openPathContract.parseResult(resultCode, data)?.let { path = it }
     }
-
-    private val requestCode: Int
-        // @see FragmentActivity#checkForValidRequestCode()
-        get() = key.hashCode() and 0x0000FFFF
 
     protected abstract var persistedPath: Path
 
-    object SimpleSummaryProvider : SummaryProvider<PathPreference> {
-        override fun provideSummary(preference: PathPreference): CharSequence? {
+    companion object {
+        /** Shows the navigation root name for the path, or the path itself. */
+        val SimpleSummaryProvider = SummaryProvider<PathPreference> { preference ->
             val path = preference.path
             val navigationRoot = NavigationRootMapLiveData.valueCompat[path]
-            return navigationRoot?.getName(preference.context) ?: path.toUserFriendlyString()
+            navigationRoot?.getName(preference.context) ?: path.toUserFriendlyString()
         }
     }
 }

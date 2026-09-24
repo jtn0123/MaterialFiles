@@ -12,8 +12,10 @@ import android.widget.Checkable
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
 
-open class CheckableView : View, Checkable {
-    private var _isChecked = false
+open class CheckableView :
+    View,
+    Checkable {
+    private var checkedState = false
         set(value) {
             if (field == value) {
                 return
@@ -26,10 +28,6 @@ open class CheckableView : View, Checkable {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    )
-
     constructor(
         context: Context,
         attrs: AttributeSet?,
@@ -37,21 +35,21 @@ open class CheckableView : View, Checkable {
         @StyleRes defStyleRes: Int
     ) : super(context, attrs, defStyleAttr, defStyleRes)
 
-    override fun isChecked(): Boolean = _isChecked
+    override fun isChecked(): Boolean = checkedState
 
     override fun setChecked(checked: Boolean) {
-        _isChecked = checked
+        checkedState = checked
         refreshDrawableState()
     }
 
     override fun toggle() {
-        _isChecked = !_isChecked
+        checkedState = !checkedState
         refreshDrawableState()
     }
 
     override fun onCreateDrawableState(extraSpace: Int): IntArray =
         super.onCreateDrawableState(extraSpace + 1).apply {
-            if (_isChecked) {
+            if (checkedState) {
                 mergeDrawableStates(this, CHECKED_STATE_SET)
             }
         }

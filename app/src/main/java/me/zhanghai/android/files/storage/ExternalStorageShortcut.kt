@@ -8,13 +8,13 @@ package me.zhanghai.android.files.storage
 import android.content.Context
 import android.content.Intent
 import java8.nio.file.Path
+import kotlin.random.Random
 import kotlinx.parcelize.Parcelize
 import me.zhanghai.android.files.file.ExternalStorageUri
 import me.zhanghai.android.files.file.displayName
 import me.zhanghai.android.files.util.createDocumentsUiViewDirectoryIntent
 import me.zhanghai.android.files.util.createIntent
 import me.zhanghai.android.files.util.putArgs
-import kotlin.random.Random
 
 @Parcelize
 data class ExternalStorageShortcut(

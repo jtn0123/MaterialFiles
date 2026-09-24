@@ -11,10 +11,10 @@ import android.util.AttributeSet
 import android.widget.FrameLayout
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
+import kotlin.math.roundToInt
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.obtainStyledAttributesCompat
 import me.zhanghai.android.files.compat.use
-import kotlin.math.roundToInt
 
 class AspectRatioFrameLayout @JvmOverloads constructor(
     context: Context,
@@ -24,7 +24,10 @@ class AspectRatioFrameLayout @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr, defStyleRes) {
     @SuppressLint("RestrictedApi")
     var ratio: Float = context.obtainStyledAttributesCompat(
-        attrs, R.styleable.AspectRatioFrameLayout, defStyleAttr, defStyleRes
+        attrs,
+        R.styleable.AspectRatioFrameLayout,
+        defStyleAttr,
+        defStyleRes
     ).use { it.getFloat(R.styleable.AspectRatioFrameLayout_aspectRatio, 0f) }
         set(value) {
             if (field == value) {

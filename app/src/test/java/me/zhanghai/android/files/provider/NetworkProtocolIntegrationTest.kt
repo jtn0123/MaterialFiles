@@ -3,6 +3,7 @@ package me.zhanghai.android.files.provider
 import com.sun.net.httpserver.HttpServer
 import java.io.IOException
 import java.net.InetSocketAddress
+import me.zhanghai.android.files.provider.smb.client.Client as SmbClient
 import me.zhanghai.android.files.provider.smb.client.getDiskShare
 import me.zhanghai.android.files.provider.smb.client.getSession
 import me.zhanghai.android.files.provider.webdav.client.AccessTokenAuthentication
@@ -110,8 +111,78 @@ class NetworkProtocolIntegrationTest {
                 assertEquals("SMB round trip", String(read))
             }
         } finally {
-            client.client.close()
+            client.clientFor(authority).close()
         }
+    }
+
+    @Test fun smbStartsOverWhenTheServerForgetsTheTreeAndReadsThroughTheChannel() {
+        val port = System.getProperty("material.smb.port")
+        val container = System.getProperty("material.smb.container")
+        assumeNotNull("Run tools/network-tests.py to provision the SMB fixture", port, container)
+        val client = me.zhanghai.android.files.provider.smb.client.Client(
+            object : me.zhanghai.android.files.provider.smb.client.Authenticator {
+                override fun getPassword(
+                    authority: me.zhanghai.android.files.provider.smb.client.Authority
+                ) = "test-only"
+            }
+        )
+        val authority = me.zhanghai.android.files.provider.smb.client.Authority(
+            "127.0.0.1",
+            port!!.toInt(),
+            "test",
+            null
+        )
+        val path = SmbPath(authority, SmbClient.Path.SharePath("test", "hello.txt"))
+        try {
+            client.getPathInformation(path, true)
+            val session = client.getSession(authority)
+            // The server tears the tree down while the connection and SMBJ's cached tree stay, so
+            // the next request through them gets STATUS_NETWORK_NAME_DELETED.
+            execInContainer(container!!, "smbcontrol", "smbd", "close-share", "test")
+            val deadline = System.nanoTime() + 10_000_000_000
+            while (execInContainer(container, "smbstatus", "-S").lines()
+                    .any { it.startsWith("test ") }
+            ) {
+                assertTrue("close-share did not take effect", System.nanoTime() < deadline)
+                Thread.sleep(100)
+            }
+            assertEquals(
+                6L,
+                client.getPathInformation(path, true).let {
+                    (it as me.zhanghai.android.files.provider.smb.client.FileInformation).endOfFile
+                }
+            )
+            assertTrue(client.getSession(authority) !== session)
+            val channel = client.openByteChannel(
+                path,
+                setOf(com.hierynomus.msdtyp.AccessMask.GENERIC_READ),
+                java.util.EnumSet.noneOf(com.hierynomus.msfscc.FileAttributes::class.java),
+                com.hierynomus.mssmb2.SMB2ShareAccess.ALL,
+                com.hierynomus.mssmb2.SMB2CreateDisposition.FILE_OPEN,
+                java.util.EnumSet.noneOf(com.hierynomus.mssmb2.SMB2CreateOptions::class.java),
+                false
+            )
+            val content = channel.use { java.nio.channels.Channels.newInputStream(it).readBytes() }
+            assertEquals("hello\n", String(content))
+        } finally {
+            client.clientFor(authority).close()
+        }
+    }
+
+    private fun execInContainer(container: String, vararg command: String): String {
+        val process = ProcessBuilder("docker", "exec", container, *command)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        assertEquals(output, 0, process.waitFor())
+        return output
+    }
+
+    private data class SmbPath(
+        override val authority: me.zhanghai.android.files.provider.smb.client.Authority,
+        override val sharePath: SmbClient.Path.SharePath?
+    ) : SmbClient.Path {
+        override fun resolve(other: String): SmbClient.Path = throw UnsupportedOperationException()
     }
 
     private data class DavPath(override val authority: Authority, override val url: HttpUrl) :

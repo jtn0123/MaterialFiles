@@ -17,10 +17,6 @@ class FixQueryChangeSearchView : FixLayoutSearchView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    )
-
     override fun setIconified(iconify: Boolean) {
         shouldIgnoreQueryChange = true
         super.setIconified(iconify)

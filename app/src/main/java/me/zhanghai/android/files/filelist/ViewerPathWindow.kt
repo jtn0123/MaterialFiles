@@ -20,30 +20,53 @@ fun <T> windowWithinBudget(
     cost: (T) -> Int
 ): Pair<List<T>, Int> {
     require(position in items.indices) { "position $position not in ${items.indices}" }
-    var start = position
-    var end = position + 1
-    var total = cost(items[position])
+    val window = BudgetWindow(items, position, budget, cost)
     var canGrowStart = true
     var canGrowEnd = true
     while (canGrowStart || canGrowEnd) {
-        if (canGrowEnd) {
-            val itemCost = if (end < items.size) cost(items[end]) else null
-            if (itemCost != null && total + itemCost <= budget) {
-                total += itemCost
-                ++end
-            } else {
-                canGrowEnd = false
-            }
-        }
-        if (canGrowStart) {
-            val itemCost = if (start > 0) cost(items[start - 1]) else null
-            if (itemCost != null && total + itemCost <= budget) {
-                total += itemCost
-                --start
-            } else {
-                canGrowStart = false
-            }
-        }
+        canGrowEnd = canGrowEnd && window.growEnd()
+        canGrowStart = canGrowStart && window.growStart()
     }
-    return items.subList(start, end) to position - start
+    return items.subList(window.start, window.end) to position - window.start
+}
+
+/** The window `[start, end)` of [items] around a position, and what it costs so far. */
+private class BudgetWindow<T>(
+    private val items: List<T>,
+    position: Int,
+    private val budget: Int,
+    private val cost: (T) -> Int
+) {
+    var start = position
+        private set
+    var end = position + 1
+        private set
+    private var total = cost(items[position])
+
+    /** Adds the item after the window if it is within the budget, and returns whether it was. */
+    fun growEnd(): Boolean {
+        if (end == items.size || !fits(items[end])) {
+            return false
+        }
+        ++end
+        return true
+    }
+
+    /** Adds the item before the window if it is within the budget, and returns whether it was. */
+    fun growStart(): Boolean {
+        if (start == 0 || !fits(items[start - 1])) {
+            return false
+        }
+        --start
+        return true
+    }
+
+    private fun fits(item: T): Boolean {
+        val itemCost = cost(item)
+        if (total + itemCost > budget) {
+            return false
+        }
+        total += itemCost
+        return true
+    }
 }

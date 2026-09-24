@@ -14,6 +14,7 @@ var FrameLayout.foregroundCompat: Drawable?
     // because both are classes and invoke-virtual works for both.
     @SuppressLint("NewApi")
     get() = foreground
+
     @SuppressLint("NewApi")
     set(value) {
         foreground = value

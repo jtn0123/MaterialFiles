@@ -49,7 +49,10 @@ class EditDeviceStorageDialogFragment : AppCompatDialogFragment() {
             ) { _, _ -> toggleVisibility() }
             .create()
             .apply {
-                window!!.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+                window?.setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE or
+                        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
+                )
             }
     }
 

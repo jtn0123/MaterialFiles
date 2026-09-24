@@ -27,17 +27,21 @@ import me.zhanghai.android.files.util.getArgsOrNull
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.startActivitySafe
 
-class SettingsActivity : AppActivity(), OnThemeChangedListener, OnNightModeChangedListener {
+class SettingsActivity :
+    AppActivity(),
+    OnThemeChangedListener,
+    OnNightModeChangedListener {
     private var isRestarting = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val args = intent.extras?.getArgsOrNull<Args>()
-        val savedInstanceState = savedInstanceState ?: args?.savedInstanceState
-        super.onCreate(savedInstanceState)
+        // A restart for a theme, night mode or locale change carries the state in its arguments.
+        val restoredState = savedInstanceState ?: args?.savedInstanceState
+        super.onCreate(restoredState)
 
         // Calls ensureSubDecor().
         findViewById<View>(android.R.id.content)
-        if (savedInstanceState == null) {
+        if (restoredState == null) {
             supportFragmentManager.commit { add<SettingsFragment>(android.R.id.content) }
         }
     }
@@ -74,26 +78,21 @@ class SettingsActivity : AppActivity(), OnThemeChangedListener, OnNightModeChang
         isRestarting = true
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        return isRestarting || super.dispatchKeyEvent(event)
-    }
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        isRestarting || super.dispatchKeyEvent(event)
 
     @SuppressLint("RestrictedApi")
-    override fun dispatchKeyShortcutEvent(event: KeyEvent): Boolean {
-        return isRestarting || super.dispatchKeyShortcutEvent(event)
-    }
+    override fun dispatchKeyShortcutEvent(event: KeyEvent): Boolean =
+        isRestarting || super.dispatchKeyShortcutEvent(event)
 
-    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
-        return isRestarting || super.dispatchTouchEvent(event)
-    }
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean =
+        isRestarting || super.dispatchTouchEvent(event)
 
-    override fun dispatchTrackballEvent(event: MotionEvent): Boolean {
-        return isRestarting || super.dispatchTrackballEvent(event)
-    }
+    override fun dispatchTrackballEvent(event: MotionEvent): Boolean =
+        isRestarting || super.dispatchTrackballEvent(event)
 
-    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
-        return isRestarting || super.dispatchGenericMotionEvent(event)
-    }
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean =
+        isRestarting || super.dispatchGenericMotionEvent(event)
 
     @Parcelize
     class Args(val savedInstanceState: @WriteWith<BundleParceler> Bundle?) : ParcelableArgs

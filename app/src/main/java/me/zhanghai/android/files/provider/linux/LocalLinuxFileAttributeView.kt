@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.provider.linux
 
 import android.system.OsConstants
+import java.io.IOException
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.PosixFileAttributeView
@@ -17,7 +18,7 @@ import me.zhanghai.android.files.provider.linux.syscall.Constants
 import me.zhanghai.android.files.provider.linux.syscall.StructTimespec
 import me.zhanghai.android.files.provider.linux.syscall.Syscall
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
-import java.io.IOException
+import me.zhanghai.android.files.util.logWarning
 
 internal class LocalLinuxFileAttributeView(
     private val path: ByteString,
@@ -40,14 +41,16 @@ internal class LocalLinuxFileAttributeView(
             LinuxUserPrincipalLookupService.getUserById(stat.st_uid)
         } catch (e: SyscallException) {
             // It's okay to have a non-existent UID.
-            e.toFileSystemException(path.toString()).printStackTrace()
+            e.toFileSystemException(path.toString())
+                .logWarning("LocalLinuxFileAttributeView", "readAttributes($path)")
             PosixUser(stat.st_uid, null)
         }
         val group = try {
             LinuxUserPrincipalLookupService.getGroupById(stat.st_gid)
         } catch (e: SyscallException) {
             // It's okay to have a non-existent GID.
-            e.toFileSystemException(path.toString()).printStackTrace()
+            e.toFileSystemException(path.toString())
+                .logWarning("LocalLinuxFileAttributeView", "readAttributes($path)")
             PosixGroup(stat.st_gid, null)
         }
         val seLinuxContext = try {
@@ -58,7 +61,8 @@ internal class LocalLinuxFileAttributeView(
             }
         } catch (e: SyscallException) {
             // SELinux calls may fail with ENODATA or ENOTSUP, and there may be other errors.
-            e.toFileSystemException(path.toString()).printStackTrace()
+            e.toFileSystemException(path.toString())
+                .logWarning("LocalLinuxFileAttributeView", "readAttributes($path)")
             if (e.errno == OsConstants.ENODATA) ByteString.EMPTY else null
         }
         return LinuxFileAttributes.from(stat, owner, group, seLinuxContext)

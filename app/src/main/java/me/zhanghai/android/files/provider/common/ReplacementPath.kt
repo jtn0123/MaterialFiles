@@ -13,5 +13,12 @@ import kotlin.random.Random
  * once its replacement is complete. Random so that two jobs replacing the same file cannot pick
  * the same name.
  */
-fun Path.replacementSibling(): Path =
-    resolveSibling(".$fileName.${Random.nextLong().toULong().toString(16)}.part")
+fun Path.replacementSibling(): Path = resolveSibling(replacementSiblingName(fileName.toString()))
+
+/** [replacementSibling] for a provider's own path type, which its [resolveSibling] preserves. */
+fun <P : CovariantPath<P>> P.replacementSibling(): P =
+    resolveSibling(replacementSiblingName(fileName.toString()))
+
+/** The name [replacementSibling] uses beside a file called [fileName]. */
+fun replacementSiblingName(fileName: String): String =
+    ".$fileName.${Random.nextLong().toULong().toString(16)}.part"

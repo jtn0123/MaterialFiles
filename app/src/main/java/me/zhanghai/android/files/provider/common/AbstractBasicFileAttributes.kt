@@ -9,7 +9,9 @@ import android.os.Parcelable
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileTime
 
-abstract class AbstractBasicFileAttributes : BasicFileAttributes, Parcelable {
+abstract class AbstractBasicFileAttributes :
+    BasicFileAttributes,
+    Parcelable {
     protected abstract val lastModifiedTime: FileTime
     protected abstract val lastAccessTime: FileTime
     protected abstract val creationTime: FileTime

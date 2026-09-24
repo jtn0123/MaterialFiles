@@ -18,9 +18,8 @@ import me.zhanghai.android.files.ui.SimpleAdapter
 import me.zhanghai.android.files.util.SelectionLiveData
 import me.zhanghai.android.files.util.layoutInflater
 
-abstract class PrincipalListAdapter(
-    private val selectionLiveData: SelectionLiveData<Int>
-) : SimpleAdapter<PrincipalItem, PrincipalListAdapter.ViewHolder>() {
+abstract class PrincipalListAdapter(private val selectionLiveData: SelectionLiveData<Int>) :
+    SimpleAdapter<PrincipalItem, PrincipalListAdapter.ViewHolder>() {
     override val hasStableIds: Boolean
         get() = true
 
@@ -29,9 +28,8 @@ abstract class PrincipalListAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
         ViewHolder(PrincipalItemBinding.inflate(parent.context.layoutInflater, parent, false))
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int): Unit =
         throw UnsupportedOperationException()
-    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: List<Any>) {
         val principal = getItem(position)
@@ -56,7 +54,9 @@ abstract class PrincipalListAdapter(
         }
         binding.principalText.text = if (principal.name != null) {
             binding.principalText.context.getString(
-                R.string.file_properties_permission_principal_format, principal.name, principal.id
+                R.string.file_properties_permission_principal_format,
+                principal.name,
+                principal.id
             )
         } else {
             principal.id.toString()

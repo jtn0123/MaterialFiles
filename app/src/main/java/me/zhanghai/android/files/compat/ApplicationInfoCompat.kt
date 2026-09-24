@@ -15,7 +15,8 @@ private val versionCodeField by lazyReflectedField(ApplicationInfo::class.java, 
 
 @RestrictedHiddenApi
 private val longVersionCodeField by lazyReflectedField(
-    ApplicationInfo::class.java, "longVersionCode"
+    ApplicationInfo::class.java,
+    "longVersionCode"
 )
 
 val ApplicationInfo.longVersionCodeCompat: Long

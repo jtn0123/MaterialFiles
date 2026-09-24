@@ -10,7 +10,9 @@ import android.os.Parcelable
 import java.io.IOException
 import java.io.InputStream
 
-class RemoteInputStream : InputStream, Parcelable {
+class RemoteInputStream :
+    InputStream,
+    Parcelable {
     private val localInputStream: InputStream?
     private val remoteInputStream: IRemoteInputStream?
 
@@ -20,12 +22,11 @@ class RemoteInputStream : InputStream, Parcelable {
     }
 
     @Throws(IOException::class)
-    override fun read(): Int =
-        if (remoteInputStream != null) {
-            remoteInputStream.call { exception -> read(exception) }
-        } else {
-            localInputStream!!.read()
-        }
+    override fun read(): Int = if (remoteInputStream != null) {
+        remoteInputStream.call { exception -> read(exception) }
+    } else {
+        localInputStream!!.read()
+    }
 
     @Throws(IOException::class)
     override fun read(buffer: ByteArray, offset: Int, length: Int): Int =
@@ -41,20 +42,18 @@ class RemoteInputStream : InputStream, Parcelable {
         }
 
     @Throws(IOException::class)
-    override fun skip(size: Long): Long =
-        if (remoteInputStream != null) {
-            remoteInputStream.call { exception -> skip(size, exception) }
-        } else {
-            localInputStream!!.skip(size)
-        }
+    override fun skip(size: Long): Long = if (remoteInputStream != null) {
+        remoteInputStream.call { exception -> skip(size, exception) }
+    } else {
+        localInputStream!!.skip(size)
+    }
 
     @Throws(IOException::class)
-    override fun available(): Int =
-        if (remoteInputStream != null) {
-            remoteInputStream.call { exception -> available(exception) }
-        } else {
-            localInputStream!!.available()
-        }
+    override fun available(): Int = if (remoteInputStream != null) {
+        remoteInputStream.call { exception -> available(exception) }
+    } else {
+        localInputStream!!.available()
+    }
 
     @Throws(IOException::class)
     override fun close() {

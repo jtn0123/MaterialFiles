@@ -7,21 +7,21 @@ package me.zhanghai.android.files.provider.content
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.IOException
 import java8.nio.file.attribute.BasicFileAttributeView
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.content.resolver.Resolver
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.util.readParcelable
-import java.io.IOException
 
-internal class ContentFileAttributeView(
-    private val path: ContentPath
-) : BasicFileAttributeView, Parcelable {
+internal class ContentFileAttributeView(private val path: ContentPath) :
+    BasicFileAttributeView,
+    Parcelable {
     override fun name(): String = NAME
 
     @Throws(IOException::class)
     override fun readAttributes(): ContentFileAttributes {
-        val uri = path.uri!!
+        val uri = path.requireUri()
         val mimeType = try {
             Resolver.getMimeType(uri)
         } catch (e: ResolverException) {
@@ -39,16 +39,14 @@ internal class ContentFileAttributeView(
         lastModifiedTime: FileTime?,
         lastAccessTime: FileTime?,
         createTime: FileTime?
-    ) {
-        throw UnsupportedOperationException()
-    }
+    ): Unit = throw UnsupportedOperationException()
 
     private constructor(source: Parcel) : this(source.readParcelable<ContentPath>()!!)
 
     override fun describeContents(): Int = 0
 
     override fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeParcelable(path as Parcelable, flags)
+        dest.writeParcelable(path, flags)
     }
 
     companion object {

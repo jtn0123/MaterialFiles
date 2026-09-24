@@ -21,7 +21,9 @@ import me.zhanghai.android.files.util.valueCompat
 class StandardDirectoryListPreferenceFragment :
     PreferenceFragmentCompat(),
     Preference.OnPreferenceClickListener {
-    override fun onCreatePreferencesFix(savedInstanceState: Bundle?, rootKey: String?) {}
+    override fun onCreatePreferencesFix(savedInstanceState: Bundle?, rootKey: String?) {
+        // The screen is built from StandardDirectoriesLiveData in onViewCreated().
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

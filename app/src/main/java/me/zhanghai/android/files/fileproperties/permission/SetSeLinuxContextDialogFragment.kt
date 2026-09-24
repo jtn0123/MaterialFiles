@@ -47,7 +47,10 @@ class SetSeLinuxContextDialogFragment : AppCompatDialogFragment() {
             ) { _, _ -> restoreSeLinuxContext() }
             .create()
             .apply {
-                window!!.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+                window?.setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE or
+                        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
+                )
             }
 
     private fun setSeLinuxContext() {
@@ -59,7 +62,10 @@ class SetSeLinuxContextDialogFragment : AppCompatDialogFragment() {
             }
         }
         FileJobService.setSeLinuxContext(
-            args.file.path, seLinuxContext, recursive, requireContext()
+            args.file.path,
+            seLinuxContext,
+            recursive,
+            requireContext()
         )
     }
 

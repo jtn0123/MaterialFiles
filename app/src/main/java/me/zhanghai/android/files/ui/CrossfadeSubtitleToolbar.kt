@@ -34,10 +34,6 @@ class CrossfadeSubtitleToolbar : Toolbar {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    )
-
     override fun getSubtitle(): CharSequence? = nextSubtitle ?: super.getSubtitle()
 
     override fun setSubtitle(subtitle: CharSequence?) {
@@ -71,7 +67,9 @@ class CrossfadeSubtitleToolbar : Toolbar {
         subtitleAnimator.target = subtitleTextView
     }
 
-    private inner class AnimatorListener : AnimatorListenerAdapter(), AnimatorUpdateListener {
+    private inner class AnimatorListener :
+        AnimatorListenerAdapter(),
+        AnimatorUpdateListener {
         private var isTextUpdated = false
 
         override fun onAnimationUpdate(animator: ValueAnimator) {

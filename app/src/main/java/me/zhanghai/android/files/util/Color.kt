@@ -5,12 +5,12 @@
 
 package me.zhanghai.android.files.util
 
+import android.graphics.Color as AndroidColor
 import androidx.annotation.ColorInt
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import androidx.core.graphics.ColorUtils
 import kotlin.math.roundToInt
-import android.graphics.Color as AndroidColor
 
 @JvmInline
 value class Color(@ColorInt val value: Int)

@@ -47,11 +47,8 @@ internal class WebDavFileAttributeView(
         if (noFollowLinks) {
             throw UnsupportedOperationException(LinkOption.NOFOLLOW_LINKS.toString())
         }
-        try {
-            client.setLastModifiedTime(path, lastModifiedTime.toInstant())
-        } catch (e: DavException) {
-            throw e.toFileSystemException(path.toString())
-        }
+        // Most servers refuse a PROPPATCH of getlastmodified, so the time the server set stays.
+        // See also https://github.com/sabre-io/dav/issues/1277
     }
 
     companion object {

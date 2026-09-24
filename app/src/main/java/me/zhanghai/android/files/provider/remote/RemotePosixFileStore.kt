@@ -5,28 +5,20 @@
 
 package me.zhanghai.android.files.provider.remote
 
+import java.io.IOException
 import java8.nio.file.attribute.FileAttributeView
 import me.zhanghai.android.files.provider.common.PosixFileStore
-import java.io.IOException
 
 abstract class RemotePosixFileStore(
     private val remoteInterface: RemoteInterface<IRemotePosixFileStore>
 ) : PosixFileStore() {
-    override fun refresh() {
-        throw AssertionError()
-    }
+    override fun refresh(): Unit = throw AssertionError()
 
-    override fun name(): String {
-        throw AssertionError()
-    }
+    override fun name(): String = throw AssertionError()
 
-    override fun type(): String {
-        throw AssertionError()
-    }
+    override fun type(): String = throw AssertionError()
 
-    override fun isReadOnly(): Boolean {
-        throw AssertionError()
-    }
+    override fun isReadOnly(): Boolean = throw AssertionError()
 
     @Throws(IOException::class)
     override fun setReadOnly(readOnly: Boolean) {
@@ -45,11 +37,8 @@ abstract class RemotePosixFileStore(
     override fun getUnallocatedSpace(): Long =
         remoteInterface.get().call { exception -> getUnallocatedSpace(exception) }
 
-    override fun supportsFileAttributeView(type: Class<out FileAttributeView>): Boolean {
+    override fun supportsFileAttributeView(type: Class<out FileAttributeView>): Boolean =
         throw AssertionError()
-    }
 
-    override fun supportsFileAttributeView(name: String): Boolean {
-        throw AssertionError()
-    }
+    override fun supportsFileAttributeView(name: String): Boolean = throw AssertionError()
 }

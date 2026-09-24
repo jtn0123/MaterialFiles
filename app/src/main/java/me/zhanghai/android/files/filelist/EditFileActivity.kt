@@ -30,8 +30,6 @@ class EditFileActivity : AppActivity() {
     }
 
     @Parcelize
-    class Args(
-        val path: @WriteWith<ParcelableParceler> Path,
-        val mimeType: MimeType
-    ) : ParcelableArgs
+    class Args(val path: @WriteWith<ParcelableParceler> Path, val mimeType: MimeType) :
+        ParcelableArgs
 }

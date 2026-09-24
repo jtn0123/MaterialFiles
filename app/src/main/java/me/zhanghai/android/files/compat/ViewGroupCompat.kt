@@ -13,8 +13,12 @@ import me.zhanghai.android.files.util.lazyReflectedMethod
 
 @RestrictedHiddenApi
 private val isTransformedTouchPointInViewMethod by lazyReflectedMethod(
-    ViewGroup::class.java, "isTransformedTouchPointInView", Float::class.java, Float::class.java,
-    View::class.java, PointF::class.java
+    ViewGroup::class.java,
+    "isTransformedTouchPointInView",
+    Float::class.java,
+    Float::class.java,
+    View::class.java,
+    PointF::class.java
 )
 
 fun ViewGroup.isTransformedTouchPointInViewCompat(
@@ -22,5 +26,4 @@ fun ViewGroup.isTransformedTouchPointInViewCompat(
     y: Float,
     child: View,
     outLocalPoint: PointF?
-): Boolean =
-    isTransformedTouchPointInViewMethod.invoke(this, x, y, child, outLocalPoint) as Boolean
+): Boolean = isTransformedTouchPointInViewMethod.invoke(this, x, y, child, outLocalPoint) as Boolean

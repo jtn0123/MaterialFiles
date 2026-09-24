@@ -17,11 +17,11 @@ import androidx.core.app.LocaleManagerCompat
 import androidx.core.os.LocaleListCompat
 import androidx.preference.ListPreference
 import androidx.preference.Preference.SummaryProvider
+import java.util.Locale
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.compat.LocaleConfigCompat
 import me.zhanghai.android.files.util.toList
-import java.util.Locale
 
 class LocalePreference : ListPreference {
     lateinit var setApplicationLocalesPre33: (LocaleListCompat) -> Unit
@@ -29,10 +29,6 @@ class LocalePreference : ListPreference {
     constructor(context: Context) : super(context)
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    )
 
     constructor(
         context: Context,

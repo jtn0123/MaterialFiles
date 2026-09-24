@@ -5,16 +5,18 @@
 
 package me.zhanghai.android.files.provider.archive
 
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.FileAttributeView
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.guessFromPath
 import me.zhanghai.android.files.provider.common.PosixFileStore
 import me.zhanghai.android.files.provider.common.size
-import java.io.IOException
 
 internal class ArchiveFileStore(private val archiveFile: Path) : PosixFileStore() {
-    override fun refresh() {}
+    override fun refresh() {
+        // Nothing is cached: the sizes are read from the archive file on each call.
+    }
 
     override fun name(): String = archiveFile.toString()
 
@@ -23,9 +25,7 @@ internal class ArchiveFileStore(private val archiveFile: Path) : PosixFileStore(
     override fun isReadOnly(): Boolean = true
 
     @Throws(IOException::class)
-    override fun setReadOnly(readOnly: Boolean) {
-        throw UnsupportedOperationException()
-    }
+    override fun setReadOnly(readOnly: Boolean): Unit = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun getTotalSpace(): Long = archiveFile.size()

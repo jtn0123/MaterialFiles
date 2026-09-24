@@ -11,9 +11,8 @@ import me.zhanghai.android.files.provider.common.PosixFileAttributeView
 import me.zhanghai.android.files.provider.common.PosixGroup
 import me.zhanghai.android.files.provider.common.PosixUser
 
-class RemotePosixFileAttributeViewInterface(
-    private val attributeView: PosixFileAttributeView
-) : IRemotePosixFileAttributeView.Stub() {
+class RemotePosixFileAttributeViewInterface(private val attributeView: PosixFileAttributeView) :
+    IRemotePosixFileAttributeView.Stub() {
     override fun readAttributes(exception: ParcelableException): ParcelableObject? =
         tryRun(exception) { attributeView.readAttributes().toParcelable() }
 
@@ -25,7 +24,9 @@ class RemotePosixFileAttributeViewInterface(
     ) {
         tryRun(exception) {
             attributeView.setTimes(
-                lastModifiedTime?.value, lastAccessTime?.value, createTime?.value
+                lastModifiedTime?.value,
+                lastAccessTime?.value,
+                createTime?.value
             )
         }
     }

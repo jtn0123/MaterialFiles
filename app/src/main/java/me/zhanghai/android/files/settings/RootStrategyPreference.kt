@@ -9,20 +9,16 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
-import com.takisoft.preferencex.PreferenceFragmentCompat
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.filejob.FileJobService
 import me.zhanghai.android.files.ui.MaterialPreferenceDialogFragmentCompat
+import me.zhanghai.android.files.ui.PreferenceFragmentCompat
 import rikka.preference.SimpleMenuPreference
 
 class RootStrategyPreference : SimpleMenuPreference {
     constructor(context: Context) : super(context)
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    )
 
     constructor(
         context: Context,
@@ -39,9 +35,12 @@ class RootStrategyPreference : SimpleMenuPreference {
         }
         dialogTitle = null
         dialogMessage = context.resources.getQuantityString(
-            R.plurals.settings_root_strategy_message_format, jobCount, jobCount
+            R.plurals.settings_root_strategy_message_format,
+            jobCount,
+            jobCount
         )
-        setPositiveButtonText(android.R.string.yes)
+        // android.R.string.yes is deprecated and has always been "OK" anyway.
+        setPositiveButtonText(android.R.string.ok)
         setNegativeButtonText(R.string.maybe_later)
         preferenceManager.showDialog(this)
     }
@@ -53,7 +52,8 @@ class RootStrategyPreference : SimpleMenuPreference {
     companion object {
         init {
             PreferenceFragmentCompat.registerPreferenceFragment(
-                RootStrategyPreference::class.java, DialogFragment::class.java
+                RootStrategyPreference::class.java,
+                DialogFragment::class.java
             )
         }
     }

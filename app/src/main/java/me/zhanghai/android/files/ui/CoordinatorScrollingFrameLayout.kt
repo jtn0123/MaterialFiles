@@ -7,7 +7,6 @@ package me.zhanghai.android.files.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
@@ -24,7 +23,6 @@ import androidx.core.view.children
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import com.google.android.material.appbar.AppBarLayout.ScrollingViewBehavior
-import me.zhanghai.android.files.util.layoutInNavigation
 import me.zhanghai.android.files.util.systemBarsInsets
 import me.zhanghai.android.files.util.systemBarsInsetsOf
 
@@ -52,9 +50,6 @@ class CoordinatorScrollingFrameLayout :
 
     init {
         fitsSystemWindows = true
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            layoutInNavigation = true
-        }
     }
 
     override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {

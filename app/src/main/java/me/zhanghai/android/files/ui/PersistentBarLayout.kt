@@ -19,7 +19,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.children
 import androidx.core.view.isInvisible
 import androidx.customview.widget.ViewDragHelper
-import me.zhanghai.android.files.util.layoutInStatusBar
 import me.zhanghai.android.files.util.replaceSystemBarsInsets
 import me.zhanghai.android.files.util.systemBarsInsets
 
@@ -38,12 +37,6 @@ class PersistentBarLayout @JvmOverloads constructor(
         ViewDragHelper.create(this, PersistentBarLayoutDragCallback(this, Gravity.BOTTOM))
 
     private var lastInsets: WindowInsetsCompat? = null
-
-    init {
-        if (fitsSystemWindows) {
-            layoutInStatusBar = true
-        }
-    }
 
     override fun dispatchApplyWindowInsets(windowInsets: WindowInsets): WindowInsets {
         if (!fitsSystemWindows) {
@@ -126,63 +119,22 @@ class PersistentBarLayout @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
-        var widthSize = MeasureSpec.getSize(widthMeasureSpec)
-        val heightMode = MeasureSpec.getMode(heightMeasureSpec)
-        var heightSize = MeasureSpec.getSize(heightMeasureSpec)
-        if (widthMode != MeasureSpec.EXACTLY || heightMode != MeasureSpec.EXACTLY) {
-            if (isInEditMode) {
-                if (widthMode == MeasureSpec.UNSPECIFIED) {
-                    widthSize = 300
-                }
-                if (heightMode == MeasureSpec.UNSPECIFIED) {
-                    heightSize = 300
-                }
-            } else {
-                throw IllegalArgumentException(
-                    "BarLayout must be measured with MeasureSpec.EXACTLY"
-                )
-            }
-        }
-        setMeasuredDimension(widthSize, heightSize)
-        var hasTopBar = false
-        var hasBottomBar = false
+        val (width, height) =
+            resolvePersistentLayoutSizes(widthMeasureSpec, heightMeasureSpec, "BarLayout")
+        setMeasuredDimension(width, height)
+        val sides = PersistentLayoutSides("bar", "top", "bottom")
         for (child in children) {
             if (child.visibility == View.GONE) {
                 continue
             }
             val isBar = isBarView(child)
+            if (isBar) {
+                sides.add(child, isTopBarView(child))
+            }
             if (isBar || isFillView(child)) {
-                if (isBar) {
-                    val isTopBar = isTopBarView(child)
-                    check(!((isTopBar && hasTopBar) || (!isTopBar && hasBottomBar))) {
-                        ("Child $child is a second ${if (isTopBar) "top" else "bottom"} bar")
-                    }
-                    if (isTopBar) {
-                        hasTopBar = true
-                    } else {
-                        hasBottomBar = true
-                    }
-                }
-                val childLayoutParams = child.layoutParams as LayoutParams
-                val childWidthSpec = getChildMeasureSpec(
-                    widthMeasureSpec,
-                    childLayoutParams.leftMargin + childLayoutParams.rightMargin,
-                    childLayoutParams.width
-                )
-                val childHeightSpec = getChildMeasureSpec(
-                    heightMeasureSpec,
-                    childLayoutParams.topMargin + childLayoutParams.bottomMargin,
-                    childLayoutParams.height
-                )
-                child.measure(childWidthSpec, childHeightSpec)
+                measurePersistentLayoutChild(child, widthMeasureSpec, heightMeasureSpec)
             } else {
-                check(isContentView(child)) {
-                    (
-                        "Child $child does not have a valid layout_gravity - must be" +
-                            " Gravity.LEFT, Gravity.RIGHT, Gravity.NO_GRAVITY or Gravity.FILL"
-                        )
-                }
+                checkPersistentLayoutContentView(child, isContentView(child))
             }
         }
         updateContentViewsWindowInsets()

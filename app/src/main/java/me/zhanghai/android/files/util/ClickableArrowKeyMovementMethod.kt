@@ -15,8 +15,6 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.widget.TextView
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * @see LinkMovementMethod
@@ -56,8 +54,9 @@ object ClickableArrowKeyMovementMethod : ArrowKeyMovementMethod() {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                 if (KeyEvent.metaStateHasNoModifiers(movementMetaState)) {
-                    if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0
-                        && action(CLICK, view, text)) {
+                    if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+                        action(CLICK, view, text)
+                    ) {
                         return true
                     }
                 }
@@ -103,101 +102,63 @@ object ClickableArrowKeyMovementMethod : ArrowKeyMovementMethod() {
         val lineBottom = layout.getLineForVertical(areaBottom)
         val first = layout.getLineStart(lineTop)
         val last = layout.getLineEnd(lineBottom)
+        val (selectionStart, selectionEnd) = navigationSelection(
+            Selection.getSelectionStart(text),
+            Selection.getSelectionEnd(text),
+            text.getSpanStart(FROM_BELOW) >= 0,
+            text.length,
+            first,
+            last
+        )
         val candidates = text.getSpans(first, last, ClickableSpan::class.java)
-        val a = Selection.getSelectionStart(text)
-        val b = Selection.getSelectionEnd(text)
-        var selectionStart = min(a, b)
-        var selectionEnd = max(a, b)
-        if (selectionStart < 0) {
-            if (text.getSpanStart(FROM_BELOW) >= 0) {
-                selectionEnd = text.length
-                selectionStart = selectionEnd
-            }
-        }
-        if (selectionStart > last) {
-            selectionEnd = Int.MAX_VALUE
-            selectionStart = selectionEnd
-        }
-        if (selectionEnd < first) {
-            selectionEnd = -1
-            selectionStart = selectionEnd
-        }
-        when (what) {
+            .map { text.getSpanStart(it) to text.getSpanEnd(it) }
+        return when (what) {
             CLICK -> {
-                if (selectionStart == selectionEnd) {
-                    return false
-                }
-                val span = text.getSpans(selectionStart, selectionEnd, ClickableSpan::class.java)
-                    .singleOrNull() ?: return false
-                span.onClick(view)
+                clickSelectedSpan(view, text, selectionStart, selectionEnd)
+                // Like LinkMovementMethod, a click doesn't consume the key.
+                false
             }
+
             UP -> {
-                var bestStart = -1
-                var bestEnd = -1
-                for (candidate in candidates) {
-                    val end = text.getSpanEnd(candidate)
-                    if (end < selectionEnd || selectionStart == selectionEnd) {
-                        if (end > bestEnd) {
-                            bestStart = text.getSpanStart(candidate)
-                            bestEnd = end
-                        }
-                    }
-                }
-                if (bestStart >= 0) {
-                    Selection.setSelection(text, bestEnd, bestStart)
-                    return true
-                }
+                val (start, end) = previousSpanBounds(candidates, selectionStart, selectionEnd)
+                    ?: return false
+                // Selected backwards when moving up, like LinkMovementMethod.
+                Selection.setSelection(text, end, start)
+                true
             }
+
             DOWN -> {
-                var bestStart = Int.MAX_VALUE
-                var bestEnd = Int.MAX_VALUE
-                for (candidate in candidates) {
-                    val start = text.getSpanStart(candidate)
-                    if (start > selectionStart || selectionStart == selectionEnd) {
-                        if (start < bestStart) {
-                            bestStart = start
-                            bestEnd = text.getSpanEnd(candidate)
-                        }
-                    }
-                }
-                if (bestEnd < Int.MAX_VALUE) {
-                    Selection.setSelection(text, bestStart, bestEnd)
-                    return true
-                }
+                val (start, end) = nextSpanBounds(candidates, selectionStart, selectionEnd)
+                    ?: return false
+                Selection.setSelection(text, start, end)
+                true
             }
+
+            else -> false
         }
-        return false
+    }
+
+    private fun clickSelectedSpan(
+        view: TextView,
+        text: Spannable,
+        selectionStart: Int,
+        selectionEnd: Int
+    ) {
+        if (selectionStart == selectionEnd) {
+            return
+        }
+        val span = text.getSpans(selectionStart, selectionEnd, ClickableSpan::class.java)
+            .singleOrNull() ?: return
+        span.onClick(view)
     }
 
     override fun onTouchEvent(view: TextView, text: Spannable, event: MotionEvent): Boolean {
-        when (val action = event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP -> {
-                val x = event.x.toInt() - view.totalPaddingLeft + view.scrollX
-                val y = event.y.toInt() - view.totalPaddingTop + view.scrollY
-                val layout = view.layout
-                val span = if (y < 0 || y > layout.height) {
-                    null
-                } else {
-                    val line = layout.getLineForVertical(y)
-                    if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) {
-                        null
-                    } else {
-                        val off = layout.getOffsetForHorizontal(line, x.toFloat())
-                        text.getSpans(off, off, ClickableSpan::class.java).firstOrNull()
-                    }
-                }
-                if (span != null) {
-                    if (action == MotionEvent.ACTION_DOWN) {
-                        Selection.setSelection(text, text.getSpanStart(span), text.getSpanEnd(span))
-                    } else {
-                        span.onClick(view)
-                    }
-                    return true
-                }
-                // Removed
-                //else {
-                //    Selection.removeSelection(text)
-                //}
+        // Unlike ClickableMovementMethod, a touch outside a span keeps the selection.
+        if (event.isClickableSpanTouch) {
+            val span = view.findClickableSpanAt(text, event)
+            if (span != null) {
+                span.onTouch(view, text, event)
+                return true
             }
         }
         return super.onTouchEvent(view, text, event)

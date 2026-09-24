@@ -51,8 +51,8 @@
 
     <notice>
         <name>PhotoView</name>
-        <url>https://github.com/chrisbanes/PhotoView</url>
-        <copyright>Copyright 2011, 2012 Chris Banes</copyright>
+        <url>https://github.com/GetStream/photoview-android</url>
+        <copyright>Copyright 2011, 2012 Chris Banes; Copyright 2023 Stream.IO, Inc.</copyright>
         <license>Apache Software License 2.0</license>
     </notice>
 

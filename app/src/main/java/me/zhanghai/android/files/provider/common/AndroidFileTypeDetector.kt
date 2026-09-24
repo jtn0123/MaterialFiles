@@ -5,13 +5,13 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.spi.FileTypeDetector
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.forSpecialPosixFileType
 import me.zhanghai.android.files.file.guessFromPath
-import java.io.IOException
 
 object AndroidFileTypeDetector : FileTypeDetector() {
     @Throws(IOException::class)

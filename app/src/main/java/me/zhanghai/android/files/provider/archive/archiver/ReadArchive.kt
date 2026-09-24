@@ -107,8 +107,11 @@ class ReadArchive : Closeable {
                 try {
                     newPosition = when (whence) {
                         OsConstants.SEEK_SET -> offset
+
                         OsConstants.SEEK_CUR -> channel.position() + offset
+
                         OsConstants.SEEK_END -> channel.size() + offset
+
                         else -> throw ArchiveException(
                             Archive.ERRNO_FATAL,
                             "Unknown whence $whence"
@@ -132,11 +135,10 @@ class ReadArchive : Closeable {
         }
     }
 
-    private fun IOException.toArchiveException(message: String): ArchiveException =
-        when (this) {
-            is InterruptedIOException -> ArchiveException(OsConstants.EINTR, message, this)
-            else -> ArchiveException(Archive.ERRNO_FATAL, message, this)
-        }
+    private fun IOException.toArchiveException(message: String): ArchiveException = when (this) {
+        is InterruptedIOException -> ArchiveException(OsConstants.EINTR, message, this)
+        else -> ArchiveException(Archive.ERRNO_FATAL, message, this)
+    }
 
     @Throws(ArchiveException::class)
     fun readEntry(charset: Charset): Entry? {
@@ -147,7 +149,8 @@ class ReadArchive : Closeable {
         val name =
             getEntryString(ArchiveEntry.pathnameUtf8(entry), ArchiveEntry.pathname(entry), charset)
                 ?: throw ArchiveException(
-                    Archive.ERRNO_FATAL, "pathname == null && pathnameUtf8 == null"
+                    Archive.ERRNO_FATAL,
+                    "pathname == null && pathnameUtf8 == null"
                 )
         val isEncrypted = ArchiveEntry.isEncrypted(entry)
         val stat = ArchiveEntry.stat(entry)
@@ -168,7 +171,8 @@ class ReadArchive : Closeable {
         val creationTime = if (ArchiveEntry.birthtimeIsSet(entry)) {
             FileTime.from(
                 Instant.ofEpochSecond(
-                    ArchiveEntry.birthtime(entry), ArchiveEntry.birthtimeNsec(entry)
+                    ArchiveEntry.birthtime(entry),
+                    ArchiveEntry.birthtimeNsec(entry)
                 )
             )
         } else {
@@ -178,13 +182,19 @@ class ReadArchive : Closeable {
         val size = stat.stSize
         // TODO: There's no way to know if UID/GID is unset or root.
         val owner = PosixUser(
-            stat.stUid, getEntryString(
-                ArchiveEntry.unameUtf8(entry), ArchiveEntry.uname(entry), charset
+            stat.stUid,
+            getEntryString(
+                ArchiveEntry.unameUtf8(entry),
+                ArchiveEntry.uname(entry),
+                charset
             )?.toByteString()
         )
         val group = PosixGroup(
-            stat.stGid, getEntryString(
-                ArchiveEntry.gnameUtf8(entry), ArchiveEntry.gname(entry), charset
+            stat.stGid,
+            getEntryString(
+                ArchiveEntry.gnameUtf8(entry),
+                ArchiveEntry.gname(entry),
+                charset
             )?.toByteString()
         )
         val mode = PosixFileMode.fromInt(stat.stMode)

@@ -16,6 +16,7 @@ import java8.nio.file.Path
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.app.clipboardManager
 import me.zhanghai.android.files.file.FileItem
+import me.zhanghai.android.files.file.FileProvider
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.fileProviderUri
 import me.zhanghai.android.files.file.isApk
@@ -64,8 +65,12 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
             } else {
                 when (pickOptions.mode) {
                     PickOptions.Mode.OPEN_FILE -> fragment.pick.pickFiles(fileItemSetOf(file))
+
                     PickOptions.Mode.CREATE_FILE -> fragment.pick.confirmReplaceFile(file)
-                    PickOptions.Mode.OPEN_DIRECTORY -> {}
+
+                    PickOptions.Mode.OPEN_DIRECTORY -> {
+                        // A file isn't selectable when picking a directory, so there is nothing to do.
+                    }
                 }
             }
             return
@@ -96,7 +101,7 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
     fun installApk(file: FileItem) {
         val path = file.path
         val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            if (!path.isArchivePath) path.fileProviderUri else null
+            if (!path.isArchivePath) file.fileProviderUri else null
         } else {
             // PackageInstaller only supports file URI before N.
             if (path.isLinuxPath) Uri.fromFile(path.toFile()) else null
@@ -122,7 +127,7 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
         if (path.isArchivePath) {
             FileJobService.open(path, mimeType, withChooser, fragment.requireContext())
         } else {
-            val intent = path.fileProviderUri.createViewIntent(mimeType)
+            val intent = file.fileProviderUri.createViewIntent(mimeType)
                 .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                 .apply {
                     // Open images and videos in our own viewers directly. Sending them
@@ -257,6 +262,7 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
     }
 
     fun shareFiles(files: FileItemSet) {
+        files.forEach { FileProvider.rememberAttributes(it.path, it.attributes) }
         shareFiles(files.map { it.path }, files.map { it.mimeType })
         viewModel.selectFiles(files, false)
     }
@@ -306,6 +312,7 @@ internal class FileListFileActions(private val fragment: FileListFragment) {
     }
 
     fun shareFile(file: FileItem) {
+        FileProvider.rememberAttributes(file.path, file.attributes)
         shareFile(file.path, file.mimeType)
     }
 

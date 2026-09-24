@@ -22,9 +22,26 @@ import org.junit.runner.Description
  * (for example under a plain `am instrument`), nothing is written.
  */
 class UiFailureDiagnosticsRule : TestWatcher() {
+    private var testName: String? = null
+
+    override fun starting(description: Description) {
+        testName = "${description.className}-${description.methodName}"
+    }
+
     override fun failed(e: Throwable?, description: Description) {
+        save("${description.className}-${description.methodName}")
+    }
+
+    /**
+     * Saves the screen as it is now; for a test that closes its activity before failing, which
+     * would leave [failed] only the launcher to capture.
+     */
+    fun capture(label: String) {
+        save("$testName-$label")
+    }
+
+    private fun save(baseName: String) {
         val directory = outputDirectory ?: return
-        val baseName = "${description.className}-${description.methodName}"
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         try {
             device.takeScreenshot(File(directory, "$baseName.png"))

@@ -10,14 +10,14 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
-import me.zhanghai.android.files.app.contentResolver
-import me.zhanghai.android.files.file.MimeType
-import me.zhanghai.android.files.util.closeSafe
-import me.zhanghai.android.files.util.takeIfNotEmpty
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import me.zhanghai.android.files.app.contentResolver
+import me.zhanghai.android.files.file.MimeType
+import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.takeIfNotEmpty
 
 object Resolver {
     @Throws(ResolverException::class)
@@ -42,13 +42,12 @@ object Resolver {
         }
     }
 
-    fun exists(uri: Uri): Boolean =
-        try {
-            checkExistence(uri)
-            true
-        } catch (e: ResolverException) {
-            false
-        }
+    fun exists(uri: Uri): Boolean = try {
+        checkExistence(uri)
+        true
+    } catch (e: ResolverException) {
+        false
+    }
 
     @Throws(ResolverException::class)
     fun getDisplayName(uri: Uri): String? =
@@ -65,22 +64,20 @@ object Resolver {
         }
 
     @Throws(ResolverException::class)
-    fun getMimeType(uri: Uri): String? =
-        try {
-            contentResolver.getType(uri)
-        } catch (e: Exception) {
-            throw ResolverException(e)
-        }?.takeIf { it.isNotEmpty() && it != MimeType.GENERIC.value }
+    fun getMimeType(uri: Uri): String? = try {
+        contentResolver.getType(uri)
+    } catch (e: Exception) {
+        throw ResolverException(e)
+    }?.takeIf { it.isNotEmpty() && it != MimeType.GENERIC.value }
 
     @Throws(ResolverException::class)
-    fun openAssetFileDescriptor(uri: Uri, mode: String): AssetFileDescriptor =
-        try {
-            contentResolver.openAssetFileDescriptor(uri, mode)
-        } catch (e: Exception) {
-            throw ResolverException(e)
-        } ?: throw ResolverException(
-            "ContentResolver.openAssetFileDescriptor() with $uri returned null"
-        )
+    fun openAssetFileDescriptor(uri: Uri, mode: String): AssetFileDescriptor = try {
+        contentResolver.openAssetFileDescriptor(uri, mode)
+    } catch (e: Exception) {
+        throw ResolverException(e)
+    } ?: throw ResolverException(
+        "ContentResolver.openAssetFileDescriptor() with $uri returned null"
+    )
 
     @Throws(ResolverException::class)
     fun openInputStream(uri: Uri, mode: String): InputStream {
@@ -105,14 +102,14 @@ object Resolver {
     }
 
     @Throws(ResolverException::class)
-    fun openParcelFileDescriptor(uri: Uri, mode: String): ParcelFileDescriptor =
-        try {
-            contentResolver.openFileDescriptor(
-                uri, mode
-            )
-        } catch (e: Exception) {
-            throw ResolverException(e)
-        } ?: throw ResolverException("ContentResolver.openFileDescriptor() with $uri returned null")
+    fun openParcelFileDescriptor(uri: Uri, mode: String): ParcelFileDescriptor = try {
+        contentResolver.openFileDescriptor(
+            uri,
+            mode
+        )
+    } catch (e: Exception) {
+        throw ResolverException(e)
+    } ?: throw ResolverException("ContentResolver.openFileDescriptor() with $uri returned null")
 
     @Throws(ResolverException::class)
     fun query(
@@ -121,10 +118,9 @@ object Resolver {
         selection: String?,
         selectionArgs: Array<out String?>?,
         sortOrder: String?
-    ): Cursor =
-        try {
-            contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)
-        } catch (e: Exception) {
-            throw ResolverException(e)
-        } ?: throw ResolverException("ContentResolver.query() with $uri returned null")
+    ): Cursor = try {
+        contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)
+    } catch (e: Exception) {
+        throw ResolverException(e)
+    } ?: throw ResolverException("ContentResolver.query() with $uri returned null")
 }

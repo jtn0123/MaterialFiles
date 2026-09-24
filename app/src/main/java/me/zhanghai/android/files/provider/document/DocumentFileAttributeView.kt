@@ -8,6 +8,7 @@ package me.zhanghai.android.files.provider.document
 import android.os.Parcel
 import android.os.Parcelable
 import android.provider.DocumentsContract
+import java.io.IOException
 import java8.nio.file.attribute.BasicFileAttributeView
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
@@ -17,11 +18,10 @@ import me.zhanghai.android.files.provider.content.resolver.getString
 import me.zhanghai.android.files.provider.content.resolver.moveToFirstOrThrow
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
 import me.zhanghai.android.files.util.readParcelable
-import java.io.IOException
 
-internal class DocumentFileAttributeView(
-    private val path: DocumentPath
-) : BasicFileAttributeView, Parcelable {
+internal class DocumentFileAttributeView(private val path: DocumentPath) :
+    BasicFileAttributeView,
+    Parcelable {
     override fun name(): String = NAME
 
     @Throws(IOException::class)
@@ -55,9 +55,7 @@ internal class DocumentFileAttributeView(
         lastModifiedTime: FileTime?,
         lastAccessTime: FileTime?,
         createTime: FileTime?
-    ) {
-        throw UnsupportedOperationException()
-    }
+    ): Unit = throw UnsupportedOperationException()
 
     private constructor(source: Parcel) : this(source.readParcelable<DocumentPath>()!!)
 

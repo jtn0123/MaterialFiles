@@ -11,30 +11,26 @@ import me.zhanghai.android.files.compat.reversedCompat
 import me.zhanghai.android.files.file.FileItem
 
 @Parcelize
-data class FileSortOptions(
-    val by: By,
-    val order: Order,
-    val isDirectoriesFirst: Boolean
-) : Parcelable {
+data class FileSortOptions(val by: By, val order: Order, val isDirectoriesFirst: Boolean) :
+    Parcelable {
     fun createComparator(): Comparator<FileItem> {
-        var comparator = compareBy<FileItem> {
+        val nameComparator = compareBy<FileItem> {
             NAME_UNIMPORTANT_PREFIXES.any { prefix -> it.name.startsWith(prefix) }
         }.thenBy { it.nameCollationKey }
-        when (by) {
-            // Nothing to do.
-            By.NAME -> {}
+        var comparator = when (by) {
+            By.NAME -> nameComparator
+
             By.TYPE ->
-                comparator = compareBy<FileItem, String>(String.CASE_INSENSITIVE_ORDER) {
-                    it.extension
-                }.then(comparator)
-            By.SIZE -> comparator = compareBy<FileItem> { it.attributes.size() }.then(comparator)
+                compareBy<FileItem, String>(String.CASE_INSENSITIVE_ORDER) { it.extension }
+                    .then(nameComparator)
+
+            By.SIZE -> compareBy<FileItem> { it.attributes.size() }.then(nameComparator)
+
             By.LAST_MODIFIED ->
-                comparator = compareBy<FileItem> { it.attributes.lastModifiedTime() }
-                    .then(comparator)
+                compareBy<FileItem> { it.attributes.lastModifiedTime() }.then(nameComparator)
         }
-        when (order) {
-            Order.ASCENDING -> {}
-            Order.DESCENDING -> comparator = comparator.reversedCompat()
+        if (order == Order.DESCENDING) {
+            comparator = comparator.reversedCompat()
         }
         if (isDirectoriesFirst) {
             val isDirectoryComparator = compareBy<FileItem> { it.attributes.isDirectory }

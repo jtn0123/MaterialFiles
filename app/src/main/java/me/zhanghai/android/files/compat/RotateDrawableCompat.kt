@@ -9,18 +9,17 @@ import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.RotateDrawable
 import android.os.Build
-import me.zhanghai.android.files.util.lazyReflectedField
 import kotlin.reflect.KClass
+import me.zhanghai.android.files.util.lazyReflectedField
 
-fun KClass<RotateDrawable>.createCompat(): RotateDrawable =
-    RotateDrawable().apply {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP_MR1) {
-            isPivotXRelativeCompat = true
-            pivotXCompat = 0.5f
-            isPivotYRelativeCompat = true
-            pivotYCompat = 0.5f
-        }
+fun KClass<RotateDrawable>.createCompat(): RotateDrawable = RotateDrawable().apply {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP_MR1) {
+        isPivotXRelativeCompat = true
+        pivotXCompat = 0.5f
+        isPivotYRelativeCompat = true
+        pivotYCompat = 0.5f
     }
+}
 
 private val rotateDrawableMStateField by lazyReflectedField(RotateDrawable::class.java, "mState")
 private val ROTATE_STATE_CLASS_NAME = "${RotateDrawable::class.java.name}\$RotateState"
@@ -89,6 +88,7 @@ var RotateDrawable.drawableCompat: Drawable?
     // is fine because both are classes and invoke-virtual works for both.
     @SuppressLint("NewApi")
     get() = drawable
+
     @SuppressLint("NewApi")
     set(value) {
         drawable = value

@@ -26,6 +26,7 @@ import me.zhanghai.android.files.provider.common.newInputStream
 import me.zhanghai.android.files.provider.root.isRunningAsRoot
 import me.zhanghai.android.files.provider.root.rootContext
 import me.zhanghai.android.files.settings.Settings
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.valueCompat
 
 object ArchiveReader {
@@ -47,7 +48,7 @@ object ArchiveReader {
             var path = path
             while (true) {
                 val parentPath = path.parent ?: break
-                val entry = entries[path]!!
+                val entry = entries.getValue(path)
                 if (entry.isDirectory) {
                     tree.getOrPut(path) { mutableListOf() }
                 }
@@ -177,7 +178,7 @@ object ArchiveReader {
         val channel = try {
             CacheSizeSeekableByteChannel(file.newByteChannel())
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("ArchiveReader", "openArchive($file)")
             null
         }
         if (channel != null) {
@@ -239,7 +240,7 @@ object ArchiveReader {
                     )
                     Charset.forName(sharedPreferences.getString(key, defaultValue)!!)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    e.logWarning("ArchiveReader", "size")
                     StandardCharsets.UTF_8
                 }
             } else {

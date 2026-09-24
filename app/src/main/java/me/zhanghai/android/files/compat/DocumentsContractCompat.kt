@@ -6,8 +6,8 @@
 package me.zhanghai.android.files.compat
 
 import android.content.ContentResolver
+import android.content.pm.PackageInfo
 import android.net.Uri
-import android.os.Build
 import android.provider.DocumentsContract
 import me.zhanghai.android.files.app.packageManager
 
@@ -25,8 +25,9 @@ object DocumentsContractCompat {
     /** @see DocumentsContract.PACKAGE_DOCUMENTS_UI */
     fun getDocumentsUiPackage(): String? {
         // See android.permission.cts.ProviderPermissionTest.testManageDocuments()
-        val packageInfos = packageManager.getPackagesHoldingPermissions(
-            arrayOf(android.Manifest.permission.MANAGE_DOCUMENTS), 0
+        val packageInfos: List<PackageInfo> = packageManager.getPackagesHoldingPermissions(
+            arrayOf(android.Manifest.permission.MANAGE_DOCUMENTS),
+            0
         )
         val packageInfo = packageInfos.firstOrNull { it.packageName.endsWith(".documentsui") }
             ?: packageInfos.firstOrNull()
@@ -46,20 +47,17 @@ object DocumentsContractCompat {
         }
     }
 
-    fun isTreeUri(uri: Uri): Boolean =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            DocumentsContract.isTreeUri(uri)
-        } else {
-            uri.pathSegments.let { it.size >= 2 && it[0] == PATH_TREE }
-        }
+    fun isTreeUri(uri: Uri): Boolean = DocumentsContract.isTreeUri(uri)
 
     fun isChildDocumentsUri(uri: Uri): Boolean {
         val pathSegments = uri.pathSegments
         return when (pathSegments.size) {
             3 -> pathSegments[0] == PATH_DOCUMENT && pathSegments[2] == PATH_CHILDREN
+
             5 ->
-                pathSegments[0] == PATH_TREE && pathSegments[2] == PATH_DOCUMENT
-                    && pathSegments[4] == PATH_CHILDREN
+                pathSegments[0] == PATH_TREE && pathSegments[2] == PATH_DOCUMENT &&
+                    pathSegments[4] == PATH_CHILDREN
+
             else -> false
         }
     }

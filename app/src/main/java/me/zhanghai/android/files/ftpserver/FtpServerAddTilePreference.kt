@@ -24,10 +24,6 @@ class FtpServerAddTilePreference : Preference {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    )
-
     constructor(
         context: Context,
         attrs: AttributeSet?,
@@ -43,15 +39,19 @@ class FtpServerAddTilePreference : Preference {
     override fun onClick() {
         val statusBarManager = context.getSystemServiceCompat(StatusBarManager::class.java)
         statusBarManager.requestAddTileService(
-            FtpServerTileService::class.java, context.mainExecutorCompat
+            FtpServerTileService::class.java,
+            context.mainExecutorCompat
         ) { result ->
             val resultRes = when (result) {
                 StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED ->
                     return@requestAddTileService
+
                 StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED ->
                     R.string.ftp_server_add_tile_result_already_added
+
                 StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED ->
                     R.string.ftp_server_add_tile_result_added
+
                 else -> R.string.ftp_server_add_tile_result_error
             }
             context.showToast(resultRes)

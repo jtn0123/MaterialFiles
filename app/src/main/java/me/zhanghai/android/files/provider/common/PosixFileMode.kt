@@ -67,71 +67,68 @@ object PosixFileMode {
         return mode
     }
 
-    fun fromInt(modeInt: Int): Set<PosixFileModeBit> =
-        enumSetOf<PosixFileModeBit>().apply {
-            if (modeInt.hasBits(OsConstants.S_ISUID)) {
-                this += PosixFileModeBit.SET_USER_ID
-            }
-            if (modeInt.hasBits(OsConstants.S_ISGID)) {
-                this += PosixFileModeBit.SET_GROUP_ID
-            }
-            if (modeInt.hasBits(OsConstants.S_ISVTX)) {
-                this += PosixFileModeBit.STICKY
-            }
-            if (modeInt.hasBits(OsConstants.S_IRUSR)) {
-                this += PosixFileModeBit.OWNER_READ
-            }
-            if (modeInt.hasBits(OsConstants.S_IWUSR)) {
-                this += PosixFileModeBit.OWNER_WRITE
-            }
-            if (modeInt.hasBits(OsConstants.S_IXUSR)) {
-                this += PosixFileModeBit.OWNER_EXECUTE
-            }
-            if (modeInt.hasBits(OsConstants.S_IRGRP)) {
-                this += PosixFileModeBit.GROUP_READ
-            }
-            if (modeInt.hasBits(OsConstants.S_IWGRP)) {
-                this += PosixFileModeBit.GROUP_WRITE
-            }
-            if (modeInt.hasBits(OsConstants.S_IXGRP)) {
-                this += PosixFileModeBit.GROUP_EXECUTE
-            }
-            if (modeInt.hasBits(OsConstants.S_IROTH)) {
-                this += PosixFileModeBit.OTHERS_READ
-            }
-            if (modeInt.hasBits(OsConstants.S_IWOTH)) {
-                this += PosixFileModeBit.OTHERS_WRITE
-            }
-            if (modeInt.hasBits(OsConstants.S_IXOTH)) {
-                this += PosixFileModeBit.OTHERS_EXECUTE
-            }
+    fun fromInt(modeInt: Int): Set<PosixFileModeBit> = enumSetOf<PosixFileModeBit>().apply {
+        if (modeInt.hasBits(OsConstants.S_ISUID)) {
+            this += PosixFileModeBit.SET_USER_ID
         }
-}
-
-fun Set<PosixFilePermission>.toMode(): Set<PosixFileModeBit> =
-    enumSetOf<PosixFileModeBit>().apply {
-        for (permission in this@toMode) {
-            this += when (permission) {
-                PosixFilePermission.OWNER_READ -> PosixFileModeBit.OWNER_READ
-                PosixFilePermission.OWNER_WRITE -> PosixFileModeBit.OWNER_WRITE
-                PosixFilePermission.OWNER_EXECUTE -> PosixFileModeBit.OWNER_EXECUTE
-                PosixFilePermission.GROUP_READ -> PosixFileModeBit.GROUP_READ
-                PosixFilePermission.GROUP_WRITE -> PosixFileModeBit.GROUP_WRITE
-                PosixFilePermission.GROUP_EXECUTE -> PosixFileModeBit.GROUP_EXECUTE
-                PosixFilePermission.OTHERS_READ -> PosixFileModeBit.OTHERS_READ
-                PosixFilePermission.OTHERS_WRITE -> PosixFileModeBit.OTHERS_WRITE
-                PosixFilePermission.OTHERS_EXECUTE -> PosixFileModeBit.OTHERS_EXECUTE
-                else -> throw UnsupportedOperationException(permission.toString())
-            }
+        if (modeInt.hasBits(OsConstants.S_ISGID)) {
+            this += PosixFileModeBit.SET_GROUP_ID
+        }
+        if (modeInt.hasBits(OsConstants.S_ISVTX)) {
+            this += PosixFileModeBit.STICKY
+        }
+        if (modeInt.hasBits(OsConstants.S_IRUSR)) {
+            this += PosixFileModeBit.OWNER_READ
+        }
+        if (modeInt.hasBits(OsConstants.S_IWUSR)) {
+            this += PosixFileModeBit.OWNER_WRITE
+        }
+        if (modeInt.hasBits(OsConstants.S_IXUSR)) {
+            this += PosixFileModeBit.OWNER_EXECUTE
+        }
+        if (modeInt.hasBits(OsConstants.S_IRGRP)) {
+            this += PosixFileModeBit.GROUP_READ
+        }
+        if (modeInt.hasBits(OsConstants.S_IWGRP)) {
+            this += PosixFileModeBit.GROUP_WRITE
+        }
+        if (modeInt.hasBits(OsConstants.S_IXGRP)) {
+            this += PosixFileModeBit.GROUP_EXECUTE
+        }
+        if (modeInt.hasBits(OsConstants.S_IROTH)) {
+            this += PosixFileModeBit.OTHERS_READ
+        }
+        if (modeInt.hasBits(OsConstants.S_IWOTH)) {
+            this += PosixFileModeBit.OTHERS_WRITE
+        }
+        if (modeInt.hasBits(OsConstants.S_IXOTH)) {
+            this += PosixFileModeBit.OTHERS_EXECUTE
         }
     }
+}
+
+fun Set<PosixFilePermission>.toMode(): Set<PosixFileModeBit> = enumSetOf<PosixFileModeBit>().apply {
+    for (permission in this@toMode) {
+        this += when (permission) {
+            PosixFilePermission.OWNER_READ -> PosixFileModeBit.OWNER_READ
+            PosixFilePermission.OWNER_WRITE -> PosixFileModeBit.OWNER_WRITE
+            PosixFilePermission.OWNER_EXECUTE -> PosixFileModeBit.OWNER_EXECUTE
+            PosixFilePermission.GROUP_READ -> PosixFileModeBit.GROUP_READ
+            PosixFilePermission.GROUP_WRITE -> PosixFileModeBit.GROUP_WRITE
+            PosixFilePermission.GROUP_EXECUTE -> PosixFileModeBit.GROUP_EXECUTE
+            PosixFilePermission.OTHERS_READ -> PosixFileModeBit.OTHERS_READ
+            PosixFilePermission.OTHERS_WRITE -> PosixFileModeBit.OTHERS_WRITE
+            PosixFilePermission.OTHERS_EXECUTE -> PosixFileModeBit.OTHERS_EXECUTE
+            else -> throw UnsupportedOperationException(permission.toString())
+        }
+    }
+}
 
 fun Set<PosixFileModeBit>.toAttribute(): FileAttribute<Set<PosixFileModeBit>> =
     PosixFileModeAttribute(this)
 
-private class PosixFileModeAttribute(
-    private val mode: Set<PosixFileModeBit>
-) : FileAttribute<Set<PosixFileModeBit>> {
+private class PosixFileModeAttribute(private val mode: Set<PosixFileModeBit>) :
+    FileAttribute<Set<PosixFileModeBit>> {
     override fun name(): String = NAME
 
     override fun value(): Set<PosixFileModeBit> = mode
@@ -141,8 +138,8 @@ private class PosixFileModeAttribute(
     }
 }
 
-fun Set<PosixFileModeBit>.toInt(): Int =
-    ((if (contains(PosixFileModeBit.SET_USER_ID)) OsConstants.S_ISUID else 0)
+fun Set<PosixFileModeBit>.toInt(): Int = (
+    (if (contains(PosixFileModeBit.SET_USER_ID)) OsConstants.S_ISUID else 0)
         or (if (contains(PosixFileModeBit.SET_GROUP_ID)) OsConstants.S_ISGID else 0)
         or (if (contains(PosixFileModeBit.STICKY)) OsConstants.S_ISVTX else 0)
         or (if (contains(PosixFileModeBit.OWNER_READ)) OsConstants.S_IRUSR else 0)
@@ -153,7 +150,8 @@ fun Set<PosixFileModeBit>.toInt(): Int =
         or (if (contains(PosixFileModeBit.GROUP_EXECUTE)) OsConstants.S_IXGRP else 0)
         or (if (contains(PosixFileModeBit.OTHERS_READ)) OsConstants.S_IROTH else 0)
         or (if (contains(PosixFileModeBit.OTHERS_WRITE)) OsConstants.S_IWOTH else 0)
-        or (if (contains(PosixFileModeBit.OTHERS_EXECUTE)) OsConstants.S_IXOTH else 0))
+        or (if (contains(PosixFileModeBit.OTHERS_EXECUTE)) OsConstants.S_IXOTH else 0)
+    )
 
 fun Set<PosixFileModeBit>.toPermissions(): Set<PosixFilePermission> =
     enumSetOf<PosixFilePermission>().apply {
@@ -173,42 +171,57 @@ fun Set<PosixFileModeBit>.toPermissions(): Set<PosixFilePermission> =
         }
     }
 
-fun Set<PosixFileModeBit>.toModeString(): String =
-    StringBuilder()
-        .append(if (contains(PosixFileModeBit.OWNER_READ)) 'r' else '-')
-        .append(if (contains(PosixFileModeBit.OWNER_WRITE)) 'w' else '-')
-        .apply {
-            val hasSetUserIdBit = contains(PosixFileModeBit.SET_USER_ID)
-            append(
-                if (contains(PosixFileModeBit.OWNER_EXECUTE)) {
-                    if (hasSetUserIdBit) 's' else 'x'
-                } else {
-                    if (hasSetUserIdBit) 'S' else '-'
-                }
-            )
+fun Set<PosixFileModeBit>.toModeString(): String = StringBuilder()
+    .appendModeTriplet(
+        this,
+        PosixFileModeBit.OWNER_READ,
+        PosixFileModeBit.OWNER_WRITE,
+        PosixFileModeBit.OWNER_EXECUTE,
+        PosixFileModeBit.SET_USER_ID,
+        's'
+    )
+    .appendModeTriplet(
+        this,
+        PosixFileModeBit.GROUP_READ,
+        PosixFileModeBit.GROUP_WRITE,
+        PosixFileModeBit.GROUP_EXECUTE,
+        PosixFileModeBit.SET_GROUP_ID,
+        's'
+    )
+    .appendModeTriplet(
+        this,
+        PosixFileModeBit.OTHERS_READ,
+        PosixFileModeBit.OTHERS_WRITE,
+        PosixFileModeBit.OTHERS_EXECUTE,
+        PosixFileModeBit.STICKY,
+        't'
+    )
+    .toString()
+
+/**
+ * Appends one `rwx` triplet of a mode string, where the execute character also carries [special]
+ * (the set-user-ID, set-group-ID or sticky bit) as [specialCharacter], upper case when the file
+ * is not executable.
+ */
+private fun StringBuilder.appendModeTriplet(
+    mode: Set<PosixFileModeBit>,
+    read: PosixFileModeBit,
+    write: PosixFileModeBit,
+    execute: PosixFileModeBit,
+    special: PosixFileModeBit,
+    specialCharacter: Char
+): StringBuilder {
+    append(if (read in mode) 'r' else '-')
+    append(if (write in mode) 'w' else '-')
+    val hasExecute = execute in mode
+    val hasSpecial = special in mode
+    append(
+        when {
+            hasExecute && hasSpecial -> specialCharacter
+            hasExecute -> 'x'
+            hasSpecial -> specialCharacter.uppercaseChar()
+            else -> '-'
         }
-        .append(if (contains(PosixFileModeBit.GROUP_READ)) 'r' else '-')
-        .append(if (contains(PosixFileModeBit.GROUP_WRITE)) 'w' else '-')
-        .apply {
-            val hasSetGroupIdBit = contains(PosixFileModeBit.SET_GROUP_ID)
-            append(
-                if (contains(PosixFileModeBit.GROUP_EXECUTE)) {
-                    if (hasSetGroupIdBit) 's' else 'x'
-                } else {
-                    if (hasSetGroupIdBit) 'S' else '-'
-                }
-            )
-        }
-        .append(if (contains(PosixFileModeBit.OTHERS_READ)) 'r' else '-')
-        .append(if (contains(PosixFileModeBit.OTHERS_WRITE)) 'w' else '-')
-        .apply {
-            val hasStickyBit = contains(PosixFileModeBit.STICKY)
-            append(
-                if (contains(PosixFileModeBit.OTHERS_EXECUTE)) {
-                    if (hasStickyBit) 't' else 'x'
-                } else {
-                    if (hasStickyBit) 'T' else '-'
-                }
-            )
-        }
-        .toString()
+    )
+    return this
+}

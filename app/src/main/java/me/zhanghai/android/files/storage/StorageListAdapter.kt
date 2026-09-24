@@ -15,19 +15,17 @@ import me.zhanghai.android.files.databinding.StorageItemBinding
 import me.zhanghai.android.files.ui.SimpleAdapter
 import me.zhanghai.android.files.util.layoutInflater
 
-class StorageListAdapter(
-    private val listener: Listener
-) : SimpleAdapter<Storage, StorageListAdapter.ViewHolder>(),
+class StorageListAdapter(private val listener: Listener) :
+    SimpleAdapter<Storage, StorageListAdapter.ViewHolder>(),
     DraggableItemAdapter<StorageListAdapter.ViewHolder> {
     override val hasStableIds: Boolean
         get() = true
 
     override fun getItemId(position: Int): Long = getItem(position).id
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
-        ViewHolder(
-            StorageItemBinding.inflate(parent.context.layoutInflater, parent, false)
-        )
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
+        StorageItemBinding.inflate(parent.context.layoutInflater, parent, false)
+    )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val storage = getItem(position)
@@ -43,7 +41,10 @@ class StorageListAdapter(
 
     override fun onCheckCanStartDrag(holder: ViewHolder, position: Int, x: Int, y: Int): Boolean =
         (holder.binding.root as ViewGroup).isTransformedTouchPointInViewCompat(
-            x.toFloat(), y.toFloat(), holder.binding.dragHandleView, null
+            x.toFloat(),
+            y.toFloat(),
+            holder.binding.dragHandleView,
+            null
         )
 
     override fun onGetItemDraggableRange(holder: ViewHolder, position: Int): ItemDraggableRange? =
@@ -66,9 +67,10 @@ class StorageListAdapter(
         listener.moveStorage(fromPosition, toPosition)
     }
 
-    class ViewHolder(val binding: StorageItemBinding) : AbstractDraggableItemViewHolder(
-        binding.root
-    )
+    class ViewHolder(val binding: StorageItemBinding) :
+        AbstractDraggableItemViewHolder(
+            binding.root
+        )
 
     interface Listener {
         fun editStorage(storage: Storage)

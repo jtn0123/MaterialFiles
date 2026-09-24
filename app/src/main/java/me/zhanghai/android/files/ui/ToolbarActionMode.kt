@@ -14,10 +14,7 @@ import androidx.annotation.MenuRes
 import androidx.annotation.StringRes
 import androidx.appcompat.widget.Toolbar
 
-abstract class ToolbarActionMode(
-    private val bar: ViewGroup,
-    private val toolbar: Toolbar
-) {
+abstract class ToolbarActionMode(private val bar: ViewGroup, private val toolbar: Toolbar) {
     @MenuRes
     private var menuRes = 0
 
@@ -111,7 +108,9 @@ abstract class ToolbarActionMode(
     protected abstract fun hide(bar: ViewGroup, animate: Boolean)
 
     interface Callback {
-        fun onToolbarActionModeStarted(toolbarActionMode: ToolbarActionMode) {}
+        fun onToolbarActionModeStarted(toolbarActionMode: ToolbarActionMode) {
+            // Optional; most callbacks only care about the menu and the finish.
+        }
 
         fun onToolbarNavigationIconClicked(toolbarActionMode: ToolbarActionMode) {
             toolbarActionMode.finish()

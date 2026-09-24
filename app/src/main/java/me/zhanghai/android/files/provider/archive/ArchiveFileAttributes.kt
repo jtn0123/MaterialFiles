@@ -34,7 +34,8 @@ internal class ArchiveFileAttributes(
     override val seLinuxContext: ByteString?,
     private val isEncrypted: Boolean,
     private val entryName: String
-) : AbstractPosixFileAttributes(), EncryptedFileAttributes {
+) : AbstractPosixFileAttributes(),
+    EncryptedFileAttributes {
     override fun isEncrypted(): Boolean = isEncrypted
 
     fun entryName(): String = entryName

@@ -5,9 +5,9 @@
 
 package me.zhanghai.android.files.provider.common
 
-import java8.nio.channels.SeekableByteChannel
 import java.io.IOException
 import java.nio.ByteBuffer
+import java8.nio.channels.SeekableByteChannel
 
 fun DelegateSeekableByteChannel(channel: SeekableByteChannel): SeekableByteChannel =
     if (channel is ForceableChannel) {
@@ -16,9 +16,8 @@ fun DelegateSeekableByteChannel(channel: SeekableByteChannel): SeekableByteChann
         DelegateNonForceableSeekableByteChannel(channel)
     }
 
-open class DelegateNonForceableSeekableByteChannel(
-    channel: SeekableByteChannel
-) : BaseDelegateSeekableByteChannel(channel) {
+open class DelegateNonForceableSeekableByteChannel(channel: SeekableByteChannel) :
+    BaseDelegateSeekableByteChannel(channel) {
     init {
         require(channel !is ForceableChannel) {
             "Use DelegateForceableSeekableByteChannel for channels that are ForceableChannel"
@@ -26,9 +25,9 @@ open class DelegateNonForceableSeekableByteChannel(
     }
 }
 
-open class DelegateForceableSeekableByteChannel(
-    private val channel: SeekableByteChannel
-) : BaseDelegateSeekableByteChannel(channel), ForceableChannel {
+open class DelegateForceableSeekableByteChannel(private val channel: SeekableByteChannel) :
+    BaseDelegateSeekableByteChannel(channel),
+    ForceableChannel {
     init {
         require(channel is ForceableChannel) {
             "Use DelegateNonForceableSeekableByteChannel for channels that aren't ForceableChannel"
@@ -42,16 +41,8 @@ open class DelegateForceableSeekableByteChannel(
 
 abstract class BaseDelegateSeekableByteChannel internal constructor(
     private val channel: SeekableByteChannel
-) : SeekableByteChannel {
-    @Throws(IOException::class)
-    override fun read(dst: ByteBuffer): Int = channel.read(dst)
-
-    @Throws(IOException::class)
-    override fun write(src: ByteBuffer): Int = channel.write(src)
-
-    @Throws(IOException::class)
-    override fun position(): Long = channel.position()
-
+) : SeekableByteChannel by channel {
+    // Overridden so that the caller keeps this channel, and not the one behind it.
     @Throws(IOException::class)
     override fun position(newPosition: Long): SeekableByteChannel {
         channel.position(newPosition)
@@ -59,18 +50,8 @@ abstract class BaseDelegateSeekableByteChannel internal constructor(
     }
 
     @Throws(IOException::class)
-    override fun size(): Long = channel.size()
-
-    @Throws(IOException::class)
     override fun truncate(size: Long): SeekableByteChannel {
         channel.truncate(size)
         return this
-    }
-
-    override fun isOpen(): Boolean = channel.isOpen
-
-    @Throws(IOException::class)
-    override fun close() {
-        channel.close()
     }
 }

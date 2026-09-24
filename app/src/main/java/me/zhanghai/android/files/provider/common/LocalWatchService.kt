@@ -5,14 +5,14 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
+import java.io.OutputStream
+import java.nio.ByteBuffer
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.Path
 import java8.nio.file.StandardWatchEventKinds
 import java8.nio.file.WatchEvent
 import me.zhanghai.android.files.provider.FileSystemProviders
-import java.io.IOException
-import java.io.OutputStream
-import java.nio.ByteBuffer
 
 class LocalWatchService : AbstractWatchService<LocalWatchKey>() {
     private val keys = mutableMapOf<Path, LocalWatchKey>()
@@ -27,19 +27,7 @@ class LocalWatchService : AbstractWatchService<LocalWatchKey>() {
         kinds: Array<WatchEvent.Kind<*>>,
         vararg modifiers: WatchEvent.Modifier
     ): LocalWatchKey {
-        val kindSet = mutableSetOf<WatchEvent.Kind<*>>()
-        for (kind in kinds) {
-            when (kind) {
-                StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.ENTRY_MODIFY -> kindSet += kind
-                // Ignored.
-                StandardWatchEventKinds.OVERFLOW -> {}
-                else -> throw UnsupportedOperationException(kind.name())
-            }
-        }
-        for (modifier in modifiers) {
-            throw UnsupportedOperationException(modifier.name())
-        }
+        val kindSet = watchEventKindSetOf(kinds, modifiers)
         synchronized(keys) {
             var key = keys[path]
             if (key != null) {
@@ -53,7 +41,9 @@ class LocalWatchService : AbstractWatchService<LocalWatchKey>() {
     }
 
     override fun cancel(key: LocalWatchKey) {
-        synchronized(keys) { keys.remove(key.watchable())!! }
+        synchronized(keys) { keys.remove(key.watchable()) }
+        // Keeps a second cancel() from coming back here, like the other watch services do.
+        key.setInvalid()
     }
 
     @Throws(IOException::class)
@@ -106,27 +96,22 @@ class LocalWatchService : AbstractWatchService<LocalWatchKey>() {
 fun NotifyEntryModifiedSeekableByteChannel(
     channel: SeekableByteChannel,
     path: Path
-) : SeekableByteChannel =
-    if (channel is ForceableChannel) {
-        NotifyEntryModifiedForceableSeekableByteChannel(channel, path)
-    } else {
-        NotifyEntryModifiedNonForceableSeekableByteChannel(channel, path)
-    }
+): SeekableByteChannel = if (channel is ForceableChannel) {
+    NotifyEntryModifiedForceableSeekableByteChannel(channel, path)
+} else {
+    NotifyEntryModifiedNonForceableSeekableByteChannel(channel, path)
+}
 
 private class NotifyEntryModifiedNonForceableSeekableByteChannel(
     channel: SeekableByteChannel,
     private val path: Path
 ) : DelegateNonForceableSeekableByteChannel(channel) {
-    override fun write(src: ByteBuffer): Int {
-        return super.write(src).also {
-            LocalWatchService.onEntryModified(path)
-        }
+    override fun write(src: ByteBuffer): Int = super.write(src).also {
+        LocalWatchService.onEntryModified(path)
     }
 
-    override fun truncate(size: Long): SeekableByteChannel {
-        return super.truncate(size).also {
-            LocalWatchService.onEntryModified(path)
-        }
+    override fun truncate(size: Long): SeekableByteChannel = super.truncate(size).also {
+        LocalWatchService.onEntryModified(path)
     }
 
     override fun close() {
@@ -140,16 +125,12 @@ private class NotifyEntryModifiedForceableSeekableByteChannel(
     channel: SeekableByteChannel,
     private val path: Path
 ) : DelegateForceableSeekableByteChannel(channel) {
-    override fun write(src: ByteBuffer): Int {
-        return super.write(src).also {
-            LocalWatchService.onEntryModified(path)
-        }
+    override fun write(src: ByteBuffer): Int = super.write(src).also {
+        LocalWatchService.onEntryModified(path)
     }
 
-    override fun truncate(size: Long): SeekableByteChannel {
-        return super.truncate(size).also {
-            LocalWatchService.onEntryModified(path)
-        }
+    override fun truncate(size: Long): SeekableByteChannel = super.truncate(size).also {
+        LocalWatchService.onEntryModified(path)
     }
 
     override fun close() {
@@ -159,10 +140,8 @@ private class NotifyEntryModifiedForceableSeekableByteChannel(
     }
 }
 
-class NotifyEntryModifiedOutputStream(
-    outputStream: OutputStream,
-    private val path: Path
-) : DelegateOutputStream(outputStream) {
+class NotifyEntryModifiedOutputStream(outputStream: OutputStream, private val path: Path) :
+    DelegateOutputStream(outputStream) {
     override fun write(b: Int) {
         super.write(b)
 

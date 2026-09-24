@@ -13,6 +13,12 @@ import android.os.IBinder
 import com.topjohnwu.superuser.NoShellException
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ipc.RootService
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
@@ -23,26 +29,23 @@ import me.zhanghai.android.files.provider.remote.IRemoteFileService
 import me.zhanghai.android.files.provider.remote.RemoteFileServiceInterface
 import me.zhanghai.android.files.provider.remote.RemoteFileSystemException
 import me.zhanghai.android.files.util.createIntent
-import java.io.IOException
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 object LibSuFileServiceLauncher {
     private val lock = Any()
 
     init {
         Shell.enableVerboseLogging = true
+        // What the deprecated Shell.FLAG_REDIRECT_STDERR sets for us anyway.
+        Shell.enableLegacyStderrRedirection = true
         Shell.setDefaultBuilder(
             Shell.Builder.create()
                 .setInitializers(LibSuShellInitializer::class.java)
-                .setFlags(Shell.FLAG_MOUNT_MASTER or Shell.FLAG_REDIRECT_STDERR)
+                .setFlags(Shell.FLAG_MOUNT_MASTER)
                 .setTimeout(TimeUnit.MILLISECONDS.toSeconds(RootFileService.TIMEOUT_MILLIS))
         )
     }
 
-    fun isSuAvailable(): Boolean =
-        // @see com.topjohnwu.superuser.Shell.rootAccess
+    fun isSuAvailable(): Boolean = // @see com.topjohnwu.superuser.Shell.rootAccess
         try {
             Runtime.getRuntime().exec("su --version")
             true
@@ -64,66 +67,8 @@ object LibSuFileServiceLauncher {
                         withTimeout(RootFileService.TIMEOUT_MILLIS) {
                             // Proactively create the shell because RootService doesn't allow us to
                             // handle errors during shell creation.
-                            suspendCancellableCoroutine<Unit> { continuation ->
-                                // Shell.getShell(GetShellCallback) doesn't allow handling errors.
-                                Shell.EXECUTOR.execute {
-                                    try {
-                                        Shell.getShell()
-                                        continuation.resume(Unit)
-                                    } catch (e: NoShellException) {
-                                        continuation.resumeWithException(
-                                            RemoteFileSystemException(e)
-                                        )
-                                    }
-                                }
-                            }
-                            suspendCancellableCoroutine { continuation ->
-                                val intent = LibSuFileService::class.createIntent()
-                                val connection = object : ServiceConnection {
-                                    override fun onServiceConnected(
-                                        name: ComponentName,
-                                        service: IBinder
-                                    ) {
-                                        val serviceInterface =
-                                            IRemoteFileService.Stub.asInterface(service)
-                                        continuation.resume(serviceInterface)
-                                    }
-
-                                    override fun onServiceDisconnected(name: ComponentName) {
-                                        if (continuation.isActive) {
-                                            continuation.resumeWithException(
-                                                RemoteFileSystemException(
-                                                    "libsu service disconnected"
-                                                )
-                                            )
-                                        }
-                                    }
-
-                                    override fun onBindingDied(name: ComponentName) {
-                                        if (continuation.isActive) {
-                                            continuation.resumeWithException(
-                                                RemoteFileSystemException("libsu binding died")
-                                            )
-                                        }
-                                    }
-
-                                    override fun onNullBinding(name: ComponentName) {
-                                        if (continuation.isActive) {
-                                            continuation.resumeWithException(
-                                                RemoteFileSystemException("libsu binding is null")
-                                            )
-                                        }
-                                    }
-                                }
-                                launch(Dispatchers.Main.immediate) {
-                                    RootService.bind(intent, connection)
-                                    continuation.invokeOnCancellation {
-                                        launch(Dispatchers.Main.immediate) {
-                                            RootService.unbind(connection)
-                                        }
-                                    }
-                                }
-                            }
+                            createShell()
+                            bindService(this)
                         }
                     } catch (e: TimeoutCancellationException) {
                         throw RemoteFileSystemException(e)
@@ -132,6 +77,61 @@ object LibSuFileServiceLauncher {
             } catch (e: InterruptedException) {
                 throw RemoteFileSystemException(e)
             }
+        }
+    }
+
+    @Throws(RemoteFileSystemException::class)
+    private suspend fun createShell() {
+        suspendCancellableCoroutine<Unit> { continuation ->
+            // Shell.getShell(GetShellCallback) doesn't allow handling errors.
+            Shell.EXECUTOR.execute {
+                try {
+                    Shell.getShell()
+                    continuation.resume(Unit)
+                } catch (e: NoShellException) {
+                    continuation.resumeWithException(RemoteFileSystemException(e))
+                }
+            }
+        }
+    }
+
+    @Throws(RemoteFileSystemException::class)
+    private suspend fun bindService(scope: CoroutineScope): IRemoteFileService =
+        suspendCancellableCoroutine { continuation ->
+            val intent = LibSuFileService::class.createIntent()
+            val connection = LibSuServiceConnection(continuation)
+            scope.launch(Dispatchers.Main.immediate) {
+                RootService.bind(intent, connection)
+                continuation.invokeOnCancellation {
+                    scope.launch(Dispatchers.Main.immediate) { RootService.unbind(connection) }
+                }
+            }
+        }
+}
+
+/** Resumes [continuation] with the bound service, or with why there is none. */
+private class LibSuServiceConnection(
+    private val continuation: CancellableContinuation<IRemoteFileService>
+) : ServiceConnection {
+    override fun onServiceConnected(name: ComponentName, service: IBinder) {
+        continuation.resume(IRemoteFileService.Stub.asInterface(service))
+    }
+
+    override fun onServiceDisconnected(name: ComponentName) {
+        failIfActive("libsu service disconnected")
+    }
+
+    override fun onBindingDied(name: ComponentName) {
+        failIfActive("libsu binding died")
+    }
+
+    override fun onNullBinding(name: ComponentName) {
+        failIfActive("libsu binding is null")
+    }
+
+    private fun failIfActive(message: String) {
+        if (continuation.isActive) {
+            continuation.resumeWithException(RemoteFileSystemException(message))
         }
     }
 }

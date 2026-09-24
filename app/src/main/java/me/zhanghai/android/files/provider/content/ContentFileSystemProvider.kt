@@ -7,6 +7,10 @@ package me.zhanghai.android.files.provider.content
 
 import android.content.ContentResolver
 import android.os.Build
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessDeniedException
@@ -30,14 +34,11 @@ import me.zhanghai.android.files.provider.common.ByteStringPath
 import me.zhanghai.android.files.provider.common.PathObservable
 import me.zhanghai.android.files.provider.common.PathObservableProvider
 import me.zhanghai.android.files.provider.common.open
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toOpenOptions
 import me.zhanghai.android.files.provider.content.resolver.Resolver
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.URI
 
 object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider {
     private const val SCHEME = ContentResolver.SCHEME_CONTENT
@@ -68,8 +69,8 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
 
     @Throws(IOException::class)
     override fun newInputStream(file: Path, vararg options: OpenOption): InputStream {
-        file as? ContentPath ?: throw ProviderMismatchException(file.toString())
-        val uri = file.uri!!
+        requireProviderPath<ContentPath>(file)
+        val uri = file.requireUri()
         val openOptions = options.toOpenOptions()
         if (openOptions.write) {
             throw UnsupportedOperationException(StandardOpenOption.WRITE.toString())
@@ -87,8 +88,8 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
 
     @Throws(IOException::class)
     override fun newOutputStream(file: Path, vararg options: OpenOption): OutputStream {
-        file as? ContentPath ?: throw ProviderMismatchException(file.toString())
-        val uri = file.uri!!
+        requireProviderPath<ContentPath>(file)
+        val uri = file.requireUri()
         val optionsSet = mutableSetOf(*options)
         if (optionsSet.isEmpty()) {
             optionsSet += StandardOpenOption.CREATE
@@ -110,8 +111,8 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): FileChannel {
-        file as? ContentPath ?: throw ProviderMismatchException(file.toString())
-        val uri = file.uri!!
+        requireProviderPath<ContentPath>(file)
+        val uri = file.requireUri()
         val openOptions = options.toOpenOptions()
         val mode = openOptions.toContentMode()
         if (attributes.isNotEmpty()) {
@@ -136,34 +137,33 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
         directory: Path,
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
-        directory as? ContentPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<ContentPath>(directory)
         throw UnsupportedOperationException()
     }
 
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
-        directory as? ContentPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<ContentPath>(directory)
         throw UnsupportedOperationException()
     }
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
-        link as? ContentPath ?: throw ProviderMismatchException(link.toString())
-        when (target) {
-            is ContentPath, is ByteStringPath -> {}
-            else -> throw ProviderMismatchException(target.toString())
+        requireProviderPath<ContentPath>(link)
+        if (target !is ContentPath && target !is ByteStringPath) {
+            throw ProviderMismatchException(target.toString())
         }
         throw UnsupportedOperationException()
     }
 
     override fun createLink(link: Path, existing: Path) {
-        link as? ContentPath ?: throw ProviderMismatchException(link.toString())
-        existing as? ContentPath ?: throw ProviderMismatchException(existing.toString())
+        requireProviderPath<ContentPath>(link)
+        requireProviderPath<ContentPath>(existing)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun delete(path: Path) {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
-        val uri = path.uri!!
+        requireProviderPath<ContentPath>(path)
+        val uri = path.requireUri()
         try {
             Resolver.delete(uri)
         } catch (e: ResolverException) {
@@ -172,41 +172,41 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
     }
 
     override fun readSymbolicLink(link: Path): Path {
-        link as? ContentPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<ContentPath>(link)
         throw UnsupportedOperationException()
     }
 
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        source as? ContentPath ?: throw ProviderMismatchException(source.toString())
-        target as? ContentPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<ContentPath>(source)
+        requireProviderPath<ContentPath>(target)
         throw UnsupportedOperationException()
     }
 
     override fun move(source: Path, target: Path, vararg options: CopyOption) {
-        source as? ContentPath ?: throw ProviderMismatchException(source.toString())
-        target as? ContentPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<ContentPath>(source)
+        requireProviderPath<ContentPath>(target)
         throw UnsupportedOperationException()
     }
 
     override fun isSameFile(path: Path, path2: Path): Boolean {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ContentPath>(path)
         return path == path2
     }
 
     override fun isHidden(path: Path): Boolean {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ContentPath>(path)
         return false
     }
 
     override fun getFileStore(path: Path): FileStore {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ContentPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
-        val uri = path.uri!!
+        requireProviderPath<ContentPath>(path)
+        val uri = path.requireUri()
         // This checks existence as well.
         val mimeType = try {
             Resolver.getMimeType(uri)
@@ -270,7 +270,7 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
     }
 
     private fun getFileAttributeView(path: Path): ContentFileAttributeView {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ContentPath>(path)
         return ContentFileAttributeView(path)
     }
 
@@ -279,7 +279,7 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any> {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ContentPath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -289,14 +289,14 @@ object ContentFileSystemProvider : FileSystemProvider(), PathObservableProvider 
         value: Any,
         vararg options: LinkOption
     ) {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<ContentPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
-        path as? ContentPath ?: throw ProviderMismatchException(path.toString())
-        val uri = path.uri!!
+        requireProviderPath<ContentPath>(path)
+        val uri = path.requireUri()
         return ContentPathObservable(uri, intervalMillis)
     }
 }

@@ -9,8 +9,11 @@ import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
 import androidx.core.net.toUri
+import java.io.File
+import java.net.URI
 import java8.nio.file.FileSystem
 import java8.nio.file.LinkOption
+import java8.nio.file.NoSuchFileException
 import java8.nio.file.Path
 import java8.nio.file.WatchEvent
 import java8.nio.file.WatchKey
@@ -22,17 +25,21 @@ import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.content.resolver.Resolver
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.util.StableUriParceler
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.readParcelable
-import java.io.File
-import java.net.URI
 
 internal class ContentPath : ByteStringListPath<ContentPath> {
     private val fileSystem: ContentFileSystem
 
     val uri: Uri?
 
+    /** The content URI of this path; a relative path has none, so it names no file. */
+    @Throws(NoSuchFileException::class)
+    fun requireUri(): Uri = uri ?: throw NoSuchFileException(toString())
+
     constructor(fileSystem: ContentFileSystem, uri: Uri) : super(
-        ContentFileSystem.SEPARATOR, true,
+        ContentFileSystem.SEPARATOR,
+        true,
         listOf(Uri.encode(uri.toString()).toByteString(), uri.bestFileName)
     ) {
         this.fileSystem = fileSystem
@@ -40,15 +47,15 @@ internal class ContentPath : ByteStringListPath<ContentPath> {
     }
 
     private constructor(fileSystem: ContentFileSystem, segments: List<ByteString>) : super(
-        ContentFileSystem.SEPARATOR, false, segments
+        ContentFileSystem.SEPARATOR,
+        false,
+        segments
     ) {
         this.fileSystem = fileSystem
         uri = null
     }
 
-    override fun isPathAbsolute(path: ByteString): Boolean {
-        throw AssertionError()
-    }
+    override fun isPathAbsolute(path: ByteString): Boolean = throw AssertionError()
 
     override fun createPath(path: ByteString): ContentPath =
         ContentPath(fileSystem, path.toString().toUri())
@@ -106,17 +113,13 @@ internal class ContentPath : ByteStringListPath<ContentPath> {
 
     override fun toRealPath(vararg options: LinkOption): ContentPath = this
 
-    override fun toFile(): File {
-        throw UnsupportedOperationException()
-    }
+    override fun toFile(): File = throw UnsupportedOperationException()
 
     override fun register(
         watcher: WatchService,
         events: Array<WatchEvent.Kind<*>>,
         vararg modifiers: WatchEvent.Modifier
-    ): WatchKey {
-        throw UnsupportedOperationException()
-    }
+    ): WatchKey = throw UnsupportedOperationException()
 
     override fun toByteString(): ByteString =
         uri?.toString()?.toByteString() ?: super.toByteString()
@@ -134,9 +137,7 @@ internal class ContentPath : ByteStringListPath<ContentPath> {
         return if (uri != null || other.uri != null) uri == other.uri else super.equals(other)
     }
 
-    override fun hashCode(): Int {
-        return uri?.hashCode() ?: super.hashCode()
-    }
+    override fun hashCode(): Int = uri?.hashCode() ?: super.hashCode()
 
     private constructor(source: Parcel) : super(source) {
         fileSystem = source.readParcelable()!!
@@ -155,12 +156,14 @@ internal class ContentPath : ByteStringListPath<ContentPath> {
     companion object {
         private val Uri.bestFileName: ByteString
             get() =
-                (try {
-                    Resolver.getDisplayName(this)
-                } catch (e: ResolverException) {
-                    e.printStackTrace()
-                    null
-                } ?: lastPathSegment ?: "file").toByteString()
+                (
+                    try {
+                        Resolver.getDisplayName(this)
+                    } catch (e: ResolverException) {
+                        e.logWarning("ContentPath", "writeToParcel")
+                        null
+                    } ?: lastPathSegment ?: "file"
+                    ).toByteString()
 
         @JvmField
         val CREATOR = object : Parcelable.Creator<ContentPath> {

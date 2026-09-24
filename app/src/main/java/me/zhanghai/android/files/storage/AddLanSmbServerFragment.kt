@@ -51,7 +51,7 @@ class AddLanSmbServerFragment : Fragment() {
 
         val activity = requireActivity() as AppCompatActivity
         activity.setSupportActionBar(binding.toolbar)
-        activity.supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+        activity.supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         binding.swipeRefreshLayout.setOnRefreshListener { viewModel.reload() }
         binding.recyclerView.layoutManager = LinearLayoutManager(activity)

@@ -21,6 +21,7 @@ buildscript {
 }
 
 plugins {
+    alias(libs.plugins.sonarqube)
     alias(libs.plugins.ktlint) apply false
 }
 
@@ -33,4 +34,139 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+sonar {
+    properties {
+        property 'sonar.projectKey', 'jtn0123_MaterialFiles'
+        property 'sonar.projectName', 'MaterialFiles'
+        property 'sonar.organization', 'jtn0123ismysonar'
+        property 'sonar.host.url', 'https://sonarcloud.io'
+        // Keep native C analysis when switching away from automatic analysis.
+        property 'sonar.cfamily.compile-commands',
+            "${rootDir}/app/.cxx/tools/debug/arm64-v8a/compile_commands.json"
+        // CI downloads the independently generated unit and device XML reports here.
+        property 'sonar.coverage.jacoco.xmlReportPaths',
+            "${rootDir}/coverage/**/*.xml"
+        // Findings reviewed and accepted, each limited to the rule and the files it was raised in
+        // (as patterns, since paths are relative to the module in a multi-module analysis).
+        def ignoredIssues = [
+            // Browsing external storage is what a file manager is for; these name its standard
+            // folders (the default one, Downloads, Pictures, Screenshots).
+            externalStorage: ['kotlin:S5324', [
+                '**/src/main/java/me/zhanghai/android/files/filelist/FileListPick.kt',
+                '**/src/main/java/me/zhanghai/android/files/navigation/NavigationItems.kt',
+                '**/src/main/java/me/zhanghai/android/files/settings/Settings.kt',
+                '**/src/main/java/me/zhanghai/android/files/viewer/saveas/SaveAsActivity.kt'
+            ]],
+            // WebDAV, CalDAV and CardDAV XML namespace names, which are identifiers and never
+            // fetched.
+            xmlNamespaces: ['kotlin:S5332', [
+                '**/src/main/kotlin/at/bitfire/dav4jvm/XmlUtils.kt',
+                '**/src/main/kotlin/at/bitfire/dav4jvm/property/caldav/namespace.kt'
+            ]],
+            // The Shizuku provider only hands the Shizuku app its binder, and Shizuku requires
+            // this one system permission for it.
+            shizukuProvider: ['xml:S6361', ['**/src/main/AndroidManifest.xml']],
+            // WebView debugging is only turned on when BuildConfig.DEBUG.
+            debugWebView: ['kotlin:S4507', [
+                '**/src/main/java/me/zhanghai/android/files/app/AppInitializers.kt'
+            ]],
+            // ByteStringBuilder.append() is not deprecated; the Kotlin compiler warns about
+            // nothing here.
+            byteStringAppend: ['kotlin:S1874', [
+                '**/src/main/java/me/zhanghai/android/files/filelist/CollatorFileNameExtensions.kt'
+            ]],
+            // The image and video tabs call Geocoder through awaitGetFromLocation(), which is
+            // already on Dispatchers.IO.
+            geocoderOnIo: ['kotlin:S6307', [
+                '**/src/main/java/me/zhanghai/android/files/fileproperties/FilePropertiesTabFragment.kt'
+            ]],
+            // Each migration is named after the version it upgrades to, like every other upgrader
+            // in the file.
+            upgraderNames: ['kotlin:S100', [
+                '**/src/main/java/me/zhanghai/android/files/app/AppUpgradersFrom140.kt'
+            ]],
+            // Only read from the app's own theme, as the colour of the scrim drawn behind the
+            // status bar; what is deprecated is the window drawing it.
+            statusBarScrim: ['kotlin:S1874', [
+                '**/src/main/java/me/zhanghai/android/files/navigation/NavigationRecyclerView.kt'
+            ]],
+            // FileChannel and MediaDataSource are abstract classes, so Kotlin cannot delegate to
+            // them with "by".
+            abstractDelegate: ['kotlin:S6514', [
+                '**/src/main/java/me/zhanghai/android/files/provider/common/DelegateFileChannel.kt',
+                '**/src/main/java/me/zhanghai/android/files/util/MediaMetadataRetrieverPathExtensions.kt'
+            ]],
+            // The JNI code looks these fields up by name.
+            syscallFieldNames: ['kotlin:S117', [
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/syscall/StructTimespec.kt'
+            ]],
+            // The syscall wrappers are named after the C functions they call.
+            syscallFunctionNames: ['kotlin:S100', [
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/syscall/Syscall.kt'
+            ]],
+            // The syscalls behind these really do return null: no entry for a user, a group or a
+            // mount point, and the end of a directory.
+            nullableSyscalls: ['kotlin:S6619', [
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/LinuxDirectoryStream.kt',
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/LinuxUserPrincipalLookupService.kt',
+                '**/src/main/java/me/zhanghai/android/files/provider/linux/LocalLinuxFileStore.kt'
+            ]],
+            // Storage.createIntent() returns null for storage that has a path, and an activity
+            // starting fresh has no state to restore.
+            nullableState: ['kotlin:S6619', [
+                '**/src/main/java/me/zhanghai/android/files/navigation/NavigationItems.kt',
+                '**/src/main/java/me/zhanghai/android/files/settings/SettingsActivity.kt'
+            ]],
+            // The job body already runs in runInterruptible(Dispatchers.IO).
+            jobOnIo: ['kotlin:S6307', [
+                '**/src/main/java/me/zhanghai/android/files/filejob/FileJob.kt'
+            ]],
+            // Nothing there is deprecated; the dialog is shown as a child fragment precisely to
+            // avoid the deprecated target fragment, and the compiler warns about none of it.
+            preferenceDialog: ['kotlin:S1874', [
+                '**/src/main/java/me/zhanghai/android/files/ui/PreferenceFragmentCompat.kt'
+            ]],
+            // Assigning a property to itself runs its setter again, which is the point: it
+            // re-applies the background and re-emits the LiveData value.
+            selfAssignment: ['kotlin:S1656', [
+                '**/src/main/java/me/zhanghai/android/files/filelist/TrailLiveData.kt',
+                '**/src/main/java/me/zhanghai/android/files/ui/ReadOnlyTextInputEditText.kt'
+            ]],
+            // MD5 and SHA-1 are checksums the user asks for and the fingerprint format of APK
+            // signing certificates; nothing is secured with them.
+            checksums: ['kotlin:S4790', [
+                '**/src/main/java/me/zhanghai/android/files/fileproperties/checksum/ChecksumInfo.kt',
+                '**/src/main/java/me/zhanghai/android/files/util/ByteArrayExtensions.kt'
+            ]],
+            // The branches look alike but call different constructor overloads, chosen by the
+            // smart cast.
+            layoutParamsOverloads: ['kotlin:S3923', [
+                '**/src/main/java/me/zhanghai/android/files/ui/PersistentBarLayout.kt',
+                '**/src/main/java/me/zhanghai/android/files/ui/PersistentDrawerLayout.kt'
+            ]],
+            // Cleartext is allowed on purpose by network_security_config.xml, for FTP and WebDAV
+            // servers on the local network, and minSdk 35 has no older behaviour to worry about.
+            cleartextTraffic: ['xml:S5332', ['**/src/main/AndroidManifest.xml']],
+            // Replacing the deprecated soft input calls means driving the keyboard insets by
+            // hand, which changes how these dialogs behave; worth its own change.
+            softInput: ['kotlin:S1874', [
+                '**/src/main/java/me/zhanghai/android/files/fileaction/ArchivePasswordDialogFragment.kt',
+                '**/src/main/java/me/zhanghai/android/files/filejob/FileJobConflictDialogFragment.kt',
+                '**/src/main/java/me/zhanghai/android/files/util/ViewExtensions.kt'
+            ]]
+        ]
+        def criteria = ignoredIssues.collectMany { name, ruleAndFiles ->
+            def (rule, files) = ruleAndFiles
+            files.withIndex().collect { file, index ->
+                ["${name}${index}", rule, file]
+            }
+        }
+        property 'sonar.issue.ignore.multicriteria', criteria.collect { it[0] }.join(',')
+        criteria.each { key, rule, file ->
+            property "sonar.issue.ignore.multicriteria.${key}.ruleKey", rule
+            property "sonar.issue.ignore.multicriteria.${key}.resourceKey", file
+        }
+    }
 }

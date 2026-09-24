@@ -7,8 +7,11 @@ package me.zhanghai.android.files.provider.document
 
 import android.net.Uri
 import android.os.Build
-import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.URI
 import java8.nio.channels.FileChannel
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessDeniedException
@@ -39,6 +42,7 @@ import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
 import me.zhanghai.android.files.provider.common.decodedPathByteString
 import me.zhanghai.android.files.provider.common.decodedQueryByteString
 import me.zhanghai.android.files.provider.common.open
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.common.toCopyOptions
@@ -46,10 +50,6 @@ import me.zhanghai.android.files.provider.common.toOpenOptions
 import me.zhanghai.android.files.provider.content.resolver.Resolver
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.URI
 
 object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
     private const val SCHEME = "document"
@@ -117,7 +117,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
 
     @Throws(IOException::class)
     override fun newInputStream(file: Path, vararg options: OpenOption): InputStream {
-        file as? DocumentPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<DocumentPath>(file)
         val optionsSet = mutableSetOf(*options)
         val create = optionsSet.remove(StandardOpenOption.CREATE)
         val createNew = optionsSet.remove(StandardOpenOption.CREATE_NEW)
@@ -129,35 +129,18 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
             throw UnsupportedOperationException(StandardOpenOption.APPEND.toString())
         }
         val mode = openOptions.toDocumentMode()
-        if (create || createNew) {
-            val exists = DocumentResolver.exists(file)
-            if (createNew && exists) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (!exists) {
-                val uri = try {
-                    // TODO: Allow passing in a mime type?
-                    DocumentResolver.create(file, MimeType.GENERIC.value)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(file.toString())
-                }
-                return try {
-                    Resolver.openInputStream(uri, mode)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(uri.toString())
-                }
-            }
-        }
-        return try {
-            DocumentResolver.openInputStream(file, mode)
-        } catch (e: ResolverException) {
-            throw e.toFileSystemException(file.toString())
-        }
+        return openCreatingIfRequested(
+            file,
+            create,
+            createNew,
+            { Resolver.openInputStream(it, mode) },
+            { DocumentResolver.openInputStream(it, mode) }
+        )
     }
 
     @Throws(IOException::class)
     override fun newOutputStream(file: Path, vararg options: OpenOption): OutputStream {
-        file as? DocumentPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<DocumentPath>(file)
         val optionsSet = mutableSetOf(*options)
         if (optionsSet.isEmpty()) {
             optionsSet += StandardOpenOption.CREATE
@@ -168,30 +151,13 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         val createNew = optionsSet.remove(StandardOpenOption.CREATE_NEW)
         val openOptions = optionsSet.toOpenOptions()
         val mode = openOptions.toDocumentMode()
-        if (create || createNew) {
-            val exists = DocumentResolver.exists(file)
-            if (createNew && exists) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (!exists) {
-                val uri = try {
-                    // TODO: Allow passing in a mime type?
-                    DocumentResolver.create(file, MimeType.GENERIC.value)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(file.toString())
-                }
-                return try {
-                    Resolver.openOutputStream(uri, mode)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(uri.toString())
-                }
-            }
-        }
-        return try {
-            DocumentResolver.openOutputStream(file, mode)
-        } catch (e: ResolverException) {
-            throw e.toFileSystemException(file.toString())
-        }
+        return openCreatingIfRequested(
+            file,
+            create,
+            createNew,
+            { Resolver.openOutputStream(it, mode) },
+            { DocumentResolver.openOutputStream(it, mode) }
+        )
     }
 
     @Throws(IOException::class)
@@ -200,7 +166,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): FileChannel {
-        file as? DocumentPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<DocumentPath>(file)
         val options = options.toMutableSet()
         val hasCreate = options.remove(StandardOpenOption.CREATE)
         val hasCreateNew = options.remove(StandardOpenOption.CREATE_NEW)
@@ -209,37 +175,60 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
         }
-        var pfd: ParcelFileDescriptor? = null
-        if (hasCreate || hasCreateNew) {
-            val exists = DocumentResolver.exists(file)
-            if (hasCreateNew && exists) {
-                throw FileAlreadyExistsException(file.toString())
+        val pfd = openCreatingIfRequested(
+            file,
+            hasCreate,
+            hasCreateNew,
+            { Resolver.openParcelFileDescriptor(it, mode) },
+            { DocumentResolver.openParcelFileDescriptor(it, mode) }
+        )
+        return FileChannel::class.open(pfd, mode)
+    }
+
+    /**
+     * Opens [file] with [openPath], or when [create] or [createNew] asks for it and the file does
+     * not exist yet, creates it and opens the new document with [openUri].
+     */
+    @Throws(IOException::class)
+    private fun <T> openCreatingIfRequested(
+        file: DocumentPath,
+        create: Boolean,
+        createNew: Boolean,
+        openUri: (Uri) -> T,
+        openPath: (DocumentPath) -> T
+    ): T {
+        val createdUri = if (create || createNew) createIfMissing(file, createNew) else null
+        return if (createdUri != null) {
+            try {
+                openUri(createdUri)
+            } catch (e: ResolverException) {
+                throw e.toFileSystemException(createdUri.toString())
             }
-            if (!exists) {
-                val uri = try {
-                    // TODO: Allow passing in a mime type?
-                    DocumentResolver.create(file, MimeType.GENERIC.value)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(file.toString())
-                }
-                pfd = try {
-                    Resolver.openParcelFileDescriptor(uri, mode)
-                } catch (e: ResolverException) {
-                    throw e.toFileSystemException(uri.toString())
-                }
-            }
-        }
-        if (pfd == null) {
-            pfd = try {
-                DocumentResolver.openParcelFileDescriptor(file, mode)
+        } else {
+            try {
+                openPath(file)
             } catch (e: ResolverException) {
                 throw e.toFileSystemException(file.toString())
             }
         }
-        // TODO: kotlinc: Type mismatch: inferred type is ParcelFileDescriptor? but
-        //  ParcelFileDescriptor was expected
-        //return FileChannel::class.open(pfd, mode)
-        return FileChannel::class.open(pfd!!, mode)
+    }
+
+    /** Returns the URI of the document created for [file], or null if it already existed. */
+    @Throws(IOException::class)
+    private fun createIfMissing(file: DocumentPath, createNew: Boolean): Uri? {
+        val exists = DocumentResolver.exists(file)
+        if (createNew && exists) {
+            throw FileAlreadyExistsException(file.toString())
+        }
+        if (exists) {
+            return null
+        }
+        return try {
+            // TODO: Allow passing in a mime type?
+            DocumentResolver.create(file, MimeType.GENERIC.value)
+        } catch (e: ResolverException) {
+            throw e.toFileSystemException(file.toString())
+        }
     }
 
     @Throws(IOException::class)
@@ -248,7 +237,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): SeekableByteChannel {
-        file as? DocumentPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<DocumentPath>(file)
         return newFileChannel(file, options, *attributes)
     }
 
@@ -257,7 +246,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         directory: Path,
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
-        directory as? DocumentPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<DocumentPath>(directory)
         val children = try {
             @Suppress("UNCHECKED_CAST")
             DocumentResolver.queryChildren(directory) as List<Path>
@@ -270,7 +259,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
 
     @Throws(IOException::class)
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
-        directory as? DocumentPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<DocumentPath>(directory)
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
         }
@@ -282,23 +271,22 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
     }
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
-        link as? DocumentPath ?: throw ProviderMismatchException(link.toString())
-        when (target) {
-            is DocumentPath, is ByteStringPath -> {}
-            else -> throw ProviderMismatchException(target.toString())
+        requireProviderPath<DocumentPath>(link)
+        if (target !is DocumentPath && target !is ByteStringPath) {
+            throw ProviderMismatchException(target.toString())
         }
         throw UnsupportedOperationException()
     }
 
     override fun createLink(link: Path, existing: Path) {
-        link as? DocumentPath ?: throw ProviderMismatchException(link.toString())
-        existing as? DocumentPath ?: throw ProviderMismatchException(existing.toString())
+        requireProviderPath<DocumentPath>(link)
+        requireProviderPath<DocumentPath>(existing)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun delete(path: Path) {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         try {
             DocumentResolver.remove(path)
         } catch (e: ResolverException) {
@@ -307,46 +295,46 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
     }
 
     override fun readSymbolicLink(link: Path): Path {
-        link as? DocumentPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<DocumentPath>(link)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        source as? DocumentPath ?: throw ProviderMismatchException(source.toString())
-        target as? DocumentPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<DocumentPath>(source)
+        requireProviderPath<DocumentPath>(target)
         val copyOptions = options.toCopyOptions()
         DocumentCopyMove.copy(source, target, copyOptions)
     }
 
     @Throws(IOException::class)
     override fun move(source: Path, target: Path, vararg options: CopyOption) {
-        source as? DocumentPath ?: throw ProviderMismatchException(source.toString())
-        target as? DocumentPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<DocumentPath>(source)
+        requireProviderPath<DocumentPath>(target)
         val copyOptions = options.toCopyOptions()
         DocumentCopyMove.move(source, target, copyOptions)
     }
 
     override fun isSameFile(path: Path, path2: Path): Boolean {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         // TODO: DocumentsContract.findDocumentPath()?
         return path == path2
     }
 
     override fun isHidden(path: Path): Boolean {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         val fileName = path.fileNameByteString ?: return false
         return fileName.startsWith(HIDDEN_FILE_NAME_PREFIX)
     }
 
     override fun getFileStore(path: Path): FileStore {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         // This checks existence as well.
         val mimeType = try {
             DocumentResolver.getMimeType(path)
@@ -410,7 +398,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
     }
 
     private fun getFileAttributeView(path: Path): DocumentFileAttributeView {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         return DocumentFileAttributeView(path)
     }
 
@@ -419,7 +407,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any> {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -429,13 +417,13 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         value: Any,
         vararg options: LinkOption
     ) {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
-        path as? DocumentPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<DocumentPath>(path)
         return DocumentPathObservable(path, intervalMillis)
     }
 
@@ -446,7 +434,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
         intervalMillis: Long,
         listener: (List<Path>) -> Unit
     ) {
-        directory as? DocumentPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<DocumentPath>(directory)
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 }

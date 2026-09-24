@@ -24,25 +24,30 @@ class FileInformation(
 ) : PathInformation()
 
 @Throws(SMBRuntimeException::class)
-fun FileIdFullDirectoryInformation.toFileInformation(): FileInformation =
-    FileInformation(
-        creationTime, lastAccessTime, lastWriteTime, changeTime, endOfFile, fileAttributes, fileId
-    )
+fun FileIdFullDirectoryInformation.toFileInformation(): FileInformation = FileInformation(
+    creationTime,
+    lastAccessTime,
+    lastWriteTime,
+    changeTime,
+    endOfFile,
+    fileAttributes,
+    fileId
+)
 
-fun FileAllInformation.toFileInformation(): FileInformation =
-    FileInformation(
-        basicInformation.creationTime, basicInformation.lastAccessTime,
-        basicInformation.lastWriteTime, basicInformation.changeTime, standardInformation.endOfFile,
-        basicInformation.fileAttributes, internalInformation.indexNumber
-    )
+fun FileAllInformation.toFileInformation(): FileInformation = FileInformation(
+    basicInformation.creationTime,
+    basicInformation.lastAccessTime,
+    basicInformation.lastWriteTime,
+    basicInformation.changeTime,
+    standardInformation.endOfFile,
+    basicInformation.fileAttributes,
+    internalInformation.indexNumber
+)
 
-class ShareInformation(
-    val type: ShareType,
-    val shareInfo: ShareInfo?
-) : PathInformation()
+class ShareInformation(val type: ShareType, val shareInfo: ShareInfo?) : PathInformation()
 
 enum class ShareType {
     DISK,
     PIPE,
-    PRINTER,
+    PRINTER
 }

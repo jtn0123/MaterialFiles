@@ -5,6 +5,9 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
+import java.io.InterruptedIOException
+import java.util.concurrent.atomic.AtomicInteger
 import java8.nio.file.DirectoryIteratorException
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
@@ -13,9 +16,7 @@ import java8.nio.file.WatchEvent
 import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.BuildConfig
 import me.zhanghai.android.files.provider.FileSystemProviders
-import java.io.IOException
-import java.io.InterruptedIOException
-import java.util.concurrent.atomic.AtomicInteger
+import me.zhanghai.android.files.util.logWarning
 
 class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
     private val pollers = mutableMapOf<Path, Poller>()
@@ -26,19 +27,7 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
         kinds: Array<WatchEvent.Kind<*>>,
         vararg modifiers: WatchEvent.Modifier
     ): PollingWatchKey {
-        val kindSet = mutableSetOf<WatchEvent.Kind<*>>()
-        for (kind in kinds) {
-            when (kind) {
-                StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.ENTRY_MODIFY -> kindSet += kind
-                // Ignored.
-                StandardWatchEventKinds.OVERFLOW -> {}
-                else -> throw UnsupportedOperationException(kind.name())
-            }
-        }
-        for (modifier in modifiers) {
-            throw UnsupportedOperationException(modifier.name())
-        }
+        val kindSet = watchEventKindSetOf(kinds, modifiers)
         synchronized(pollers) {
             var poller = pollers[path]
             if (poller != null) {
@@ -59,12 +48,13 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
     }
 
     override fun cancel(key: PollingWatchKey) {
-        val poller = synchronized(pollers) { pollers.remove(key.watchable())!! }
+        // Gone already if close() or its own failure stopped it.
+        val poller = synchronized(pollers) { pollers.remove(key.watchable()) } ?: return
         poller.interrupt()
         try {
             poller.join()
         } catch (e: InterruptedException) {
-            e.printStackTrace()
+            e.logWarning("PollingWatchService", "cancel")
         }
     }
 
@@ -91,7 +81,9 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
         exception?.let { throw it }
     }
 
-    private class Poller @Throws(IOException::class) constructor(
+    private class Poller
+    @Throws(IOException::class)
+    constructor(
         private val watchService: PollingWatchService,
         private val path: Path,
         @Volatile
@@ -111,44 +103,28 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
                 while (true) {
                     sleep(POLL_INTERNAL_MILLIS)
                     val newFiles = getFiles()
-                    if (FileSystemProviders.overflowWatchEvents) {
-                        if (newFiles != oldFiles) {
-                            key.addEvent(StandardWatchEventKinds.OVERFLOW, null)
-                        }
-                    } else {
-                        for ((path, oldAttributes) in oldFiles) {
-                            val newAttributes = newFiles[path]
-                            val kind = when {
-                                newAttributes == null -> StandardWatchEventKinds.ENTRY_DELETE
-                                newAttributes != oldAttributes ->
-                                    StandardWatchEventKinds.ENTRY_MODIFY
-                                else -> continue
-                            }
-                            if (kind !in kinds) {
-                                continue
-                            }
-                            key.addEvent(kind, path)
-                        }
-                        for (path in newFiles.keys) {
-                            if (path in oldFiles) {
-                                continue
-                            }
-                            val kind = StandardWatchEventKinds.ENTRY_CREATE
-                            if (kind !in kinds) {
-                                continue
-                            }
-                            key.addEvent(kind, path)
-                        }
-                    }
+                    addEvents(newFiles)
                     oldFiles = newFiles
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.logWarning("PollingWatchService", "run")
                 key.setInvalid()
                 if (!(e is InterruptedException || e is InterruptedIOException)) {
                     key.signal()
                 }
                 watchService.removePoller(this)
+            }
+        }
+
+        private fun addEvents(newFiles: Map<Path, BasicFileAttributes>) {
+            if (FileSystemProviders.overflowWatchEvents) {
+                if (newFiles != oldFiles) {
+                    key.addEvent(StandardWatchEventKinds.OVERFLOW, null)
+                }
+                return
+            }
+            for ((kind, path) in diffPolledFiles(oldFiles, newFiles, kinds)) {
+                key.addEvent(kind, path)
             }
         }
 
@@ -161,10 +137,11 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
                             directoryStream.forEach {
                                 val attributes = try {
                                     it.readAttributes(
-                                        BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS
+                                        BasicFileAttributes::class.java,
+                                        LinkOption.NOFOLLOW_LINKS
                                     )
                                 } catch (e: IOException) {
-                                    e.printStackTrace()
+                                    e.logWarning("PollingWatchService", "getFiles")
                                     return@forEach
                                 }
                                 this[it] = attributes
@@ -175,7 +152,8 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
                     }
                 } else {
                     this[path] = path.readAttributes(
-                        BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS
+                        BasicFileAttributes::class.java,
+                        LinkOption.NOFOLLOW_LINKS
                     )
                 }
             }.also {
@@ -183,8 +161,8 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
                     // Ensure that the attributes class has overridden equals().
                     val attributes = it.values.firstOrNull() ?: return@also
                     check(
-                        attributes::class.java.getMethod("equals", Object::class.java)
-                            != Object::class.java.getMethod("equals", Object::class.java)
+                        attributes::class.java.getMethod("equals", Any::class.java)
+                            != Any::class.java.getMethod("equals", Any::class.java)
                     )
                 }
             }
@@ -196,3 +174,34 @@ class PollingWatchService : AbstractWatchService<PollingWatchKey>() {
         }
     }
 }
+
+/**
+ * The events that turn [oldFiles] into [newFiles], limited to [kinds]: deletions and
+ * modifications in the order of [oldFiles], then creations in the order of [newFiles].
+ */
+internal fun <A : Any> diffPolledFiles(
+    oldFiles: Map<Path, A>,
+    newFiles: Map<Path, A>,
+    kinds: Set<WatchEvent.Kind<*>>
+): List<Pair<WatchEvent.Kind<Path>, Path>> = buildList {
+    for ((path, oldAttributes) in oldFiles) {
+        val kind = changeKind(oldAttributes, newFiles[path])
+        if (kind != null && kind in kinds) {
+            this += kind to path
+        }
+    }
+    if (StandardWatchEventKinds.ENTRY_CREATE in kinds) {
+        for (path in newFiles.keys) {
+            if (path !in oldFiles) {
+                this += StandardWatchEventKinds.ENTRY_CREATE to path
+            }
+        }
+    }
+}
+
+private fun <A : Any> changeKind(oldAttributes: A, newAttributes: A?): WatchEvent.Kind<Path>? =
+    when (newAttributes) {
+        null -> StandardWatchEventKinds.ENTRY_DELETE
+        oldAttributes -> null
+        else -> StandardWatchEventKinds.ENTRY_MODIFY
+    }

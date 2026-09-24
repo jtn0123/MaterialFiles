@@ -17,19 +17,17 @@ import me.zhanghai.android.files.navigation.BookmarkDirectory
 import me.zhanghai.android.files.ui.SimpleAdapter
 import me.zhanghai.android.files.util.layoutInflater
 
-class BookmarkDirectoryListAdapter(
-    private val listener: Listener
-) : SimpleAdapter<BookmarkDirectory, BookmarkDirectoryListAdapter.ViewHolder>(),
+class BookmarkDirectoryListAdapter(private val listener: Listener) :
+    SimpleAdapter<BookmarkDirectory, BookmarkDirectoryListAdapter.ViewHolder>(),
     DraggableItemAdapter<BookmarkDirectoryListAdapter.ViewHolder> {
     override val hasStableIds: Boolean
         get() = true
 
     override fun getItemId(position: Int): Long = getItem(position).id
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
-        ViewHolder(
-            BookmarkDirectoryItemBinding.inflate(parent.context.layoutInflater, parent, false)
-        )
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
+        BookmarkDirectoryItemBinding.inflate(parent.context.layoutInflater, parent, false)
+    )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val bookmarkDirectory = getItem(position)
@@ -43,7 +41,10 @@ class BookmarkDirectoryListAdapter(
 
     override fun onCheckCanStartDrag(holder: ViewHolder, position: Int, x: Int, y: Int): Boolean =
         (holder.binding.root as ViewGroup).isTransformedTouchPointInViewCompat(
-            x.toFloat(), y.toFloat(), holder.binding.dragHandleView, null
+            x.toFloat(),
+            y.toFloat(),
+            holder.binding.dragHandleView,
+            null
         )
 
     override fun onGetItemDraggableRange(holder: ViewHolder, position: Int): ItemDraggableRange? =
@@ -66,9 +67,10 @@ class BookmarkDirectoryListAdapter(
         listener.moveBookmarkDirectory(fromPosition, toPosition)
     }
 
-    class ViewHolder(val binding: BookmarkDirectoryItemBinding) : AbstractDraggableItemViewHolder(
-        binding.root
-    )
+    class ViewHolder(val binding: BookmarkDirectoryItemBinding) :
+        AbstractDraggableItemViewHolder(
+            binding.root
+        )
 
     interface Listener {
         fun editBookmarkDirectory(bookmarkDirectory: BookmarkDirectory)

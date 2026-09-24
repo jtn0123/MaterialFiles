@@ -44,10 +44,9 @@ class FileListActivity : AppActivity() {
     }
 
     companion object {
-        fun createViewIntent(path: Path): Intent =
-            FileListActivity::class.createIntent()
-                .setAction(Intent.ACTION_VIEW)
-                .apply { extraPath = path }
+        fun createViewIntent(path: Path): Intent = FileListActivity::class.createIntent()
+            .setAction(Intent.ACTION_VIEW)
+            .apply { extraPath = path }
     }
 
     class OpenFileContract : ActivityResultContract<List<MimeType>, Path?>() {
@@ -66,15 +65,14 @@ class FileListActivity : AppActivity() {
         override fun createIntent(
             context: Context,
             input: Triple<MimeType, String?, Path?>
-        ): Intent =
-            FileListActivity::class.createIntent()
-                .setAction(Intent.ACTION_CREATE_DOCUMENT)
-                .setType(input.first.value)
-                .addCategory(Intent.CATEGORY_OPENABLE)
-                .apply {
-                    input.second?.let { putExtra(Intent.EXTRA_TITLE, it) }
-                    input.third?.let { extraPath = it }
-                }
+        ): Intent = FileListActivity::class.createIntent()
+            .setAction(Intent.ACTION_CREATE_DOCUMENT)
+            .setType(input.first.value)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .apply {
+                input.second?.let { putExtra(Intent.EXTRA_TITLE, it) }
+                input.third?.let { extraPath = it }
+            }
 
         override fun parseResult(resultCode: Int, intent: Intent?): Path? =
             if (resultCode == RESULT_OK) intent?.extraPath else null

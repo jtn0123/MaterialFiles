@@ -23,34 +23,43 @@ object ClickableMovementMethod : BaseMovementMethod() {
     }
 
     override fun onTouchEvent(view: TextView, text: Spannable, event: MotionEvent): Boolean {
-        when (val action = event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP -> {
-                val x = event.x.toInt() - view.totalPaddingLeft + view.scrollX
-                val y = event.y.toInt() - view.totalPaddingTop + view.scrollY
-                val layout = view.layout
-                val span = if (y < 0 || y > layout.height) {
-                    null
-                } else {
-                    val line = layout.getLineForVertical(y)
-                    if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) {
-                        null
-                    } else {
-                        val off = layout.getOffsetForHorizontal(line, x.toFloat())
-                        text.getSpans(off, off, ClickableSpan::class.java).firstOrNull()
-                    }
-                }
-                if (span != null) {
-                    if (action == MotionEvent.ACTION_DOWN) {
-                        Selection.setSelection(text, text.getSpanStart(span), text.getSpanEnd(span))
-                    } else {
-                        span.onClick(view)
-                    }
-                    return true
-                } else {
-                    Selection.removeSelection(text)
-                }
-            }
+        if (!event.isClickableSpanTouch) {
+            return false
         }
-        return false
+        val span = view.findClickableSpanAt(text, event)
+        if (span == null) {
+            Selection.removeSelection(text)
+            return false
+        }
+        span.onTouch(view, text, event)
+        return true
+    }
+}
+
+internal val MotionEvent.isClickableSpanTouch: Boolean
+    get() = actionMasked == MotionEvent.ACTION_DOWN || actionMasked == MotionEvent.ACTION_UP
+
+/** Returns the [ClickableSpan] under [event] in [text] shown by this view, if any. */
+internal fun TextView.findClickableSpanAt(text: Spannable, event: MotionEvent): ClickableSpan? {
+    val x = event.x.toInt() - totalPaddingLeft + scrollX
+    val y = event.y.toInt() - totalPaddingTop + scrollY
+    val layout = layout
+    if (y < 0 || y > layout.height) {
+        return null
+    }
+    val line = layout.getLineForVertical(y)
+    if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) {
+        return null
+    }
+    val offset = layout.getOffsetForHorizontal(line, x.toFloat())
+    return text.getSpans(offset, offset, ClickableSpan::class.java).firstOrNull()
+}
+
+/** Selects this span when [event] goes down on it, and clicks it when [event] goes up. */
+internal fun ClickableSpan.onTouch(view: TextView, text: Spannable, event: MotionEvent) {
+    if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+        Selection.setSelection(text, text.getSpanStart(this), text.getSpanEnd(this))
+    } else {
+        onClick(view)
     }
 }

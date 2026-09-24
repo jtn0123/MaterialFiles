@@ -34,6 +34,7 @@ import java8.nio.file.attribute.FileAttributeView
 import java8.nio.file.spi.FileSystemProvider
 import me.zhanghai.android.files.provider.common.ByteStringPath
 import me.zhanghai.android.files.provider.common.DelegateSchemeFileSystemProvider
+import me.zhanghai.android.files.provider.common.OpenOptions
 import me.zhanghai.android.files.provider.common.PathListDirectoryStream
 import me.zhanghai.android.files.provider.common.PathObservable
 import me.zhanghai.android.files.provider.common.PathObservableProvider
@@ -42,6 +43,7 @@ import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
 import me.zhanghai.android.files.provider.common.WatchServicePathObservable
 import me.zhanghai.android.files.provider.common.decodedPathByteString
 import me.zhanghai.android.files.provider.common.decodedQueryByteString
+import me.zhanghai.android.files.provider.common.requireProviderPath
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.common.toCopyOptions
@@ -51,6 +53,7 @@ import me.zhanghai.android.files.provider.ftp.client.Authority
 import me.zhanghai.android.files.provider.ftp.client.Client
 import me.zhanghai.android.files.provider.ftp.client.Mode
 import me.zhanghai.android.files.provider.ftp.client.Protocol
+import org.apache.commons.net.ftp.FTPFile
 
 object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
     /** Set by the app initializers before any path of this provider is used. */
@@ -126,41 +129,16 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
 
     @Throws(IOException::class)
     override fun newInputStream(file: Path, vararg options: OpenOption): InputStream {
-        file as? FtpPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<FtpPath>(file)
         val openOptions = options.toOpenOptions()
         openOptions.checkForFtp()
+        // Without WRITE, toOpenOptions() has already dropped TRUNCATE_EXISTING, CREATE and
+        // CREATE_NEW, and APPEND implies WRITE, so WRITE is all there is to refuse here.
         if (openOptions.write) {
             throw UnsupportedOperationException(StandardOpenOption.WRITE.toString())
         }
-        if (openOptions.append) {
-            throw UnsupportedOperationException(StandardOpenOption.APPEND.toString())
-        }
-        if (openOptions.truncateExisting) {
-            throw UnsupportedOperationException(StandardOpenOption.TRUNCATE_EXISTING.toString())
-        }
-        if (openOptions.create || openOptions.createNew || openOptions.noFollowLinks) {
-            val fileFile = try {
-                client.listFileOrNull(file, true)
-            } catch (e: IOException) {
-                throw e.toFileSystemExceptionForFtp(file.toString())
-            }
-            if (openOptions.createNew && fileFile != null) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (openOptions.noFollowLinks && fileFile != null && fileFile.isSymbolicLink) {
-                throw FileSystemException(
-                    file.toString(),
-                    null,
-                    "File is a symbolic link: $fileFile"
-                )
-            }
-            if ((openOptions.create || openOptions.createNew) && fileFile == null) {
-                try {
-                    client.createFile(file)
-                } catch (e: IOException) {
-                    throw e.toFileSystemExceptionForFtp(file.toString())
-                }
-            }
+        if (openOptions.noFollowLinks) {
+            checkNoFollowLinks(file, openOptions, listFileOrNullNoFollow(file))
         }
         try {
             return client.retrieveFile(file)
@@ -171,7 +149,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
 
     @Throws(IOException::class)
     override fun newOutputStream(file: Path, vararg options: OpenOption): OutputStream {
-        file as? FtpPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<FtpPath>(file)
         val optionsSet = mutableSetOf(*options)
         if (optionsSet.isEmpty()) {
             optionsSet += StandardOpenOption.CREATE
@@ -183,11 +161,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         if (!openOptions.truncateExisting && !openOptions.createNew) {
             throw UnsupportedOperationException("Missing ${StandardOpenOption.TRUNCATE_EXISTING}")
         }
-        val fileFile = try {
-            client.listFileOrNull(file, true)
-        } catch (e: IOException) {
-            throw e.toFileSystemExceptionForFtp(file.toString())
-        }
+        val fileFile = listFileOrNullNoFollow(file)
         if (openOptions.createNew && fileFile != null) {
             throw FileAlreadyExistsException(file.toString())
         }
@@ -207,7 +181,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): FileChannel {
-        file as? FtpPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<FtpPath>(file)
         options.toOpenOptions().checkForFtp()
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
@@ -221,7 +195,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         options: Set<OpenOption>,
         vararg attributes: FileAttribute<*>
     ): SeekableByteChannel {
-        file as? FtpPath ?: throw ProviderMismatchException(file.toString())
+        requireProviderPath<FtpPath>(file)
         val openOptions = options.toOpenOptions()
         openOptions.checkForFtp()
         if (openOptions.write && !openOptions.truncateExisting) {
@@ -230,31 +204,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         if (openOptions.write || openOptions.create || openOptions.createNew ||
             openOptions.noFollowLinks
         ) {
-            val fileFile = try {
-                client.listFileOrNull(file, true)
-            } catch (e: IOException) {
-                throw e.toFileSystemExceptionForFtp(file.toString())
-            }
-            if (openOptions.createNew && fileFile != null) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (openOptions.noFollowLinks && fileFile != null && fileFile.isSymbolicLink) {
-                throw FileSystemException(
-                    file.toString(),
-                    null,
-                    "File is a symbolic link: $fileFile"
-                )
-            }
-            if (fileFile == null) {
-                if (!(openOptions.create || openOptions.createNew)) {
-                    throw NoSuchFileException(file.toString())
-                }
-                try {
-                    client.createFile(file)
-                } catch (e: IOException) {
-                    throw e.toFileSystemExceptionForFtp(file.toString())
-                }
-            }
+            prepareFileToOpenChannel(file, openOptions)
         }
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
@@ -266,12 +216,46 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         }
     }
 
+    private fun prepareFileToOpenChannel(file: FtpPath, openOptions: OpenOptions) {
+        val fileFile = listFileOrNullNoFollow(file)
+        if (openOptions.createNew && fileFile != null) {
+            throw FileAlreadyExistsException(file.toString())
+        }
+        checkNoFollowLinks(file, openOptions, fileFile)
+        if (fileFile == null) {
+            if (!(openOptions.create || openOptions.createNew)) {
+                throw NoSuchFileException(file.toString())
+            }
+            createFileToOpen(file)
+        }
+    }
+
+    private fun listFileOrNullNoFollow(file: FtpPath): FTPFile? = try {
+        client.listFileOrNull(file, true)
+    } catch (e: IOException) {
+        throw e.toFileSystemExceptionForFtp(file.toString())
+    }
+
+    private fun checkNoFollowLinks(file: FtpPath, openOptions: OpenOptions, fileFile: FTPFile?) {
+        if (openOptions.noFollowLinks && fileFile != null && fileFile.isSymbolicLink) {
+            throw FileSystemException(file.toString(), null, "File is a symbolic link: $fileFile")
+        }
+    }
+
+    private fun createFileToOpen(file: FtpPath) {
+        try {
+            client.createFile(file)
+        } catch (e: IOException) {
+            throw e.toFileSystemExceptionForFtp(file.toString())
+        }
+    }
+
     @Throws(IOException::class)
     override fun newDirectoryStream(
         directory: Path,
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
-        directory as? FtpPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<FtpPath>(directory)
         val paths = try {
             @Suppress("UNCHECKED_CAST")
             client.listDirectory(directory) as List<Path>
@@ -283,7 +267,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
 
     @Throws(IOException::class)
     override fun createDirectory(directory: Path, vararg attributes: FileAttribute<*>) {
-        directory as? FtpPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<FtpPath>(directory)
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
         }
@@ -295,10 +279,9 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
-        link as? FtpPath ?: throw ProviderMismatchException(link.toString())
-        when (target) {
-            is FtpPath, is ByteStringPath -> {}
-            else -> throw ProviderMismatchException(target.toString())
+        requireProviderPath<FtpPath>(link)
+        if (target !is FtpPath && target !is ByteStringPath) {
+            throw ProviderMismatchException(target.toString())
         }
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
@@ -307,14 +290,14 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     override fun createLink(link: Path, existing: Path) {
-        link as? FtpPath ?: throw ProviderMismatchException(link.toString())
-        existing as? FtpPath ?: throw ProviderMismatchException(existing.toString())
+        requireProviderPath<FtpPath>(link)
+        requireProviderPath<FtpPath>(existing)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun delete(path: Path) {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         try {
             client.delete(path)
         } catch (e: IOException) {
@@ -323,7 +306,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     override fun readSymbolicLink(link: Path): Path {
-        link as? FtpPath ?: throw ProviderMismatchException(link.toString())
+        requireProviderPath<FtpPath>(link)
         val linkFile = try {
             client.listFile(link, true)
         } catch (e: IOException) {
@@ -342,39 +325,39 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
 
     @Throws(IOException::class)
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
-        source as? FtpPath ?: throw ProviderMismatchException(source.toString())
-        target as? FtpPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<FtpPath>(source)
+        requireProviderPath<FtpPath>(target)
         val copyOptions = options.toCopyOptions()
         FtpCopyMove.copy(source, target, copyOptions)
     }
 
     @Throws(IOException::class)
     override fun move(source: Path, target: Path, vararg options: CopyOption) {
-        source as? FtpPath ?: throw ProviderMismatchException(source.toString())
-        target as? FtpPath ?: throw ProviderMismatchException(target.toString())
+        requireProviderPath<FtpPath>(source)
+        requireProviderPath<FtpPath>(target)
         val copyOptions = options.toCopyOptions()
         FtpCopyMove.move(source, target, copyOptions)
     }
 
     override fun isSameFile(path: Path, path2: Path): Boolean {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         return path == path2
     }
 
     override fun isHidden(path: Path): Boolean {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         val fileName = path.fileNameByteString ?: return false
         return fileName.startsWith(HIDDEN_FILE_NAME_PREFIX)
     }
 
     override fun getFileStore(path: Path): FileStore {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         val accessModes = modes.toAccessModes()
         if (accessModes.write) {
             throw UnsupportedOperationException(AccessMode.WRITE.toString())
@@ -419,7 +402,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     }
 
     private fun getFileAttributeView(path: Path, vararg options: LinkOption): FtpFileAttributeView {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         val linkOptions = options.toLinkOptions()
         return FtpFileAttributeView(path, linkOptions.noFollowLinks)
     }
@@ -429,7 +412,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any> {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         throw UnsupportedOperationException()
     }
 
@@ -439,13 +422,13 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         value: Any,
         vararg options: LinkOption
     ) {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         throw UnsupportedOperationException()
     }
 
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
-        path as? FtpPath ?: throw ProviderMismatchException(path.toString())
+        requireProviderPath<FtpPath>(path)
         return WatchServicePathObservable(path, intervalMillis)
     }
 
@@ -456,7 +439,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         intervalMillis: Long,
         listener: (List<Path>) -> Unit
     ) {
-        directory as? FtpPath ?: throw ProviderMismatchException(directory.toString())
+        requireProviderPath<FtpPath>(directory)
         WalkFileTreeSearchable.search(directory, query, intervalMillis, listener)
     }
 }

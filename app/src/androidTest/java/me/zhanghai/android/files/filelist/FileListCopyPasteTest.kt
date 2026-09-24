@@ -89,6 +89,8 @@ class FileListCopyPasteTest {
             "The action mode never showed the selection count",
             device.wait(Until.findObject(By.text("1")), TIMEOUT_MILLIS)
         )
+        // The action mode is still animating in right after its count appears.
+        device.waitForIdle()
         device.pressBack()
         assertTrue(
             "Back did not clear the selection",
@@ -137,11 +139,15 @@ class FileListCopyPasteTest {
             "The paste bar never appeared in the subdirectory",
             device.wait(Until.findObject(By.text(pasteBarTitle)), TIMEOUT_MILLIS)
         )
+        device.waitForIdle()
         checkNotNull(device.findObject(By.desc("Paste"))).click()
-        assertNotNull(
-            "The pasted file never appeared in the subdirectory listing",
-            device.wait(Until.findObject(By.text(FILE_NAME)), TIMEOUT_MILLIS)
-        )
+        var pasted = device.wait(Until.findObject(By.text(FILE_NAME)), SHORT_TIMEOUT_MILLIS)
+        if (pasted == null) {
+            // A tap that landed while the paste bar was still animating in is lost.
+            device.findObject(By.desc("Paste"))?.click()
+            pasted = device.wait(Until.findObject(By.text(FILE_NAME)), TIMEOUT_MILLIS)
+        }
+        assertNotNull("The pasted file never appeared in the subdirectory listing", pasted)
         assertTrue(
             "The paste bar stayed after pasting",
             device.wait(Until.gone(By.text(pasteBarTitle)), TIMEOUT_MILLIS)
@@ -159,5 +165,6 @@ class FileListCopyPasteTest {
         private const val FILE_CONTENT = "MaterialFilesTest"
         private const val SUBDIRECTORY_NAME = "target"
         private const val TIMEOUT_MILLIS = 30_000L
+        private const val SHORT_TIMEOUT_MILLIS = 5_000L
     }
 }

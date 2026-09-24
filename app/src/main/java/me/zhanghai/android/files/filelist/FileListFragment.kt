@@ -176,6 +176,20 @@ class FileListFragment :
                     }
                 }
         )
+        // AppCompat collapses an expanded action view on the Back key, but not on the predictive
+        // back callback, so collapse search here before navigating up.
+        addOnBackPressedCallback(
+            object : OnBackPressedCallback(false) {
+                override fun handleOnBackPressed() {
+                    menus.collapseSearchView()
+                }
+            }
+                .also { callback ->
+                    viewModel.searchViewExpandedLiveData.observe(viewLifecycleOwner) {
+                        callback.isEnabled = it
+                    }
+                }
+        )
         addOnBackPressedCallback(actionModes.overlayActionMode.onBackPressedCallback)
         addOnBackPressedCallback(SpeedDialViewOnBackPressedCallback(binding.speedDialView))
         binding.drawerLayout?.let {
@@ -183,10 +197,14 @@ class FileListFragment :
         }
 
         if (!viewModel.hasTrail) {
-            pick.resetTrailFromIntent(args.intent, argsPath)
+            val restoredLocation = savedInstanceState
+                ?.getParcelable(STATE_LOCATION, FileListLastLocation::class.java)
+            pick.resetTrailFromIntent(args.intent, argsPath, restoredLocation)
         }
         viewModel.currentPathLiveData.observe(viewLifecycleOwner) {
             actionModes.onCurrentPathChanged()
+            // The list still shows the previous folder here, so its scroll position is not ours.
+            navigation.saveLastLocation(false)
         }
         viewModel.searchViewExpandedLiveData.observe(viewLifecycleOwner) {
             menus.updateViewSortMenuItems()
@@ -229,6 +247,22 @@ class FileListFragment :
         super.onResume()
 
         permissions.onResume()
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        navigation.saveLastLocation(true)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        // The view model does not survive the system destroying this instance, and the intent only
+        // knows where it started.
+        if (viewModel.hasTrail) {
+            outState.putParcelable(STATE_LOCATION, navigation.createLocation(view != null))
+        }
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -411,4 +445,8 @@ class FileListFragment :
 
     @Parcelize
     class Args(val intent: Intent) : ParcelableArgs
+
+    companion object {
+        private val STATE_LOCATION = "${FileListFragment::class.java.name}.state.LOCATION"
+    }
 }

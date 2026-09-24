@@ -20,21 +20,20 @@ class MemoryCookieJar : CookieJar {
         }
     }
 
-    override fun loadForRequest(url: HttpUrl): List<Cookie> =
-        buildList {
-            synchronized(cookieMap) {
-                val iterator = cookieMap.values.iterator()
-                val currentTimeMillis = System.currentTimeMillis()
-                while (iterator.hasNext()) {
-                    val cookie = iterator.next()
-                    if (cookie.expiresAt <= currentTimeMillis) {
-                        iterator.remove()
-                        continue
-                    }
-                    if (cookie.matches(url)) {
-                        this += cookie
-                    }
+    override fun loadForRequest(url: HttpUrl): List<Cookie> = buildList {
+        synchronized(cookieMap) {
+            val iterator = cookieMap.values.iterator()
+            val currentTimeMillis = System.currentTimeMillis()
+            while (iterator.hasNext()) {
+                val cookie = iterator.next()
+                if (cookie.expiresAt <= currentTimeMillis) {
+                    iterator.remove()
+                    continue
+                }
+                if (cookie.matches(url)) {
+                    this += cookie
                 }
             }
         }
+    }
 }

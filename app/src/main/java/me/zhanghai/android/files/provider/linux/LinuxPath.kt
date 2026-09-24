@@ -8,6 +8,8 @@ package me.zhanghai.android.files.provider.linux
 import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.File
+import java.io.IOException
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
 import java8.nio.file.ProviderMismatchException
@@ -23,14 +25,15 @@ import me.zhanghai.android.files.provider.root.RootablePath
 import me.zhanghai.android.files.storage.StorageVolumeListLiveData
 import me.zhanghai.android.files.util.readParcelable
 import me.zhanghai.android.files.util.valueCompat
-import java.io.File
-import java.io.IOException
 
-internal class LinuxPath : ByteStringListPath<LinuxPath>, RootablePath {
+internal class LinuxPath :
+    ByteStringListPath<LinuxPath>,
+    RootablePath {
     private val fileSystem: LinuxFileSystem
 
     constructor(fileSystem: LinuxFileSystem, path: ByteString) : super(
-        LinuxFileSystem.SEPARATOR, path
+        LinuxFileSystem.SEPARATOR,
+        path
     ) {
         this.fileSystem = fileSystem
     }
@@ -59,9 +62,8 @@ internal class LinuxPath : ByteStringListPath<LinuxPath>, RootablePath {
     override fun getRoot(): LinuxPath? = if (isAbsolute) fileSystem.rootDirectory else null
 
     @Throws(IOException::class)
-    override fun toRealPath(vararg options: LinkOption): LinuxPath {
+    override fun toRealPath(vararg options: LinkOption): LinuxPath =
         throw UnsupportedOperationException()
-    }
 
     override fun toFile(): File = File(toString())
 

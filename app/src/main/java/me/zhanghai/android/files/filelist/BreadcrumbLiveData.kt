@@ -12,9 +12,8 @@ import java8.nio.file.Path
 import me.zhanghai.android.files.navigation.NavigationRootMapLiveData
 import me.zhanghai.android.files.util.valueCompat
 
-class BreadcrumbLiveData(
-    private val trailLiveData: LiveData<TrailData>
-) : MediatorLiveData<BreadcrumbData>() {
+class BreadcrumbLiveData(private val trailLiveData: LiveData<TrailData>) :
+    MediatorLiveData<BreadcrumbData>() {
     init {
         addSource(trailLiveData) { loadValue() }
         addSource(NavigationRootMapLiveData) { loadValue() }

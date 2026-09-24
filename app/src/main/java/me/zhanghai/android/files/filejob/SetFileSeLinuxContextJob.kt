@@ -6,16 +6,12 @@
 package me.zhanghai.android.files.filejob
 
 import java.io.IOException
-import java.io.InterruptedIOException
-import java8.nio.file.FileVisitResult
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
-import java8.nio.file.SimpleFileVisitor
-import java8.nio.file.attribute.BasicFileAttributes
 import me.zhanghai.android.files.R
-import me.zhanghai.android.files.provider.common.UserActionRequiredException
 import me.zhanghai.android.files.provider.common.setSeLinuxContext
 import me.zhanghai.android.files.provider.common.toByteString
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toUserMessage
 
 class SetFileSeLinuxContextJob(
@@ -25,55 +21,19 @@ class SetFileSeLinuxContextJob(
 ) : FileJob() {
     @Throws(IOException::class)
     override fun run() {
-        val scanInfo = scan(
+        walkSettingAttribute(
             path,
             recursive,
             R.plurals.file_job_set_selinux_context_scan_notification_title_format
-        )
-        val transferInfo = TransferInfo(scanInfo, null)
-        val actionAllInfo = ActionAllInfo()
-        walkFileTreeForSettingAttributes(
-            path,
-            recursive,
-            object : SimpleFileVisitor<Path>() {
-                @Throws(IOException::class)
-                override fun preVisitDirectory(
-                    directory: Path,
-                    attributes: BasicFileAttributes
-                ): FileVisitResult = visitFile(directory, attributes)
-
-                @Throws(IOException::class)
-                override fun visitFile(
-                    file: Path,
-                    attributes: BasicFileAttributes
-                ): FileVisitResult {
-                    setSeLinuxContext(
-                        file,
-                        seLinuxContext,
-                        !attributes.isSymbolicLink,
-                        transferInfo,
-                        actionAllInfo
-                    )
-                    throwIfInterrupted()
-                    return FileVisitResult.CONTINUE
-                }
-
-                @Throws(IOException::class)
-                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                    // TODO: Prompt retry, skip, skip-all or abort.
-                    return super.visitFileFailed(file, exception)
-                }
-
-                @Throws(IOException::class)
-                override fun postVisitDirectory(
-                    directory: Path,
-                    exception: IOException?
-                ): FileVisitResult {
-                    // TODO: Prompt retry, skip, skip-all or abort.
-                    return super.postVisitDirectory(directory, exception)
-                }
-            }
-        )
+        ) { file, attributes, transferInfo, actionAllInfo ->
+            setSeLinuxContext(
+                file,
+                seLinuxContext,
+                !attributes.isSymbolicLink,
+                transferInfo,
+                actionAllInfo
+            )
+        }
     }
 }
 
@@ -85,32 +45,16 @@ private fun FileJob.setSeLinuxContext(
     transferInfo: TransferInfo,
     actionAllInfo: ActionAllInfo
 ) {
-    var retry: Boolean
-    do {
-        retry = false
-        try {
-            val options = if (followLinks) arrayOf() else arrayOf(LinkOption.NOFOLLOW_LINKS)
-            path.setSeLinuxContext(seLinuxContext.toByteString(), *options)
-            transferInfo.incrementTransferredFileCount()
-            postSetSeLinuxContextNotification(transferInfo, path)
-        } catch (e: InterruptedIOException) {
-            throw e
-        } catch (e: IOException) {
-            e.printStackTrace()
-            if (actionAllInfo.skipSetSeLinuxContextError) {
-                recordSkippedError()
-                transferInfo.skipFileIgnoringSize()
-                postSetSeLinuxContextNotification(transferInfo, path)
-                return
-            }
-            if (e is UserActionRequiredException) {
-                val result = showUserAction(e)
-                if (result) {
-                    retry = true
-                    continue
-                }
-            }
-            val result = showErrorDialog(
+    val options = if (followLinks) arrayOf() else arrayOf(LinkOption.NOFOLLOW_LINKS)
+    runCountedStep(
+        path,
+        transferInfo,
+        FileJob::postSetSeLinuxContextNotification,
+        { path.setSeLinuxContext(seLinuxContext.toByteString(), *options) }
+    ) { e ->
+        e.logWarning("SetFileSeLinuxContextJob", "setSeLinuxContext($path)")
+        decideOnError(e, actionAllInfo::skipSetSeLinuxContextError) {
+            showRetrySkipCancelDialog(
                 getString(
                     R.string.file_job_set_selinux_context_error_title_format,
                     getFileName(path)
@@ -120,40 +64,11 @@ private fun FileJob.setSeLinuxContext(
                     seLinuxContext,
                     e.toUserMessage(service)
                 ),
-                getReadOnlyFileStore(path, e),
-                true,
-                getString(R.string.retry),
-                getString(R.string.skip),
-                getString(android.R.string.cancel)
+                path,
+                e
             )
-            when (result.action) {
-                FileJobErrorAction.POSITIVE -> {
-                    retry = true
-                    continue
-                }
-
-                FileJobErrorAction.NEGATIVE -> {
-                    recordSkippedError()
-                    if (result.isAll) {
-                        actionAllInfo.skipSetSeLinuxContextError = true
-                    }
-                    transferInfo.skipFileIgnoringSize()
-                    postSetSeLinuxContextNotification(transferInfo, path)
-                    return
-                }
-
-                FileJobErrorAction.CANCELED -> {
-                    transferInfo.skipFileIgnoringSize()
-                    postSetSeLinuxContextNotification(transferInfo, path)
-                    return
-                }
-
-                FileJobErrorAction.NEUTRAL -> throw InterruptedIOException()
-
-                else -> throw AssertionError(result.action)
-            }
         }
-    } while (retry)
+    }
 }
 
 private fun FileJob.postSetSeLinuxContextNotification(

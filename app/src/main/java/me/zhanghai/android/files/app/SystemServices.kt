@@ -9,21 +9,26 @@ import android.content.ClipboardManager
 import android.content.ContentResolver
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.PowerManager
 import android.os.storage.StorageManager
 import android.view.inputmethod.InputMethodManager
 import androidx.core.app.NotificationManagerCompat
 import androidx.preference.PreferenceManager
+import java.util.concurrent.Executor
 import me.zhanghai.android.files.compat.getSystemServiceCompat
 import me.zhanghai.android.files.compat.mainExecutorCompat
 import okhttp3.OkHttpClient
-import java.util.concurrent.Executor
 
 val appClassLoader = AppProvider::class.java.classLoader
 
 val clipboardManager: ClipboardManager by lazy {
     application.getSystemServiceCompat(ClipboardManager::class.java)
+}
+
+val connectivityManager: ConnectivityManager by lazy {
+    application.getSystemServiceCompat(ConnectivityManager::class.java)
 }
 
 val contentResolver: ContentResolver by lazy { application.contentResolver }

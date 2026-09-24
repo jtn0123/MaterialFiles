@@ -13,18 +13,14 @@ import androidx.annotation.ColorInt
 import androidx.annotation.StyleRes
 import androidx.preference.DialogPreference
 import androidx.preference.PreferenceViewHolder
+import kotlin.math.roundToInt
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.util.getFloatByAttr
-import kotlin.math.roundToInt
 
 abstract class BaseColorPreference : DialogPreference {
     constructor(context: Context) : super(context)
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(
-        context, attrs, defStyleAttr
-    )
 
     constructor(
         context: Context,

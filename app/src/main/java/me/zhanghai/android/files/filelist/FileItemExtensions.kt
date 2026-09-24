@@ -7,9 +7,11 @@ package me.zhanghai.android.files.filelist
 
 import android.content.Context
 import android.os.Build
+import java.text.CollationKey
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileTime
+import me.zhanghai.android.files.coil.isReadableForThumbnail
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.getBrokenSymbolicLinkName
@@ -21,14 +23,12 @@ import me.zhanghai.android.files.file.isPdf
 import me.zhanghai.android.files.provider.archive.createArchiveRootPath
 import me.zhanghai.android.files.provider.document.documentSupportsThumbnail
 import me.zhanghai.android.files.provider.document.isDocumentPath
-import me.zhanghai.android.files.provider.ftp.isFtpPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.asFileName
 import me.zhanghai.android.files.util.isGetPackageArchiveInfoCompatible
 import me.zhanghai.android.files.util.isMediaMetadataRetrieverCompatible
 import me.zhanghai.android.files.util.valueCompat
-import java.text.CollationKey
 
 val FileItem.name: String
     get() = path.name
@@ -40,11 +40,11 @@ val FileItem.extension: String
     get() = if (attributes.isDirectory) "" else name.asFileName().extensions
 
 fun FileItem.getMimeTypeName(context: Context): String {
-        if (attributesNoFollowLinks.isSymbolicLink && isSymbolicLinkBroken) {
-            return MimeType.getBrokenSymbolicLinkName(context)
-        }
-        return mimeType.getName(extension, context)
+    if (attributesNoFollowLinks.isSymbolicLink && isSymbolicLinkBroken) {
+        return MimeType.getBrokenSymbolicLinkName(context)
     }
+    return mimeType.getName(extension, context)
+}
 
 val FileItem.isArchiveFile: Boolean
     get() = path.isArchiveFile(mimeType)
@@ -61,23 +61,59 @@ val FileItem.supportsThumbnail: Boolean
         if (path.isDocumentPath && attributes.documentSupportsThumbnail) {
             return true
         }
-        if (path.isRemotePath) {
-            val shouldReadRemotePath = !path.isFtpPath
-                && Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
-            if (!shouldReadRemotePath) {
-                return false
-            }
+        if (path.isRemotePath && !path.isReadableForThumbnail) {
+            return false
         }
         return when {
             mimeType.isApk && path.isGetPackageArchiveInfoCompatible -> true
-            mimeType.isImage -> true
+
+            mimeType.isImage -> mimeType.value in DECODABLE_IMAGE_MIME_TYPES
+
             mimeType.isMedia && path.isMediaMetadataRetrieverCompatible -> true
+
             mimeType.isPdf && (path.isLinuxPath || path.isDocumentPath) ->
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-                    || Settings.SHOW_PDF_THUMBNAIL_PRE_28.valueCompat
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ||
+                    Settings.SHOW_PDF_THUMBNAIL_PRE_28.valueCompat
+
             else -> false
         }
     }
+
+/**
+ * What Android and Coil can decode. Anything else that looks like an image (TIFF, Photoshop,
+ * drawings) would be read, in full on a server, only to fail.
+ *
+ * @see android.graphics.ImageDecoder
+ */
+private val DECODABLE_IMAGE_MIME_TYPES = setOf(
+    "image/apng",
+    "image/avif",
+    "image/bmp",
+    "image/gif",
+    "image/heic",
+    "image/heic-sequence",
+    "image/heif",
+    "image/heif-sequence",
+    "image/ico",
+    "image/jpeg",
+    "image/png",
+    "image/svg+xml",
+    "image/vnd.wap.wbmp",
+    "image/webp",
+    "image/x-icon",
+    "image/x-ms-bmp",
+    // Camera raw files, through the preview Skia extracts from them.
+    "image/x-adobe-dng",
+    "image/x-canon-cr2",
+    "image/x-fuji-raf",
+    "image/x-nikon-nef",
+    "image/x-nikon-nrw",
+    "image/x-olympus-orf",
+    "image/x-panasonic-rw2",
+    "image/x-pentax-pef",
+    "image/x-samsung-srw",
+    "image/x-sony-arw"
+)
 
 // @see android.content.pm.parsing.ApkLiteParseUtils.parsePackageSplitNames
 // @see android.content.pm.parsing.ParsingPackageUtils.validateName
@@ -86,8 +122,10 @@ private const val PACKAGE_NAME_COMPONENT_PATTERN = "[A-Za-z][0-9A-Z_a-z]*"
 private const val PACKAGE_NAME_PATTERN =
     "$PACKAGE_NAME_COMPONENT_PATTERN(?:\\.$PACKAGE_NAME_COMPONENT_PATTERN)+"
 private const val BASE64_URL_SAFE_CHARACTER_CLASS = "[0-9A-Za-z\\-_]"
-private const val BASE64_URL_SAFE_PATTERN = ("(?:$BASE64_URL_SAFE_CHARACTER_CLASS{4})*"
-    + "(?:$BASE64_URL_SAFE_CHARACTER_CLASS{3}=|$BASE64_URL_SAFE_CHARACTER_CLASS{2}==)?")
+private const val BASE64_URL_SAFE_PATTERN = (
+    "(?:$BASE64_URL_SAFE_CHARACTER_CLASS{4})*" +
+        "(?:$BASE64_URL_SAFE_CHARACTER_CLASS{3}=|$BASE64_URL_SAFE_CHARACTER_CLASS{2}==)?"
+    )
 private val APP_DIRECTORY_REGEX =
     Regex("($PACKAGE_NAME_PATTERN)(?:-$BASE64_URL_SAFE_PATTERN)?")
 
@@ -99,38 +137,32 @@ val FileItem.appDirectoryPackageName: String?
         return APP_DIRECTORY_REGEX.matchEntire(name)?.groupValues?.get(1)
     }
 
-fun FileItem.createDummyArchiveRoot(): FileItem =
-    FileItem(
-        path.createArchiveRootPath(), DummyCollationKey(), DummyArchiveRootBasicFileAttributes(),
-        null, null, false, MimeType.DIRECTORY
-    )
+fun FileItem.createDummyArchiveRoot(): FileItem = FileItem(
+    path.createArchiveRootPath(),
+    DummyCollationKey(),
+    DummyArchiveRootBasicFileAttributes(),
+    null,
+    null,
+    false,
+    MimeType.DIRECTORY
+)
 
 // Dummy collation key only to be added to the selection set, which may be used to determine file
 // type when confirming deletion.
 private class DummyCollationKey : CollationKey("") {
-    override fun compareTo(other: CollationKey?): Int {
-        throw UnsupportedOperationException()
-    }
+    override fun compareTo(other: CollationKey?): Int = throw UnsupportedOperationException()
 
-    override fun toByteArray(): ByteArray {
-        throw UnsupportedOperationException()
-    }
+    override fun toByteArray(): ByteArray = throw UnsupportedOperationException()
 }
 
 // Dummy attributes only to be added to the selection set, which may be used to determine file
 // type when confirming deletion.
 private class DummyArchiveRootBasicFileAttributes : BasicFileAttributes {
-    override fun lastModifiedTime(): FileTime {
-        throw UnsupportedOperationException()
-    }
+    override fun lastModifiedTime(): FileTime = throw UnsupportedOperationException()
 
-    override fun lastAccessTime(): FileTime {
-        throw UnsupportedOperationException()
-    }
+    override fun lastAccessTime(): FileTime = throw UnsupportedOperationException()
 
-    override fun creationTime(): FileTime {
-        throw UnsupportedOperationException()
-    }
+    override fun creationTime(): FileTime = throw UnsupportedOperationException()
 
     override fun isRegularFile(): Boolean = false
 
@@ -140,11 +172,7 @@ private class DummyArchiveRootBasicFileAttributes : BasicFileAttributes {
 
     override fun isOther(): Boolean = false
 
-    override fun size(): Long {
-        throw UnsupportedOperationException()
-    }
+    override fun size(): Long = throw UnsupportedOperationException()
 
-    override fun fileKey(): Any {
-        throw UnsupportedOperationException()
-    }
+    override fun fileKey(): Any = throw UnsupportedOperationException()
 }

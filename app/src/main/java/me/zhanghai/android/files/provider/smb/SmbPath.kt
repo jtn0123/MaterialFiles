@@ -7,6 +7,8 @@ package me.zhanghai.android.files.provider.smb
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.io.File
+import java.io.IOException
 import java8.nio.file.FileSystem
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
@@ -17,13 +19,14 @@ import java8.nio.file.WatchService
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.ByteStringListPath
 import me.zhanghai.android.files.provider.common.UriAuthority
+import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.smb.client.Authority
 import me.zhanghai.android.files.provider.smb.client.Client
 import me.zhanghai.android.files.util.readParcelable
-import java.io.File
-import java.io.IOException
 
-internal class SmbPath : ByteStringListPath<SmbPath>, Client.Path {
+internal class SmbPath :
+    ByteStringListPath<SmbPath>,
+    Client.Path {
     private val fileSystem: SmbFileSystem
 
     constructor(
@@ -52,6 +55,15 @@ internal class SmbPath : ByteStringListPath<SmbPath>, Client.Path {
     override val uriAuthority: UriAuthority
         get() = fileSystem.authority.toUriAuthority()
 
+    override val uriQuery: ByteString?
+        get() {
+            val authority = fileSystem.authority
+            if (authority.encrypt == Authority.DEFAULT_ENCRYPT) {
+                return null
+            }
+            return "$QUERY_PARAMETER_ENCRYPT=${authority.encrypt}".toByteString()
+        }
+
     override val defaultDirectory: SmbPath
         get() = fileSystem.defaultDirectory
 
@@ -60,13 +72,10 @@ internal class SmbPath : ByteStringListPath<SmbPath>, Client.Path {
     override fun getRoot(): SmbPath? = if (isAbsolute) fileSystem.rootDirectory else null
 
     @Throws(IOException::class)
-    override fun toRealPath(vararg options: LinkOption): SmbPath {
+    override fun toRealPath(vararg options: LinkOption): SmbPath =
         throw UnsupportedOperationException()
-    }
 
-    override fun toFile(): File {
-        throw UnsupportedOperationException()
-    }
+    override fun toFile(): File = throw UnsupportedOperationException()
 
     @Throws(IOException::class)
     override fun register(
@@ -95,30 +104,29 @@ internal class SmbPath : ByteStringListPath<SmbPath>, Client.Path {
         }
     }
 
-    fun toWindowsPath(): String =
-        if (isAbsolute) {
-            // Port cannot be specified in a Windows UNC path for SMB, or otherwise it is resolved
-            // as a WebDAV path.
-            check(authority.port == Authority.DEFAULT_PORT) {
-                "Path is absolute but uses port ${authority.port} instead of the default port ${
+    fun toWindowsPath(): String = if (isAbsolute) {
+        // Port cannot be specified in a Windows UNC path for SMB, or otherwise it is resolved
+        // as a WebDAV path.
+        check(authority.port == Authority.DEFAULT_PORT) {
+            "Path is absolute but uses port ${authority.port} instead of the default port ${
                 Authority.DEFAULT_PORT}"
-            }
-            StringBuilder()
-                .append("\\\\")
-                .append(authority.host)
-                .append("\\")
-                .apply {
-                    val share = sharePath
-                    if (share != null) {
-                        append(share.name)
-                        append("\\")
-                        append(share.path)
-                    }
-                }
-                .toString()
-        } else {
-            nameByteStrings.joinToString("\\")
         }
+        StringBuilder()
+            .append("\\\\")
+            .append(authority.host)
+            .append("\\")
+            .apply {
+                val share = sharePath
+                if (share != null) {
+                    append(share.name)
+                    append("\\")
+                    append(share.path)
+                }
+            }
+            .toString()
+    } else {
+        nameByteStrings.joinToString("\\")
+    }
 
     private constructor(source: Parcel) : super(source) {
         fileSystem = source.readParcelable()!!
@@ -137,6 +145,8 @@ internal class SmbPath : ByteStringListPath<SmbPath>, Client.Path {
 
             override fun newArray(size: Int): Array<SmbPath?> = arrayOfNulls(size)
         }
+
+        const val QUERY_PARAMETER_ENCRYPT = "encrypt"
     }
 }
 

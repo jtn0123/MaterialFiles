@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.archive
 
+import java.io.IOException
 import java8.nio.file.Path
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.common.ByteString
@@ -12,7 +13,6 @@ import me.zhanghai.android.files.provider.common.PosixFileAttributeView
 import me.zhanghai.android.files.provider.common.PosixFileModeBit
 import me.zhanghai.android.files.provider.common.PosixGroup
 import me.zhanghai.android.files.provider.common.PosixUser
-import java.io.IOException
 
 internal class ArchiveFileAttributeView(private val path: Path) : PosixFileAttributeView {
     override fun name(): String = NAME
@@ -28,29 +28,18 @@ internal class ArchiveFileAttributeView(private val path: Path) : PosixFileAttri
         lastModifiedTime: FileTime?,
         lastAccessTime: FileTime?,
         createTime: FileTime?
-    ) {
-        throw UnsupportedOperationException()
-    }
+    ): Unit = throw UnsupportedOperationException()
 
-    override fun setOwner(owner: PosixUser) {
-        throw UnsupportedOperationException()
-    }
+    override fun setOwner(owner: PosixUser): Unit = throw UnsupportedOperationException()
 
-    override fun setGroup(group: PosixGroup) {
-        throw UnsupportedOperationException()
-    }
+    override fun setGroup(group: PosixGroup): Unit = throw UnsupportedOperationException()
 
-    override fun setMode(mode: Set<PosixFileModeBit>) {
-        throw UnsupportedOperationException()
-    }
+    override fun setMode(mode: Set<PosixFileModeBit>): Unit = throw UnsupportedOperationException()
 
-    override fun setSeLinuxContext(context: ByteString) {
+    override fun setSeLinuxContext(context: ByteString): Unit =
         throw UnsupportedOperationException()
-    }
 
-    override fun restoreSeLinuxContext() {
-        throw UnsupportedOperationException()
-    }
+    override fun restoreSeLinuxContext(): Unit = throw UnsupportedOperationException()
 
     companion object {
         private val NAME = ArchiveFileSystemProvider.scheme

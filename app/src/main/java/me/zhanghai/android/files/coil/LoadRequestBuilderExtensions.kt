@@ -14,6 +14,8 @@ import coil.target.ImageViewTarget
 fun ImageRequest.Builder.ignoreError() {
     val view = (build().target as ImageViewTarget).view
     target(object : ImageViewTarget(view) {
-        override fun onError(error: Drawable?) {}
+        override fun onError(error: Drawable?) {
+            // Keep showing the placeholder, see above.
+        }
     })
 }
