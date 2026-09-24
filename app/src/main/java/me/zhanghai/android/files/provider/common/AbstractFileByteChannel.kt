@@ -26,6 +26,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeout
 import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.logWarning
 
 /**
  * A seekable channel over a file that is read and written in positioned chunks, for providers
@@ -335,8 +336,12 @@ abstract class AbstractFileByteChannel(
                 if (joinCancelledRead) {
                     try {
                         future.get(readTimeoutMillis, TimeUnit.MILLISECONDS)
+                    } catch (e: CancellationException) {
+                        // Expected: the read was cancelled just above.
                     } catch (e: Exception) {
-                        // Ignored
+                        // The read is abandoned either way, but a failure or a timeout here may
+                        // leave the connection busy.
+                        e.logWarning("AbstractFileByteChannel", "abandonRead")
                     }
                 }
             }
