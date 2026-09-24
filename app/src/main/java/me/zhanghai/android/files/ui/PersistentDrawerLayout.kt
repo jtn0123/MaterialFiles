@@ -116,63 +116,22 @@ class PersistentDrawerLayout @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
-        var widthSize = MeasureSpec.getSize(widthMeasureSpec)
-        val heightMode = MeasureSpec.getMode(heightMeasureSpec)
-        var heightSize = MeasureSpec.getSize(heightMeasureSpec)
-        if (widthMode != MeasureSpec.EXACTLY || heightMode != MeasureSpec.EXACTLY) {
-            if (isInEditMode) {
-                if (widthMode == MeasureSpec.UNSPECIFIED) {
-                    widthSize = 300
-                }
-                if (heightMode == MeasureSpec.UNSPECIFIED) {
-                    heightSize = 300
-                }
-            } else {
-                throw IllegalArgumentException(
-                    "DrawerLayout must be measured with MeasureSpec.EXACTLY"
-                )
-            }
-        }
-        setMeasuredDimension(widthSize, heightSize)
-        var hasLeftDrawer = false
-        var hasRightDrawer = false
+        val (width, height) =
+            resolvePersistentLayoutSizes(widthMeasureSpec, heightMeasureSpec, "DrawerLayout")
+        setMeasuredDimension(width, height)
+        val sides = PersistentLayoutSides("drawer", "left", "right")
         for (child in children) {
             if (child.visibility == View.GONE) {
                 continue
             }
             val isDrawer = isDrawerView(child)
+            if (isDrawer) {
+                sides.add(child, isLeftDrawerView(child))
+            }
             if (isDrawer || isFillView(child)) {
-                if (isDrawer) {
-                    val isLeftDrawer = isLeftDrawerView(child)
-                    check(!((isLeftDrawer && hasLeftDrawer) || (!isLeftDrawer && hasRightDrawer))) {
-                        ("Child $child is a second ${if (isLeftDrawer) "left" else "right"} drawer")
-                    }
-                    if (isLeftDrawer) {
-                        hasLeftDrawer = true
-                    } else {
-                        hasRightDrawer = true
-                    }
-                }
-                val childLayoutParams = child.layoutParams as LayoutParams
-                val childWidthSpec = getChildMeasureSpec(
-                    widthMeasureSpec,
-                    childLayoutParams.leftMargin + childLayoutParams.rightMargin,
-                    childLayoutParams.width
-                )
-                val childHeightSpec = getChildMeasureSpec(
-                    heightMeasureSpec,
-                    childLayoutParams.topMargin + childLayoutParams.bottomMargin,
-                    childLayoutParams.height
-                )
-                child.measure(childWidthSpec, childHeightSpec)
+                measurePersistentLayoutChild(child, widthMeasureSpec, heightMeasureSpec)
             } else {
-                check(isContentView(child)) {
-                    (
-                        "Child $child does not have a valid layout_gravity - must be" +
-                            " Gravity.LEFT, Gravity.RIGHT, Gravity.NO_GRAVITY or Gravity.FILL"
-                        )
-                }
+                checkPersistentLayoutContentView(child, isContentView(child))
             }
         }
         updateContentViewsWindowInsets()
