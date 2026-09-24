@@ -34,6 +34,7 @@ import java8.nio.file.attribute.FileAttributeView
 import java8.nio.file.spi.FileSystemProvider
 import me.zhanghai.android.files.provider.common.ByteStringPath
 import me.zhanghai.android.files.provider.common.DelegateSchemeFileSystemProvider
+import me.zhanghai.android.files.provider.common.OpenOptions
 import me.zhanghai.android.files.provider.common.PathListDirectoryStream
 import me.zhanghai.android.files.provider.common.PathObservable
 import me.zhanghai.android.files.provider.common.PathObservableProvider
@@ -52,6 +53,7 @@ import me.zhanghai.android.files.provider.ftp.client.Authority
 import me.zhanghai.android.files.provider.ftp.client.Client
 import me.zhanghai.android.files.provider.ftp.client.Mode
 import me.zhanghai.android.files.provider.ftp.client.Protocol
+import org.apache.commons.net.ftp.FTPFile
 
 object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Searchable {
     /** Set by the app initializers before any path of this provider is used. */
@@ -130,38 +132,13 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         requireProviderPath<FtpPath>(file)
         val openOptions = options.toOpenOptions()
         openOptions.checkForFtp()
+        // Without WRITE, toOpenOptions() has already dropped TRUNCATE_EXISTING, CREATE and
+        // CREATE_NEW, and APPEND implies WRITE, so WRITE is all there is to refuse here.
         if (openOptions.write) {
             throw UnsupportedOperationException(StandardOpenOption.WRITE.toString())
         }
-        if (openOptions.append) {
-            throw UnsupportedOperationException(StandardOpenOption.APPEND.toString())
-        }
-        if (openOptions.truncateExisting) {
-            throw UnsupportedOperationException(StandardOpenOption.TRUNCATE_EXISTING.toString())
-        }
-        if (openOptions.create || openOptions.createNew || openOptions.noFollowLinks) {
-            val fileFile = try {
-                client.listFileOrNull(file, true)
-            } catch (e: IOException) {
-                throw e.toFileSystemExceptionForFtp(file.toString())
-            }
-            if (openOptions.createNew && fileFile != null) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (openOptions.noFollowLinks && fileFile != null && fileFile.isSymbolicLink) {
-                throw FileSystemException(
-                    file.toString(),
-                    null,
-                    "File is a symbolic link: $fileFile"
-                )
-            }
-            if ((openOptions.create || openOptions.createNew) && fileFile == null) {
-                try {
-                    client.createFile(file)
-                } catch (e: IOException) {
-                    throw e.toFileSystemExceptionForFtp(file.toString())
-                }
-            }
+        if (openOptions.noFollowLinks) {
+            checkNoFollowLinks(file, openOptions, listFileOrNullNoFollow(file))
         }
         try {
             return client.retrieveFile(file)
@@ -184,11 +161,7 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         if (!openOptions.truncateExisting && !openOptions.createNew) {
             throw UnsupportedOperationException("Missing ${StandardOpenOption.TRUNCATE_EXISTING}")
         }
-        val fileFile = try {
-            client.listFileOrNull(file, true)
-        } catch (e: IOException) {
-            throw e.toFileSystemExceptionForFtp(file.toString())
-        }
+        val fileFile = listFileOrNullNoFollow(file)
         if (openOptions.createNew && fileFile != null) {
             throw FileAlreadyExistsException(file.toString())
         }
@@ -231,37 +204,47 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
         if (openOptions.write || openOptions.create || openOptions.createNew ||
             openOptions.noFollowLinks
         ) {
-            val fileFile = try {
-                client.listFileOrNull(file, true)
-            } catch (e: IOException) {
-                throw e.toFileSystemExceptionForFtp(file.toString())
-            }
-            if (openOptions.createNew && fileFile != null) {
-                throw FileAlreadyExistsException(file.toString())
-            }
-            if (openOptions.noFollowLinks && fileFile != null && fileFile.isSymbolicLink) {
-                throw FileSystemException(
-                    file.toString(),
-                    null,
-                    "File is a symbolic link: $fileFile"
-                )
-            }
-            if (fileFile == null) {
-                if (!(openOptions.create || openOptions.createNew)) {
-                    throw NoSuchFileException(file.toString())
-                }
-                try {
-                    client.createFile(file)
-                } catch (e: IOException) {
-                    throw e.toFileSystemExceptionForFtp(file.toString())
-                }
-            }
+            prepareFileToOpenChannel(file, openOptions)
         }
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
         }
         try {
             return client.openByteChannel(file, openOptions.append)
+        } catch (e: IOException) {
+            throw e.toFileSystemExceptionForFtp(file.toString())
+        }
+    }
+
+    private fun prepareFileToOpenChannel(file: FtpPath, openOptions: OpenOptions) {
+        val fileFile = listFileOrNullNoFollow(file)
+        if (openOptions.createNew && fileFile != null) {
+            throw FileAlreadyExistsException(file.toString())
+        }
+        checkNoFollowLinks(file, openOptions, fileFile)
+        if (fileFile == null) {
+            if (!(openOptions.create || openOptions.createNew)) {
+                throw NoSuchFileException(file.toString())
+            }
+            createFileToOpen(file)
+        }
+    }
+
+    private fun listFileOrNullNoFollow(file: FtpPath): FTPFile? = try {
+        client.listFileOrNull(file, true)
+    } catch (e: IOException) {
+        throw e.toFileSystemExceptionForFtp(file.toString())
+    }
+
+    private fun checkNoFollowLinks(file: FtpPath, openOptions: OpenOptions, fileFile: FTPFile?) {
+        if (openOptions.noFollowLinks && fileFile != null && fileFile.isSymbolicLink) {
+            throw FileSystemException(file.toString(), null, "File is a symbolic link: $fileFile")
+        }
+    }
+
+    private fun createFileToOpen(file: FtpPath) {
+        try {
+            client.createFile(file)
         } catch (e: IOException) {
             throw e.toFileSystemExceptionForFtp(file.toString())
         }
@@ -297,9 +280,8 @@ object FtpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
 
     override fun createSymbolicLink(link: Path, target: Path, vararg attributes: FileAttribute<*>) {
         requireProviderPath<FtpPath>(link)
-        when (target) {
-            is FtpPath, is ByteStringPath -> {}
-            else -> throw ProviderMismatchException(target.toString())
+        if (target !is FtpPath && target !is ByteStringPath) {
+            throw ProviderMismatchException(target.toString())
         }
         if (attributes.isNotEmpty()) {
             throw UnsupportedOperationException(attributes.contentToString())
