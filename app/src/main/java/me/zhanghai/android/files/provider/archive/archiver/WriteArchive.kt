@@ -6,9 +6,7 @@
 package me.zhanghai.android.files.provider.archive.archiver
 
 import java.io.Closeable
-import java.io.IOException
 import java.io.OutputStream
-import java.nio.ByteBuffer
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.charset.StandardCharsets
 import java8.nio.file.attribute.FileTime
@@ -69,7 +67,8 @@ constructor(
     }
 
     @Throws(ArchiveException::class)
-    fun newDataOutputStream(): OutputStream = DataOutputStream()
+    fun newDataOutputStream(): OutputStream =
+        ArchiveDataOutputStream { Archive.writeData(archive, it) }
 
     @Throws(ArchiveException::class)
     override fun close() {
@@ -141,25 +140,6 @@ constructor(
 
         override fun close() {
             ArchiveEntry.free(entry)
-        }
-    }
-
-    private inner class DataOutputStream : OutputStream() {
-        private val oneByteBuffer = ByteBuffer.allocateDirect(1)
-
-        @Throws(IOException::class)
-        override fun write(b: Int) {
-            oneByteBuffer.clear()
-            oneByteBuffer.put(b.toByte())
-            Archive.writeData(archive, oneByteBuffer)
-        }
-
-        @Throws(IOException::class)
-        override fun write(b: ByteArray, off: Int, len: Int) {
-            val buffer = ByteBuffer.wrap(b, off, len)
-            while (buffer.hasRemaining()) {
-                Archive.writeData(archive, buffer)
-            }
         }
     }
 }
