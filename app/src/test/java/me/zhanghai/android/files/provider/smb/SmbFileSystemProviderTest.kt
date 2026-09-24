@@ -192,6 +192,27 @@ class SmbFileSystemProviderTest {
     }
 
     @Test
+    fun theTimesOfAFileThatIsNotThereCannotBeSet() {
+        val view = SmbFileSystemProvider.getFileAttributeView(
+            path("missing.txt"),
+            BasicFileAttributeView::class.java
+        )!!
+        assertThrows(NoSuchFileException::class.java) {
+            view.setTimes(FileTime.fromMillis(1_600_000_000_000), null, null)
+        }
+    }
+
+    @Test
+    fun theShareItselfIsADirectoryWithTheSpaceOnItsDisk() {
+        val attributes = SmbFileSystemProvider.readAttributes(
+            fileSystem.getPath("/test"),
+            BasicFileAttributes::class.java
+        )
+        assertTrue(attributes.isDirectory)
+        assertTrue((attributes as SmbShareFileAttributes).totalSpace()!! > 0)
+    }
+
+    @Test
     fun accessIsCheckedByOpeningTheFileWithWhatWasAskedFor() {
         write("file.txt", "hello")
         SmbFileSystemProvider.checkAccess(path("file.txt"), AccessMode.READ, AccessMode.WRITE)
