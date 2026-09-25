@@ -5,11 +5,16 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
 import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import java.nio.channels.ClosedChannelException
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -117,5 +122,55 @@ class AbstractFileByteChannelTest {
         assertFalse(channel.isOpen)
         channel.close()
         assertThrows(ClosedChannelException::class.java) { channel.force(false) }
+    }
+
+    @Test
+    fun aReadThatClosesItsChannelWhileAnotherThreadClosesItDoesNotDeadlock() {
+        val isReading = CountDownLatch(1)
+        lateinit var closer: Thread
+        val closeCount = AtomicInteger()
+        val channel = object : AbstractFileByteChannel(false) {
+            override fun onReadAsync(
+                position: Long,
+                size: Int,
+                timeoutMillis: Long
+            ): Future<ByteBuffer> = object : CompletableFuture<ByteBuffer>() {
+                override fun get(timeout: Long, unit: TimeUnit): ByteBuffer {
+                    isReading.countDown()
+                    // Like SMB, whose read closes the channel when its wait is interrupted: by
+                    // then another thread is closing the channel to abort this very read.
+                    while (closer.state != Thread.State.BLOCKED) {
+                        Thread.sleep(1)
+                    }
+                    close()
+                    throw ExecutionException(IOException("Interrupted"))
+                }
+            }
+
+            override fun onWrite(position: Long, source: ByteBuffer) = throw AssertionError()
+
+            override fun onTruncate(size: Long) = throw AssertionError()
+
+            override fun onSize(): Long = 0
+
+            override fun onClose() {
+                closeCount.incrementAndGet()
+            }
+        }
+        closer = Thread {
+            isReading.await()
+            channel.close()
+        }
+        closer.start()
+        val reader = Thread {
+            assertThrows(IOException::class.java) { channel.read(ByteBuffer.allocate(16)) }
+        }
+        reader.start()
+        reader.join(5_000)
+        closer.join(5_000)
+        assertFalse("The reader is stuck", reader.isAlive)
+        assertFalse("The closer is stuck", closer.isAlive)
+        assertFalse(channel.isOpen)
+        assertEquals(1, closeCount.get())
     }
 }

@@ -17,6 +17,7 @@ import android.widget.TextView
 import androidx.annotation.AttrRes
 import androidx.appcompat.widget.Toolbar
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.shortAnimTime
 
 class CrossfadeSubtitleToolbar : Toolbar {
@@ -61,7 +62,7 @@ class CrossfadeSubtitleToolbar : Toolbar {
                 .apply { isAccessible = true }
                 .get(this) as TextView?
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("CrossfadeSubtitleToolbar", "Get the subtitle text view via reflection")
             null
         } ?: return
         subtitleAnimator.target = subtitleTextView

@@ -12,6 +12,7 @@ import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
 import androidx.preference.EditTextPreference as AndroidXEditTextPreference
 import me.zhanghai.android.files.ui.EditTextPreference
+import me.zhanghai.android.files.util.logWarning
 
 class PasswordPreference : EditTextPreference {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
@@ -26,7 +27,7 @@ class PasswordPreference : EditTextPreference {
         try {
             EncryptedPasswordStore.read(sharedPreferences!!, key, defaultReturnValue.orEmpty())
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("PasswordPreference", "Read the persisted password for $key")
             defaultReturnValue
         }
     } else {
@@ -39,7 +40,7 @@ class PasswordPreference : EditTextPreference {
             EncryptedPasswordStore.write(sharedPreferences!!, key, value.orEmpty())
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("PasswordPreference", "Persist the password for $key")
             android.widget.Toast.makeText(
                 context,
                 me.zhanghai.android.files.R.string.password_save_failed,

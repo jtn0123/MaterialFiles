@@ -7,6 +7,7 @@ package me.zhanghai.android.files.app
 
 import androidx.core.content.edit
 import me.zhanghai.android.files.BuildConfig
+import me.zhanghai.android.files.util.logWarning
 
 private const val KEY_VERSION_CODE = "key_version_code"
 
@@ -46,7 +47,7 @@ fun upgradeApp() {
         lastVersionCode = VERSION_CODE_LATEST
     } catch (e: Exception) {
         // Retain the version marker so the migration is retried on next launch.
-        e.printStackTrace()
+        e.logWarning("AppUpgrader", "Upgrade the app from version code $lastVersionCode")
     }
 }
 

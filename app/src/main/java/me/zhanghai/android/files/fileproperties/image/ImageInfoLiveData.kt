@@ -21,6 +21,7 @@ import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
 import me.zhanghai.android.files.util.backgroundExecutor
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.valueCompat
 import okio.buffer
 import okio.source
@@ -83,7 +84,7 @@ class ImageInfoLiveData(path: Path, private val mimeType: MimeType) :
         val exifInfo = try {
             loadExifInfo()
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("ImageInfoLiveData", "Load the EXIF info of $path")
             null
         }
         return ImageInfo(dimensions, exifInfo)

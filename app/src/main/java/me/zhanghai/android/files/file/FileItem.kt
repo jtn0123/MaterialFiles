@@ -23,6 +23,7 @@ import me.zhanghai.android.files.provider.common.isHidden
 import me.zhanghai.android.files.provider.common.readAttributes
 import me.zhanghai.android.files.provider.common.readSymbolicLinkByteString
 import me.zhanghai.android.files.util.ParcelableParceler
+import me.zhanghai.android.files.util.logWarning
 
 @Parcelize
 data class FileItem(
@@ -58,7 +59,10 @@ fun Path.loadFileItem(): FileItem {
     val symbolicLinkTargetAttributes = try {
         readAttributes(BasicFileAttributes::class.java)
     } catch (e: IOException) {
-        e.printStackTrace()
+        e.logWarning(
+            "FileItem",
+            "Read the attributes of the symbolic link target $symbolicLinkTarget of $this"
+        )
         null
     }
     val mimeType = AndroidFileTypeDetector.getMimeType(

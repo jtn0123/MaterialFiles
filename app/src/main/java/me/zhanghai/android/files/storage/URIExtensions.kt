@@ -3,6 +3,7 @@ package me.zhanghai.android.files.storage
 import java.net.URI
 import java.net.URISyntaxException
 import kotlin.reflect.KClass
+import me.zhanghai.android.files.util.logWarning
 
 // @see URI.appendAuthority
 fun KClass<URI>.canonicalizeHost(host: String): String =
@@ -11,7 +12,7 @@ fun KClass<URI>.canonicalizeHost(host: String): String =
 fun KClass<URI>.createOrLog(uri: String): URI? = try {
     URI(uri)
 } catch (e: URISyntaxException) {
-    e.printStackTrace()
+    e.logWarning("URIExtensions", "Create the URI $uri")
     null
 }
 
@@ -26,7 +27,7 @@ fun KClass<URI>.createOrLog(
 ): URI? = try {
     URI(scheme, userInfo, host, port, path, query, fragment)
 } catch (e: URISyntaxException) {
-    e.printStackTrace()
+    e.logWarning("URIExtensions", "Create the URI for host $host")
     null
 }
 
