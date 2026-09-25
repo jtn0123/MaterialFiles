@@ -19,6 +19,18 @@
     <string name="empty">Prázdný</string>
     <string name="empty_placeholder">(Prázdný)</string>
     <string name="error">Chyba</string>
+    <string name="error_access_denied">Přístup odepřen</string>
+    <string name="error_file_not_found">Soubor nebyl nalezen</string>
+    <string name="error_file_already_exists">Soubor s tímto názvem již existuje</string>
+    <string name="error_directory_not_empty">Složka není prázdná</string>
+    <string name="error_not_a_directory">Nejedná se o složku</string>
+    <string name="error_is_a_directory">Toto je složka</string>
+    <string name="error_read_only_file_system">Úložiště je jen pro čtení</string>
+    <string name="error_invalid_file_name">Neplatný název souboru</string>
+    <string name="error_unknown_host">Neznámý hostitel</string>
+    <string name="error_connection_timed_out">Vypršel časový limit připojení</string>
+    <string name="error_connection_failed">Nelze se připojit</string>
+    <string name="error_interrupted">Operace byla přerušena</string>
     <string name="hide">Skrýt</string>
     <string name="install">Nainstalovat</string>
     <string name="keep_editing">Pokračovat v úpravách</string>
@@ -39,6 +51,7 @@
     <string name="search">Hledat</string>
     <string name="select">Vybrat</string>
     <string name="select_all">Vybrat vše</string>
+    <string name="select_range">Vybrat rozsah</string>
     <string name="share">Sdílet</string>
     <string name="show">Ukázat</string>
     <string name="skip">Přeskočit</string>
@@ -132,6 +145,13 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s/%2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Dokončeno, %1$,d soubor přeskočen kvůli chybě</item>
+        <item quantity="few">Dokončeno, %1$,d soubory přeskočeny kvůli chybám</item>
+        <item quantity="many">Dokončeno, %1$,d souborů přeskočeno kvůli chybám</item>
+        <item quantity="other">Dokončeno, %1$,d souborů přeskočeno kvůli chybám</item>
+    </plurals>
+    <string name="file_job_failed_format">Selhalo: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Připrava ke smazání %1$,d souboru</item>
         <item quantity="few">Příprava ke smazání %1$,d souborů</item>
@@ -244,6 +264,9 @@
     <string name="file_job_move_error_message_format">Nastala chyba při přesouvání souboru do \"%1$s\".\n%2$s</string>
     <string name="file_job_delete_error_title">Chyba při mazání</string>
     <string name="file_job_delete_error_message_format">Nastala chyba při mazání \"%1$s\".\n%2$s</string>
+    <string name="file_job_read_error_title">Chyba při čtení</string>
+    <string name="file_job_read_error_message_format">Nastala chyba při čtení „%1$s“.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Nastala chyba při výpisu obsahu „%1$s“.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Chyba při přejmenovávání \"%1$s\"</string>
     <string name="file_job_rename_error_message_format">Nastala chyba při přejmenovávání souboru na \"%1$s\".\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Chyba při změně majitele \"%1$s\"</string>
@@ -370,6 +393,7 @@
     <string name="file_list_action_create_directory">Složka</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Další možnosti</string>
     <string name="file_item_action_open_with">Otevřít v</string>
     <string name="file_item_action_extract">Rozbalit</string>
     <string name="file_item_action_archive">Zkomprimovat</string>
@@ -424,9 +448,11 @@
         <item>Nastavit GID</item>
         <item>Sticky bit</item>
     </string-array>
+    <string name="file_properties_permission_set_mode_uppercase_x">Nepřidávat „Spuštění“ obsaženým souborům</string>
     <string name="file_properties_permission_selinux_context">Kontext SELinux</string>
     <string name="file_properties_permission_set_selinux_context_title">Změnit kontext SELinux</string>
     <string name="file_properties_permission_set_selinux_context_restore">Obnovit</string>
+    <string name="file_properties_permission_recursive">Použít na obsažené soubory</string>
     <string name="file_properties_image">Obrázek</string>
     <string name="file_properties_media_dimensions">Rozměry</string>
     <string name="file_properties_media_dimensions_format">%1$d \u00d7 %2$d</string>
@@ -486,10 +512,13 @@
     <string name="file_properties_checksum">Kontrolní součty</string>
     <string name="file_properties_checksum_compare">Porovnat</string>
     <string name="file_properties_checksum_compare_placeholder">Jakýkoli kontrolní součet</string>
+    <string name="file_properties_checksum_compare_match_format">Odpovídá kontrolnímu součtu %1$s</string>
+    <string name="file_properties_checksum_compare_prefix_match_format">Odpovídá začátku kontrolního součtu %1$s</string>
     <string name="file_properties_checksum_compare_no_match">Žádný odpovídající kontrolní součet</string>
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Úložiště</string>
     <string name="storage_list_empty">Žádné úložiště</string>
+    <string name="list_item_drag_handle">Přetažením změníte pořadí</string>
     <string name="storage_add_storage_title">Přidat úložiště</string>
     <string name="storage_add_storage_document_tree">Externí úložiště</string>
     <string name="storage_add_storage_ftp_server">Server FTP</string>
@@ -501,6 +530,8 @@
     <string name="storage_edit_device_storage_path">Cesta</string>
     <string name="storage_add_external_storage_shortcut_title">Přidat zkratku na externí úložiště</string>
     <string name="storage_edit_external_storage_shortcut_title">Upravit zkratku na externí úložiště</string>
+    <string name="storage_edit_external_storage_shortcut_root_id">Svazek úložiště</string>
+    <string name="storage_edit_external_storage_shortcut_root_id_error_empty">Zadejte svazek úložiště</string>
     <string name="storage_edit_external_storage_shortcut_path">Cesta</string>
     <string name="storage_add_document_tree_title">Přidat externí úložiště</string>
     <string name="storage_edit_document_tree_title">Upravit externí úložiště</string>
@@ -562,6 +593,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Může zůstat prázné</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Neplatné heslo soukromého klíče</string>
     <string name="storage_edit_sftp_server_connect_and_add">Připojit se a přidat</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Klíč hostitele se změnil</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">Klíč %2$s hostitele %1$s není ten, který byl zapamatován při prvním připojení. Někdo může připojení odposlouchávat, nebo byl server přeinstalován.\n\nZapamatovaný: %3$s\nPředložený: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Důvěřovat novému klíči</string>
     <string name="storage_edit_sftp_server_add">Přidat</string>
     <string name="storage_add_lan_smb_server_loading">Hledání SMB serverů…</string>
     <string name="storage_add_lan_smb_server_add">Přidat manuálně</string>
@@ -586,6 +620,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Vložit uživatelské jméno</string>
     <string name="storage_edit_smb_server_password">Heslo</string>
     <string name="storage_edit_smb_server_domain">Doména</string>
+    <string name="storage_edit_smb_server_encrypt">Šifrovat připojení</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Vyžádat šifrování SMB3. Nutné pro sdílené složky, které ho vyžadují; servery bez jeho podpory ho ignorují.</string>
     <string name="storage_edit_smb_server_connect_and_add">Připojit se a přidat</string>
     <string name="storage_edit_smb_server_add">Přidat</string>
     <string name="storage_edit_webdav_server_title_edit">Upravit server WebDAV</string>
@@ -635,9 +671,23 @@
     <string name="archive_viewer_title">Prohlížeč archivů</string>
     <string name="image_viewer_title">Prohlížeč obrázků</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Přehrávač videa</string>
+    <string name="video_viewer_picture_in_picture">Obraz v obraze</string>
+    <string name="video_viewer_play_from_beginning">Přehrát od začátku</string>
+    <string name="video_viewer_screen_orientation">Orientace obrazovky</string>
+    <string name="video_viewer_screen_orientation_auto">Automatické otáčení</string>
+    <string name="video_viewer_screen_orientation_landscape">Na šířku</string>
+    <string name="video_viewer_screen_orientation_portrait">Na výšku</string>
+    <string name="video_viewer_error_format">Nelze přehrát %1$s</string>
     <string name="save_as_title">Uložit jako</string>
     <string name="save_as_error">Chyba při ukládání souboru</string>
     <string name="save_as_success_format">„%1$s“ byl uložen do „%2$s“</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d soubor byl uložen do „%2$s“</item>
+        <item quantity="few">%1$d soubory byly uloženy do „%2$s“</item>
+        <item quantity="many">%1$d souborů bylo uloženo do „%2$s“</item>
+        <item quantity="other">%1$d souborů bylo uloženo do „%2$s“</item>
+    </plurals>
     <string name="text_editor_title">Textový editor</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -662,9 +712,14 @@
     <string name="ftp_server_add_tile_result_error">Chyba při přidávání \"Server FTP\" do rychlých nastavení</string>
     <string name="ftp_server_configuration_title">Konfigurace</string>
     <string name="ftp_server_anonymous_login_title">Anonymní přihlášení</string>
+    <string name="ftp_server_error_password_empty">Před spuštěním FTP serveru nastavte heslo nebo povolte anonymní přihlášení</string>
     <string name="ftp_server_username_title">Uživatelské jméno</string>
     <string name="ftp_server_password_title">Heslo</string>
     <string name="ftp_server_port_title">Port</string>
+    <string name="ftp_server_passive_ports_title">Pasivní datové porty</string>
+    <string name="ftp_server_passive_ports_summary_any">Libovolný volný port</string>
+    <string name="ftp_server_passive_ports_dialog_message">Porty nebo rozsahy pro datová připojení, např. 2300-2400 nebo 2300, 2301. Ponechte prázdné pro použití libovolného volného portu. Nastavte, pokud je server dostupný přes přesměrování portů nebo tunel.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Zadejte porty mezi 1 a 65535 jako čísla nebo rozsahy oddělené čárkami</string>
     <string name="ftp_server_home_directory_title">Složka Root</string>
     <string name="ftp_server_writable_title">Povolit zapisování</string>
     <string name="settings_title">Nastavení</string>
@@ -692,6 +747,8 @@
     </string-array>
     <string name="settings_behavior_title">Chování</string>
     <string name="settings_default_directory_title">Výchozí složka</string>
+    <string name="settings_remember_last_directory_title">Znovu otevřít poslední složku</string>
+    <string name="settings_remember_last_directory_summary">Pokračovat tam, kde jste skončili, místo ve výchozí složce</string>
     <string name="settings_standard_directories_title">Standardní složky</string>
     <string name="settings_standard_directories_summary_empty">Nejsou povoleny žádné standartní složky</string>
     <string name="settings_bookmark_directory_screenshots">Snímky obrazovky</string>
@@ -719,6 +776,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Zobrazit náhled pro PDF soubory</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Aplikace může být nestabilní na starších verzích systému Android.</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Přečíst vzdálené soubory pro náhled</string>
+    <string name="settings_video_remember_playback_position_title">Pamatovat si pozici přehrávání videa</string>
 
     <string name="about_title">O aplikaci</string>
     <string name="about_version_title">Verze</string>
@@ -728,4 +786,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Sledovat na GitHubu</string>
     <string name="about_author_twitter_title">Sledovat na Twitteru</string>
+    <string name="text_editor_draft_save_failed">Nelze uložit koncept pro obnovení. Před odchodem své úpravy uložte.</string>
+    <string name="text_editor_draft_restored">Neuložené úpravy byly obnoveny</string>
+    <string name="text_editor_draft_restore_failed">Neuložené úpravy nelze obnovit</string>
+    <string name="password_save_failed">Heslo nelze uložit</string>
+    <string name="file_list_partial_error">Některé soubory nelze načíst (chybí %1$d). Obnovením to zkuste znovu.</string>
 </resources>

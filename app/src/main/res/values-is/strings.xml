@@ -21,6 +21,18 @@
     <string name="empty">Tómt</string>
     <string name="empty_placeholder">(Tómt)</string>
     <string name="error">Villa</string>
+    <string name="error_access_denied">Aðgangi hafnað</string>
+    <string name="error_file_not_found">Skrá fannst ekki</string>
+    <string name="error_file_already_exists">Skrá með þessu heiti er þegar til</string>
+    <string name="error_directory_not_empty">Mappan er ekki tóm</string>
+    <string name="error_not_a_directory">Ekki mappa</string>
+    <string name="error_is_a_directory">Þetta er mappa</string>
+    <string name="error_read_only_file_system">Geymslurýmið er einungis til lestrar</string>
+    <string name="error_invalid_file_name">Ógilt skráarheiti</string>
+    <string name="error_unknown_host">Óþekkt vél</string>
+    <string name="error_connection_timed_out">Tenging rann út á tíma</string>
+    <string name="error_connection_failed">Gat ekki tengst</string>
+    <string name="error_interrupted">Aðgerðin var rofin</string>
     <string name="hide">Fela</string>
     <string name="install">Setja upp</string>
     <string name="keep_editing">Halda áfram með breytingar</string>
@@ -41,6 +53,7 @@
     <string name="search">Leita</string>
     <string name="select">Velja</string>
     <string name="select_all">Velja allt</string>
+    <string name="select_range">Velja svið</string>
     <string name="share">Deila</string>
     <string name="show">Birta</string>
     <string name="skip">Sleppa</string>
@@ -116,6 +129,11 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Lokið, %1$,d skrá sleppt vegna villu</item>
+        <item quantity="other">Lokið, %1$,d skrám sleppt vegna villna</item>
+    </plurals>
+    <string name="file_job_failed_format">Mistókst: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Undirbý að eyða %1$,d skrá</item>
         <item quantity="other">Undirbý að eyða %1$,d skrám</item>
@@ -204,6 +222,9 @@
     <string name="file_job_move_error_message_format">Villa kom upp við að færa skrána inn í “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">Villa kom upp við að eyða</string>
     <string name="file_job_delete_error_message_format">Villa kom upp við að eyða “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">Villa kom upp við að lesa</string>
+    <string name="file_job_read_error_message_format">Villa kom upp við að lesa “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Villa kom upp við að birta innihald “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Villa kom upp við að endurnefna “%1$s”</string>
     <string name="file_job_rename_error_message_format">Villa kom upp við að endurnefna skrána sem “%1$s”.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Villa kom upp við að breyta eiganda á “%1$s”</string>
@@ -316,6 +337,7 @@
     <string name="file_list_action_create_directory">Mappa</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Fleiri valkostir</string>
     <string name="file_item_action_open_with">Opna með</string>
     <string name="file_item_action_extract">Afþjappa</string>
     <string name="file_item_action_archive">Þjappa</string>
@@ -436,6 +458,7 @@
     <string name="storage_file_system_root_title">Rót</string>
     <string name="storage_list_title">Geymslurými</string>
     <string name="storage_list_empty">Ekkert geymslurými</string>
+    <string name="list_item_drag_handle">Dragðu til að endurraða</string>
     <string name="storage_add_storage_title">Bæta við geymslurými</string>
     <string name="storage_add_storage_document_tree">Ytra geymslurými</string>
     <string name="storage_add_storage_ftp_server">FTP-netþjónn</string>
@@ -510,6 +533,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Má skilja eftir autt</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Ógilt lykilorð einkalykils</string>
     <string name="storage_edit_sftp_server_connect_and_add">Tengjast og bæta við</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Lykill vélar hefur breyst</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">%2$s-lykill %1$s er ekki sá sem var munaður frá fyrstu tengingu. Einhver gæti verið að hlera tenginguna, eða netþjónninn var settur upp aftur.\n\nMunaður: %3$s\nBirtur: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Treysta nýjum lykli</string>
     <string name="storage_edit_sftp_server_add">Bæta við</string>
     <string name="storage_add_lan_smb_server_loading">Leita að SMB-netþjónum…</string>
     <string name="storage_add_lan_smb_server_add">Bæta við handvirkt</string>
@@ -534,6 +560,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Settu inn notandanafn</string>
     <string name="storage_edit_smb_server_password">Lykilorð</string>
     <string name="storage_edit_smb_server_domain">Lén</string>
+    <string name="storage_edit_smb_server_encrypt">Dulrita tengingu</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Biðja um SMB3-dulritun. Nauðsynlegt fyrir sameignir sem krefjast hennar; netþjónar án hennar hunsa þetta.</string>
     <string name="storage_edit_smb_server_connect_and_add">Tengjast og bæta við</string>
     <string name="storage_edit_smb_server_add">Bæta við</string>
     <string name="storage_edit_webdav_server_title_edit">Breyta WebDAV-þjóni</string>
@@ -583,9 +611,21 @@
     <string name="archive_viewer_title">Safnskoðari</string>
     <string name="image_viewer_title">Myndaskoðari</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Myndspilari</string>
+    <string name="video_viewer_picture_in_picture">Mynd í mynd</string>
+    <string name="video_viewer_play_from_beginning">Spila frá byrjun</string>
+    <string name="video_viewer_screen_orientation">Skjástefna</string>
+    <string name="video_viewer_screen_orientation_auto">Snúa sjálfkrafa</string>
+    <string name="video_viewer_screen_orientation_landscape">Langsnið</string>
+    <string name="video_viewer_screen_orientation_portrait">Skammsnið</string>
+    <string name="video_viewer_error_format">Get ekki spilað %1$s</string>
     <string name="save_as_title">Vista sem</string>
     <string name="save_as_error">Villa kom upp við að vista skrá</string>
     <string name="save_as_success_format">“%1$s” hefur verið vistuð í “%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d skrá hefur verið vistuð í “%2$s”</item>
+        <item quantity="other">%1$d skrár hafa verið vistaðar í “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">Textaritill</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -610,9 +650,14 @@
     <string name="ftp_server_add_tile_result_error">Villa við að bæta “FTP-netþjónn” í flýtistillingar</string>
     <string name="ftp_server_configuration_title">Uppsetning</string>
     <string name="ftp_server_anonymous_login_title">Nafnlaus innskráning</string>
+    <string name="ftp_server_error_password_empty">Settu lykilorð, eða virkjaðu nafnlausa innskráningu, áður en FTP-netþjónninn er ræstur</string>
     <string name="ftp_server_username_title">Notandanafn</string>
     <string name="ftp_server_password_title">Lykilorð</string>
     <string name="ftp_server_port_title">Gátt</string>
+    <string name="ftp_server_passive_ports_title">Óvirkar gagnagáttir</string>
+    <string name="ftp_server_passive_ports_summary_any">Hvaða laus gátt sem er</string>
+    <string name="ftp_server_passive_ports_dialog_message">Gáttir eða svið fyrir gagnatengingar, t.d. 2300-2400 eða 2300, 2301. Skildu eftir autt til að nota hvaða lausa gátt sem er. Stilltu þetta þegar netþjónninn er náður í gegnum gáttaframsendingu eða göng.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Settu inn gáttir á milli 1 og 65535, sem tölur eða svið aðskilin með kommum</string>
     <string name="ftp_server_home_directory_title">Rótarmappa</string>
     <string name="ftp_server_writable_title">Leyfa skrifun</string>
     <string name="settings_title">Stillingar</string>
@@ -640,6 +685,8 @@
     </string-array>
     <string name="settings_behavior_title">Hegðun</string>
     <string name="settings_default_directory_title">Sjálfgefin mappa</string>
+    <string name="settings_remember_last_directory_title">Opna síðustu möppu aftur</string>
+    <string name="settings_remember_last_directory_summary">Byrja þar sem frá var horfið í stað sjálfgefnu möppunnar</string>
     <string name="settings_standard_directories_title">Staðlaðar möppur</string>
     <string name="settings_standard_directories_summary_empty">Engar staðlaðar möppur virkjaðar</string>
     <string name="settings_bookmark_directory_screenshots">Skjámyndir</string>
@@ -665,6 +712,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Birta smámyndir fyrir PDF-skjöl</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Gæti gert forritið óstöðugt í eldri útgáfum Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Lesa fjartengdar skrár til að útbúa smámyndir</string>
+    <string name="settings_video_remember_playback_position_title">Muna spilunarstöðu myndskeiða</string>
 
     <string name="about_title">Um hugbúnaðinn</string>
     <string name="about_version_title">Útgáfa</string>
@@ -674,4 +722,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Fylgjast með á GitHub</string>
     <string name="about_author_twitter_title">Fylgjast með á Twitter</string>
+    <string name="text_editor_draft_save_failed">Gat ekki vistað endurheimtardrög. Vistaðu breytingarnar þínar áður en þú ferð.</string>
+    <string name="text_editor_draft_restored">Óvistaðar breytingar þínar voru endurheimtar</string>
+    <string name="text_editor_draft_restore_failed">Gat ekki endurheimt óvistaðar breytingar þínar</string>
+    <string name="password_save_failed">Gat ekki vistað lykilorð</string>
+    <string name="file_list_partial_error">Ekki tókst að lesa sumar skrár (%1$d vantar). Endurnýjaðu til að reyna aftur.</string>
 </resources>

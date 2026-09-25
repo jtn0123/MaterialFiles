@@ -19,6 +19,18 @@
     <string name="empty">Trống</string>
     <string name="empty_placeholder">(trống)</string>
     <string name="error">Lỗi</string>
+    <string name="error_access_denied">Truy cập bị từ chối</string>
+    <string name="error_file_not_found">Không tìm thấy tệp</string>
+    <string name="error_file_already_exists">Đã có tệp trùng tên</string>
+    <string name="error_directory_not_empty">Thư mục không trống</string>
+    <string name="error_not_a_directory">Không phải là thư mục</string>
+    <string name="error_is_a_directory">Đây là một thư mục</string>
+    <string name="error_read_only_file_system">Bộ nhớ chỉ cho phép đọc</string>
+    <string name="error_invalid_file_name">Tên tệp không hợp lệ</string>
+    <string name="error_unknown_host">Không xác định được máy chủ</string>
+    <string name="error_connection_timed_out">Hết thời gian chờ kết nối</string>
+    <string name="error_connection_failed">Không thể kết nối</string>
+    <string name="error_interrupted">Thao tác đã bị gián đoạn</string>
     <string name="hide">Ẩn</string>
     <string name="install">Cài đặt</string>
     <string name="keep_editing">Tiếp tục chỉnh sửa</string>
@@ -39,6 +51,7 @@
     <string name="search">Tìm kiếm</string>
     <string name="select">Chọn</string>
     <string name="select_all">Chọn tất cả</string>
+    <string name="select_range">Chọn phạm vi</string>
     <string name="share">Chia sẻ</string>
     <string name="show">Hiển thị</string>
     <string name="skip">Bỏ qua</string>
@@ -105,6 +118,10 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="other">Đã hoàn tất, bỏ qua %1$,d tệp do lỗi</item>
+    </plurals>
+    <string name="file_job_failed_format">Thất bại: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="other">Đang chuẩn bị xoá %1$,d tệp</item>
     </plurals>
@@ -181,6 +198,9 @@
     <string name="file_job_move_error_message_format">Đã có lỗi khi di chuyển tệp vào “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">Lỗi khi xoá</string>
     <string name="file_job_delete_error_message_format">Đã có lỗi khi xoá “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">Lỗi khi đọc</string>
+    <string name="file_job_read_error_message_format">Đã có lỗi khi đọc “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Đã có lỗi khi liệt kê nội dung của “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Lỗi khi đổi tên \"%1$s\"</string>
     <string name="file_job_rename_error_message_format">Đã có lỗi khi đổi tên tệp thành \"%1$s\". \n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Lỗi khi thay đổi chủ sở hữu của “%1$s”</string>
@@ -217,6 +237,7 @@
     <string name="file_name_error_empty">Tên tệp không được trống</string>
     <string name="file_name_error_invalid">Tên tệp không hợp lệ</string>
     <string name="file_name_error_already_exists">Một tệp có tên này đã tồn tại</string>
+    <string name="file_replace_message_format">Thay thế “%1$s”?</string>
     <string name="file_delete_message_file_format">Xoá “%1$s”?</string>
     <string name="file_delete_message_directory_format">Xoá thư mục “%1$s” và nội dung của nó?</string>
     <plurals name="file_delete_message_multiple_files_format">
@@ -232,11 +253,19 @@
     <string name="file_create_archive_type_zip">.zip</string>
     <string name="file_create_archive_type_tar_xz">.tar.xz</string>
     <string name="file_create_archive_type_7z">.7z</string>
+    <string name="file_create_archive_password">Mật khẩu (không bắt buộc)</string>
     <string name="file_add_bookmark_success">Đã thêm đánh dấu</string>
     <string name="file_create_file_title">Tệp mới</string>
     <string name="file_create_directory_title">Thư mục mới</string>
 
     <string name="file_list_title">Tệp</string>
+    <plurals name="file_list_title_open_file">
+        <item quantity="other">Chọn tệp</item>
+    </plurals>
+    <string name="file_list_title_create_file">Lưu tệp</string>
+    <plurals name="file_list_title_open_directory">
+        <item quantity="other">Chọn thư mục</item>
+    </plurals>
     <plurals name="file_list_subtitle_directory_count_format">
         <item quantity="other">%1$,d thư mục</item>
     </plurals>
@@ -246,12 +275,16 @@
     <string name="file_list_subtitle_separator">,\u0020</string>
     <string name="file_list_path_error_empty">Đường dẫn không thể trống</string>
     <string name="file_list_path_error_invalid">Đường dẫn không hợp lệ</string>
+    <string name="file_list_action_view_sort">Xem và sắp xếp</string>
+    <string name="file_list_action_view_list">Danh sách</string>
+    <string name="file_list_action_view_grid">Lưới</string>
     <string name="file_list_action_sort_by_name">Tên</string>
     <string name="file_list_action_sort_by_type">Loại</string>
     <string name="file_list_action_sort_by_size">Kích cỡ</string>
     <string name="file_list_action_sort_by_last_modified">Thay đổi lần cuối</string>
     <string name="file_list_action_sort_order_ascending">Tăng dần</string>
     <string name="file_list_action_sort_directories_first">Thư mục lên trước</string>
+    <string name="file_list_action_view_sort_path_specific">Chỉ cho thư mục này</string>
     <string name="file_list_action_new_task">Cửa sổ mới</string>
     <string name="file_list_action_navigate_up">Đi lên</string>
     <string name="file_list_action_navigate_to">Đi đến</string>
@@ -261,6 +294,9 @@
     <string name="file_list_action_add_bookmark">Thêm đánh dấu</string>
     <string name="file_list_action_create_shortcut">Tạo lối tắt</string>
     <string name="file_list_breadcrumb_action_open_in_new_task">Mở trong cửa sổ mới</string>
+    <string name="file_list_select_title_format">%1$,d</string>
+    <string name="file_list_create_file_name_hint">Tên tệp</string>
+    <string name="file_list_open_current_directory_format">Chọn “%1$s”</string>
     <string name="file_list_paste_move_title_format">Đang di chuyển %1$,d</string>
     <string name="file_list_paste_copy_title_format">Đang sao chép %1$,d</string>
     <string name="file_list_paste_extract_title_format">Đang giải nén %1$,d</string>
@@ -270,6 +306,7 @@
     <string name="file_list_action_create_directory">Thư mục</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Tùy chọn khác</string>
     <string name="file_item_action_open_with">Mở bằng</string>
     <string name="file_item_action_extract">Giải nén</string>
     <string name="file_item_action_archive">Nén</string>
@@ -293,6 +330,39 @@
     <string name="file_properties_basic_archive_file">Tệp nén</string>
     <string name="file_properties_basic_archive_entry">Mục lưu trữ nén</string>
     <string name="file_properties_basic_free_space">Không gian trống</string>
+    <string name="file_properties_permission">Quyền</string>
+    <string name="file_properties_permission_owner">Chủ sở hữu</string>
+    <string name="file_properties_permission_group">Nhóm</string>
+    <string name="file_properties_permission_principal_format">%1$s (%2$d)</string>
+    <string name="file_properties_permission_set_owner_title">Thay đổi chủ sở hữu</string>
+    <string name="file_properties_permission_set_group_title">Thay đổi nhóm</string>
+    <string name="file_properties_permission_set_principal_filter_hint">Nhập tên hoặc ID</string>
+    <string name="file_properties_permission_set_principal_system">Hệ thống</string>
+    <string name="file_properties_permission_mode">Chế độ</string>
+    <string name="file_properties_permission_mode_format">%1$s (%2$04o)</string>
+    <string name="file_properties_permission_set_mode_title">Thay đổi chế độ</string>
+    <string name="file_properties_permission_set_mode_others">Người khác</string>
+    <string-array name="file_properties_permission_set_mode_normal_mode_bits_file">
+        <item>Đọc</item>
+        <item>Ghi</item>
+        <item>Thực thi</item>
+    </string-array>
+    <string-array name="file_properties_permission_set_mode_normal_mode_bits_directory">
+        <item>Đọc</item>
+        <item>Ghi</item>
+        <item>Tìm kiếm</item>
+    </string-array>
+    <string name="file_properties_permission_set_mode_special">Đặc biệt</string>
+    <string-array name="file_properties_permission_set_mode_special_mode_bits">
+        <item>Set UID</item>
+        <item>Set GID</item>
+        <item>Sticky bit</item>
+    </string-array>
+    <string name="file_properties_permission_set_mode_uppercase_x">Không thêm quyền “Thực thi” cho các tệp bên trong</string>
+    <string name="file_properties_permission_selinux_context">Ngữ cảnh SELinux</string>
+    <string name="file_properties_permission_set_selinux_context_title">Thay đổi ngữ cảnh SELinux</string>
+    <string name="file_properties_permission_set_selinux_context_restore">Khôi phục</string>
+    <string name="file_properties_permission_recursive">Áp dụng cho các tệp bên trong</string>
     <string name="file_properties_image">Hình ảnh</string>
     <string name="file_properties_media_dimensions">Kích thước</string>
     <string name="file_properties_media_dimensions_format">%1$d \u00d7 %2$d</string>
@@ -346,17 +416,30 @@
     <string name="file_properties_apk_signature_digests">Chữ kí</string>
     <string name="file_properties_apk_signature_digests_empty">Không có chữ ký hợp lệ</string>
     <string name="file_properties_apk_past_signature_digests">Chữ kí cũ</string>
+    <string name="file_properties_checksum">Mã kiểm tra</string>
+    <string name="file_properties_checksum_compare">So sánh</string>
+    <string name="file_properties_checksum_compare_placeholder">Mã kiểm tra bất kỳ</string>
+    <string name="file_properties_checksum_compare_match_format">Khớp với mã kiểm tra %1$s</string>
+    <string name="file_properties_checksum_compare_prefix_match_format">Khớp với phần đầu của mã kiểm tra %1$s</string>
+    <string name="file_properties_checksum_compare_no_match">Không tìm thấy mã kiểm tra trùng khớp</string>
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Kho lưu trữ</string>
     <string name="storage_list_empty">Không có kho lưu trữ</string>
+    <string name="list_item_drag_handle">Kéo để sắp xếp lại</string>
     <string name="storage_add_storage_title">Thêm kho lưu trữ</string>
     <string name="storage_add_storage_document_tree">Bộ nhớ ngoài</string>
     <string name="storage_add_storage_ftp_server">Máy chủ FTP</string>
     <string name="storage_add_storage_sftp_server">Máy chủ SFTP</string>
     <string name="storage_add_storage_smb_server">Máy chủ SMB</string>
+    <string name="storage_add_storage_webdav_server">Máy chủ WebDAV</string>
     <string name="storage_edit_device_storage_title">Chỉnh sửa kho lưu trữ thiết bị</string>
     <string name="storage_edit_device_storage_name">Tên</string>
     <string name="storage_edit_device_storage_path">Đường dẫn</string>
+    <string name="storage_add_external_storage_shortcut_title">Thêm lối tắt bộ nhớ ngoài</string>
+    <string name="storage_edit_external_storage_shortcut_title">Chỉnh sửa lối tắt bộ nhớ ngoài</string>
+    <string name="storage_edit_external_storage_shortcut_root_id">Ổ lưu trữ</string>
+    <string name="storage_edit_external_storage_shortcut_root_id_error_empty">Nhập ổ lưu trữ</string>
+    <string name="storage_edit_external_storage_shortcut_path">Đường dẫn</string>
     <string name="storage_add_document_tree_title">Thêm kho lưu trữ ngoài</string>
     <string name="storage_edit_document_tree_title">Chỉnh sửa kho lưu trữ ngoài</string>
     <string name="storage_edit_document_tree_name">Tên</string>
@@ -417,6 +500,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Có thể để trống</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Mật khẩu mã riêng tư không hợp lệ</string>
     <string name="storage_edit_sftp_server_connect_and_add">Kết nối và thêm</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Khóa máy chủ đã thay đổi</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">Khóa %2$s của %1$s không giống khóa đã ghi nhớ từ lần kết nối đầu tiên. Có thể ai đó đang chặn kết nối, hoặc máy chủ đã được cài đặt lại.\n\nĐã ghi nhớ: %3$s\nHiện tại: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Tin cậy khóa mới</string>
     <string name="storage_edit_sftp_server_add">Thêm</string>
     <string name="storage_add_lan_smb_server_loading">Đang tìm kiếm máy chủ SMB…</string>
     <string name="storage_add_lan_smb_server_add">Thêm thủ công</string>
@@ -441,8 +527,35 @@
     <string name="storage_edit_smb_server_username_error_empty">Nhập tên người dùng</string>
     <string name="storage_edit_smb_server_password">Mật khẩu</string>
     <string name="storage_edit_smb_server_domain">Miền</string>
+    <string name="storage_edit_smb_server_encrypt">Mã hóa kết nối</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Yêu cầu mã hóa SMB3. Cần thiết cho các thư mục chia sẻ bắt buộc mã hóa; bị bỏ qua với máy chủ không hỗ trợ.</string>
     <string name="storage_edit_smb_server_connect_and_add">Kết nối và thêm</string>
     <string name="storage_edit_smb_server_add">Thêm</string>
+    <string name="storage_edit_webdav_server_title_edit">Chỉnh sửa máy chủ WebDAV</string>
+    <string name="storage_edit_webdav_server_title_add">Thêm máy chủ WebDAV</string>
+    <string name="storage_edit_webdav_server_host">Tên máy chủ</string>
+    <string name="storage_edit_webdav_server_host_error_empty">Nhập tên máy chủ</string>
+    <string name="storage_edit_webdav_server_host_error_invalid">Tên máy chủ không hợp lệ</string>
+    <string name="storage_edit_webdav_server_port">Cổng</string>
+    <string name="storage_edit_webdav_server_port_error_invalid">Cổng không hợp lệ</string>
+    <string name="storage_edit_webdav_server_path">Đường dẫn</string>
+    <string name="storage_edit_webdav_server_path_placeholder">Có thể để trống</string>
+    <string name="storage_edit_webdav_server_name">Tên</string>
+    <string name="storage_edit_webdav_server_name_placeholder">Sử dụng tên máy chủ</string>
+    <string name="storage_edit_webdav_server_protocol">Giao thức</string>
+    <string name="storage_edit_webdav_server_authentication_type">Xác thực</string>
+    <string-array name="storage_edit_webdav_server_authentication_type_entries">
+        <item>Mật khẩu</item>
+        <item>Mã truy cập</item>
+        <item>Không</item>
+    </string-array>
+    <string name="storage_edit_webdav_server_username">Tên người dùng</string>
+    <string name="storage_edit_webdav_server_username_error_empty">Nhập tên người dùng</string>
+    <string name="storage_edit_webdav_server_password">Mật khẩu</string>
+    <string name="storage_edit_webdav_server_access_token">Mã truy cập</string>
+    <string name="storage_edit_webdav_server_access_token_error_empty">Nhập mã truy cập</string>
+    <string name="storage_edit_webdav_server_connect_and_add">Kết nối và thêm</string>
+    <string name="storage_edit_webdav_server_add">Thêm</string>
     <string name="navigation_storage_subtitle_format">%1$s trống trong số %2$s</string>
     <string name="navigation_add_storage">Thêm kho lưu trữ…</string>
     <string name="navigation_standard_directory_alarms">Báo thức</string>
@@ -464,6 +577,20 @@
     <string name="archive_viewer_title">Trình xem tệp nén</string>
     <string name="image_viewer_title">Trình xem hình ảnh</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Trình phát video</string>
+    <string name="video_viewer_picture_in_picture">Hình trong hình</string>
+    <string name="video_viewer_play_from_beginning">Phát từ đầu</string>
+    <string name="video_viewer_screen_orientation">Hướng màn hình</string>
+    <string name="video_viewer_screen_orientation_auto">Tự động xoay</string>
+    <string name="video_viewer_screen_orientation_landscape">Ngang</string>
+    <string name="video_viewer_screen_orientation_portrait">Dọc</string>
+    <string name="video_viewer_error_format">Không thể phát %1$s</string>
+    <string name="save_as_title">Lưu thành</string>
+    <string name="save_as_error">Lỗi khi lưu tệp</string>
+    <string name="save_as_success_format">Đã lưu “%1$s” vào “%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="other">Đã lưu %1$d tệp vào “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">Trình chỉnh sửa văn bản</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">* %1$s</string>
@@ -479,17 +606,28 @@
     <string name="ftp_server_state_summary_stopping">Đang dừng…</string>
     <string name="ftp_server_state_summary_stopped">Chưa khởi động</string>
     <string name="ftp_server_url_title">URL</string>
+    <string name="ftp_server_url_summary_no_local_inet_address">Không xác định được địa chỉ IP cục bộ</string>
     <string name="ftp_server_url_menu_copy_url">Sao chép URL</string>
     <string name="ftp_server_url_menu_copy_password">Sao chép mật khẩu</string>
+    <string name="ftp_server_add_tile_title">Thêm vào Cài đặt nhanh</string>
+    <string name="ftp_server_add_tile_result_added">Đã thêm “Máy chủ FTP” vào Cài đặt nhanh</string>
+    <string name="ftp_server_add_tile_result_already_added">“Máy chủ FTP” đã có trong Cài đặt nhanh</string>
+    <string name="ftp_server_add_tile_result_error">Lỗi khi thêm “Máy chủ FTP” vào Cài đặt nhanh</string>
     <string name="ftp_server_configuration_title">Thiết lập</string>
     <string name="ftp_server_anonymous_login_title">Đăng nhập nặc danh</string>
+    <string name="ftp_server_error_password_empty">Hãy đặt mật khẩu hoặc bật đăng nhập nặc danh trước khi khởi động máy chủ FTP</string>
     <string name="ftp_server_username_title">Tên đăng nhập</string>
     <string name="ftp_server_password_title">Mật khẩu</string>
     <string name="ftp_server_port_title">Cổng</string>
+    <string name="ftp_server_passive_ports_title">Cổng dữ liệu thụ động</string>
+    <string name="ftp_server_passive_ports_summary_any">Bất kỳ cổng trống nào</string>
+    <string name="ftp_server_passive_ports_dialog_message">Các cổng hoặc dải cổng cho kết nối dữ liệu, ví dụ 2300-2400 hoặc 2300, 2301. Để trống để dùng bất kỳ cổng trống nào. Hãy đặt mục này khi máy chủ được truy cập qua chuyển tiếp cổng hoặc đường hầm.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Nhập các cổng từ 1 đến 65535, dưới dạng số hoặc dải cổng, phân cách bằng dấu phẩy</string>
     <string name="ftp_server_home_directory_title">Thư mục gốc</string>
     <string name="ftp_server_writable_title">Cho phép ghi</string>
     <string name="settings_title">Cài đặt</string>
     <string name="settings_interface_title">Giao diện</string>
+    <string name="settings_locale_title">Ngôn ngữ</string>
     <string name="settings_theme_color_title">Màu chủ đề</string>
     <string name="settings_theme_color_summary">Màu thường xuyên xuất hiện nhất trong ứng dụng</string>
     <string name="settings_material_design_3_title">Thiết kế Material 3</string>
@@ -512,6 +650,8 @@
     </string-array>
     <string name="settings_behavior_title">Hành vi</string>
     <string name="settings_default_directory_title">Thư mục mặc định</string>
+    <string name="settings_remember_last_directory_title">Mở lại thư mục gần nhất</string>
+    <string name="settings_remember_last_directory_summary">Bắt đầu từ nơi bạn đã dừng thay vì thư mục mặc định</string>
     <string name="settings_standard_directories_title">Các thư mục tiêu chuẩn</string>
     <string name="settings_standard_directories_summary_empty">Không bật thư mục tiêu chuẩn nào</string>
     <string name="settings_bookmark_directory_screenshots">Ảnh chụp màn hình</string>
@@ -533,8 +673,10 @@
         <item>Xem nội dung</item>
         <item>Hỏi xem sẽ làm gì</item>
     </string-array>
+    <string name="settings_show_pdf_thumbnail_pre_28_title">Hiện hình thu nhỏ cho tài liệu PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Có thể làm ứng dụng không ổn định trên các phiên bản Android thấp hơn</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Đọc tệp từ xa để lấy ảnh xem trước</string>
+    <string name="settings_video_remember_playback_position_title">Ghi nhớ vị trí phát video</string>
 
     <string name="about_title">Giới thiệu</string>
     <string name="about_version_title">Phiên bản</string>
@@ -544,4 +686,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Theo dõi trên GitHub</string>
     <string name="about_author_twitter_title">Theo dõi trên Twitter</string>
+    <string name="text_editor_draft_save_failed">Không thể lưu bản nháp khôi phục. Hãy lưu các thay đổi trước khi thoát.</string>
+    <string name="text_editor_draft_restored">Đã khôi phục các thay đổi chưa lưu</string>
+    <string name="text_editor_draft_restore_failed">Không thể khôi phục các thay đổi chưa lưu</string>
+    <string name="password_save_failed">Không thể lưu mật khẩu</string>
+    <string name="file_list_partial_error">Không thể đọc một số tệp (thiếu %1$d). Làm mới để thử lại.</string>
 </resources>

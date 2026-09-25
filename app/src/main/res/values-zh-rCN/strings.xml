@@ -19,6 +19,18 @@
     <string name="empty">空</string>
     <string name="empty_placeholder">（空）</string>
     <string name="error">错误</string>
+    <string name="error_access_denied">访问被拒绝</string>
+    <string name="error_file_not_found">找不到文件</string>
+    <string name="error_file_already_exists">已存在同名文件</string>
+    <string name="error_directory_not_empty">文件夹不为空</string>
+    <string name="error_not_a_directory">不是文件夹</string>
+    <string name="error_is_a_directory">这是一个文件夹</string>
+    <string name="error_read_only_file_system">存储空间为只读</string>
+    <string name="error_invalid_file_name">无效文件名</string>
+    <string name="error_unknown_host">未知主机</string>
+    <string name="error_connection_timed_out">连接超时</string>
+    <string name="error_connection_failed">无法连接</string>
+    <string name="error_interrupted">操作已中断</string>
     <string name="hide">隐藏</string>
     <string name="install">安装</string>
     <string name="keep_editing">继续编辑</string>
@@ -39,6 +51,7 @@
     <string name="search">搜索</string>
     <string name="select">选择</string>
     <string name="select_all">全选</string>
+    <string name="select_range">选择范围</string>
     <string name="share">分享</string>
     <string name="show">显示</string>
     <string name="skip">跳过</string>
@@ -103,6 +116,10 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="other">已完成，%1$,d 个文件因错误而被跳过</item>
+    </plurals>
+    <string name="file_job_failed_format">失败：%1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="other">正在准备删除 %1$,d 个文件</item>
     </plurals>
@@ -179,6 +196,9 @@
     <string name="file_job_move_error_message_format">将文件移动到“%1$s”时发生错误。\n%2$s</string>
     <string name="file_job_delete_error_title">删除时发生错误</string>
     <string name="file_job_delete_error_message_format">在删除“%1$s”时发生错误。\n%2$s</string>
+    <string name="file_job_read_error_title">读取时发生错误</string>
+    <string name="file_job_read_error_message_format">在读取“%1$s”时发生错误。\n%2$s</string>
+    <string name="file_job_list_error_message_format">在列出“%1$s”的内容时发生错误。\n%2$s</string>
     <string name="file_job_rename_error_title_format">重命名“%1$s”时发生错误</string>
     <string name="file_job_rename_error_message_format">将文件重命名为“%1$s”时发生错误。\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">更改“%1$s”的所有者时发生错误</string>
@@ -284,6 +304,7 @@
     <string name="file_list_action_create_directory">文件夹</string>
 
     <string name="file_item_description_separator">"    "</string>
+    <string name="file_item_menu">更多选项</string>
     <string name="file_item_action_open_with">打开方式</string>
     <string name="file_item_action_extract">提取</string>
     <string name="file_item_action_archive">压缩</string>
@@ -403,6 +424,7 @@
     <string name="storage_file_system_root_title">根目录</string>
     <string name="storage_list_title">存储空间</string>
     <string name="storage_list_empty">无存储空间</string>
+    <string name="list_item_drag_handle">拖动以重新排序</string>
     <string name="storage_add_storage_title">添加存储空间</string>
     <string name="storage_add_storage_document_tree">外部存储空间</string>
     <string name="storage_add_storage_ftp_server">FTP 服务器</string>
@@ -477,6 +499,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">可留空</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">无效私钥密码</string>
     <string name="storage_edit_sftp_server_connect_and_add">连接并添加</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">主机密钥已更改</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">%1$s 的 %2$s 密钥与首次连接时记住的不一致。可能有人正在拦截连接，或服务器已重新安装。\n\n已记住：%3$s\n当前提供：%4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">信任新密钥</string>
     <string name="storage_edit_sftp_server_add">添加</string>
     <string name="storage_add_lan_smb_server_loading">正在搜索 SMB 服务器…</string>
     <string name="storage_add_lan_smb_server_add">手动添加</string>
@@ -501,6 +526,8 @@
     <string name="storage_edit_smb_server_username_error_empty">输入用户名</string>
     <string name="storage_edit_smb_server_password">密码</string>
     <string name="storage_edit_smb_server_domain">域</string>
+    <string name="storage_edit_smb_server_encrypt">加密连接</string>
+    <string name="storage_edit_smb_server_encrypt_summary">请求 SMB3 加密。要求加密的共享需要启用此项；不支持加密的服务器会忽略此项。</string>
     <string name="storage_edit_smb_server_connect_and_add">连接并添加</string>
     <string name="storage_edit_smb_server_add">添加</string>
     <string name="storage_edit_webdav_server_title_edit">编辑 WebDAV 服务器</string>
@@ -551,9 +578,20 @@
     <string name="archive_viewer_title">归档文件查看器</string>
     <string name="image_viewer_title">图片查看器</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">视频播放器</string>
+    <string name="video_viewer_picture_in_picture">画中画</string>
+    <string name="video_viewer_play_from_beginning">从头播放</string>
+    <string name="video_viewer_screen_orientation">屏幕方向</string>
+    <string name="video_viewer_screen_orientation_auto">自动旋转</string>
+    <string name="video_viewer_screen_orientation_landscape">横屏</string>
+    <string name="video_viewer_screen_orientation_portrait">竖屏</string>
+    <string name="video_viewer_error_format">无法播放 %1$s</string>
     <string name="save_as_title">另存为</string>
     <string name="save_as_error">保存时发生错误</string>
     <string name="save_as_success_format">已将“%1$s”保存到“%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="other">已将 %1$d 个文件保存到“%2$s”</item>
+    </plurals>
     <string name="text_editor_title">文本编辑器</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -578,9 +616,14 @@
     <string name="ftp_server_add_tile_result_error">将“FTP 服务器”添加到“快捷设置”时发生错误</string>
     <string name="ftp_server_configuration_title">配置</string>
     <string name="ftp_server_anonymous_login_title">匿名登录</string>
+    <string name="ftp_server_error_password_empty">启动 FTP 服务器前，请设置密码或启用匿名登录</string>
     <string name="ftp_server_username_title">用户名</string>
     <string name="ftp_server_password_title">密码</string>
     <string name="ftp_server_port_title">端口</string>
+    <string name="ftp_server_passive_ports_title">被动数据端口</string>
+    <string name="ftp_server_passive_ports_summary_any">任意空闲端口</string>
+    <string name="ftp_server_passive_ports_dialog_message">用于数据连接的端口或端口范围，例如 2300-2400 或 2300, 2301。留空则使用任意空闲端口。当通过端口转发或隧道访问服务器时，请设置此项。</string>
+    <string name="ftp_server_passive_ports_error_invalid">请输入 1 到 65535 之间的端口，可以是数字或范围，用逗号分隔</string>
     <string name="ftp_server_home_directory_title">根文件夹</string>
     <string name="ftp_server_writable_title">允许写入</string>
 
@@ -609,6 +652,8 @@
     </string-array>
     <string name="settings_behavior_title">行为</string>
     <string name="settings_default_directory_title">默认文件夹</string>
+    <string name="settings_remember_last_directory_title">重新打开上次的文件夹</string>
+    <string name="settings_remember_last_directory_summary">从上次离开的位置继续，而不是默认文件夹</string>
     <string name="settings_standard_directories_title">标准文件夹</string>
     <string name="settings_standard_directories_summary_empty">未启用标准文件夹</string>
     <string name="settings_bookmark_directory_screenshots">屏幕截图</string>
@@ -633,6 +678,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">显示 PDF 文档缩略图</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">可能导致应用在旧版 Android 上不稳定</string>
     <string name="settings_read_remote_files_for_thumbnail_title">读取远程文件以显示缩略图</string>
+    <string name="settings_video_remember_playback_position_title">记住视频播放位置</string>
 
     <string name="about_title">关于</string>
     <string name="about_version_title">版本</string>
@@ -642,4 +688,9 @@
     <string name="about_author_name_title">张海</string>
     <string name="about_author_github_title">在 GitHub 上关注</string>
     <string name="about_author_twitter_title">在 Twitter 上关注</string>
+    <string name="text_editor_draft_save_failed">无法保存恢复草稿。请在离开前保存您的编辑。</string>
+    <string name="text_editor_draft_restored">已恢复未保存的编辑</string>
+    <string name="text_editor_draft_restore_failed">无法恢复未保存的编辑</string>
+    <string name="password_save_failed">无法保存密码</string>
+    <string name="file_list_partial_error">部分文件无法读取（缺少 %1$d 个）。请刷新以重试。</string>
 </resources>

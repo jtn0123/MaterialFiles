@@ -21,6 +21,18 @@
     <string name="empty">Пусто</string>
     <string name="empty_placeholder">(Пусто)</string>
     <string name="error">Ошибка</string>
+    <string name="error_access_denied">Доступ запрещён</string>
+    <string name="error_file_not_found">Файл не найден</string>
+    <string name="error_file_already_exists">Файл с таким именем уже существует</string>
+    <string name="error_directory_not_empty">Папка не пуста</string>
+    <string name="error_not_a_directory">Это не папка</string>
+    <string name="error_is_a_directory">Это папка</string>
+    <string name="error_read_only_file_system">Хранилище доступно только для чтения</string>
+    <string name="error_invalid_file_name">Неверное имя файла</string>
+    <string name="error_unknown_host">Неизвестный хост</string>
+    <string name="error_connection_timed_out">Время ожидания соединения истекло</string>
+    <string name="error_connection_failed">Не удалось соединиться</string>
+    <string name="error_interrupted">Операция была прервана</string>
     <string name="hide">Скрыть</string>
     <string name="install">Установить</string>
     <string name="keep_editing">Продолжить редактирование</string>
@@ -41,6 +53,7 @@
     <string name="search">Поиск</string>
     <string name="select">Выбрать</string>
     <string name="select_all">Выбрать всё</string>
+    <string name="select_range">Выбрать диапазон</string>
     <string name="share">Поделиться</string>
     <string name="show">Показать</string>
     <string name="skip">Пропустить</string>
@@ -134,6 +147,13 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Завершено, %1$,d файл пропущен из-за ошибки</item>
+        <item quantity="few">Завершено, %1$,d файла пропущено из-за ошибок</item>
+        <item quantity="many">Завершено, %1$,d файлов пропущено из-за ошибок</item>
+        <item quantity="other">Завершено, %1$,d файла пропущено из-за ошибок</item>
+    </plurals>
+    <string name="file_job_failed_format">Ошибка: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Подготовка к удалению %1$,d файла</item>
         <item quantity="few">Подготовка к удалению %1$,d файлов</item>
@@ -246,6 +266,9 @@
     <string name="file_job_move_error_message_format">При перемещении файла в “%1$s” произошла ошибка.\n%2$s</string>
     <string name="file_job_delete_error_title">Ошибка при удалении</string>
     <string name="file_job_delete_error_message_format">Произошла ошибка при удалении “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">Ошибка во время чтения</string>
+    <string name="file_job_read_error_message_format">Произошла ошибка при чтении “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Произошла ошибка при получении содержимого “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Ошибка переименования “%1$s”</string>
     <string name="file_job_rename_error_message_format">Произошла ошибка при переименовании файла в “%1$s”.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Ошибка при смене владельца для “%1$s”</string>
@@ -372,6 +395,7 @@
     <string name="file_list_action_create_directory">Папка</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Другие параметры</string>
     <string name="file_item_action_open_with">Открыть с помощью</string>
     <string name="file_item_action_extract">Извлечь</string>
     <string name="file_item_action_archive">Сжать</string>
@@ -496,6 +520,7 @@
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Накопитель</string>
     <string name="storage_list_empty">Нет накопителей</string>
+    <string name="list_item_drag_handle">Перетащите, чтобы изменить порядок</string>
     <string name="storage_add_storage_title">Добавить накопитель</string>
     <string name="storage_add_storage_document_tree">Внешний накопитель</string>
     <string name="storage_add_storage_ftp_server">FTP сервер</string>
@@ -570,6 +595,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Может быть пустым</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Неверный пароль приватного ключа</string>
     <string name="storage_edit_sftp_server_connect_and_add">Соединиться и добавить</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Ключ хоста изменился</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">Ключ %2$s хоста %1$s не совпадает с запомненным при первом соединении. Кто-то может перехватывать соединение, или сервер был переустановлен.\n\nЗапомненный: %3$s\nПолученный: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Доверять новому ключу</string>
     <string name="storage_edit_sftp_server_add">Добавить</string>
     <string name="storage_add_lan_smb_server_loading">Поиск SMB серверов…</string>
     <string name="storage_add_lan_smb_server_add">Добавить вручную</string>
@@ -594,6 +622,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Введите имя пользователя</string>
     <string name="storage_edit_smb_server_password">Пароль</string>
     <string name="storage_edit_smb_server_domain">Домен</string>
+    <string name="storage_edit_smb_server_encrypt">Шифровать соединение</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Запрашивать шифрование SMB3. Нужно для общих ресурсов, которые его требуют; игнорируется серверами без его поддержки.</string>
     <string name="storage_edit_smb_server_connect_and_add">Добавить и соединиться</string>
     <string name="storage_edit_smb_server_add">Добавить</string>
     <string name="storage_edit_webdav_server_title_edit">Редактировать WebDAV сервер</string>
@@ -643,9 +673,23 @@
     <string name="archive_viewer_title">Просмотрщик архивов</string>
     <string name="image_viewer_title">Просмотрщик изображений</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Видеоплеер</string>
+    <string name="video_viewer_picture_in_picture">Картинка в картинке</string>
+    <string name="video_viewer_play_from_beginning">Воспроизвести с начала</string>
+    <string name="video_viewer_screen_orientation">Ориентация экрана</string>
+    <string name="video_viewer_screen_orientation_auto">Автоповорот</string>
+    <string name="video_viewer_screen_orientation_landscape">Альбомная</string>
+    <string name="video_viewer_screen_orientation_portrait">Портретная</string>
+    <string name="video_viewer_error_format">Не удалось воспроизвести %1$s</string>
     <string name="save_as_title">Сохранить как</string>
     <string name="save_as_error">Ошибка при сохранении файла</string>
     <string name="save_as_success_format">“%1$s” было сохранено в “%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d файл сохранён в “%2$s”</item>
+        <item quantity="few">%1$d файла сохранено в “%2$s”</item>
+        <item quantity="many">%1$d файлов сохранено в “%2$s”</item>
+        <item quantity="other">%1$d файла сохранено в “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">Текстовый редактор</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -670,9 +714,14 @@
     <string name="ftp_server_add_tile_result_error">Ошибка при добавлении “FTP server” в Быстрые настройки</string>
     <string name="ftp_server_configuration_title">Конфигурация</string>
     <string name="ftp_server_anonymous_login_title">Анонимный вход</string>
+    <string name="ftp_server_error_password_empty">Задайте пароль или включите анонимный вход перед запуском FTP сервера</string>
     <string name="ftp_server_username_title">Имя пользователя</string>
     <string name="ftp_server_password_title">Пароль</string>
     <string name="ftp_server_port_title">Порт</string>
+    <string name="ftp_server_passive_ports_title">Пассивные порты данных</string>
+    <string name="ftp_server_passive_ports_summary_any">Любой свободный порт</string>
+    <string name="ftp_server_passive_ports_dialog_message">Порты или диапазоны для соединений передачи данных, например 2300-2400 или 2300, 2301. Оставьте пустым, чтобы использовать любой свободный порт. Задайте, если сервер доступен через проброс портов или туннель.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Введите порты от 1 до 65535 в виде чисел или диапазонов через запятую</string>
     <string name="ftp_server_home_directory_title">Корневой каталог</string>
     <string name="ftp_server_writable_title">Разрешить запись</string>
     <string name="settings_title">Настройки</string>
@@ -700,6 +749,8 @@
     </string-array>
     <string name="settings_behavior_title">Поведение</string>
     <string name="settings_default_directory_title">Папка по умолчанию</string>
+    <string name="settings_remember_last_directory_title">Открывать последнюю папку</string>
+    <string name="settings_remember_last_directory_summary">Продолжать с того места, где вы остановились, а не с папки по умолчанию</string>
     <string name="settings_standard_directories_title">Стандартные папки</string>
     <string name="settings_standard_directories_summary_empty">Стандартные папки не включены</string>
     <string name="settings_bookmark_directory_screenshots">Скриншоты</string>
@@ -727,6 +778,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Показывать миниатюры для документов PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Приложение может стать нестабильным на старых версиях Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Показывать миниатюры для сетевых файлов</string>
+    <string name="settings_video_remember_playback_position_title">Запоминать позицию воспроизведения видео</string>
 
     <string name="about_title">О программе</string>
     <string name="about_version_title">Версия</string>
@@ -736,4 +788,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Подписаться на GitHub</string>
     <string name="about_author_twitter_title">Подписаться в Twitter</string>
+    <string name="text_editor_draft_save_failed">Не удалось сохранить черновик для восстановления. Сохраните изменения перед выходом.</string>
+    <string name="text_editor_draft_restored">Несохранённые изменения восстановлены</string>
+    <string name="text_editor_draft_restore_failed">Не удалось восстановить несохранённые изменения</string>
+    <string name="password_save_failed">Не удалось сохранить пароль</string>
+    <string name="file_list_partial_error">Некоторые файлы не удалось прочитать (отсутствует: %1$d). Обновите, чтобы повторить попытку.</string>
 </resources>

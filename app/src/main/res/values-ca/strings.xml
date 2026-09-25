@@ -19,6 +19,18 @@
     <string name="empty">Buit</string>
     <string name="empty_placeholder">(Buit)</string>
     <string name="error">Error</string>
+    <string name="error_access_denied">S\'ha denegat l\'accés</string>
+    <string name="error_file_not_found">No s\'ha trobat el fitxer</string>
+    <string name="error_file_already_exists">Ja existeix un fitxer amb aquest nom</string>
+    <string name="error_directory_not_empty">La carpeta no és buida</string>
+    <string name="error_not_a_directory">No és una carpeta</string>
+    <string name="error_is_a_directory">Això és una carpeta</string>
+    <string name="error_read_only_file_system">L\'emmagatzematge és només de lectura</string>
+    <string name="error_invalid_file_name">El nom del fitxer no és vàlid</string>
+    <string name="error_unknown_host">Amfitrió desconegut</string>
+    <string name="error_connection_timed_out">S\'ha esgotat el temps d\'espera de la connexió</string>
+    <string name="error_connection_failed">No s\'ha pogut connectar</string>
+    <string name="error_interrupted">S\'ha interromput l\'operació</string>
     <string name="hide">Amaga</string>
     <string name="install">Instal·la</string>
     <string name="keep_editing">Continua editant</string>
@@ -39,6 +51,7 @@
     <string name="search">Cerca</string>
     <string name="select">Selecciona</string>
     <string name="select_all">Selecciona-ho tot</string>
+    <string name="select_range">Selecciona un interval</string>
     <string name="share">Comparteix</string>
     <string name="show">Mostra</string>
     <string name="skip">Omet</string>
@@ -114,6 +127,12 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s de %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d de %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Acabat, s\'ha omès %1$,d fitxer a causa d\'un error</item>
+        <item quantity="many">Acabat, s\'han omès %1$,d fitxers a causa d\'errors</item>
+        <item quantity="other">Acabat, s\'han omès %1$,d fitxers a causa d\'errors</item>
+    </plurals>
+    <string name="file_job_failed_format">Ha fallat: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Preparant la supressió de %1$,d fitxers</item>
         <item quantity="other">S\'està preparant la supressió %1$,d fitxers</item>
@@ -202,6 +221,9 @@
     <string name="file_job_move_error_message_format">S\'ha produït un error en moure el fitxer a «%1$s».\n%2$s</string>
     <string name="file_job_delete_error_title">S\'ha produït un error en suprimir</string>
     <string name="file_job_delete_error_message_format">S\'ha produït un error en suprimir «%1$s».\n%2$s</string>
+    <string name="file_job_read_error_title">S\'ha produït un error en llegir</string>
+    <string name="file_job_read_error_message_format">S\'ha produït un error en llegir «%1$s».\n%2$s</string>
+    <string name="file_job_list_error_message_format">S\'ha produït un error en llistar el contingut de «%1$s».\n%2$s</string>
     <string name="file_job_rename_error_title_format">S\'ha produït un error en canviar el nom de «%1$s»</string>
     <string name="file_job_rename_error_message_format">S\'ha produït un error en canviar el nom del fitxer a «%1$s».\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">S\'ha produït un error en canviar el propietari de «%1$s»</string>
@@ -238,6 +260,7 @@
     <string name="file_name_error_empty">El nom del fitxer no pot estar buit</string>
     <string name="file_name_error_invalid">El nom del fitxer no és vàlid</string>
     <string name="file_name_error_already_exists">Ja existeix un fitxer amb aquest nom</string>
+    <string name="file_replace_message_format">Voleu substituir «%1$s»?</string>
     <string name="file_delete_message_file_format">Voleu suprimir «%1$s»?</string>
     <string name="file_delete_message_directory_format">Voleu suprimir la carpeta «%1$s» i el seu contingut?</string>
     <plurals name="file_delete_message_multiple_files_format">
@@ -262,6 +285,17 @@
     <string name="file_create_directory_title">Carpeta nova</string>
 
     <string name="file_list_title">Fitxers</string>
+    <plurals name="file_list_title_open_file">
+        <item quantity="one">Seleccioneu un fitxer</item>
+        <item quantity="many">Seleccioneu fitxers</item>
+        <item quantity="other">Seleccioneu fitxers</item>
+    </plurals>
+    <string name="file_list_title_create_file">Desa el fitxer</string>
+    <plurals name="file_list_title_open_directory">
+        <item quantity="one">Seleccioneu una carpeta</item>
+        <item quantity="many">Seleccioneu carpetes</item>
+        <item quantity="other">Seleccioneu carpetes</item>
+    </plurals>
     <plurals name="file_list_subtitle_directory_count_format">
         <item quantity="one">%1$,d carpeta</item>
         <item quantity="other">%1$,d carpetes</item>
@@ -293,6 +327,8 @@
     <string name="file_list_action_create_shortcut">Crea una drecera</string>
     <string name="file_list_breadcrumb_action_open_in_new_task">Obre en una finestra nova</string>
     <string name="file_list_select_title_format">%1$,d</string>
+    <string name="file_list_create_file_name_hint">Nom del fitxer</string>
+    <string name="file_list_open_current_directory_format">Selecciona «%1$s»</string>
     <string name="file_list_paste_move_title_format">S\'està movent %1$,d</string>
     <string name="file_list_paste_copy_title_format">S\'està copiant %1$,d</string>
     <string name="file_list_paste_extract_title_format">S\'està extraient %1$,d</string>
@@ -302,6 +338,7 @@
     <string name="file_list_action_create_directory">Carpeta</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Més opcions</string>
     <string name="file_item_action_open_with">Obre amb</string>
     <string name="file_item_action_extract">Extreu</string>
     <string name="file_item_action_archive">Comprimeix</string>
@@ -326,6 +363,39 @@
     <string name="file_properties_basic_archive_file">Fitxer de l\'arxiu</string>
     <string name="file_properties_basic_archive_entry">Entrada del fitxer</string>
     <string name="file_properties_basic_free_space">Espai lliure</string>
+    <string name="file_properties_permission">Permisos</string>
+    <string name="file_properties_permission_owner">Propietari</string>
+    <string name="file_properties_permission_group">Grup</string>
+    <string name="file_properties_permission_principal_format">%1$s (%2$d)</string>
+    <string name="file_properties_permission_set_owner_title">Canvia el propietari</string>
+    <string name="file_properties_permission_set_group_title">Canvia el grup</string>
+    <string name="file_properties_permission_set_principal_filter_hint">Introduïu un nom o un ID</string>
+    <string name="file_properties_permission_set_principal_system">Sistema</string>
+    <string name="file_properties_permission_mode">Mode</string>
+    <string name="file_properties_permission_mode_format">%1$s (%2$04o)</string>
+    <string name="file_properties_permission_set_mode_title">Canvia el mode</string>
+    <string name="file_properties_permission_set_mode_others">Altres</string>
+    <string-array name="file_properties_permission_set_mode_normal_mode_bits_file">
+        <item>Lectura</item>
+        <item>Escriptura</item>
+        <item>Execució</item>
+    </string-array>
+    <string-array name="file_properties_permission_set_mode_normal_mode_bits_directory">
+        <item>Lectura</item>
+        <item>Escriptura</item>
+        <item>Cerca</item>
+    </string-array>
+    <string name="file_properties_permission_set_mode_special">Especial</string>
+    <string-array name="file_properties_permission_set_mode_special_mode_bits">
+        <item>Set UID</item>
+        <item>Set GID</item>
+        <item>Sticky bit</item>
+    </string-array>
+    <string name="file_properties_permission_set_mode_uppercase_x">No afegeixis «Execució» als fitxers continguts</string>
+    <string name="file_properties_permission_selinux_context">Context de SELinux</string>
+    <string name="file_properties_permission_set_selinux_context_title">Canvia el context de SELinux</string>
+    <string name="file_properties_permission_set_selinux_context_restore">Restaura</string>
+    <string name="file_properties_permission_recursive">Aplica als fitxers continguts</string>
     <string name="file_properties_image">Imatge</string>
     <string name="file_properties_media_dimensions">Dimensions</string>
     <string name="file_properties_media_dimensions_format">%1$d \u00d7 %2$d</string>
@@ -380,9 +450,16 @@
     <string name="file_properties_apk_signature_digests">Signatures</string>
     <string name="file_properties_apk_signature_digests_empty">No hi ha cap signatura vàlida</string>
     <string name="file_properties_apk_past_signature_digests">Signatures antigues</string>
+    <string name="file_properties_checksum">Sumes de verificació</string>
+    <string name="file_properties_checksum_compare">Compara</string>
+    <string name="file_properties_checksum_compare_placeholder">Qualsevol suma de verificació</string>
+    <string name="file_properties_checksum_compare_match_format">Coincideix amb la suma de verificació %1$s</string>
+    <string name="file_properties_checksum_compare_prefix_match_format">Coincideix amb el prefix de la suma de verificació %1$s</string>
+    <string name="file_properties_checksum_compare_no_match">No s\'ha trobat cap suma de verificació coincident</string>
     <string name="storage_file_system_root_title">Arrel</string>
     <string name="storage_list_title">Emmagatzematge</string>
     <string name="storage_list_empty">Sense emmagatzematge</string>
+    <string name="list_item_drag_handle">Arrossegueu per reordenar</string>
     <string name="storage_add_storage_title">Afegeix l\'emmagatzematge</string>
     <string name="storage_add_storage_document_tree">Emmagatzematge extern</string>
     <string name="storage_add_storage_ftp_server">Servidor FTP</string>
@@ -392,6 +469,11 @@
     <string name="storage_edit_device_storage_title">Edita l\'emmagatzematge del dispositiu</string>
     <string name="storage_edit_device_storage_name">Nom</string>
     <string name="storage_edit_device_storage_path">Camí</string>
+    <string name="storage_add_external_storage_shortcut_title">Afegeix una drecera d\'emmagatzematge extern</string>
+    <string name="storage_edit_external_storage_shortcut_title">Edita la drecera d\'emmagatzematge extern</string>
+    <string name="storage_edit_external_storage_shortcut_root_id">Volum d\'emmagatzematge</string>
+    <string name="storage_edit_external_storage_shortcut_root_id_error_empty">Introduïu un volum d\'emmagatzematge</string>
+    <string name="storage_edit_external_storage_shortcut_path">Camí</string>
     <string name="storage_add_document_tree_title">Afegeix un emmagatzematge extern</string>
     <string name="storage_edit_document_tree_title">Edita l\'emmagatzematge extern</string>
     <string name="storage_edit_document_tree_name">Nom</string>
@@ -452,6 +534,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Es pot deixar buit</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">La contrasenya de la clau privada no és vàlida</string>
     <string name="storage_edit_sftp_server_connect_and_add">Connecta i afegeix</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">La clau de l\'amfitrió ha canviat</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">La clau %2$s de %1$s no és la que es va recordar a la primera connexió. Algú podria estar interceptant la connexió, o bé el servidor s\'ha reinstal·lat.\n\nRecordada: %3$s\nPresentada: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Confia en la clau nova</string>
     <string name="storage_edit_sftp_server_add">Afegeix</string>
     <string name="storage_add_lan_smb_server_loading">S\'estan cercant servidors SMB…</string>
     <string name="storage_add_lan_smb_server_add">Afegeix manualment</string>
@@ -476,6 +561,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Introduïu un nom d\'usuari</string>
     <string name="storage_edit_smb_server_password">Contrasenya</string>
     <string name="storage_edit_smb_server_domain">Domini</string>
+    <string name="storage_edit_smb_server_encrypt">Xifra la connexió</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Demana el xifratge SMB3. Cal per a les comparticions que l\'exigeixen; els servidors que no l\'admeten l\'ignoren.</string>
     <string name="storage_edit_smb_server_connect_and_add">Connecta i afegeix</string>
     <string name="storage_edit_smb_server_add">Afegeix</string>
     <string name="storage_edit_webdav_server_title_edit">Edita el servidor WebDAV</string>
@@ -525,6 +612,22 @@
     <string name="archive_viewer_title">Visor d\'arxius</string>
     <string name="image_viewer_title">Visor d\'imatges</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Reproductor de vídeo</string>
+    <string name="video_viewer_picture_in_picture">Imatge sobre imatge</string>
+    <string name="video_viewer_play_from_beginning">Reprodueix des del principi</string>
+    <string name="video_viewer_screen_orientation">Orientació de la pantalla</string>
+    <string name="video_viewer_screen_orientation_auto">Gira automàticament</string>
+    <string name="video_viewer_screen_orientation_landscape">Horitzontal</string>
+    <string name="video_viewer_screen_orientation_portrait">Vertical</string>
+    <string name="video_viewer_error_format">No es pot reproduir %1$s</string>
+    <string name="save_as_title">Desa com a</string>
+    <string name="save_as_error">S\'ha produït un error en desar el fitxer</string>
+    <string name="save_as_success_format">«%1$s» s\'ha desat a «%2$s»</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">S\'ha desat %1$d fitxer a «%2$s»</item>
+        <item quantity="many">S\'han desat %1$d fitxers a «%2$s»</item>
+        <item quantity="other">S\'han desat %1$d fitxers a «%2$s»</item>
+    </plurals>
     <string name="text_editor_title">Editor de text</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -549,9 +652,14 @@
     <string name="ftp_server_add_tile_result_error">S\'ha produït un error en afegir «servidor FTP» a la configuració ràpida</string>
     <string name="ftp_server_configuration_title">Configuració</string>
     <string name="ftp_server_anonymous_login_title">Inici de sessió anònim</string>
+    <string name="ftp_server_error_password_empty">Establiu una contrasenya, o activeu l\'inici de sessió anònim, abans d\'iniciar el servidor FTP</string>
     <string name="ftp_server_username_title">Nom d\'usuari</string>
     <string name="ftp_server_password_title">Contrasenya</string>
     <string name="ftp_server_port_title">Port</string>
+    <string name="ftp_server_passive_ports_title">Ports de dades passius</string>
+    <string name="ftp_server_passive_ports_summary_any">Qualsevol port lliure</string>
+    <string name="ftp_server_passive_ports_dialog_message">Ports o intervals per a les connexions de dades, p. ex. 2300-2400 o 2300, 2301. Deixeu-ho buit per usar qualsevol port lliure. Configureu-ho quan s\'accedeixi al servidor a través d\'una redirecció de ports o d\'un túnel.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Introduïu ports entre 1 i 65535, com a números o intervals separats per comes</string>
     <string name="ftp_server_home_directory_title">Carpeta arrel</string>
     <string name="ftp_server_writable_title">Permet l\'escriptura</string>
     <string name="settings_title">Configuració</string>
@@ -579,6 +687,8 @@
     </string-array>
     <string name="settings_behavior_title">Comportament</string>
     <string name="settings_default_directory_title">Carpeta predeterminada</string>
+    <string name="settings_remember_last_directory_title">Torna a obrir l\'última carpeta</string>
+    <string name="settings_remember_last_directory_summary">Continua on ho vau deixar en lloc de començar a la carpeta predeterminada</string>
     <string name="settings_standard_directories_title">Carpetes estàndard</string>
     <string name="settings_standard_directories_summary_empty">No hi ha cap carpeta estàndard activada</string>
     <string name="settings_bookmark_directory_screenshots">Captures de pantalla</string>
@@ -601,8 +711,10 @@
         <item>Mostra el contingut</item>
         <item>Demana què fer</item>
     </string-array>
+    <string name="settings_show_pdf_thumbnail_pre_28_title">Mostra miniatures dels documents PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Pot fer que l\'aplicació sigui inestable en versions anteriors d\'Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Lectura remota de miniatures</string>
+    <string name="settings_video_remember_playback_position_title">Recorda la posició de reproducció dels vídeos</string>
 
     <string name="about_title">Quant a</string>
     <string name="about_version_title">Versió</string>
@@ -612,4 +724,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Segueix a GitHub</string>
     <string name="about_author_twitter_title">Segueix al Twitter</string>
+    <string name="text_editor_draft_save_failed">No s\'ha pogut desar un esborrany de recuperació. Deseu els canvis abans de sortir.</string>
+    <string name="text_editor_draft_restored">S\'han recuperat els canvis no desats</string>
+    <string name="text_editor_draft_restore_failed">No s\'han pogut recuperar els canvis no desats</string>
+    <string name="password_save_failed">No s\'ha pogut desar la contrasenya</string>
+    <string name="file_list_partial_error">No s\'han pogut llegir alguns fitxers (en falten %1$d). Refresqueu per tornar-ho a provar.</string>
 </resources>
