@@ -80,6 +80,7 @@ class FileListAdapter(private val listener: Listener) :
         }
 
     fun replaceSelectedFiles(files: FileItemSet) {
+        val wasSelecting = selectedFiles.isNotEmpty()
         val changedFiles = fileItemSetOf()
         val iterator = selectedFiles.iterator()
         while (iterator.hasNext()) {
@@ -94,6 +95,11 @@ class FileListAdapter(private val listener: Listener) :
                 selectedFiles.add(file)
                 changedFiles.add(file)
             }
+        }
+        if (selectedFiles.isNotEmpty() != wasSelecting) {
+            // What a tap does and whether a row announces being unselected changed for every row.
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_STATE_CHANGED)
+            return
         }
         for (file in changedFiles) {
             val position = filePositionMap[file.path]
@@ -237,12 +243,14 @@ class FileListAdapter(private val listener: Listener) :
         holder.bindIcons(file)
         holder.nameText.text = file.name
         holder.descriptionText?.let { it.text = getDescription(file, it.context) }
+        holder.bindAccessibilityDescription(file)
         bindViewHolderMenu(holder, file)
     }
 
     /** Binds what a change of the selection or the pick options can change. */
     private fun bindViewHolderState(holder: ViewHolder, file: FileItem) {
-        val isEnabled = isFileSelectable(file) || file.attributes.isDirectory
+        val isSelectable = isFileSelectable(file)
+        val isEnabled = isSelectable || file.attributes.isDirectory
         holder.itemLayout.isEnabled = isEnabled
         holder.menuButton.isEnabled = isEnabled
         val menu = holder.popupMenu.menu
@@ -250,7 +258,14 @@ class FileListAdapter(private val listener: Listener) :
         val isReadOnly = file.path.fileSystem.isReadOnly
         menu.findItem(R.id.action_cut).isVisible = !hasPickOptions && !isReadOnly
         menu.findItem(R.id.action_copy).isVisible = !hasPickOptions
-        holder.itemLayout.isChecked = file in selectedFiles
+        val isFileSelected = file in selectedFiles
+        holder.itemLayout.isChecked = isFileSelected
+        holder.bindAccessibilityState(
+            file,
+            isSelectable,
+            isFileSelected,
+            selectedFiles.isNotEmpty()
+        )
         holder.nameText.apply {
             if (isSingleLineCompat) {
                 val nameEllipsize = nameEllipsize

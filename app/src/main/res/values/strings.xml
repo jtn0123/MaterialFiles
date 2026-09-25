@@ -211,6 +211,8 @@
     <string name="file_job_merge_target_name">Original folder</string>
     <string name="file_job_merge_source_name">Merge with</string>
     <string name="file_job_conflict_show_name">Select a new name for the destination</string>
+    <string name="file_job_conflict_show_name_expanded">Expanded</string>
+    <string name="file_job_conflict_show_name_collapsed">Collapsed</string>
     <string name="file_job_conflict_name_hint">New name</string>
     <string name="file_job_archive_error_title_format">Error while compressing “%1$s”</string>
     <string name="file_job_archive_error_message_format">There was an error compressing the file into “%1$s”.\n%2$s</string>
@@ -346,6 +348,19 @@
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">More options</string>
+    <string name="file_item_menu_format">More options for %1$s</string>
+    <string name="file_item_select_format">Select %1$s</string>
+    <string name="file_item_deselect_format">Deselect %1$s</string>
+    <string name="file_item_action_open">Open</string>
+    <string name="file_item_action_deselect">Deselect</string>
+    <string name="file_item_state_selected">Selected</string>
+    <string name="file_item_state_not_selected">Not selected</string>
+    <!-- Separates the parts of a file list item read aloud by a screen reader. -->
+    <string name="file_item_accessibility_separator">,\u0020</string>
+    <string name="file_item_accessibility_symbolic_link">Link</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Broken link</string>
+    <string name="file_item_accessibility_encrypted">Encrypted</string>
+    <string name="file_item_accessibility_app_directory">App folder</string>
     <string name="file_item_action_open_with">Open with</string>
     <string name="file_item_action_extract">Extract</string>
     <string name="file_item_action_archive">Compress</string>
@@ -794,6 +809,7 @@
     <string name="settings_locale_title">Language</string>
     <string name="settings_theme_color_title">Theme color</string>
     <string name="settings_theme_color_summary">Color that appears most frequently in the app</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 uses your wallpaper colors instead</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Night mode</string>
     <string-array name="settings_night_mode_entries">
