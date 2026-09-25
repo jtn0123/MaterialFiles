@@ -35,15 +35,14 @@ import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.autoCleared
-import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getTextArray
 import me.zhanghai.android.files.util.hideTextInputLayoutErrorOnTextChange
 import me.zhanghai.android.files.util.isReady
 import me.zhanghai.android.files.util.launchSafe
 import me.zhanghai.android.files.util.logWarning
-import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.viewModels
 
 class EditSftpServerFragment :
@@ -59,6 +58,15 @@ class EditSftpServerFragment :
     private val viewModel by viewModels { { EditSftpServerViewModel() } }
 
     private var binding by autoCleared<EditSftpServerFragmentBinding>()
+
+    private val connectViews: ServerConnectViews
+        get() = ServerConnectViews(
+            binding.scrollView,
+            binding.formLayout,
+            binding.progress,
+            binding.connectErrorText,
+            listOf(binding.saveOrConnectAndAddButton, binding.removeOrAddButton)
+        )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -119,6 +127,7 @@ class EditSftpServerFragment :
             onAuthenticationTypeChanged(authenticationType)
         }
         binding.usernameEdit.hideTextInputLayoutErrorOnTextChange(binding.usernameLayout)
+        binding.passwordEdit.hideTextInputLayoutErrorOnTextChange(binding.passwordLayout)
         binding.usernameEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.privateKeyLayout.setEndIconOnClickListener { onOpenPrivateKeyFile() }
         binding.privateKeyEdit.hideTextInputLayoutErrorOnTextChange(
@@ -248,7 +257,7 @@ class EditSftpServerFragment :
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.logWarning("EditSftpServerFragment", "Read the private key file")
-                showToast(throwable.toString())
+                binding.privateKeyLayout.error = throwable.toUserMessage(requireContext())
                 viewModel.finishReadingPrivateKeyFile()
             }
         }
@@ -270,13 +279,8 @@ class EditSftpServerFragment :
 
     private fun onConnectStateChanged(state: ActionState<SftpServer, Unit>) {
         when (state) {
-            is ActionState.Ready, is ActionState.Running -> {
-                val isConnecting = state is ActionState.Running
-                binding.progress.fadeToVisibilityUnsafe(isConnecting)
-                binding.scrollView.fadeToVisibilityUnsafe(!isConnecting)
-                binding.saveOrConnectAndAddButton.isEnabled = !isConnecting
-                binding.removeOrAddButton.isEnabled = !isConnecting
-            }
+            is ActionState.Ready, is ActionState.Running ->
+                connectViews.setConnecting(state is ActionState.Running)
 
             is ActionState.Success -> {
                 Storages.addOrReplace(state.argument)
@@ -290,11 +294,26 @@ class EditSftpServerFragment :
                 if (hostKeyChange != null) {
                     SftpHostKeyChangedDialogFragment.show(hostKeyChange, this)
                 } else {
-                    showToast(throwable.toString())
+                    showConnectError(throwable)
                 }
                 viewModel.finishConnecting()
             }
         }
+    }
+
+    private fun showConnectError(throwable: Throwable) {
+        val credentialsField = when (authenticationType) {
+            AuthenticationType.PASSWORD ->
+                ServerFormField(binding.passwordLayout, binding.passwordEdit)
+
+            AuthenticationType.PUBLIC_KEY ->
+                ServerFormField(binding.privateKeyLayout, binding.privateKeyEdit)
+        }
+        connectViews.showError(
+            throwable,
+            ServerFormField(binding.hostLayout, binding.hostEdit),
+            credentialsField
+        )
     }
 
     override fun trustHostKey(change: HostKeyChange) {

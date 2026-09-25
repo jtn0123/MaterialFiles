@@ -36,13 +36,6 @@
             android:layout_height="0dp"
             android:layout_weight="1">
 
-            <ProgressBar
-                android:id="@+id/progress"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:visibility="gone" />
-
             <androidx.core.widget.NestedScrollView
                 android:id="@+id/scrollView"
                 android:layout_width="match_parent"
@@ -51,6 +44,7 @@
                 android:scrollIndicators="bottom">
 
                 <LinearLayout
+                    android:id="@+id/formLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingStart="@dimen/screen_edge_margin"
@@ -59,6 +53,16 @@
                     android:paddingBottom="@dimen/screen_edge_margin_minus_16dp"
                     android:animateLayoutChanges="true"
                     android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/connectErrorText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:accessibilityLiveRegion="polite"
+                        android:textAppearance="?textAppearanceBodyMedium"
+                        android:textColor="?colorError"
+                        android:visibility="gone" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/hostLayout"
@@ -205,6 +209,15 @@
                         android:textColor="?android:textColorSecondary" />
                 </LinearLayout>
             </androidx.core.widget.NestedScrollView>
+
+            <!-- Above the form, which stays visible (but disabled) while we connect. -->
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:indeterminate="true"
+                android:visibility="gone" />
         </FrameLayout>
 
         <LinearLayout
