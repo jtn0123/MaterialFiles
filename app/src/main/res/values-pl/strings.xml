@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Pusto)</string>
     <string name="error">Błąd</string>
     <string name="error_access_denied">Odmowa dostępu</string>
+    <string name="error_authentication_failed">Logowanie nie powiodło się</string>
     <string name="error_file_not_found">Nie znaleziono pliku</string>
     <string name="error_file_already_exists">Plik o tej nazwie już istnieje</string>
     <string name="error_directory_not_empty">Katalog nie jest pusty</string>
@@ -253,6 +254,8 @@
     <string name="file_job_merge_target_name">Oryginalny katalog</string>
     <string name="file_job_merge_source_name">Scalić z</string>
     <string name="file_job_conflict_show_name">Wybierz nową nazwę miejsca docelowego</string>
+    <string name="file_job_conflict_show_name_expanded">Rozwinięte</string>
+    <string name="file_job_conflict_show_name_collapsed">Zwinięte</string>
     <string name="file_job_conflict_name_hint">Nowa nazwa</string>
     <string name="file_job_archive_error_title_format">Błąd podczas kompresowania „%1$s”</string>
     <string name="file_job_archive_error_message_format">Wystąpił błąd podczas kompresowania pliku do „%1$s”.\n%2$s</string>
@@ -388,12 +391,25 @@
     <string name="file_list_paste_copy_title_format">Kopiowanie %1$,d</string>
     <string name="file_list_paste_extract_title_format">Rozpakowywanie %1$,d</string>
     <string name="file_list_paste_action_extract_here">Wypakuj tutaj</string>
+    <string name="file_list_edit_server">Edytuj serwer</string>
     <string name="file_list_empty">Brak plików</string>
     <string name="file_list_action_create_file">Plik</string>
     <string name="file_list_action_create_directory">Katalog</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Więcej opcji</string>
+    <string name="file_item_menu_format">Więcej opcji dla %1$s</string>
+    <string name="file_item_select_format">Zaznacz %1$s</string>
+    <string name="file_item_deselect_format">Odznacz %1$s</string>
+    <string name="file_item_action_open">Otwórz</string>
+    <string name="file_item_action_deselect">Odznacz</string>
+    <string name="file_item_state_selected">Zaznaczone</string>
+    <string name="file_item_state_not_selected">Niezaznaczone</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Link</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Uszkodzony link</string>
+    <string name="file_item_accessibility_encrypted">Zaszyfrowane</string>
+    <string name="file_item_accessibility_app_directory">Katalog aplikacji</string>
     <string name="file_item_action_open_with">Otwórz za pomocą</string>
     <string name="file_item_action_extract">Wypakuj</string>
     <string name="file_item_action_archive">Skompresuj plik</string>
@@ -679,6 +695,8 @@
     <string name="video_viewer_screen_orientation_landscape">Poziomo</string>
     <string name="video_viewer_screen_orientation_portrait">Pionowo</string>
     <string name="video_viewer_error_format">Nie można odtworzyć %1$s</string>
+    <string name="video_viewer_error_unsupported">To urządzenie nie może odtworzyć tego formatu wideo</string>
+    <string name="video_viewer_error_malformed">Plik wideo jest uszkodzony lub niekompletny</string>
     <string name="save_as_title">Zapisz jako</string>
     <string name="save_as_error">Błąd podczas zapisywania pliku</string>
     <string name="save_as_success_format">„%1$s” zostało zapisane w „%2$s”</string>
@@ -727,6 +745,7 @@
     <string name="settings_locale_title">Język</string>
     <string name="settings_theme_color_title">Kolor motywu</string>
     <string name="settings_theme_color_summary">Kolor pojawiający się najczęściej w aplikacji</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 używa zamiast tego kolorów tapety</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Ciemny motyw</string>
     <string-array name="settings_night_mode_entries">

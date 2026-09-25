@@ -22,6 +22,7 @@
     <string name="empty_placeholder">(vide)</string>
     <string name="error">Erreur</string>
     <string name="error_access_denied">Accès refusé</string>
+    <string name="error_authentication_failed">Échec de la connexion</string>
     <string name="error_file_not_found">Fichier introuvable</string>
     <string name="error_file_already_exists">Un fichier portant ce nom existe déjà</string>
     <string name="error_directory_not_empty">Le dossier n\'est pas vide</string>
@@ -233,6 +234,8 @@
     <string name="file_job_merge_target_name">Dossier original</string>
     <string name="file_job_merge_source_name">Fusionner avec</string>
     <string name="file_job_conflict_show_name">Sélectionner un nouveau nom pour la destination</string>
+    <string name="file_job_conflict_show_name_expanded">Développé</string>
+    <string name="file_job_conflict_show_name_collapsed">Réduit</string>
     <string name="file_job_conflict_name_hint">Nouveau nom</string>
     <string name="file_job_archive_error_title_format">Erreur lors de la compression “%1$s”</string>
     <string name="file_job_archive_error_message_format">Une erreur s\'est produite lors de la compression du fichier \"%1$s\".\n%2$s</string>
@@ -361,12 +364,25 @@
     <string name="file_list_paste_copy_title_format">Copier %1$,d</string>
     <string name="file_list_paste_extract_title_format">Extraire %1$,d</string>
     <string name="file_list_paste_action_extract_here">Extraire ici</string>
+    <string name="file_list_edit_server">Modifier le serveur</string>
     <string name="file_list_empty">Pas de fichiers</string>
     <string name="file_list_action_create_file">Fichier</string>
     <string name="file_list_action_create_directory">Dossier</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Plus d\'options</string>
+    <string name="file_item_menu_format">Plus d\'options pour %1$s</string>
+    <string name="file_item_select_format">Sélectionner %1$s</string>
+    <string name="file_item_deselect_format">Désélectionner %1$s</string>
+    <string name="file_item_action_open">Ouvrir</string>
+    <string name="file_item_action_deselect">Désélectionner</string>
+    <string name="file_item_state_selected">Sélectionné</string>
+    <string name="file_item_state_not_selected">Non sélectionné</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Lien</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Lien rompu</string>
+    <string name="file_item_accessibility_encrypted">Chiffré</string>
+    <string name="file_item_accessibility_app_directory">Dossier d\'application</string>
     <string name="file_item_action_open_with">Ouvrir avec</string>
     <string name="file_item_action_extract">Extraire</string>
     <string name="file_item_action_archive">Compresser</string>
@@ -650,6 +666,8 @@
     <string name="video_viewer_screen_orientation_landscape">Paysage</string>
     <string name="video_viewer_screen_orientation_portrait">Portrait</string>
     <string name="video_viewer_error_format">Impossible de lire %1$s</string>
+    <string name="video_viewer_error_unsupported">Cet appareil ne peut pas lire ce format vidéo</string>
+    <string name="video_viewer_error_malformed">Le fichier vidéo est endommagé ou incomplet</string>
     <string name="save_as_title">Enregistrer sous</string>
     <string name="save_as_error">Erreur lors de l\'enregistrement du fichier</string>
     <string name="save_as_success_format">\"%1$s\" a été enregistré dans \"%2$s\"</string>
@@ -697,6 +715,7 @@
     <string name="settings_locale_title">Langage </string>
     <string name="settings_theme_color_title">Couleur du thème</string>
     <string name="settings_theme_color_summary">Couleur qui apparaît le plus souvent dans l’application</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 utilise plutôt les couleurs de votre fond d\'écran</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Mode nuit</string>
     <string-array name="settings_night_mode_entries">

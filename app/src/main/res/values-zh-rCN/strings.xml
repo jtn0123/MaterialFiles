@@ -20,6 +20,7 @@
     <string name="empty_placeholder">（空）</string>
     <string name="error">错误</string>
     <string name="error_access_denied">访问被拒绝</string>
+    <string name="error_authentication_failed">登录失败</string>
     <string name="error_file_not_found">找不到文件</string>
     <string name="error_file_already_exists">已存在同名文件</string>
     <string name="error_directory_not_empty">文件夹不为空</string>
@@ -185,6 +186,8 @@
     <string name="file_job_merge_target_name">原始文件夹</string>
     <string name="file_job_merge_source_name">合并</string>
     <string name="file_job_conflict_show_name">为目标选择新的名称</string>
+    <string name="file_job_conflict_show_name_expanded">已展开</string>
+    <string name="file_job_conflict_show_name_collapsed">已收起</string>
     <string name="file_job_conflict_name_hint">新名称</string>
     <string name="file_job_archive_error_title_format">压缩“%1$s”时发生错误</string>
     <string name="file_job_archive_error_message_format">将文件压缩进“%1$s”时发生错误。\n%2$s</string>
@@ -299,12 +302,25 @@
     <string name="file_list_paste_copy_title_format">复制 %1$,d</string>
     <string name="file_list_paste_extract_title_format">提取 %1$,d</string>
     <string name="file_list_paste_action_extract_here">提取到此处</string>
+    <string name="file_list_edit_server">编辑服务器</string>
     <string name="file_list_empty">无文件</string>
     <string name="file_list_action_create_file">文件</string>
     <string name="file_list_action_create_directory">文件夹</string>
 
     <string name="file_item_description_separator">"    "</string>
     <string name="file_item_menu">更多选项</string>
+    <string name="file_item_menu_format">%1$s 的更多选项</string>
+    <string name="file_item_select_format">选择 %1$s</string>
+    <string name="file_item_deselect_format">取消选择 %1$s</string>
+    <string name="file_item_action_open">打开</string>
+    <string name="file_item_action_deselect">取消选择</string>
+    <string name="file_item_state_selected">已选择</string>
+    <string name="file_item_state_not_selected">未选择</string>
+    <string name="file_item_accessibility_separator">，</string>
+    <string name="file_item_accessibility_symbolic_link">链接</string>
+    <string name="file_item_accessibility_broken_symbolic_link">失效链接</string>
+    <string name="file_item_accessibility_encrypted">已加密</string>
+    <string name="file_item_accessibility_app_directory">应用文件夹</string>
     <string name="file_item_action_open_with">打开方式</string>
     <string name="file_item_action_extract">提取</string>
     <string name="file_item_action_archive">压缩</string>
@@ -586,6 +602,8 @@
     <string name="video_viewer_screen_orientation_landscape">横屏</string>
     <string name="video_viewer_screen_orientation_portrait">竖屏</string>
     <string name="video_viewer_error_format">无法播放 %1$s</string>
+    <string name="video_viewer_error_unsupported">此设备无法播放这种视频格式</string>
+    <string name="video_viewer_error_malformed">视频文件已损坏或不完整</string>
     <string name="save_as_title">另存为</string>
     <string name="save_as_error">保存时发生错误</string>
     <string name="save_as_success_format">已将“%1$s”保存到“%2$s”</string>
@@ -632,6 +650,7 @@
     <string name="settings_locale_title">语言</string>
     <string name="settings_theme_color_title">主题色</string>
     <string name="settings_theme_color_summary">应用中最常见的颜色</string>
+    <string name="settings_theme_color_summary_material_design_3">质感设计 3 会改用您的壁纸颜色</string>
     <string name="settings_material_design_3_title">质感设计 3</string>
     <string name="settings_night_mode_title">夜间模式</string>
     <string-array name="settings_night_mode_entries">

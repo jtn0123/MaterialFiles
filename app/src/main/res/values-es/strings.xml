@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Vacío)</string>
     <string name="error">Error</string>
     <string name="error_access_denied">Acceso denegado</string>
+    <string name="error_authentication_failed">Error al iniciar sesión</string>
     <string name="error_file_not_found">Archivo no encontrado</string>
     <string name="error_file_already_exists">Ya existe un archivo con ese nombre</string>
     <string name="error_directory_not_empty">La carpeta no está vacía</string>
@@ -231,6 +232,8 @@
     <string name="file_job_merge_target_name">Carpeta original</string>
     <string name="file_job_merge_source_name">Combinar con</string>
     <string name="file_job_conflict_show_name">Seleccionar un nuevo nombre para el destino</string>
+    <string name="file_job_conflict_show_name_expanded">Expandido</string>
+    <string name="file_job_conflict_show_name_collapsed">Contraído</string>
     <string name="file_job_conflict_name_hint">Nombre nuevo</string>
     <string name="file_job_archive_error_title_format">Error al comprimir “%1$s”</string>
     <string name="file_job_archive_error_message_format">Se produjo un error al comprimir el archivo en “%1$s”.\n%2$s</string>
@@ -359,12 +362,25 @@
     <string name="file_list_paste_copy_title_format">Copiando %1$,d</string>
     <string name="file_list_paste_extract_title_format">Extrayendo %1$,d</string>
     <string name="file_list_paste_action_extract_here">Extraer aquí</string>
+    <string name="file_list_edit_server">Editar servidor</string>
     <string name="file_list_empty">Sin archivos</string>
     <string name="file_list_action_create_file">Archivo</string>
     <string name="file_list_action_create_directory">Carpeta</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Más opciones</string>
+    <string name="file_item_menu_format">Más opciones para %1$s</string>
+    <string name="file_item_select_format">Seleccionar %1$s</string>
+    <string name="file_item_deselect_format">Deseleccionar %1$s</string>
+    <string name="file_item_action_open">Abrir</string>
+    <string name="file_item_action_deselect">Deseleccionar</string>
+    <string name="file_item_state_selected">Seleccionado</string>
+    <string name="file_item_state_not_selected">No seleccionado</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Enlace</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Enlace roto</string>
+    <string name="file_item_accessibility_encrypted">Cifrado</string>
+    <string name="file_item_accessibility_app_directory">Carpeta de aplicación</string>
     <string name="file_item_action_open_with">Abrir con</string>
     <string name="file_item_action_extract">Extraer</string>
     <string name="file_item_action_archive">Comprimir</string>
@@ -648,6 +664,8 @@
     <string name="video_viewer_screen_orientation_landscape">Horizontal</string>
     <string name="video_viewer_screen_orientation_portrait">Vertical</string>
     <string name="video_viewer_error_format">No se puede reproducir %1$s</string>
+    <string name="video_viewer_error_unsupported">Este dispositivo no puede reproducir este formato de vídeo</string>
+    <string name="video_viewer_error_malformed">El archivo de vídeo está dañado o incompleto</string>
     <string name="save_as_title">Guardar como</string>
     <string name="save_as_error">Error al guardar el archivo</string>
     <string name="save_as_success_format">“%1$s” se ha guardado en “%2$s”</string>
@@ -695,6 +713,7 @@
     <string name="settings_locale_title">Idioma</string>
     <string name="settings_theme_color_title">Color de tema</string>
     <string name="settings_theme_color_summary">Color que aparece más frecuentemente en la aplicación</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 usa en su lugar los colores del fondo de pantalla</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Tema oscuro</string>
     <string-array name="settings_night_mode_entries">

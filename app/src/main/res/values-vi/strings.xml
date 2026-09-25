@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(trống)</string>
     <string name="error">Lỗi</string>
     <string name="error_access_denied">Truy cập bị từ chối</string>
+    <string name="error_authentication_failed">Đăng nhập không thành công</string>
     <string name="error_file_not_found">Không tìm thấy tệp</string>
     <string name="error_file_already_exists">Đã có tệp trùng tên</string>
     <string name="error_directory_not_empty">Thư mục không trống</string>
@@ -187,6 +188,8 @@
     <string name="file_job_merge_target_name">Thư mục gốc</string>
     <string name="file_job_merge_source_name">Hợp nhất với</string>
     <string name="file_job_conflict_show_name">Chọn tên mới cho tệp đích</string>
+    <string name="file_job_conflict_show_name_expanded">Đã mở rộng</string>
+    <string name="file_job_conflict_show_name_collapsed">Đã thu gọn</string>
     <string name="file_job_conflict_name_hint">Tên mới</string>
     <string name="file_job_archive_error_title_format">Lỗi khi nén “%1$s”</string>
     <string name="file_job_archive_error_message_format">Đã có lỗi khi nén tệp thành “%1$s”.\n%2$s</string>
@@ -301,12 +304,25 @@
     <string name="file_list_paste_copy_title_format">Đang sao chép %1$,d</string>
     <string name="file_list_paste_extract_title_format">Đang giải nén %1$,d</string>
     <string name="file_list_paste_action_extract_here">Giải nén vào đây</string>
+    <string name="file_list_edit_server">Chỉnh sửa máy chủ</string>
     <string name="file_list_empty">Không có tệp</string>
     <string name="file_list_action_create_file">Tệp</string>
     <string name="file_list_action_create_directory">Thư mục</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Tùy chọn khác</string>
+    <string name="file_item_menu_format">Tùy chọn khác cho %1$s</string>
+    <string name="file_item_select_format">Chọn %1$s</string>
+    <string name="file_item_deselect_format">Bỏ chọn %1$s</string>
+    <string name="file_item_action_open">Mở</string>
+    <string name="file_item_action_deselect">Bỏ chọn</string>
+    <string name="file_item_state_selected">Đã chọn</string>
+    <string name="file_item_state_not_selected">Chưa chọn</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Liên kết</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Liên kết bị hỏng</string>
+    <string name="file_item_accessibility_encrypted">Đã mã hóa</string>
+    <string name="file_item_accessibility_app_directory">Thư mục ứng dụng</string>
     <string name="file_item_action_open_with">Mở bằng</string>
     <string name="file_item_action_extract">Giải nén</string>
     <string name="file_item_action_archive">Nén</string>
@@ -585,6 +601,8 @@
     <string name="video_viewer_screen_orientation_landscape">Ngang</string>
     <string name="video_viewer_screen_orientation_portrait">Dọc</string>
     <string name="video_viewer_error_format">Không thể phát %1$s</string>
+    <string name="video_viewer_error_unsupported">Thiết bị này không thể phát định dạng video này</string>
+    <string name="video_viewer_error_malformed">Tệp video bị hỏng hoặc không đầy đủ</string>
     <string name="save_as_title">Lưu thành</string>
     <string name="save_as_error">Lỗi khi lưu tệp</string>
     <string name="save_as_success_format">Đã lưu “%1$s” vào “%2$s”</string>
@@ -630,6 +648,7 @@
     <string name="settings_locale_title">Ngôn ngữ</string>
     <string name="settings_theme_color_title">Màu chủ đề</string>
     <string name="settings_theme_color_summary">Màu thường xuyên xuất hiện nhất trong ứng dụng</string>
+    <string name="settings_theme_color_summary_material_design_3">Thiết kế Material 3 sẽ dùng màu hình nền của bạn thay thế</string>
     <string name="settings_material_design_3_title">Thiết kế Material 3</string>
     <string name="settings_night_mode_title">Chế độ ban đêm</string>
     <string-array name="settings_night_mode_entries">

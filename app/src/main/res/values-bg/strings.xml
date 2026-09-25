@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Празно)</string>
     <string name="error">Грешка</string>
     <string name="error_access_denied">Достъпът е отказан</string>
+    <string name="error_authentication_failed">Неуспешно вписване</string>
     <string name="error_file_not_found">Файлът не е намерен</string>
     <string name="error_file_already_exists">Вече съществува файл с това име</string>
     <string name="error_directory_not_empty">Папката не е празна</string>
@@ -209,6 +210,8 @@
     <string name="file_job_merge_target_name">Оригинална папка</string>
     <string name="file_job_merge_source_name">Обединяване с</string>
     <string name="file_job_conflict_show_name">Избиране на ново име</string>
+    <string name="file_job_conflict_show_name_expanded">Разгънато</string>
+    <string name="file_job_conflict_show_name_collapsed">Свито</string>
     <string name="file_job_conflict_name_hint">Ново име</string>
     <string name="file_job_archive_error_title_format">Грешка при компресирането на “%1$s”</string>
     <string name="file_job_archive_error_message_format">Възникна грешка докато файлът се компресираше в “%1$s”.\n%2$s</string>
@@ -330,12 +333,25 @@
     <string name="file_list_paste_copy_title_format">Копиране на %1$,d</string>
     <string name="file_list_paste_extract_title_format">Извличане на %1$,d</string>
     <string name="file_list_paste_action_extract_here">Извличане тук</string>
+    <string name="file_list_edit_server">Редакция на сървъра</string>
     <string name="file_list_empty">Няма файлове</string>
     <string name="file_list_action_create_file">Файл</string>
     <string name="file_list_action_create_directory">Папка</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Още възможности</string>
+    <string name="file_item_menu_format">Още възможности за %1$s</string>
+    <string name="file_item_select_format">Избиране на %1$s</string>
+    <string name="file_item_deselect_format">Отмяна на избора на %1$s</string>
+    <string name="file_item_action_open">Отваряне</string>
+    <string name="file_item_action_deselect">Отмяна на избора</string>
+    <string name="file_item_state_selected">Избрано</string>
+    <string name="file_item_state_not_selected">Не е избрано</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Препратка</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Повредена препратка</string>
+    <string name="file_item_accessibility_encrypted">Шифровано</string>
+    <string name="file_item_accessibility_app_directory">Папка на приложение</string>
     <string name="file_item_action_open_with">Отваряне с</string>
     <string name="file_item_action_extract">Извличане</string>
     <string name="file_item_action_archive">Компресиране</string>
@@ -617,6 +633,8 @@
     <string name="video_viewer_screen_orientation_landscape">Хоризонтално</string>
     <string name="video_viewer_screen_orientation_portrait">Вертикално</string>
     <string name="video_viewer_error_format">%1$s не може да бъде възпроизведен</string>
+    <string name="video_viewer_error_unsupported">Това устройство не може да възпроизведе този видеоформат</string>
+    <string name="video_viewer_error_malformed">Видеофайлът е повреден или непълен</string>
     <string name="save_as_title">Запазване като</string>
     <string name="save_as_error">Грешка при запазване на файла</string>
     <string name="save_as_success_format">Файлът „%1$s“ е запазен в „%2$s“</string>
@@ -663,6 +681,7 @@
     <string name="settings_locale_title">Език</string>
     <string name="settings_theme_color_title">Цвят на темата</string>
     <string name="settings_theme_color_summary">Цвят, който се ползва най-често в приложението</string>
+    <string name="settings_theme_color_summary_material_design_3">Материален дизайн 3 използва вместо това цветовете на тапета ви</string>
     <string name="settings_material_design_3_title">Материален дизайн 3</string>
     <string name="settings_night_mode_title">Нощен режим</string>
     <string-array name="settings_night_mode_entries">

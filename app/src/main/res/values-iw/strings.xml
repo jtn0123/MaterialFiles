@@ -22,6 +22,7 @@
     <string name="empty_placeholder">(ריק)</string>
     <string name="error">שגיאה</string>
     <string name="error_access_denied">הגישה נדחתה</string>
+    <string name="error_authentication_failed">הכניסה נכשלה</string>
     <string name="error_file_not_found">הקובץ לא נמצא</string>
     <string name="error_file_already_exists">כבר קיים קובץ בשם הזה</string>
     <string name="error_directory_not_empty">התיקיה אינה ריקה</string>
@@ -233,6 +234,8 @@
     <string name="file_job_merge_target_name">התיקייה המקורית</string>
     <string name="file_job_merge_source_name">למזג עם</string>
     <string name="file_job_conflict_show_name">בחירת שם חדש ליעד</string>
+    <string name="file_job_conflict_show_name_expanded">מורחב</string>
+    <string name="file_job_conflict_show_name_collapsed">מכווץ</string>
     <string name="file_job_conflict_name_hint">שם חדש</string>
     <string name="file_job_archive_error_title_format">שגיאה במהלך דחיסת \"%1$s\"</string>
     <string name="file_job_archive_error_message_format">שגיאה בעת דחיסת הקובץ אל “%1$s”.\n%2$s</string>
@@ -361,12 +364,25 @@
     <string name="file_list_paste_copy_title_format">מעתיק את %1$,d</string>
     <string name="file_list_paste_extract_title_format">מחלץ את %1$,d</string>
     <string name="file_list_paste_action_extract_here">חילוץ לכאן</string>
+    <string name="file_list_edit_server">עריכת שרת</string>
     <string name="file_list_empty">אין קבצים</string>
     <string name="file_list_action_create_file">קובץ</string>
     <string name="file_list_action_create_directory">תיקייה</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">אפשרויות נוספות</string>
+    <string name="file_item_menu_format">אפשרויות נוספות עבור %1$s</string>
+    <string name="file_item_select_format">בחירת %1$s</string>
+    <string name="file_item_deselect_format">ביטול הבחירה של %1$s</string>
+    <string name="file_item_action_open">פתיחה</string>
+    <string name="file_item_action_deselect">ביטול בחירה</string>
+    <string name="file_item_state_selected">נבחר</string>
+    <string name="file_item_state_not_selected">לא נבחר</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">קישור</string>
+    <string name="file_item_accessibility_broken_symbolic_link">קישור שבור</string>
+    <string name="file_item_accessibility_encrypted">מוצפן</string>
+    <string name="file_item_accessibility_app_directory">תיקיית יישום</string>
     <string name="file_item_action_open_with">פתיחה באמצעות</string>
     <string name="file_item_action_extract">חילוץ</string>
     <string name="file_item_action_archive">דחיסה</string>
@@ -650,6 +666,8 @@
     <string name="video_viewer_screen_orientation_landscape">לרוחב</string>
     <string name="video_viewer_screen_orientation_portrait">לאורך</string>
     <string name="video_viewer_error_format">לא ניתן לנגן את %1$s</string>
+    <string name="video_viewer_error_unsupported">המכשיר הזה לא יכול לנגן את תבנית הווידאו הזו</string>
+    <string name="video_viewer_error_malformed">קובץ הווידאו פגום או חלקי</string>
     <string name="save_as_title">שמירה בשם</string>
     <string name="save_as_error">שגיאה בשמירת הקובץ</string>
     <string name="save_as_success_format">„%1$s” נשמר אל „%2$s”</string>
@@ -697,6 +715,7 @@
     <string name="settings_locale_title">שפה</string>
     <string name="settings_theme_color_title">צבע ערכת נושא</string>
     <string name="settings_theme_color_summary">צבע המופיע בתדירות הגבוהה ביותר ביישום</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 משתמש במקום זאת בצבעי הטפט שלך</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">מצב לילה</string>
     <string-array name="settings_night_mode_entries">

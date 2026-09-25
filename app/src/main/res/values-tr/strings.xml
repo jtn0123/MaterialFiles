@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Boş)</string>
     <string name="error">Hata</string>
     <string name="error_access_denied">Erişim reddedildi</string>
+    <string name="error_authentication_failed">Oturum açılamadı</string>
     <string name="error_file_not_found">Dosya bulunamadı</string>
     <string name="error_file_already_exists">Bu isimde bir dosya zaten mevcut</string>
     <string name="error_directory_not_empty">Klasör boş değil</string>
@@ -206,6 +207,8 @@
     <string name="file_job_merge_target_name">Orijinal klasör</string>
     <string name="file_job_merge_source_name">Birleştir</string>
     <string name="file_job_conflict_show_name">Hedef için yeni bir isim seçin</string>
+    <string name="file_job_conflict_show_name_expanded">Genişletildi</string>
+    <string name="file_job_conflict_show_name_collapsed">Daraltıldı</string>
     <string name="file_job_conflict_name_hint">Yeni isim</string>
     <string name="file_job_archive_error_title_format">“%1$s” sıkıştırılırken hata oluştu</string>
     <string name="file_job_archive_error_message_format">Dosya “%1$s” içine sıkıştırılırken bir sorun oluştu.\n%2$s</string>
@@ -327,12 +330,25 @@
     <string name="file_list_paste_copy_title_format">%1$,d kopyalanıyor</string>
     <string name="file_list_paste_extract_title_format">%1$,d çıkartılıyor</string>
     <string name="file_list_paste_action_extract_here">Buraya çıkart</string>
+    <string name="file_list_edit_server">Sunucuyu düzenle</string>
     <string name="file_list_empty">Dosya yok</string>
     <string name="file_list_action_create_file">Dosya</string>
     <string name="file_list_action_create_directory">Klasör</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Diğer seçenekler</string>
+    <string name="file_item_menu_format">%1$s için diğer seçenekler</string>
+    <string name="file_item_select_format">%1$s öğesini seç</string>
+    <string name="file_item_deselect_format">%1$s öğesinin seçimini kaldır</string>
+    <string name="file_item_action_open">Aç</string>
+    <string name="file_item_action_deselect">Seçimi kaldır</string>
+    <string name="file_item_state_selected">Seçili</string>
+    <string name="file_item_state_not_selected">Seçili değil</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Bağlantı</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Bozuk bağlantı</string>
+    <string name="file_item_accessibility_encrypted">Şifreli</string>
+    <string name="file_item_accessibility_app_directory">Uygulama klasörü</string>
     <string name="file_item_action_open_with">Birlikte aç</string>
     <string name="file_item_action_extract">Çıkart</string>
     <string name="file_item_action_archive">Sıkıştır</string>
@@ -613,6 +629,8 @@
     <string name="video_viewer_screen_orientation_landscape">Yatay</string>
     <string name="video_viewer_screen_orientation_portrait">Dikey</string>
     <string name="video_viewer_error_format">%1$s oynatılamıyor</string>
+    <string name="video_viewer_error_unsupported">Bu cihaz bu video biçimini oynatamıyor</string>
+    <string name="video_viewer_error_malformed">Video dosyası hasarlı veya eksik</string>
     <string name="save_as_title">Farklı kaydet</string>
     <string name="save_as_error">Dosya kaydedilirken hata oluştu</string>
     <string name="save_as_success_format">“%1$s”, “%2$s” konumuna kaydedildi</string>
@@ -659,6 +677,7 @@
     <string name="settings_locale_title">Dil</string>
     <string name="settings_theme_color_title">Tema rengi</string>
     <string name="settings_theme_color_summary">Uygulamada en sık görünen renk</string>
+    <string name="settings_theme_color_summary_material_design_3">Materyal Tasarım 3 bunun yerine duvar kâğıdınızın renklerini kullanır</string>
     <string name="settings_material_design_3_title">Materyal Tasarım 3</string>
     <string name="settings_night_mode_title">Gece modu</string>
     <string-array name="settings_night_mode_entries">

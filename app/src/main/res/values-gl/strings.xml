@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Baleiro)</string>
     <string name="error">Erro</string>
     <string name="error_access_denied">Acceso denegado</string>
+    <string name="error_authentication_failed">Fallou o inicio de sesión</string>
     <string name="error_file_not_found">Non se atopou o ficheiro</string>
     <string name="error_file_already_exists">Xa existe un ficheiro con ese nome</string>
     <string name="error_directory_not_empty">O cartafol non está baleiro</string>
@@ -209,6 +210,8 @@
     <string name="file_job_merge_target_name">Cartafol orixinal</string>
     <string name="file_job_merge_source_name">Fusionar con</string>
     <string name="file_job_conflict_show_name">escolle un novo nome para o destino</string>
+    <string name="file_job_conflict_show_name_expanded">Despregado</string>
+    <string name="file_job_conflict_show_name_collapsed">Pregado</string>
     <string name="file_job_conflict_name_hint">Novo nome</string>
     <string name="file_job_archive_error_title_format">Erro ao comprimir \"%1$s\"</string>
     <string name="file_job_archive_error_message_format">Houbo un erro ao comprimir o ficheiro en \"%1$s\".\n%2$s</string>
@@ -330,12 +333,25 @@
     <string name="file_list_paste_copy_title_format">Copiando %1$,d</string>
     <string name="file_list_paste_extract_title_format">Extraendo %1$,d</string>
     <string name="file_list_paste_action_extract_here">Extraer aquí</string>
+    <string name="file_list_edit_server">Editar servidor</string>
     <string name="file_list_empty">Sen ficheiros</string>
     <string name="file_list_action_create_file">File</string>
     <string name="file_list_action_create_directory">Cartafol</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Máis opcións</string>
+    <string name="file_item_menu_format">Máis opcións para %1$s</string>
+    <string name="file_item_select_format">Escoller %1$s</string>
+    <string name="file_item_deselect_format">Desmarcar %1$s</string>
+    <string name="file_item_action_open">Abrir</string>
+    <string name="file_item_action_deselect">Desmarcar</string>
+    <string name="file_item_state_selected">Escollido</string>
+    <string name="file_item_state_not_selected">Non escollido</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Ligazón</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Ligazón rota</string>
+    <string name="file_item_accessibility_encrypted">Cifrado</string>
+    <string name="file_item_accessibility_app_directory">Cartafol da aplicación</string>
     <string name="file_item_action_open_with">Abrir con</string>
     <string name="file_item_action_extract">Extraer</string>
     <string name="file_item_action_archive">Comprimir</string>
@@ -617,6 +633,8 @@
     <string name="video_viewer_screen_orientation_landscape">Horizontal</string>
     <string name="video_viewer_screen_orientation_portrait">Vertical</string>
     <string name="video_viewer_error_format">Non se pode reproducir %1$s</string>
+    <string name="video_viewer_error_unsupported">Este dispositivo non pode reproducir este formato de vídeo</string>
+    <string name="video_viewer_error_malformed">O ficheiro de vídeo está danado ou incompleto</string>
     <string name="save_as_title">Gardar como</string>
     <string name="save_as_error">Erro ao gardar o ficheiro</string>
     <string name="save_as_success_format">\"%1$s\" foi gardado en \"%2$s\"</string>
@@ -663,6 +681,7 @@
     <string name="settings_locale_title">Lingua</string>
     <string name="settings_theme_color_title">Cor do tema</string>
     <string name="settings_theme_color_summary">Cor que aparece con máis frecuencia na aplicación</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 usa no seu lugar as cores do fondo de pantalla</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Modo noite</string>
     <string-array name="settings_night_mode_entries">

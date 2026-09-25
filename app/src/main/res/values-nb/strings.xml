@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Tom)</string>
     <string name="error">Feil</string>
     <string name="error_access_denied">Tilgang nektet</string>
+    <string name="error_authentication_failed">Innlogging mislyktes</string>
     <string name="error_file_not_found">Fant ikke filen</string>
     <string name="error_file_already_exists">Det finnes allerede en fil med det navnet</string>
     <string name="error_directory_not_empty">Mappen er ikke tom</string>
@@ -209,6 +210,8 @@
     <string name="file_job_merge_target_name">Opprinnelig mappe</string>
     <string name="file_job_merge_source_name">Slå sammen med</string>
     <string name="file_job_conflict_show_name">Velg et nytt navn for målet</string>
+    <string name="file_job_conflict_show_name_expanded">Utvidet</string>
+    <string name="file_job_conflict_show_name_collapsed">Skjult</string>
     <string name="file_job_conflict_name_hint">Nytt navn</string>
     <string name="file_job_archive_error_title_format">Feil under komprimering av «%1$s»</string>
     <string name="file_job_archive_error_message_format">Det oppsto en feil under komprimering av filen inn i «%1$s».\n%2$s</string>
@@ -330,12 +333,25 @@
     <string name="file_list_paste_copy_title_format">Kopierer %1$,d</string>
     <string name="file_list_paste_extract_title_format">Pakker ut %1$,d</string>
     <string name="file_list_paste_action_extract_here">Pakk ut her</string>
+    <string name="file_list_edit_server">Rediger tjener</string>
     <string name="file_list_empty">Ingen filer</string>
     <string name="file_list_action_create_file">Fil</string>
     <string name="file_list_action_create_directory">Mappe</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Flere alternativer</string>
+    <string name="file_item_menu_format">Flere alternativer for %1$s</string>
+    <string name="file_item_select_format">Velg %1$s</string>
+    <string name="file_item_deselect_format">Fjern valg av %1$s</string>
+    <string name="file_item_action_open">Åpne</string>
+    <string name="file_item_action_deselect">Fjern valg</string>
+    <string name="file_item_state_selected">Valgt</string>
+    <string name="file_item_state_not_selected">Ikke valgt</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Lenke</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Brutt lenke</string>
+    <string name="file_item_accessibility_encrypted">Kryptert</string>
+    <string name="file_item_accessibility_app_directory">App-mappe</string>
     <string name="file_item_action_open_with">Åpne med</string>
     <string name="file_item_action_extract">Pakk ut</string>
     <string name="file_item_action_archive">Komprimer</string>
@@ -617,6 +633,8 @@
     <string name="video_viewer_screen_orientation_landscape">Liggende</string>
     <string name="video_viewer_screen_orientation_portrait">Stående</string>
     <string name="video_viewer_error_format">Kan ikke spille av %1$s</string>
+    <string name="video_viewer_error_unsupported">Denne enheten kan ikke spille av dette videoformatet</string>
+    <string name="video_viewer_error_malformed">Videofilen er skadet eller ufullstendig</string>
     <string name="save_as_title">Lagre som</string>
     <string name="save_as_error">Feil under lagring av fil</string>
     <string name="save_as_success_format">«%1$s» er lagret i «%2$s»</string>
@@ -663,6 +681,7 @@
     <string name="settings_locale_title">Språk</string>
     <string name="settings_theme_color_title">Temafarge</string>
     <string name="settings_theme_color_summary">Den mest brukte fargen i appen</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 bruker fargene fra bakgrunnsbildet i stedet</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Nattmodus</string>
     <string-array name="settings_night_mode_entries">

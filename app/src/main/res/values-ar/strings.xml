@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(فارغ)</string>
     <string name="error">خطأ</string>
     <string name="error_access_denied">رُفض الوصول</string>
+    <string name="error_authentication_failed">فشل تسجيل الدخول</string>
     <string name="error_file_not_found">الملف غير موجود</string>
     <string name="error_file_already_exists">يوجد ملف بهذا الاسم بالفعل</string>
     <string name="error_directory_not_empty">المجلد ليس فارغًا</string>
@@ -297,6 +298,8 @@
     <string name="file_job_merge_target_name">المجلد الأصلي</string>
     <string name="file_job_merge_source_name">ادمج مع</string>
     <string name="file_job_conflict_show_name">حدّد اسمًا جديدًا للوجهة</string>
+    <string name="file_job_conflict_show_name_expanded">موسَّع</string>
+    <string name="file_job_conflict_show_name_collapsed">مطويّ</string>
     <string name="file_job_conflict_name_hint">اسم جديد</string>
     <string name="file_job_archive_error_title_format">خطأ أثناء ضغط ”%1$s“</string>
     <string name="file_job_archive_error_message_format">حدث خطأ أثناء ضغط الملف إلى ”%1$s“.\n%2$s</string>
@@ -446,12 +449,25 @@
     <string name="file_list_paste_copy_title_format">ينسخ %1$,d</string>
     <string name="file_list_paste_extract_title_format">يستخرِج %1$,d</string>
     <string name="file_list_paste_action_extract_here">استخرِج هنا</string>
+    <string name="file_list_edit_server">حرّر الخادم</string>
     <string name="file_list_empty">لا توجد ملفات</string>
     <string name="file_list_action_create_file">ملف</string>
     <string name="file_list_action_create_directory">مجلد</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">خيارات أخرى</string>
+    <string name="file_item_menu_format">خيارات أخرى لـ %1$s</string>
+    <string name="file_item_select_format">حدّد %1$s</string>
+    <string name="file_item_deselect_format">ألغِ تحديد %1$s</string>
+    <string name="file_item_action_open">افتح</string>
+    <string name="file_item_action_deselect">ألغِ التحديد</string>
+    <string name="file_item_state_selected">محدَّد</string>
+    <string name="file_item_state_not_selected">غير محدَّد</string>
+    <string name="file_item_accessibility_separator">،</string>
+    <string name="file_item_accessibility_symbolic_link">رابط</string>
+    <string name="file_item_accessibility_broken_symbolic_link">رابط معطّل</string>
+    <string name="file_item_accessibility_encrypted">مشفّر</string>
+    <string name="file_item_accessibility_app_directory">مجلد التطبيق</string>
     <string name="file_item_action_open_with">افتح بـ</string>
     <string name="file_item_action_extract">استخرِج</string>
     <string name="file_item_action_archive">اضغط</string>
@@ -741,6 +757,8 @@
     <string name="video_viewer_screen_orientation_landscape">أفقي</string>
     <string name="video_viewer_screen_orientation_portrait">عمودي</string>
     <string name="video_viewer_error_format">تعذّر تشغيل %1$s</string>
+    <string name="video_viewer_error_unsupported">لا يمكن لهذا الجهاز تشغيل صيغة الفيديو هذه</string>
+    <string name="video_viewer_error_malformed">ملف الفيديو تالف أو غير مكتمل</string>
     <string name="save_as_title">احفظ كـ</string>
     <string name="save_as_error">خطأ أثناء حفظ الملف</string>
     <string name="save_as_success_format">حُفظ ”%1$s“ إلى ”%2$s“</string>
@@ -791,6 +809,7 @@
     <string name="settings_locale_title">لغة</string>
     <string name="settings_theme_color_title">لون السمة</string>
     <string name="settings_theme_color_summary">اللون الذي يظهر بشكل متكرر في التطبيق</string>
+    <string name="settings_theme_color_summary_material_design_3">يستخدم تصميم ماتيريال 3 ألوان خلفيتك بدلًا من ذلك</string>
     <string name="settings_material_design_3_title">تصميم ماتيريال 3</string>
     <string name="settings_night_mode_title">الوضع الليلي</string>
     <string-array name="settings_night_mode_entries">

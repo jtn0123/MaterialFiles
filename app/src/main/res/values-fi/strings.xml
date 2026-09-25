@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(tyhjä)</string>
     <string name="error">Virhe</string>
     <string name="error_access_denied">Pääsy estetty</string>
+    <string name="error_authentication_failed">Kirjautuminen epäonnistui</string>
     <string name="error_file_not_found">Tiedostoa ei löytynyt</string>
     <string name="error_file_already_exists">Samanniminen tiedosto on jo olemassa</string>
     <string name="error_directory_not_empty">Kansio ei ole tyhjä</string>
@@ -205,6 +206,8 @@
     <string name="file_job_merge_target_name">Alkuperäinen kansio</string>
     <string name="file_job_merge_source_name">Yhdistä kansioon</string>
     <string name="file_job_conflict_show_name">Valitse uusi nimi kohteelle</string>
+    <string name="file_job_conflict_show_name_expanded">Laajennettu</string>
+    <string name="file_job_conflict_show_name_collapsed">Tiivistetty</string>
     <string name="file_job_conflict_name_hint">Uusi nimi</string>
     <string name="file_job_archive_error_title_format">Virhe pakattaessa “%1$s”</string>
     <string name="file_job_archive_error_message_format">Tapahtui virhe tiedostoa kohteeseen “%1$s” pakatessa.\n%2$s</string>
@@ -326,12 +329,25 @@
     <string name="file_list_paste_copy_title_format">Kopioidaan %1$,d</string>
     <string name="file_list_paste_extract_title_format">Puretaan %1$,d</string>
     <string name="file_list_paste_action_extract_here">Pura tähän</string>
+    <string name="file_list_edit_server">Muokkaa palvelinta</string>
     <string name="file_list_empty">Ei tiedostoja</string>
     <string name="file_list_action_create_file">Tiedosto</string>
     <string name="file_list_action_create_directory">Kansio</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Lisää vaihtoehtoja</string>
+    <string name="file_item_menu_format">Lisää vaihtoehtoja: %1$s</string>
+    <string name="file_item_select_format">Valitse %1$s</string>
+    <string name="file_item_deselect_format">Poista valinta: %1$s</string>
+    <string name="file_item_action_open">Avaa</string>
+    <string name="file_item_action_deselect">Poista valinta</string>
+    <string name="file_item_state_selected">Valittu</string>
+    <string name="file_item_state_not_selected">Ei valittu</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Linkki</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Rikkinäinen linkki</string>
+    <string name="file_item_accessibility_encrypted">Salattu</string>
+    <string name="file_item_accessibility_app_directory">Sovelluskansio</string>
     <string name="file_item_action_open_with">Avaa…</string>
     <string name="file_item_action_extract">Pura</string>
     <string name="file_item_action_archive">Pakkaa</string>
@@ -612,6 +628,8 @@
     <string name="video_viewer_screen_orientation_landscape">Vaaka</string>
     <string name="video_viewer_screen_orientation_portrait">Pysty</string>
     <string name="video_viewer_error_format">Ei voida toistaa: %1$s</string>
+    <string name="video_viewer_error_unsupported">Tämä laite ei voi toistaa tätä videomuotoa</string>
+    <string name="video_viewer_error_malformed">Videotiedosto on vioittunut tai keskeneräinen</string>
     <string name="save_as_title">Tallenna nimellä</string>
     <string name="save_as_error">Virhe tiedoston tallentamisessa</string>
     <string name="save_as_success_format">“%1$s” on tallennettu kohteeseen “%2$s”</string>
@@ -658,6 +676,7 @@
     <string name="settings_locale_title">Kieli</string>
     <string name="settings_theme_color_title">Teemaväri</string>
     <string name="settings_theme_color_summary">Eniten näytetty väri sovelluksessa</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 käyttää sen sijaan taustakuvan värejä</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Yötila</string>
     <string-array name="settings_night_mode_entries">

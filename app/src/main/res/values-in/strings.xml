@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Kosong)</string>
     <string name="error">kesalahan</string>
     <string name="error_access_denied">Akses ditolak</string>
+    <string name="error_authentication_failed">Gagal masuk</string>
     <string name="error_file_not_found">Berkas tidak ditemukan</string>
     <string name="error_file_already_exists">Berkas dengan nama tersebut sudah ada</string>
     <string name="error_directory_not_empty">Folder tidak kosong</string>
@@ -187,6 +188,8 @@
     <string name="file_job_merge_target_name">Folder asli</string>
     <string name="file_job_merge_source_name">Gabung dengan</string>
     <string name="file_job_conflict_show_name">Pilih nama baru</string>
+    <string name="file_job_conflict_show_name_expanded">Diluaskan</string>
+    <string name="file_job_conflict_show_name_collapsed">Diciutkan</string>
     <string name="file_job_conflict_name_hint">Nama baru</string>
     <string name="file_job_archive_error_title_format">Terjadi kesalahan saat mengompres “%1$s”</string>
     <string name="file_job_archive_error_message_format">Telah terjadi kesalahan saat mengompres berkas ke dalam “%1$s”.\n%2$s</string>
@@ -301,12 +304,25 @@
     <string name="file_list_paste_copy_title_format">Menyalin %1$,d</string>
     <string name="file_list_paste_extract_title_format">Mengekstrak %1$,d</string>
     <string name="file_list_paste_action_extract_here">Ekstrak di sini</string>
+    <string name="file_list_edit_server">Sunting server</string>
     <string name="file_list_empty">Tidak ada berkas</string>
     <string name="file_list_action_create_file">Berkas</string>
     <string name="file_list_action_create_directory">Folder</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Opsi lainnya</string>
+    <string name="file_item_menu_format">Opsi lainnya untuk %1$s</string>
+    <string name="file_item_select_format">Pilih %1$s</string>
+    <string name="file_item_deselect_format">Batalkan pilihan %1$s</string>
+    <string name="file_item_action_open">Buka</string>
+    <string name="file_item_action_deselect">Batalkan pilihan</string>
+    <string name="file_item_state_selected">Dipilih</string>
+    <string name="file_item_state_not_selected">Tidak dipilih</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Tautan</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Tautan rusak</string>
+    <string name="file_item_accessibility_encrypted">Terenkripsi</string>
+    <string name="file_item_accessibility_app_directory">Folder aplikasi</string>
     <string name="file_item_action_open_with">Buka dengan</string>
     <string name="file_item_action_extract">Ekstrak</string>
     <string name="file_item_action_archive">Kompres</string>
@@ -586,6 +602,8 @@
     <string name="video_viewer_screen_orientation_landscape">Lanskap</string>
     <string name="video_viewer_screen_orientation_portrait">Potret</string>
     <string name="video_viewer_error_format">Tidak dapat memutar %1$s</string>
+    <string name="video_viewer_error_unsupported">Perangkat ini tidak dapat memutar format video ini</string>
+    <string name="video_viewer_error_malformed">Berkas video rusak atau tidak lengkap</string>
     <string name="save_as_title">Simpan sebagai</string>
     <string name="save_as_error">Galat saat menyimpan berkas</string>
     <string name="save_as_success_format">“%1$s” berhasil disimpan ke “%2$s”</string>
@@ -631,6 +649,7 @@
     <string name="settings_locale_title">Bahasa</string>
     <string name="settings_theme_color_title">Warna tema</string>
     <string name="settings_theme_color_summary">Warna yang muncul paling sering di dalam apl</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 menggunakan warna wallpaper Anda sebagai gantinya</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Mode malam</string>
     <string-array name="settings_night_mode_entries">

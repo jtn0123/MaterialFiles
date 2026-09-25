@@ -20,6 +20,7 @@
     <string name="empty_placeholder">（空）</string>
     <string name="error">錯誤</string>
     <string name="error_access_denied">存取遭拒</string>
+    <string name="error_authentication_failed">登入失敗</string>
     <string name="error_file_not_found">找不到檔案</string>
     <string name="error_file_already_exists">已存在同名的檔案</string>
     <string name="error_directory_not_empty">資料夾不是空的</string>
@@ -185,6 +186,8 @@
     <string name="file_job_merge_target_name">原始資料夾</string>
     <string name="file_job_merge_source_name">合併</string>
     <string name="file_job_conflict_show_name">為目標選取新的名稱</string>
+    <string name="file_job_conflict_show_name_expanded">已展開</string>
+    <string name="file_job_conflict_show_name_collapsed">已收合</string>
     <string name="file_job_conflict_name_hint">新名稱</string>
     <string name="file_job_archive_error_title_format">壓縮「%1$s」時發生錯誤</string>
     <string name="file_job_archive_error_message_format">將檔案壓縮進「%1$s」時發生錯誤。\n%2$s</string>
@@ -299,12 +302,25 @@
     <string name="file_list_paste_copy_title_format">複製 %1$,d</string>
     <string name="file_list_paste_extract_title_format">解開 %1$,d</string>
     <string name="file_list_paste_action_extract_here">在這裡解開</string>
+    <string name="file_list_edit_server">編輯伺服器</string>
     <string name="file_list_empty">無檔案</string>
     <string name="file_list_action_create_file">檔案</string>
     <string name="file_list_action_create_directory">資料夾</string>
 
     <string name="file_item_description_separator">"    "</string>
     <string name="file_item_menu">更多選項</string>
+    <string name="file_item_menu_format">%1$s 的更多選項</string>
+    <string name="file_item_select_format">選取 %1$s</string>
+    <string name="file_item_deselect_format">取消選取 %1$s</string>
+    <string name="file_item_action_open">開啟</string>
+    <string name="file_item_action_deselect">取消選取</string>
+    <string name="file_item_state_selected">已選取</string>
+    <string name="file_item_state_not_selected">未選取</string>
+    <string name="file_item_accessibility_separator">，</string>
+    <string name="file_item_accessibility_symbolic_link">連結</string>
+    <string name="file_item_accessibility_broken_symbolic_link">失效連結</string>
+    <string name="file_item_accessibility_encrypted">已加密</string>
+    <string name="file_item_accessibility_app_directory">應用程式資料夾</string>
     <string name="file_item_action_open_with">開啟方式</string>
     <string name="file_item_action_extract">解開</string>
     <string name="file_item_action_archive">壓縮</string>
@@ -586,6 +602,8 @@
     <string name="video_viewer_screen_orientation_landscape">橫向</string>
     <string name="video_viewer_screen_orientation_portrait">直向</string>
     <string name="video_viewer_error_format">無法播放 %1$s</string>
+    <string name="video_viewer_error_unsupported">這部裝置無法播放這種影片格式</string>
+    <string name="video_viewer_error_malformed">影片檔案已損毀或不完整</string>
     <string name="save_as_title">另存為</string>
     <string name="save_as_error">儲存時發生錯誤</string>
     <string name="save_as_success_format">已將「%1$s」儲存到「%2$s」</string>
@@ -632,6 +650,7 @@
     <string name="settings_locale_title">語言</string>
     <string name="settings_theme_color_title">主題色</string>
     <string name="settings_theme_color_summary">應用程式中最常見的色彩</string>
+    <string name="settings_theme_color_summary_material_design_3">質感設計 3 會改用您的桌布色彩</string>
     <string name="settings_material_design_3_title">質感設計 3</string>
     <string name="settings_night_mode_title">夜間模式</string>
     <string-array name="settings_night_mode_entries">

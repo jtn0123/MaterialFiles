@@ -22,6 +22,7 @@
     <string name="empty_placeholder">(Пусто)</string>
     <string name="error">Ошибка</string>
     <string name="error_access_denied">Доступ запрещён</string>
+    <string name="error_authentication_failed">Не удалось войти</string>
     <string name="error_file_not_found">Файл не найден</string>
     <string name="error_file_already_exists">Файл с таким именем уже существует</string>
     <string name="error_directory_not_empty">Папка не пуста</string>
@@ -255,6 +256,8 @@
     <string name="file_job_merge_target_name">Исходная папка</string>
     <string name="file_job_merge_source_name">Объединить с</string>
     <string name="file_job_conflict_show_name">Выберите новое имя для файла назначения</string>
+    <string name="file_job_conflict_show_name_expanded">Развёрнуто</string>
+    <string name="file_job_conflict_show_name_collapsed">Свёрнуто</string>
     <string name="file_job_conflict_name_hint">Новое имя</string>
     <string name="file_job_archive_error_title_format">Ошибка при сжатии “%1$s”</string>
     <string name="file_job_archive_error_message_format">При сжатии файла в “%1$s” произошла ошибка.\n%2$s</string>
@@ -390,12 +393,25 @@
     <string name="file_list_paste_copy_title_format">Копирование %1$,d</string>
     <string name="file_list_paste_extract_title_format">Извлечение %1$,d</string>
     <string name="file_list_paste_action_extract_here">Извлечь здесь</string>
+    <string name="file_list_edit_server">Редактировать сервер</string>
     <string name="file_list_empty">Нет файлов</string>
     <string name="file_list_action_create_file">Файл</string>
     <string name="file_list_action_create_directory">Папка</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Другие параметры</string>
+    <string name="file_item_menu_format">Другие параметры для %1$s</string>
+    <string name="file_item_select_format">Выбрать %1$s</string>
+    <string name="file_item_deselect_format">Отменить выбор %1$s</string>
+    <string name="file_item_action_open">Открыть</string>
+    <string name="file_item_action_deselect">Отменить выбор</string>
+    <string name="file_item_state_selected">Выбрано</string>
+    <string name="file_item_state_not_selected">Не выбрано</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Ссылка</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Битая ссылка</string>
+    <string name="file_item_accessibility_encrypted">Зашифровано</string>
+    <string name="file_item_accessibility_app_directory">Папка приложения</string>
     <string name="file_item_action_open_with">Открыть с помощью</string>
     <string name="file_item_action_extract">Извлечь</string>
     <string name="file_item_action_archive">Сжать</string>
@@ -681,6 +697,8 @@
     <string name="video_viewer_screen_orientation_landscape">Альбомная</string>
     <string name="video_viewer_screen_orientation_portrait">Портретная</string>
     <string name="video_viewer_error_format">Не удалось воспроизвести %1$s</string>
+    <string name="video_viewer_error_unsupported">Это устройство не может воспроизвести этот формат видео</string>
+    <string name="video_viewer_error_malformed">Видеофайл повреждён или неполный</string>
     <string name="save_as_title">Сохранить как</string>
     <string name="save_as_error">Ошибка при сохранении файла</string>
     <string name="save_as_success_format">“%1$s” было сохранено в “%2$s”</string>
@@ -729,6 +747,7 @@
     <string name="settings_locale_title">Язык</string>
     <string name="settings_theme_color_title">Цвет темы</string>
     <string name="settings_theme_color_summary">Цвет для элементов в приложении</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 вместо этого использует цвета обоев</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Ночной режим</string>
     <string-array name="settings_night_mode_entries">

@@ -22,6 +22,7 @@
     <string name="empty_placeholder">(Порожньо)</string>
     <string name="error">Помилка</string>
     <string name="error_access_denied">Доступ заборонено</string>
+    <string name="error_authentication_failed">Не вдалося увійти</string>
     <string name="error_file_not_found">Файл не знайдено</string>
     <string name="error_file_already_exists">Файл з такою назвою вже існує</string>
     <string name="error_directory_not_empty">Тека не порожня</string>
@@ -255,6 +256,8 @@
     <string name="file_job_merge_target_name">Оригінальна тека</string>
     <string name="file_job_merge_source_name">Об\'єднати з</string>
     <string name="file_job_conflict_show_name">Виберіть нове ім\'я для цілі</string>
+    <string name="file_job_conflict_show_name_expanded">Розгорнуто</string>
+    <string name="file_job_conflict_show_name_collapsed">Згорнуто</string>
     <string name="file_job_conflict_name_hint">Нова назва</string>
     <string name="file_job_archive_error_title_format">Помилка під час стиснення «%1$s»</string>
     <string name="file_job_archive_error_message_format">Сталася помилка під час стиснення файлу в «%1$s».\n%2$s</string>
@@ -390,12 +393,25 @@
     <string name="file_list_paste_copy_title_format">Копіювання %1$,d</string>
     <string name="file_list_paste_extract_title_format">Видобування %1$,d</string>
     <string name="file_list_paste_action_extract_here">Видобути тут</string>
+    <string name="file_list_edit_server">Змінити сервер</string>
     <string name="file_list_empty">Нема файлів</string>
     <string name="file_list_action_create_file">Файл</string>
     <string name="file_list_action_create_directory">Тека</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Інші параметри</string>
+    <string name="file_item_menu_format">Інші параметри для %1$s</string>
+    <string name="file_item_select_format">Вибрати %1$s</string>
+    <string name="file_item_deselect_format">Скасувати вибір %1$s</string>
+    <string name="file_item_action_open">Відкрити</string>
+    <string name="file_item_action_deselect">Скасувати вибір</string>
+    <string name="file_item_state_selected">Вибрано</string>
+    <string name="file_item_state_not_selected">Не вибрано</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Посилання</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Недійсне посилання</string>
+    <string name="file_item_accessibility_encrypted">Зашифровано</string>
+    <string name="file_item_accessibility_app_directory">Тека застосунку</string>
     <string name="file_item_action_open_with">Відкрити через</string>
     <string name="file_item_action_extract">Видобути</string>
     <string name="file_item_action_archive">Стиснути</string>
@@ -681,6 +697,8 @@
     <string name="video_viewer_screen_orientation_landscape">Альбомна</string>
     <string name="video_viewer_screen_orientation_portrait">Портретна</string>
     <string name="video_viewer_error_format">Не вдалося відтворити %1$s</string>
+    <string name="video_viewer_error_unsupported">Цей пристрій не може відтворити цей формат відео</string>
+    <string name="video_viewer_error_malformed">Відеофайл пошкоджений або неповний</string>
     <string name="save_as_title">Зберегти як</string>
     <string name="save_as_error">Помилка при збереженні файлу</string>
     <string name="save_as_success_format">“%1$s” збережено у “%2$s”</string>
@@ -729,6 +747,7 @@
     <string name="settings_locale_title">Мова</string>
     <string name="settings_theme_color_title">Колір теми</string>
     <string name="settings_theme_color_summary">Колір, який найчастіше з’являється у застосунку</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 натомість використовує кольори шпалер</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Нічний режим</string>
     <string-array name="settings_night_mode_entries">

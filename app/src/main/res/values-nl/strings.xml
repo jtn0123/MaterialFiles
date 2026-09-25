@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(leeg)</string>
     <string name="error">Fout</string>
     <string name="error_access_denied">Toegang geweigerd</string>
+    <string name="error_authentication_failed">Inloggen mislukt</string>
     <string name="error_file_not_found">Bestand niet gevonden</string>
     <string name="error_file_already_exists">Er is al een bestand met deze naam</string>
     <string name="error_directory_not_empty">De map is niet leeg</string>
@@ -209,6 +210,8 @@
     <string name="file_job_merge_target_name">Oorspronkelijke map</string>
     <string name="file_job_merge_source_name">Samenvoegen met</string>
     <string name="file_job_conflict_show_name">Voer een nieuwe naam in</string>
+    <string name="file_job_conflict_show_name_expanded">Uitgevouwen</string>
+    <string name="file_job_conflict_show_name_collapsed">Samengevouwen</string>
     <string name="file_job_conflict_name_hint">Nieuwe naam</string>
     <string name="file_job_archive_error_title_format">Fout tijdens inpakken van ‘%1$s’</string>
     <string name="file_job_archive_error_message_format">Er is een fout opgetreden tijdens het inpakken in ‘%1$s’.\n%2$s</string>
@@ -330,12 +333,25 @@
     <string name="file_list_paste_copy_title_format">Bezig met kopiëren van %1$,d</string>
     <string name="file_list_paste_extract_title_format">Bezig met uitpakken van %1$,d</string>
     <string name="file_list_paste_action_extract_here">Hier uitpakken</string>
+    <string name="file_list_edit_server">Server bewerken</string>
     <string name="file_list_empty">Geen bestanden</string>
     <string name="file_list_action_create_file">Bestand</string>
     <string name="file_list_action_create_directory">Map</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Meer opties</string>
+    <string name="file_item_menu_format">Meer opties voor %1$s</string>
+    <string name="file_item_select_format">%1$s selecteren</string>
+    <string name="file_item_deselect_format">%1$s deselecteren</string>
+    <string name="file_item_action_open">Openen</string>
+    <string name="file_item_action_deselect">Deselecteren</string>
+    <string name="file_item_state_selected">Geselecteerd</string>
+    <string name="file_item_state_not_selected">Niet geselecteerd</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Verwijzing</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Verbroken verwijzing</string>
+    <string name="file_item_accessibility_encrypted">Versleuteld</string>
+    <string name="file_item_accessibility_app_directory">App-map</string>
     <string name="file_item_action_open_with">Openen met</string>
     <string name="file_item_action_extract">Uitpakken</string>
     <string name="file_item_action_archive">Inpakken</string>
@@ -617,6 +633,8 @@
     <string name="video_viewer_screen_orientation_landscape">Liggend</string>
     <string name="video_viewer_screen_orientation_portrait">Staand</string>
     <string name="video_viewer_error_format">Kan %1$s niet afspelen</string>
+    <string name="video_viewer_error_unsupported">Dit apparaat kan deze video-indeling niet afspelen</string>
+    <string name="video_viewer_error_malformed">Het videobestand is beschadigd of onvolledig</string>
     <string name="save_as_title">Opslaan als</string>
     <string name="save_as_error">Fout tijdens opslaan van bestand</string>
     <string name="save_as_success_format">“%1$s” is opgeslagen in ‘%2$s’</string>
@@ -663,6 +681,7 @@
     <string name="settings_locale_title">Taal</string>
     <string name="settings_theme_color_title">Themakleur</string>
     <string name="settings_theme_color_summary">De kleur die het vaakst wordt gebruikt in de app</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 gebruikt in plaats daarvan de kleuren van je achtergrond</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Nachtmodus</string>
     <string-array name="settings_night_mode_entries">

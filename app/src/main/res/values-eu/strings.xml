@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Hutsik)</string>
     <string name="error">Errorea</string>
     <string name="error_access_denied">Sarbidea ukatu da</string>
+    <string name="error_authentication_failed">Saio-hasierak huts egin du</string>
     <string name="error_file_not_found">Ez da fitxategia aurkitu</string>
     <string name="error_file_already_exists">Badago izen bereko fitxategi bat</string>
     <string name="error_directory_not_empty">Karpeta ez dago hutsik</string>
@@ -206,6 +207,8 @@
     <string name="file_job_merge_target_name">Jatorrizko karpeta</string>
     <string name="file_job_merge_source_name">Bateratu honekin</string>
     <string name="file_job_conflict_show_name">Aukeratu izen berria helmugarentzat</string>
+    <string name="file_job_conflict_show_name_expanded">Zabalduta</string>
+    <string name="file_job_conflict_show_name_collapsed">Tolestuta</string>
     <string name="file_job_conflict_name_hint">Izen berria</string>
     <string name="file_job_archive_error_title_format">Errorea \"%1$s\" konprimitzean</string>
     <string name="file_job_archive_error_message_format">Errorea gertatu da “%1$s” konprimitzean.\n%2$s</string>
@@ -327,12 +330,25 @@
     <string name="file_list_paste_copy_title_format">%1$,d kopiatzen</string>
     <string name="file_list_paste_extract_title_format">%1$,d erauzten</string>
     <string name="file_list_paste_action_extract_here">Erauzi hemen</string>
+    <string name="file_list_edit_server">Editatu zerbitzaria</string>
     <string name="file_list_empty">Fitxategirik ez</string>
     <string name="file_list_action_create_file">Fitxategia</string>
     <string name="file_list_action_create_directory">Karpeta</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Aukera gehiago</string>
+    <string name="file_item_menu_format">Aukera gehiago: %1$s</string>
+    <string name="file_item_select_format">Hautatu %1$s</string>
+    <string name="file_item_deselect_format">Desautatu %1$s</string>
+    <string name="file_item_action_open">Ireki</string>
+    <string name="file_item_action_deselect">Desautatu</string>
+    <string name="file_item_state_selected">Hautatuta</string>
+    <string name="file_item_state_not_selected">Hautatu gabe</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Esteka</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Esteka hautsia</string>
+    <string name="file_item_accessibility_encrypted">Zifratuta</string>
+    <string name="file_item_accessibility_app_directory">Aplikazioaren karpeta</string>
     <string name="file_item_action_open_with">Ireki honekin</string>
     <string name="file_item_action_extract">Erauzi</string>
     <string name="file_item_action_archive">Konprimitu</string>
@@ -613,6 +629,8 @@
     <string name="video_viewer_screen_orientation_landscape">Horizontala</string>
     <string name="video_viewer_screen_orientation_portrait">Bertikala</string>
     <string name="video_viewer_error_format">Ezin da %1$s erreproduzitu</string>
+    <string name="video_viewer_error_unsupported">Gailu honek ezin du bideo-formatu hau erreproduzitu</string>
+    <string name="video_viewer_error_malformed">Bideo-fitxategia hondatuta edo osatu gabe dago</string>
     <string name="save_as_title">Gorde honela</string>
     <string name="save_as_error">Errorea fitxategia gordetzean</string>
     <string name="save_as_success_format">“%1$s” hemen gorde da: “%2$s”</string>
@@ -659,6 +677,7 @@
     <string name="settings_locale_title">Hizkuntza</string>
     <string name="settings_theme_color_title">Gaiaren kolorea</string>
     <string name="settings_theme_color_summary">Aplikazioan gehien agertzen den kolorea</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3-k horma-paperaren koloreak erabiltzen ditu horren ordez</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Gauerako modua</string>
     <string-array name="settings_night_mode_entries">

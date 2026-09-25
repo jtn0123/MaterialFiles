@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(空白)</string>
     <string name="error">エラー</string>
     <string name="error_access_denied">アクセスが拒否されました</string>
+    <string name="error_authentication_failed">ログインに失敗しました</string>
     <string name="error_file_not_found">ファイルが見つかりません</string>
     <string name="error_file_already_exists">同じ名前のファイルが既に存在します</string>
     <string name="error_directory_not_empty">フォルダが空ではありません</string>
@@ -187,6 +188,8 @@
     <string name="file_job_merge_target_name">元のフォルダ</string>
     <string name="file_job_merge_source_name">マージ</string>
     <string name="file_job_conflict_show_name">移動先の新しい名前を選択してください</string>
+    <string name="file_job_conflict_show_name_expanded">展開</string>
+    <string name="file_job_conflict_show_name_collapsed">折りたたみ</string>
     <string name="file_job_conflict_name_hint">新しい名前</string>
     <string name="file_job_archive_error_title_format">「%1$s」の圧縮中にエラーが発生しました</string>
     <string name="file_job_archive_error_message_format">ファイルを「%1$s」に圧縮中にエラーが発生しました。\n%2$s</string>
@@ -301,12 +304,25 @@
     <string name="file_list_paste_copy_title_format">%1$,d 件をコピー中</string>
     <string name="file_list_paste_extract_title_format">%1$,d 件を展開中</string>
     <string name="file_list_paste_action_extract_here">ここに展開</string>
+    <string name="file_list_edit_server">サーバーを編集</string>
     <string name="file_list_empty">ファイルがありません</string>
     <string name="file_list_action_create_file">ファイル</string>
     <string name="file_list_action_create_directory">フォルダ</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">その他のオプション</string>
+    <string name="file_item_menu_format">%1$s のその他のオプション</string>
+    <string name="file_item_select_format">%1$s を選択</string>
+    <string name="file_item_deselect_format">%1$s の選択を解除</string>
+    <string name="file_item_action_open">開く</string>
+    <string name="file_item_action_deselect">選択を解除</string>
+    <string name="file_item_state_selected">選択済み</string>
+    <string name="file_item_state_not_selected">未選択</string>
+    <string name="file_item_accessibility_separator">、</string>
+    <string name="file_item_accessibility_symbolic_link">リンク</string>
+    <string name="file_item_accessibility_broken_symbolic_link">壊れたリンク</string>
+    <string name="file_item_accessibility_encrypted">暗号化</string>
+    <string name="file_item_accessibility_app_directory">アプリフォルダ</string>
     <string name="file_item_action_open_with">アプリで開く</string>
     <string name="file_item_action_extract">展開</string>
     <string name="file_item_action_archive">圧縮</string>
@@ -586,6 +602,8 @@
     <string name="video_viewer_screen_orientation_landscape">横向き</string>
     <string name="video_viewer_screen_orientation_portrait">縦向き</string>
     <string name="video_viewer_error_format">%1$s を再生できません</string>
+    <string name="video_viewer_error_unsupported">このデバイスではこの動画形式を再生できません</string>
+    <string name="video_viewer_error_malformed">動画ファイルが破損しているか、不完全です</string>
     <string name="save_as_title">保存</string>
     <string name="save_as_error">ファイルを保存中にエラーが発生しました</string>
     <string name="save_as_success_format">「%1$s」は「%2$s」に保存されました</string>
@@ -631,6 +649,7 @@
     <string name="settings_locale_title">言語</string>
     <string name="settings_theme_color_title">テーマカラー</string>
     <string name="settings_theme_color_summary">アプリ内で優先して使用する色です</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 では代わりに壁紙の色が使用されます</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">夜間モード</string>
     <string-array name="settings_night_mode_entries">

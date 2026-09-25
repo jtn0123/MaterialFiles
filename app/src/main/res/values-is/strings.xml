@@ -22,6 +22,7 @@
     <string name="empty_placeholder">(Tómt)</string>
     <string name="error">Villa</string>
     <string name="error_access_denied">Aðgangi hafnað</string>
+    <string name="error_authentication_failed">Innskráning mistókst</string>
     <string name="error_file_not_found">Skrá fannst ekki</string>
     <string name="error_file_already_exists">Skrá með þessu heiti er þegar til</string>
     <string name="error_directory_not_empty">Mappan er ekki tóm</string>
@@ -211,6 +212,8 @@
     <string name="file_job_merge_target_name">Upprunaleg mappa</string>
     <string name="file_job_merge_source_name">Sameina við</string>
     <string name="file_job_conflict_show_name">Veldu nýtt nafn á úttakið</string>
+    <string name="file_job_conflict_show_name_expanded">Útvíkkað</string>
+    <string name="file_job_conflict_show_name_collapsed">Fellt saman</string>
     <string name="file_job_conflict_name_hint">Nýtt nafn</string>
     <string name="file_job_archive_error_title_format">Villa kom upp við að þjappa “%1$s”</string>
     <string name="file_job_archive_error_message_format">Villa kom upp við að þjappa skrána inn í “%1$s”.\n%2$s</string>
@@ -332,12 +335,25 @@
     <string name="file_list_paste_copy_title_format">Afrita %1$,d</string>
     <string name="file_list_paste_extract_title_format">Afþjappa %1$,d</string>
     <string name="file_list_paste_action_extract_here">Afþjappa hér</string>
+    <string name="file_list_edit_server">Breyta netþjóni</string>
     <string name="file_list_empty">Engar skrár</string>
     <string name="file_list_action_create_file">Skrá</string>
     <string name="file_list_action_create_directory">Mappa</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Fleiri valkostir</string>
+    <string name="file_item_menu_format">Fleiri valkostir fyrir %1$s</string>
+    <string name="file_item_select_format">Velja %1$s</string>
+    <string name="file_item_deselect_format">Afvelja %1$s</string>
+    <string name="file_item_action_open">Opna</string>
+    <string name="file_item_action_deselect">Afvelja</string>
+    <string name="file_item_state_selected">Valið</string>
+    <string name="file_item_state_not_selected">Ekki valið</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Tengill</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Rofinn tengill</string>
+    <string name="file_item_accessibility_encrypted">Dulritað</string>
+    <string name="file_item_accessibility_app_directory">Forritsmappa</string>
     <string name="file_item_action_open_with">Opna með</string>
     <string name="file_item_action_extract">Afþjappa</string>
     <string name="file_item_action_archive">Þjappa</string>
@@ -619,6 +635,8 @@
     <string name="video_viewer_screen_orientation_landscape">Langsnið</string>
     <string name="video_viewer_screen_orientation_portrait">Skammsnið</string>
     <string name="video_viewer_error_format">Get ekki spilað %1$s</string>
+    <string name="video_viewer_error_unsupported">Þetta tæki getur ekki spilað þetta myndskeiðssnið</string>
+    <string name="video_viewer_error_malformed">Myndskeiðsskráin er skemmd eða ófullgerð</string>
     <string name="save_as_title">Vista sem</string>
     <string name="save_as_error">Villa kom upp við að vista skrá</string>
     <string name="save_as_success_format">“%1$s” hefur verið vistuð í “%2$s”</string>
@@ -665,6 +683,7 @@
     <string name="settings_locale_title">Tungumál</string>
     <string name="settings_theme_color_title">Litur þema</string>
     <string name="settings_theme_color_summary">Litur sem birtist oftast í forritinu</string>
+    <string name="settings_theme_color_summary_material_design_3">Material-hönnun 3 notar í staðinn liti bakgrunnsmyndarinnar</string>
     <string name="settings_material_design_3_title">Material-hönnun 3</string>
     <string name="settings_night_mode_title">Næturhamur</string>
     <string-array name="settings_night_mode_entries">

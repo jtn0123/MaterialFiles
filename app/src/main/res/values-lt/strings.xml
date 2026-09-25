@@ -22,6 +22,7 @@
     <string name="empty_placeholder">(Tuščia)</string>
     <string name="error">Klaida</string>
     <string name="error_access_denied">Prieiga uždrausta</string>
+    <string name="error_authentication_failed">Prisijungti nepavyko</string>
     <string name="error_file_not_found">Failas nerastas</string>
     <string name="error_file_already_exists">Failas šiuo pavadinimu jau egzistuoja</string>
     <string name="error_directory_not_empty">Aplankas nėra tuščias</string>
@@ -252,6 +253,8 @@
     <string name="file_job_merge_target_name">Originalus aplankas</string>
     <string name="file_job_merge_source_name">Sujungti su</string>
     <string name="file_job_conflict_show_name">Pasirinkite naują paskirties vietos pavadinimą</string>
+    <string name="file_job_conflict_show_name_expanded">Išskleista</string>
+    <string name="file_job_conflict_show_name_collapsed">Suskleista</string>
     <string name="file_job_conflict_name_hint">Naujas pavadinimas</string>
     <string name="file_job_archive_error_title_format">Įvyko klaida suspaudžiant “%1$s”</string>
     <string name="file_job_archive_error_message_format">Įvyko klaida suspaudžiant failą į “%1$s”.\n%2$s</string>
@@ -387,12 +390,25 @@
     <string name="file_list_paste_copy_title_format">Kopijuojama %1$,d</string>
     <string name="file_list_paste_extract_title_format">Išskleidžiama %1$,d</string>
     <string name="file_list_paste_action_extract_here">Išskleisti čia</string>
+    <string name="file_list_edit_server">Redaguoti serverį</string>
     <string name="file_list_empty">Nėra failų</string>
     <string name="file_list_action_create_file">Failas</string>
     <string name="file_list_action_create_directory">Aplankas</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Daugiau parinkčių</string>
+    <string name="file_item_menu_format">Daugiau parinkčių: %1$s</string>
+    <string name="file_item_select_format">Pasirinkti %1$s</string>
+    <string name="file_item_deselect_format">Atšaukti %1$s pasirinkimą</string>
+    <string name="file_item_action_open">Atidaryti</string>
+    <string name="file_item_action_deselect">Atšaukti pasirinkimą</string>
+    <string name="file_item_state_selected">Pasirinkta</string>
+    <string name="file_item_state_not_selected">Nepasirinkta</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Nuoroda</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Neveikianti nuoroda</string>
+    <string name="file_item_accessibility_encrypted">Šifruota</string>
+    <string name="file_item_accessibility_app_directory">Programėlės aplankas</string>
     <string name="file_item_action_open_with">Atidaryti su</string>
     <string name="file_item_action_extract">Išskleisti</string>
     <string name="file_item_action_archive">Suspausti</string>
@@ -677,6 +693,8 @@
     <string name="video_viewer_screen_orientation_landscape">Gulsčias</string>
     <string name="video_viewer_screen_orientation_portrait">Stačias</string>
     <string name="video_viewer_error_format">Nepavyko paleisti %1$s</string>
+    <string name="video_viewer_error_unsupported">Šis įrenginys negali paleisti šio formato vaizdo įrašų</string>
+    <string name="video_viewer_error_malformed">Vaizdo įrašo failas sugadintas arba neužbaigtas</string>
     <string name="save_as_title">Išsaugoti kaip</string>
     <string name="save_as_error">Klaida išsaugant failą</string>
     <string name="save_as_success_format">„%1$s“ išsaugotas į „%2$s“</string>
@@ -725,6 +743,7 @@
     <string name="settings_locale_title">Kalba</string>
     <string name="settings_theme_color_title">Temos spalva</string>
     <string name="settings_theme_color_summary">Dažniausiai programėlėje pasitaikanti spalva</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 vietoj to naudoja ekrano fono spalvas</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Nakties režimas</string>
     <string-array name="settings_night_mode_entries">

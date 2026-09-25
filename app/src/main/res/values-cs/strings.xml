@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Prázdný)</string>
     <string name="error">Chyba</string>
     <string name="error_access_denied">Přístup odepřen</string>
+    <string name="error_authentication_failed">Přihlášení se nezdařilo</string>
     <string name="error_file_not_found">Soubor nebyl nalezen</string>
     <string name="error_file_already_exists">Soubor s tímto názvem již existuje</string>
     <string name="error_directory_not_empty">Složka není prázdná</string>
@@ -253,6 +254,8 @@
     <string name="file_job_merge_target_name">Původní složka</string>
     <string name="file_job_merge_source_name">Sloučit s</string>
     <string name="file_job_conflict_show_name">Zvolte nové jméno destinace</string>
+    <string name="file_job_conflict_show_name_expanded">Rozbaleno</string>
+    <string name="file_job_conflict_show_name_collapsed">Sbaleno</string>
     <string name="file_job_conflict_name_hint">Nový název</string>
     <string name="file_job_archive_error_title_format">Chyba při kompresi \"%1$s\"</string>
     <string name="file_job_archive_error_message_format">Nastala chyba při kompresi souboru do \"%1$s\".\n%2$s</string>
@@ -388,12 +391,25 @@
     <string name="file_list_paste_copy_title_format">Kopírování %1$,d</string>
     <string name="file_list_paste_extract_title_format">Rozbalování %1$,d</string>
     <string name="file_list_paste_action_extract_here">Rozbalit zde</string>
+    <string name="file_list_edit_server">Upravit server</string>
     <string name="file_list_empty">Žádné soubory</string>
     <string name="file_list_action_create_file">Soubor</string>
     <string name="file_list_action_create_directory">Složka</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Další možnosti</string>
+    <string name="file_item_menu_format">Další možnosti pro %1$s</string>
+    <string name="file_item_select_format">Vybrat %1$s</string>
+    <string name="file_item_deselect_format">Zrušit výběr %1$s</string>
+    <string name="file_item_action_open">Otevřít</string>
+    <string name="file_item_action_deselect">Zrušit výběr</string>
+    <string name="file_item_state_selected">Vybráno</string>
+    <string name="file_item_state_not_selected">Nevybráno</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Odkaz</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Nefunkční odkaz</string>
+    <string name="file_item_accessibility_encrypted">Šifrováno</string>
+    <string name="file_item_accessibility_app_directory">Složka aplikace</string>
     <string name="file_item_action_open_with">Otevřít v</string>
     <string name="file_item_action_extract">Rozbalit</string>
     <string name="file_item_action_archive">Zkomprimovat</string>
@@ -679,6 +695,8 @@
     <string name="video_viewer_screen_orientation_landscape">Na šířku</string>
     <string name="video_viewer_screen_orientation_portrait">Na výšku</string>
     <string name="video_viewer_error_format">Nelze přehrát %1$s</string>
+    <string name="video_viewer_error_unsupported">Toto zařízení neumí přehrát tento formát videa</string>
+    <string name="video_viewer_error_malformed">Soubor videa je poškozený nebo neúplný</string>
     <string name="save_as_title">Uložit jako</string>
     <string name="save_as_error">Chyba při ukládání souboru</string>
     <string name="save_as_success_format">„%1$s“ byl uložen do „%2$s“</string>
@@ -727,6 +745,7 @@
     <string name="settings_locale_title">Jazyk</string>
     <string name="settings_theme_color_title">Barva motivu</string>
     <string name="settings_theme_color_summary">Barva, která se v aplikaci vyskytuje nejvíce</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 místo toho používá barvy tapety</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Noční režim</string>
     <string-array name="settings_night_mode_entries">

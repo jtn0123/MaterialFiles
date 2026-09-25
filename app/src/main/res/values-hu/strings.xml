@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Üres)</string>
     <string name="error">Hiba</string>
     <string name="error_access_denied">Hozzáférés megtagadva</string>
+    <string name="error_authentication_failed">Sikertelen bejelentkezés</string>
     <string name="error_file_not_found">A fájl nem található</string>
     <string name="error_file_already_exists">Már létezik ilyen nevű fájl</string>
     <string name="error_directory_not_empty">A mappa nem üres</string>
@@ -209,6 +210,8 @@
     <string name="file_job_merge_target_name">Eredeti mappa</string>
     <string name="file_job_merge_source_name">Egyesítés ezzel:</string>
     <string name="file_job_conflict_show_name">Válasszon új nevet a célhoz</string>
+    <string name="file_job_conflict_show_name_expanded">Kibontva</string>
+    <string name="file_job_conflict_show_name_collapsed">Összecsukva</string>
     <string name="file_job_conflict_name_hint">Új név</string>
     <string name="file_job_archive_error_title_format">Hiba a(z) „%1$s” tömörítésekor</string>
     <string name="file_job_archive_error_message_format">Hiba történt a(z) „%1$s” létrehozásakor.\n%2$s</string>
@@ -330,12 +333,25 @@
     <string name="file_list_paste_copy_title_format">%1$,d másolása</string>
     <string name="file_list_paste_extract_title_format">%1$,d fájl kibontása</string>
     <string name="file_list_paste_action_extract_here">Kibontás ide</string>
+    <string name="file_list_edit_server">Kiszolgáló szerkesztése</string>
     <string name="file_list_empty">Nincsenek fájlok</string>
     <string name="file_list_action_create_file">Fájl</string>
     <string name="file_list_action_create_directory">Mappa</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">További lehetőségek</string>
+    <string name="file_item_menu_format">További lehetőségek: %1$s</string>
+    <string name="file_item_select_format">%1$s kiválasztása</string>
+    <string name="file_item_deselect_format">%1$s kiválasztásának megszüntetése</string>
+    <string name="file_item_action_open">Megnyitás</string>
+    <string name="file_item_action_deselect">Kiválasztás megszüntetése</string>
+    <string name="file_item_state_selected">Kiválasztva</string>
+    <string name="file_item_state_not_selected">Nincs kiválasztva</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Link</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Hibás link</string>
+    <string name="file_item_accessibility_encrypted">Titkosított</string>
+    <string name="file_item_accessibility_app_directory">Alkalmazásmappa</string>
     <string name="file_item_action_open_with">Megnyitás ezzel:</string>
     <string name="file_item_action_extract">Kibontás</string>
     <string name="file_item_action_archive">Tömörítés</string>
@@ -617,6 +633,8 @@
     <string name="video_viewer_screen_orientation_landscape">Fekvő</string>
     <string name="video_viewer_screen_orientation_portrait">Álló</string>
     <string name="video_viewer_error_format">Nem játszható le: %1$s</string>
+    <string name="video_viewer_error_unsupported">Ez az eszköz nem tudja lejátszani ezt a videóformátumot</string>
+    <string name="video_viewer_error_malformed">A videofájl sérült vagy hiányos</string>
     <string name="save_as_title">Mentés mint</string>
     <string name="save_as_error">Hiba a fájl mentése során</string>
     <string name="save_as_success_format">“%1$s” el lett mentve a “%2$s” helyre</string>
@@ -663,6 +681,7 @@
     <string name="settings_locale_title">Nyelv</string>
     <string name="settings_theme_color_title">Téma színe</string>
     <string name="settings_theme_color_summary">A szín, amely a leggyakrabban megjelenik az alkalmazásban</string>
+    <string name="settings_theme_color_summary_material_design_3">A Material Design 3 helyette a háttérkép színeit használja</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Éjszakai mód</string>
     <string-array name="settings_night_mode_entries">

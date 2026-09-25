@@ -22,6 +22,7 @@
     <string name="empty_placeholder">(خالی)</string>
     <string name="error">خطا</string>
     <string name="error_access_denied">دسترسی رد شد</string>
+    <string name="error_authentication_failed">ورود ناموفق بود</string>
     <string name="error_file_not_found">پرونده پیدا نشد</string>
     <string name="error_file_already_exists">پرونده‌ای با این نام از قبل وجود دارد</string>
     <string name="error_directory_not_empty">شاخه خالی نیست</string>
@@ -208,6 +209,8 @@
     <string name="file_job_merge_target_name">شاخهٔ اصلی</string>
     <string name="file_job_merge_source_name">ادغام با</string>
     <string name="file_job_conflict_show_name">نامی جدید برای مقصد برگزینید</string>
+    <string name="file_job_conflict_show_name_expanded">گسترده</string>
+    <string name="file_job_conflict_show_name_collapsed">جمع‌شده</string>
     <string name="file_job_conflict_name_hint">نام جدید</string>
     <string name="file_job_archive_error_title_format">خطا هنگام فشرده کردن «⁨%1$s⁩»</string>
     <string name="file_job_archive_error_message_format">هنگام فشرده کردن پرونده به «⁨%1$s⁩» خطایی رخ داد.\n%2$s</string>
@@ -329,12 +332,25 @@
     <string name="file_list_paste_copy_title_format">در حال رونوشت %1$,d</string>
     <string name="file_list_paste_extract_title_format">در حال استخراج %1$,d</string>
     <string name="file_list_paste_action_extract_here">اینجا استخراج شود</string>
+    <string name="file_list_edit_server">ویرایش کارساز</string>
     <string name="file_list_empty">بدون پرونده</string>
     <string name="file_list_action_create_file">پرونده</string>
     <string name="file_list_action_create_directory">شاخه</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">گزینه‌های بیشتر</string>
+    <string name="file_item_menu_format">گزینه‌های بیشتر برای %1$s</string>
+    <string name="file_item_select_format">گزینش %1$s</string>
+    <string name="file_item_deselect_format">لغو گزینش %1$s</string>
+    <string name="file_item_action_open">گشودن</string>
+    <string name="file_item_action_deselect">لغو گزینش</string>
+    <string name="file_item_state_selected">گزیده</string>
+    <string name="file_item_state_not_selected">گزیده نشده</string>
+    <string name="file_item_accessibility_separator">،</string>
+    <string name="file_item_accessibility_symbolic_link">پیوند</string>
+    <string name="file_item_accessibility_broken_symbolic_link">پیوند شکسته</string>
+    <string name="file_item_accessibility_encrypted">رمزنگاری‌شده</string>
+    <string name="file_item_accessibility_app_directory">شاخهٔ برنامه</string>
     <string name="file_item_action_open_with">گشودن با</string>
     <string name="file_item_action_extract">استخراج</string>
     <string name="file_item_action_archive">فشرده‌سازی</string>
@@ -615,6 +631,8 @@
     <string name="video_viewer_screen_orientation_landscape">افقی</string>
     <string name="video_viewer_screen_orientation_portrait">عمودی</string>
     <string name="video_viewer_error_format">نمی‌توان %1$s را پخش کرد</string>
+    <string name="video_viewer_error_unsupported">این افزاره نمی‌تواند این قالب ویدیو را پخش کند</string>
+    <string name="video_viewer_error_malformed">پروندهٔ ویدیو آسیب دیده یا ناقص است</string>
     <string name="save_as_title">ذخیره به عنوان</string>
     <string name="save_as_error">خطا هنگام ذخیرهٔ پرونده</string>
     <string name="save_as_success_format">«⁨%1$s⁩» در «⁨%2$s⁩» ذخیره شد</string>
@@ -661,6 +679,7 @@
     <string name="settings_locale_title">زبان</string>
     <string name="settings_theme_color_title">رنگ زمینه</string>
     <string name="settings_theme_color_summary">رنگی که بیشتر در برنامه ظاهر می‌شود</string>
+    <string name="settings_theme_color_summary_material_design_3">طراحی متریال ۳ به جای آن از رنگ‌های کاغذدیواری شما استفاده می‌کند</string>
     <string name="settings_material_design_3_title">طراحی متریال ۳</string>
     <string name="settings_night_mode_title">حالت شب</string>
     <string-array name="settings_night_mode_entries">

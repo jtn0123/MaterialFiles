@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Gol)</string>
     <string name="error">Eroare</string>
     <string name="error_access_denied">Acces refuzat</string>
+    <string name="error_authentication_failed">Autentificarea a eșuat</string>
     <string name="error_file_not_found">Fișierul nu a fost găsit</string>
     <string name="error_file_already_exists">Un fișier cu același nume există deja</string>
     <string name="error_directory_not_empty">Dosarul nu este gol</string>
@@ -231,6 +232,8 @@
     <string name="file_job_merge_target_name">Dosar original</string>
     <string name="file_job_merge_source_name">Îmbină cu</string>
     <string name="file_job_conflict_show_name">Selectează un nume nou pentru destinație</string>
+    <string name="file_job_conflict_show_name_expanded">Extins</string>
+    <string name="file_job_conflict_show_name_collapsed">Restrâns</string>
     <string name="file_job_conflict_name_hint">Nume nou</string>
     <string name="file_job_archive_error_title_format">A apărut o eroare în timpul compresiei \"%1$s\"</string>
     <string name="file_job_archive_error_message_format">A apărut o eroare în timpul compresiei fișierului în \"%1$s\".\n%2$s</string>
@@ -359,12 +362,25 @@
     <string name="file_list_paste_copy_title_format">Se copiază %1$,d</string>
     <string name="file_list_paste_extract_title_format">Se extrag %1$,d</string>
     <string name="file_list_paste_action_extract_here">Extrage aici</string>
+    <string name="file_list_edit_server">Editează serverul</string>
     <string name="file_list_empty">Fără fișiere</string>
     <string name="file_list_action_create_file">Fișier</string>
     <string name="file_list_action_create_directory">Dosar</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Mai multe opțiuni</string>
+    <string name="file_item_menu_format">Mai multe opțiuni pentru %1$s</string>
+    <string name="file_item_select_format">Selectează %1$s</string>
+    <string name="file_item_deselect_format">Deselectează %1$s</string>
+    <string name="file_item_action_open">Deschide</string>
+    <string name="file_item_action_deselect">Deselectează</string>
+    <string name="file_item_state_selected">Selectat</string>
+    <string name="file_item_state_not_selected">Neselectat</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Link</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Link nefuncțional</string>
+    <string name="file_item_accessibility_encrypted">Criptat</string>
+    <string name="file_item_accessibility_app_directory">Dosarul aplicației</string>
     <string name="file_item_action_open_with">Deschide cu</string>
     <string name="file_item_action_extract">Extrage</string>
     <string name="file_item_action_archive">Comprimă</string>
@@ -647,6 +663,8 @@
     <string name="video_viewer_screen_orientation_landscape">Peisaj</string>
     <string name="video_viewer_screen_orientation_portrait">Portret</string>
     <string name="video_viewer_error_format">Nu se poate reda %1$s</string>
+    <string name="video_viewer_error_unsupported">Acest dispozitiv nu poate reda acest format video</string>
+    <string name="video_viewer_error_malformed">Fișierul video este deteriorat sau incomplet</string>
     <string name="save_as_title">Salvează ca</string>
     <string name="save_as_error">Eroare la salvarea fișierului</string>
     <string name="save_as_success_format">„%1$s” a fost salvat în „%2$s”</string>
@@ -694,6 +712,7 @@
     <string name="settings_locale_title">Limbă</string>
     <string name="settings_theme_color_title">Culoarea temei</string>
     <string name="settings_theme_color_summary">Culoarea ce apare cel mai frecvent în aplicație</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 folosește în schimb culorile imaginii de fundal</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Mod de noapte</string>
     <string-array name="settings_night_mode_entries">

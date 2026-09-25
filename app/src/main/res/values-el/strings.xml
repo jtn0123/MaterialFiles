@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Κενό)</string>
     <string name="error">Σφάλμα</string>
     <string name="error_access_denied">Δεν επιτρέπεται η πρόσβαση</string>
+    <string name="error_authentication_failed">Η είσοδος απέτυχε</string>
     <string name="error_file_not_found">Το αρχείο δεν βρέθηκε</string>
     <string name="error_file_already_exists">Υπάρχει ήδη αρχείο με αυτό το όνομα</string>
     <string name="error_directory_not_empty">Ο φάκελος δεν είναι κενός</string>
@@ -209,6 +210,8 @@
     <string name="file_job_merge_target_name">Αρχικός φάκελος</string>
     <string name="file_job_merge_source_name">Συγχώνευση με</string>
     <string name="file_job_conflict_show_name">Επιλέξτε ένα νέο όνομα για τον προορισμό</string>
+    <string name="file_job_conflict_show_name_expanded">Αναπτυγμένο</string>
+    <string name="file_job_conflict_show_name_collapsed">Συμπτυγμένο</string>
     <string name="file_job_conflict_name_hint">Νέο όνομα</string>
     <string name="file_job_archive_error_title_format">Σφάλμα κατά τη συμπίεση “%1$s”</string>
     <string name="file_job_archive_error_message_format">Υπήρξε σφάλμα συμπίεσης του αρχείου σε “%1$s”.\n%2$s</string>
@@ -330,12 +333,25 @@
     <string name="file_list_paste_copy_title_format">Αντιγραφή %1$,d</string>
     <string name="file_list_paste_extract_title_format">Εξαγωγή %1$,d</string>
     <string name="file_list_paste_action_extract_here">Εξαγωγή εδώ</string>
+    <string name="file_list_edit_server">Επεξεργασία διακομιστή</string>
     <string name="file_list_empty">Χωρίς αρχεία</string>
     <string name="file_list_action_create_file">Αρχείο</string>
     <string name="file_list_action_create_directory">Φάκελος</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Περισσότερες επιλογές</string>
+    <string name="file_item_menu_format">Περισσότερες επιλογές για %1$s</string>
+    <string name="file_item_select_format">Επιλογή %1$s</string>
+    <string name="file_item_deselect_format">Αποεπιλογή %1$s</string>
+    <string name="file_item_action_open">Άνοιγμα</string>
+    <string name="file_item_action_deselect">Αποεπιλογή</string>
+    <string name="file_item_state_selected">Επιλεγμένο</string>
+    <string name="file_item_state_not_selected">Μη επιλεγμένο</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Σύνδεσμος</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Κατεστραμμένος σύνδεσμος</string>
+    <string name="file_item_accessibility_encrypted">Κρυπτογραφημένο</string>
+    <string name="file_item_accessibility_app_directory">Φάκελος εφαρμογής</string>
     <string name="file_item_action_open_with">Άνοιγμα με</string>
     <string name="file_item_action_extract">Εξαγωγή</string>
     <string name="file_item_action_archive">Συμπίεση</string>
@@ -617,6 +633,8 @@
     <string name="video_viewer_screen_orientation_landscape">Οριζόντιος</string>
     <string name="video_viewer_screen_orientation_portrait">Κατακόρυφος</string>
     <string name="video_viewer_error_format">Δεν είναι δυνατή η αναπαραγωγή του %1$s</string>
+    <string name="video_viewer_error_unsupported">Αυτή η συσκευή δεν μπορεί να αναπαράγει αυτή τη μορφή βίντεο</string>
+    <string name="video_viewer_error_malformed">Το αρχείο βίντεο είναι κατεστραμμένο ή ημιτελές</string>
     <string name="save_as_title">Αποθήκευση ως</string>
     <string name="save_as_error">Σφάλμα κατά την αποθήκευση του αρχείου</string>
     <string name="save_as_success_format">“%1$s” αποθηκεύτηκε στο “%2$s”</string>
@@ -663,6 +681,7 @@
     <string name="settings_locale_title">Γλώσσα</string>
     <string name="settings_theme_color_title">Χρώμα θέματος</string>
     <string name="settings_theme_color_summary">Χρώμα που εμφανίζεται συχνότερα στην εφαρμογή</string>
+    <string name="settings_theme_color_summary_material_design_3">Η Σχεδίαση Υλικού 3 χρησιμοποιεί τα χρώματα της ταπετσαρίας σας</string>
     <string name="settings_material_design_3_title">Σχεδίαση Υλικού 3</string>
     <string name="settings_night_mode_title">Νυχτερινή λειτουργία</string>
     <string-array name="settings_night_mode_entries">

@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Buit)</string>
     <string name="error">Error</string>
     <string name="error_access_denied">S\'ha denegat l\'accés</string>
+    <string name="error_authentication_failed">No s\'ha pogut iniciar la sessió</string>
     <string name="error_file_not_found">No s\'ha trobat el fitxer</string>
     <string name="error_file_already_exists">Ja existeix un fitxer amb aquest nom</string>
     <string name="error_directory_not_empty">La carpeta no és buida</string>
@@ -210,6 +211,8 @@
     <string name="file_job_merge_target_name">Carpeta original</string>
     <string name="file_job_merge_source_name">Fusiona amb</string>
     <string name="file_job_conflict_show_name">Selecciona un nom nou per la destinació</string>
+    <string name="file_job_conflict_show_name_expanded">Desplegat</string>
+    <string name="file_job_conflict_show_name_collapsed">Plegat</string>
     <string name="file_job_conflict_name_hint">Nom nou</string>
     <string name="file_job_archive_error_title_format">S\'ha produït un error en comprimir «%1$s»</string>
     <string name="file_job_archive_error_message_format">S\'ha produït un error en comprimir el fitxer a «%1$s».\n%2$s</string>
@@ -333,12 +336,25 @@
     <string name="file_list_paste_copy_title_format">S\'està copiant %1$,d</string>
     <string name="file_list_paste_extract_title_format">S\'està extraient %1$,d</string>
     <string name="file_list_paste_action_extract_here">Extreu aquí</string>
+    <string name="file_list_edit_server">Edita el servidor</string>
     <string name="file_list_empty">No hi ha cap fitxer</string>
     <string name="file_list_action_create_file">Fitxer</string>
     <string name="file_list_action_create_directory">Carpeta</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">Més opcions</string>
+    <string name="file_item_menu_format">Més opcions per a %1$s</string>
+    <string name="file_item_select_format">Selecciona %1$s</string>
+    <string name="file_item_deselect_format">Desselecciona %1$s</string>
+    <string name="file_item_action_open">Obre</string>
+    <string name="file_item_action_deselect">Desselecciona</string>
+    <string name="file_item_state_selected">Seleccionat</string>
+    <string name="file_item_state_not_selected">No seleccionat</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Enllaç</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Enllaç trencat</string>
+    <string name="file_item_accessibility_encrypted">Xifrat</string>
+    <string name="file_item_accessibility_app_directory">Carpeta d\'aplicació</string>
     <string name="file_item_action_open_with">Obre amb</string>
     <string name="file_item_action_extract">Extreu</string>
     <string name="file_item_action_archive">Comprimeix</string>
@@ -620,6 +636,8 @@
     <string name="video_viewer_screen_orientation_landscape">Horitzontal</string>
     <string name="video_viewer_screen_orientation_portrait">Vertical</string>
     <string name="video_viewer_error_format">No es pot reproduir %1$s</string>
+    <string name="video_viewer_error_unsupported">Aquest dispositiu no pot reproduir aquest format de vídeo</string>
+    <string name="video_viewer_error_malformed">El fitxer de vídeo està malmès o incomplet</string>
     <string name="save_as_title">Desa com a</string>
     <string name="save_as_error">S\'ha produït un error en desar el fitxer</string>
     <string name="save_as_success_format">«%1$s» s\'ha desat a «%2$s»</string>
@@ -667,6 +685,7 @@
     <string name="settings_locale_title">Idioma</string>
     <string name="settings_theme_color_title">Color del tema</string>
     <string name="settings_theme_color_summary">El color que apareix amb més freqüència a l\'aplicació</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 fa servir els colors del fons de pantalla</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Mode nocturn</string>
     <string-array name="settings_night_mode_entries">

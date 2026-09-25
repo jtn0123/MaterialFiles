@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(빈 항목)</string>
     <string name="error">오류</string>
     <string name="error_access_denied">액세스가 거부됨</string>
+    <string name="error_authentication_failed">로그인 실패</string>
     <string name="error_file_not_found">파일을 찾을 수 없음</string>
     <string name="error_file_already_exists">같은 이름의 파일이 이미 있습니다</string>
     <string name="error_directory_not_empty">폴더가 비어 있지 않습니다</string>
@@ -187,6 +188,8 @@
     <string name="file_job_merge_target_name">기존 폴더</string>
     <string name="file_job_merge_source_name">와 합치기</string>
     <string name="file_job_conflict_show_name">새 파일 이름 선택</string>
+    <string name="file_job_conflict_show_name_expanded">펼쳐짐</string>
+    <string name="file_job_conflict_show_name_collapsed">접힘</string>
     <string name="file_job_conflict_name_hint">새 이름</string>
     <string name="file_job_archive_error_title_format">“%1$s” 압축 중 오류</string>
     <string name="file_job_archive_error_message_format">“%1$s” 압축 파일을 생성하는 중에 오류가 발생하였습니다.\n%2$s</string>
@@ -301,12 +304,25 @@
     <string name="file_list_paste_copy_title_format">%1$,d개 항목 복사</string>
     <string name="file_list_paste_extract_title_format">%1$,d개 항목 압축 해제</string>
     <string name="file_list_paste_action_extract_here">여기에 압축 풀기</string>
+    <string name="file_list_edit_server">서버 편집</string>
     <string name="file_list_empty">파일 없음</string>
     <string name="file_list_action_create_file">파일</string>
     <string name="file_list_action_create_directory">폴더</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">추가 옵션</string>
+    <string name="file_item_menu_format">%1$s 추가 옵션</string>
+    <string name="file_item_select_format">%1$s 선택</string>
+    <string name="file_item_deselect_format">%1$s 선택 해제</string>
+    <string name="file_item_action_open">열기</string>
+    <string name="file_item_action_deselect">선택 해제</string>
+    <string name="file_item_state_selected">선택됨</string>
+    <string name="file_item_state_not_selected">선택 안 됨</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">바로가기</string>
+    <string name="file_item_accessibility_broken_symbolic_link">깨진 바로가기</string>
+    <string name="file_item_accessibility_encrypted">암호화됨</string>
+    <string name="file_item_accessibility_app_directory">앱 폴더</string>
     <string name="file_item_action_open_with">연결 프로그램</string>
     <string name="file_item_action_extract">압축 풀기</string>
     <string name="file_item_action_archive">압축</string>
@@ -586,6 +602,8 @@
     <string name="video_viewer_screen_orientation_landscape">가로</string>
     <string name="video_viewer_screen_orientation_portrait">세로</string>
     <string name="video_viewer_error_format">%1$s을(를) 재생할 수 없습니다</string>
+    <string name="video_viewer_error_unsupported">이 기기에서 재생할 수 없는 동영상 형식입니다</string>
+    <string name="video_viewer_error_malformed">동영상 파일이 손상되었거나 불완전합니다</string>
     <string name="save_as_title">다른 이름으로 저장</string>
     <string name="save_as_error">파일 저장 중 오류</string>
     <string name="save_as_success_format">“%1$s” 항목을 “%2$s”에 저장했습니다.</string>
@@ -631,6 +649,7 @@
     <string name="settings_locale_title">언어</string>
     <string name="settings_theme_color_title">테마 색상</string>
     <string name="settings_theme_color_summary">앱에서 가장 많이 보이는 색상</string>
+    <string name="settings_theme_color_summary_material_design_3">머티리얼 디자인 3은 대신 배경화면 색상을 사용합니다</string>
     <string name="settings_material_design_3_title">머티리얼 디자인 3</string>
     <string name="settings_night_mode_title">다크 모드</string>
     <string-array name="settings_night_mode_entries">
