@@ -129,7 +129,7 @@ class ImageViewerAdapterTest {
             reads.get() > 0
         )
         assertTrue(holder.binding.image.isVisible)
-        assertFalse(holder.binding.errorText.isVisible)
+        assertFalse(holder.binding.errorLayout.isVisible)
     }
 
     /** The colours in the middle of the left and right halves of the photo that is shown. */
@@ -164,7 +164,7 @@ class ImageViewerAdapterTest {
     fun aPhotoThatIsGoneShowsWhyItCannotBeShown() {
         val holder = show(Paths.get(File(directory, "Gone.jpg").path))
 
-        await("The error was never shown") { holder.binding.errorText.isVisible }
+        await("The error was never shown") { holder.binding.errorLayout.isVisible }
 
         assertTrue(
             holder.binding.errorText.text.toString(),
