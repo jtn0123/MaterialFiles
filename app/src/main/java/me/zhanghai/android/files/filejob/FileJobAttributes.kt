@@ -8,6 +8,7 @@ package me.zhanghai.android.files.filejob
 import androidx.annotation.PluralsRes
 import java.io.IOException
 import java8.nio.file.FileVisitResult
+import java8.nio.file.Files
 import java8.nio.file.Path
 import java8.nio.file.SimpleFileVisitor
 import java8.nio.file.attribute.BasicFileAttributes
@@ -26,25 +27,45 @@ internal fun FileJob.walkSettingAttribute(
     @PluralsRes scanNotificationTitleRes: Int,
     setAttribute: SetAttribute
 ) {
-    val scanInfo = scan(path, recursive, scanNotificationTitleRes)
-    val transferInfo = TransferInfo(scanInfo, null)
     val actionAllInfo = ActionAllInfo()
-    walkFileTreeForSettingAttributes(
-        path,
-        recursive,
-        SettingAttributeVisitor { file, attributes ->
-            setAttribute(file, attributes, transferInfo, actionAllInfo)
-            throwIfInterrupted()
+    val scanInfo = scan(path, recursive, scanNotificationTitleRes, actionAllInfo)
+    val transferInfo = TransferInfo(scanInfo, null)
+    val decide = walkErrorDecider(actionAllInfo, transferInfo)
+    walkSettingAttribute(path, recursive, decide) { file, attributes ->
+        setAttribute(file, attributes, transferInfo, actionAllInfo)
+    }
+}
+
+/**
+ * Calls [visit] on [path], and on everything under it if [recursive], deciding on each failure of
+ * the walk with [decide].
+ */
+@Throws(IOException::class)
+internal fun FileJob.walkSettingAttribute(
+    path: Path,
+    recursive: Boolean,
+    decide: WalkErrorDecider,
+    visit: (Path, BasicFileAttributes) -> Unit
+) {
+    val visitor = SettingAttributeVisitor { file, attributes ->
+        visit(file, attributes)
+        throwIfInterrupted()
+    }
+    // A retry at the start path walks it the same way again; anything below it is walked plainly.
+    val walk: FileTreeWalk = { start, walkVisitor ->
+        if (start == path) {
+            walkFileTreeForSettingAttributes(start, recursive, walkVisitor)
+        } else {
+            Files.walkFileTree(start, walkVisitor)
         }
-    )
+    }
+    walk(path, WalkErrorVisitor(visitor, decide, walk))
 }
 
 /**
  * Visits a directory before its children just like a file, since setting an attribute on either is
- * the same step.
- *
- * TODO: Prompt retry, skip, skip-all or abort when a file cannot be visited or a directory cannot
- *  be listed, which fails the job for now.
+ * the same step. A file that cannot be visited or a directory that cannot be listed fails the walk,
+ * unless the visitor is wrapped in a [WalkErrorVisitor] as [walkSettingAttribute] does.
  */
 internal class SettingAttributeVisitor(private val visit: (Path, BasicFileAttributes) -> Unit) :
     SimpleFileVisitor<Path>() {

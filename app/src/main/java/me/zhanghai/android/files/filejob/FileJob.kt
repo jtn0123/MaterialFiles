@@ -29,6 +29,11 @@ abstract class FileJob {
 
     internal var decisions: FileJobDecisions = AndroidFileJobDecisions(this)
 
+    /** Shows the progress of a scan; the notification needs the service, which tests lack. */
+    internal var postScanProgress: (ScanInfo, Int) -> Unit = { scanInfo, titleRes ->
+        postScanNotification(scanInfo, titleRes)
+    }
+
     internal lateinit var service: FileJobService
         private set
 

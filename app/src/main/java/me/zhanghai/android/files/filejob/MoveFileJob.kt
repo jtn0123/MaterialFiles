@@ -8,7 +8,6 @@ package me.zhanghai.android.files.filejob
 import java.io.IOException
 import java.io.InterruptedIOException
 import java8.nio.file.FileVisitResult
-import java8.nio.file.Files
 import java8.nio.file.Path
 import java8.nio.file.SimpleFileVisitor
 import java8.nio.file.attribute.BasicFileAttributes
@@ -31,9 +30,13 @@ class MoveFileJob(private val sources: List<Path>, private val targetDirectory: 
             }
             throwIfInterrupted()
         }
-        val scanInfo = scan(sourcesToMove, R.plurals.file_job_move_scan_notification_title_format)
-        val transferInfo = TransferInfo(scanInfo, targetDirectory)
         val actionAllInfo = ActionAllInfo()
+        val scanInfo = scan(
+            sourcesToMove,
+            R.plurals.file_job_move_scan_notification_title_format,
+            actionAllInfo
+        )
+        val transferInfo = TransferInfo(scanInfo, targetDirectory)
         for (source in sourcesToMove) {
             val target = targetDirectory.resolveForeign(source.fileName)
             moveRecursively(source, target, transferInfo, actionAllInfo)
@@ -48,7 +51,7 @@ class MoveFileJob(private val sources: List<Path>, private val targetDirectory: 
         transferInfo: TransferInfo,
         actionAllInfo: ActionAllInfo
     ) {
-        Files.walkFileTree(
+        walkFileTreeAskingOnErrors(
             source,
             object : SimpleFileVisitor<Path>() {
                 @Throws(IOException::class)
@@ -93,24 +96,18 @@ class MoveFileJob(private val sources: List<Path>, private val targetDirectory: 
                 }
 
                 @Throws(IOException::class)
-                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                    // TODO: Prompt retry, skip, skip-all or abort.
-                    return super.visitFileFailed(file, exception)
-                }
-
-                @Throws(IOException::class)
                 override fun postVisitDirectory(
                     directory: Path,
                     exception: IOException?
-                ): FileVisitResult? {
-                    if (exception != null) {
-                        throw exception
-                    }
+                ): FileVisitResult {
+                    // Only reached with no exception for a directory that was fully moved.
                     delete(directory, null, actionAllInfo)
                     throwIfInterrupted()
                     return FileVisitResult.CONTINUE
                 }
-            }
+            },
+            actionAllInfo,
+            transferInfo
         )
     }
 }

@@ -7,7 +7,6 @@ package me.zhanghai.android.files.filejob
 
 import java.io.IOException
 import java8.nio.file.FileVisitResult
-import java8.nio.file.Files
 import java8.nio.file.Path
 import java8.nio.file.SimpleFileVisitor
 import java8.nio.file.attribute.BasicFileAttributes
@@ -19,55 +18,46 @@ import me.zhanghai.android.files.util.toUserMessage
 class DeleteFileJob(private val paths: List<Path>) : FileJob() {
     @Throws(IOException::class)
     override fun run() {
-        val scanInfo = scan(paths, R.plurals.file_job_delete_scan_notification_title_format)
-        val transferInfo = TransferInfo(scanInfo, null)
         val actionAllInfo = ActionAllInfo()
+        val scanInfo = scan(
+            paths,
+            R.plurals.file_job_delete_scan_notification_title_format,
+            actionAllInfo
+        )
+        val transferInfo = TransferInfo(scanInfo, null)
         for (path in paths) {
-            deleteRecursively(path, transferInfo, actionAllInfo)
+            walkFileTreeAskingOnErrors(
+                path,
+                DeletingVisitor {
+                    delete(it, transferInfo, actionAllInfo)
+                    throwIfInterrupted()
+                },
+                actionAllInfo,
+                transferInfo
+            )
             throwIfInterrupted()
         }
     }
+}
+
+/**
+ * Deletes each file, and each directory after its children. Meant to be wrapped in a
+ * [WalkErrorVisitor], which leaves out a directory that could not be emptied completely.
+ */
+internal class DeletingVisitor(private val delete: (Path) -> Unit) : SimpleFileVisitor<Path>() {
+    @Throws(IOException::class)
+    override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
+        delete(file)
+        return FileVisitResult.CONTINUE
+    }
 
     @Throws(IOException::class)
-    private fun deleteRecursively(
-        path: Path,
-        transferInfo: TransferInfo,
-        actionAllInfo: ActionAllInfo
-    ) {
-        Files.walkFileTree(
-            path,
-            object : SimpleFileVisitor<Path>() {
-                @Throws(IOException::class)
-                override fun visitFile(
-                    file: Path,
-                    attributes: BasicFileAttributes
-                ): FileVisitResult {
-                    delete(file, transferInfo, actionAllInfo)
-                    throwIfInterrupted()
-                    return FileVisitResult.CONTINUE
-                }
-
-                @Throws(IOException::class)
-                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                    // TODO: Prompt retry, skip, skip-all or abort.
-                    return super.visitFileFailed(file, exception)
-                }
-
-                @Throws(IOException::class)
-                override fun postVisitDirectory(
-                    directory: Path,
-                    exception: IOException?
-                ): FileVisitResult {
-                    // TODO: Prompt retry, skip, skip-all or abort.
-                    if (exception != null) {
-                        throw exception
-                    }
-                    delete(directory, transferInfo, actionAllInfo)
-                    throwIfInterrupted()
-                    return FileVisitResult.CONTINUE
-                }
-            }
-        )
+    override fun postVisitDirectory(directory: Path, exception: IOException?): FileVisitResult {
+        if (exception != null) {
+            throw exception
+        }
+        delete(directory)
+        return FileVisitResult.CONTINUE
     }
 }
 

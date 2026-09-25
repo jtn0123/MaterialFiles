@@ -8,7 +8,6 @@ package me.zhanghai.android.files.filejob
 import java.io.IOException
 import java.io.InterruptedIOException
 import java8.nio.file.FileVisitResult
-import java8.nio.file.Files
 import java8.nio.file.Path
 import java8.nio.file.SimpleFileVisitor
 import java8.nio.file.StandardOpenOption
@@ -30,7 +29,12 @@ class ArchiveFileJob(
 ) : FileJob() {
     @Throws(IOException::class)
     override fun run() {
-        val scanInfo = scan(sources, R.plurals.file_job_archive_scan_notification_title_format)
+        val actionAllInfo = ActionAllInfo()
+        val scanInfo = scan(
+            sources,
+            R.plurals.file_job_archive_scan_notification_title_format,
+            actionAllInfo
+        )
         val channel = archiveFile.newByteChannel(
             StandardOpenOption.CREATE_NEW,
             StandardOpenOption.WRITE
@@ -42,7 +46,7 @@ class ArchiveFileJob(
                     val transferInfo = TransferInfo(scanInfo, archiveFile)
                     for (source in sources) {
                         val target = getTargetFileName(source)
-                        archiveRecursively(source, writer, target, transferInfo)
+                        archiveRecursively(source, writer, target, transferInfo, actionAllInfo)
                         throwIfInterrupted()
                     }
                 }
@@ -66,9 +70,10 @@ class ArchiveFileJob(
         source: Path,
         writer: ArchiveWriter,
         target: Path,
-        transferInfo: TransferInfo
+        transferInfo: TransferInfo,
+        actionAllInfo: ActionAllInfo
     ) {
-        Files.walkFileTree(
+        walkFileTreeAskingOnErrors(
             source,
             object : SimpleFileVisitor<Path>() {
                 @Throws(IOException::class)
@@ -92,13 +97,9 @@ class ArchiveFileJob(
                     throwIfInterrupted()
                     return FileVisitResult.CONTINUE
                 }
-
-                @Throws(IOException::class)
-                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                    // TODO: Prompt retry, skip, skip-all or abort.
-                    return super.visitFileFailed(file, exception)
-                }
-            }
+            },
+            actionAllInfo,
+            transferInfo
         )
     }
 }

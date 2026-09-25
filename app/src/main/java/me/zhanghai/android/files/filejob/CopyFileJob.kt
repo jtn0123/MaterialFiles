@@ -7,7 +7,6 @@ package me.zhanghai.android.files.filejob
 
 import java.io.IOException
 import java8.nio.file.FileVisitResult
-import java8.nio.file.Files
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
 import java8.nio.file.SimpleFileVisitor
@@ -24,16 +23,17 @@ class CopyFileJob(private val sources: List<Path>, private val targetDirectory: 
     @Throws(IOException::class)
     override fun run() {
         val isExtract = sources.all { it.isArchivePath }
+        val actionAllInfo = ActionAllInfo()
         val scanInfo = scan(
             sources,
             if (isExtract) {
                 R.plurals.file_job_extract_scan_notification_title_format
             } else {
                 R.plurals.file_job_copy_scan_notification_title_format
-            }
+            },
+            actionAllInfo
         )
         val transferInfo = TransferInfo(scanInfo, targetDirectory)
-        val actionAllInfo = ActionAllInfo()
         for (source in sources) {
             val target = if (source.parent == targetDirectory) {
                 getTargetPathForDuplicate(source)
@@ -53,7 +53,7 @@ class CopyFileJob(private val sources: List<Path>, private val targetDirectory: 
         transferInfo: TransferInfo,
         actionAllInfo: ActionAllInfo
     ) {
-        Files.walkFileTree(
+        walkFileTreeAskingOnErrors(
             source,
             object : SimpleFileVisitor<Path>() {
                 @Throws(IOException::class)
@@ -83,13 +83,9 @@ class CopyFileJob(private val sources: List<Path>, private val targetDirectory: 
                     throwIfInterrupted()
                     return FileVisitResult.CONTINUE
                 }
-
-                @Throws(IOException::class)
-                override fun visitFileFailed(file: Path, exception: IOException): FileVisitResult {
-                    // TODO: Prompt retry, skip, skip-all or abort.
-                    return super.visitFileFailed(file, exception)
-                }
-            }
+            },
+            actionAllInfo,
+            transferInfo
         )
     }
 

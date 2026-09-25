@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.common
 
+import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.URI
@@ -20,6 +21,7 @@ import java.nio.file.attribute.FileTime as JavaFileTime
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.AccessMode
 import java8.nio.file.CopyOption
+import java8.nio.file.DirectoryIteratorException
 import java8.nio.file.DirectoryNotEmptyException
 import java8.nio.file.DirectoryStream
 import java8.nio.file.FileAlreadyExistsException
@@ -81,9 +83,12 @@ internal object LocalTestFileSystemProvider : FileSystemProvider() {
                 stream.map { fileSystem.getPath("/${fileSystem.rootDirectory.relativize(it)}") }
             }
         }
+        val isBroken = dir in fileSystem.brokenListings
         return object : DirectoryStream<Path> {
-            override fun iterator(): MutableIterator<Path> =
-                paths.filterTo(mutableListOf()) { filter.accept(it) }.iterator()
+            override fun iterator(): MutableIterator<Path> {
+                val iterator = paths.filterTo(mutableListOf()) { filter.accept(it) }.iterator()
+                return if (isBroken) BreakingIterator(iterator) else iterator
+            }
 
             override fun close() {}
         }
@@ -291,6 +296,21 @@ private fun Array<out LinkOption>.toJavaOptions(): Array<JavaLinkOption> = map {
         LinkOption.NOFOLLOW_LINKS -> JavaLinkOption.NOFOLLOW_LINKS
     }
 }.toTypedArray()
+
+/** Lists the first child and then fails, as a listing that broke off does. */
+private class BreakingIterator(private val iterator: MutableIterator<Path>) :
+    MutableIterator<Path> by iterator {
+    private var hasListed = false
+
+    override fun hasNext(): Boolean {
+        if (hasListed) {
+            throw DirectoryIteratorException(IOException("The listing broke off"))
+        }
+        return iterator.hasNext()
+    }
+
+    override fun next(): Path = iterator.next().also { hasListed = true }
+}
 
 /** `java.nio` exceptions mean nothing to callers of the java8 API, so they are translated. */
 private inline fun <R> translate(block: () -> R): R = try {

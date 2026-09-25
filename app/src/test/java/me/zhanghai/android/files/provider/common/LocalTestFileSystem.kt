@@ -40,6 +40,9 @@ import java8.nio.file.attribute.UserPrincipalLookupService
  * without an Android device.
  */
 internal class LocalTestFileSystem(val rootDirectory: JavaPath) : FileSystem() {
+    /** Directories whose listing breaks off after their first child, as a flaky server's can. */
+    val brokenListings = mutableSetOf<Path>()
+
     override fun getPath(first: String, vararg more: String): LocalTestPath =
         LocalTestPath(this, (listOf(first) + more).joinToString(SEPARATOR_STRING).toByteString())
 
