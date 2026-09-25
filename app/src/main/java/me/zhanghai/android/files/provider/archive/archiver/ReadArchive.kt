@@ -105,17 +105,8 @@ class ReadArchive : Closeable {
             Archive.readSetSeekCallback<Any?>(archive) { _, _, offset, whence ->
                 val newPosition: Long
                 try {
-                    newPosition = when (whence) {
-                        OsConstants.SEEK_SET -> offset
-
-                        OsConstants.SEEK_CUR -> channel.position() + offset
-
-                        OsConstants.SEEK_END -> channel.size() + offset
-
-                        else -> throw ArchiveException(
-                            Archive.ERRNO_FATAL,
-                            "Unknown whence $whence"
-                        )
+                    newPosition = seekPosition(offset, whence, { channel.position() }) {
+                        channel.size()
                     }
                     channel.position(newPosition)
                 } catch (e: IOException) {
@@ -135,11 +126,6 @@ class ReadArchive : Closeable {
         }
     }
 
-    private fun IOException.toArchiveException(message: String): ArchiveException = when (this) {
-        is InterruptedIOException -> ArchiveException(OsConstants.EINTR, message, this)
-        else -> ArchiveException(Archive.ERRNO_FATAL, message, this)
-    }
-
     @Throws(ArchiveException::class)
     fun readEntry(charset: Charset): Entry? {
         val entry = Archive.readNextHeader(archive)
@@ -147,7 +133,11 @@ class ReadArchive : Closeable {
             return null
         }
         val name =
-            getEntryString(ArchiveEntry.pathnameUtf8(entry), ArchiveEntry.pathname(entry), charset)
+            decodeEntryString(
+                ArchiveEntry.pathnameUtf8(entry),
+                ArchiveEntry.pathname(entry),
+                charset
+            )
                 ?: throw ArchiveException(
                     Archive.ERRNO_FATAL,
                     "pathname == null && pathnameUtf8 == null"
@@ -183,7 +173,7 @@ class ReadArchive : Closeable {
         // TODO: There's no way to know if UID/GID is unset or root.
         val owner = PosixUser(
             stat.stUid,
-            getEntryString(
+            decodeEntryString(
                 ArchiveEntry.unameUtf8(entry),
                 ArchiveEntry.uname(entry),
                 charset
@@ -191,7 +181,7 @@ class ReadArchive : Closeable {
         )
         val group = PosixGroup(
             stat.stGid,
-            getEntryString(
+            decodeEntryString(
                 ArchiveEntry.gnameUtf8(entry),
                 ArchiveEntry.gname(entry),
                 charset
@@ -199,18 +189,15 @@ class ReadArchive : Closeable {
         )
         val mode = PosixFileMode.fromInt(stat.stMode)
         val symbolicLinkTarget =
-            getEntryString(ArchiveEntry.symlinkUtf8(entry), ArchiveEntry.symlink(entry), charset)
+            decodeEntryString(ArchiveEntry.symlinkUtf8(entry), ArchiveEntry.symlink(entry), charset)
         return Entry(
             name, isEncrypted, lastModifiedTime, lastAccessTime, creationTime, type, size, owner,
             group, mode, symbolicLinkTarget
         )
     }
 
-    private fun getEntryString(stringUtf8: String?, string: ByteArray?, charset: Charset): String? =
-        stringUtf8 ?: string?.toString(charset)
-
     @Throws(ArchiveException::class)
-    fun newDataInputStream(): InputStream = DataInputStream()
+    fun newDataInputStream(): InputStream = ArchiveDataInputStream { Archive.readData(archive, it) }
 
     @Throws(ArchiveException::class)
     override fun close() {
@@ -236,28 +223,34 @@ class ReadArchive : Closeable {
         val isSymbolicLink: Boolean
             get() = type == PosixFileType.SYMBOLIC_LINK
     }
+}
 
-    private inner class DataInputStream : InputStream() {
-        private val oneByteBuffer = ByteBuffer.allocateDirect(1)
+/**
+ * A string of an entry: libarchive's UTF-8 version when it has one (the archive said what the
+ * encoding is), or else the raw bytes decoded with the [charset] the user chose.
+ */
+internal fun decodeEntryString(stringUtf8: String?, string: ByteArray?, charset: Charset): String? =
+    stringUtf8 ?: string?.toString(charset)
 
-        @Throws(IOException::class)
-        override fun read(): Int {
-            read(oneByteBuffer)
-            return if (oneByteBuffer.hasRemaining()) oneByteBuffer.get().toUByte().toInt() else -1
-        }
+/** The [ArchiveException] a read callback throws, for libarchive to report back to its caller. */
+internal fun IOException.toArchiveException(message: String): ArchiveException = when (this) {
+    is InterruptedIOException -> ArchiveException(OsConstants.EINTR, message, this)
+    else -> ArchiveException(Archive.ERRNO_FATAL, message, this)
+}
 
-        @Throws(IOException::class)
-        override fun read(b: ByteArray, off: Int, len: Int): Int {
-            val buffer = ByteBuffer.wrap(b, off, len)
-            read(buffer)
-            return if (buffer.hasRemaining()) buffer.remaining() else -1
-        }
-
-        @Throws(IOException::class)
-        private fun read(buffer: ByteBuffer) {
-            buffer.clear()
-            Archive.readData(archive, buffer)
-            buffer.flip()
-        }
-    }
+/**
+ * The position a seek callback of libarchive asks for, as `lseek()` would compute it: [position]
+ * and [size] are only asked for when [whence] needs them.
+ */
+@Throws(ArchiveException::class, IOException::class)
+internal inline fun seekPosition(
+    offset: Long,
+    whence: Int,
+    position: () -> Long,
+    size: () -> Long
+): Long = when (whence) {
+    OsConstants.SEEK_SET -> offset
+    OsConstants.SEEK_CUR -> position() + offset
+    OsConstants.SEEK_END -> size() + offset
+    else -> throw ArchiveException(Archive.ERRNO_FATAL, "Unknown whence $whence")
 }

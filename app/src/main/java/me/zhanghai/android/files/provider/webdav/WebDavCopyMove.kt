@@ -7,6 +7,7 @@ package me.zhanghai.android.files.provider.webdav
 
 import at.bitfire.dav4jvm.Response
 import at.bitfire.dav4jvm.exception.DavException
+import java8.nio.file.DirectoryNotEmptyException
 import java8.nio.file.NoSuchFileException
 import me.zhanghai.android.files.provider.common.AbstractCopyMove
 import me.zhanghai.android.files.provider.common.CopyOptions
@@ -58,12 +59,13 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
             throw e.toFileSystemException(source.toString())
         }
         sourceInputStream.useMappingCloseFailure({ it.toCloseFailure(source) }) {
+            // A refusal can also come while writing, once the server has answered early.
             val targetOutputStream = try {
-                client.put(target)
+                client.put(target).mapDavExceptions(target.toString())
             } catch (e: DavException) {
                 throw e.toFileSystemException(target.toString())
             }
-            targetOutputStream.useMappingCloseFailure({ it.toCloseFailure(target) }) {
+            targetOutputStream.use {
                 sourceInputStream.copyTo(
                     targetOutputStream,
                     copyOptions.progressIntervalMillis,
@@ -101,8 +103,15 @@ internal object WebDavCopyMove : AbstractCopyMove<WebDavPath, Response>() {
     }
 
     override fun delete(path: WebDavPath, fileType: FileType) {
+        val isDirectory = fileType == FileType.DIRECTORY
         try {
-            client.delete(path, fileType == FileType.DIRECTORY)
+            // A DELETE takes everything in a collection along (RFC 4918 9.6.1), but a directory
+            // deleted here must be empty: a move that falls back to copying creates the target
+            // directory without its members and then deletes the source.
+            if (isDirectory && client.findCollectionMembers(path).isNotEmpty()) {
+                throw DirectoryNotEmptyException(path.toString())
+            }
+            client.delete(path, isDirectory)
         } catch (e: DavException) {
             val exception = e.toFileSystemException(path.toString())
             if (exception !is NoSuchFileException) {

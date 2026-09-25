@@ -210,7 +210,7 @@ class Client(internal val authenticator: Authenticator) {
             val resource = DavResource(client, path.url)
             val patchSupport = resource.getPatchSupport()
             return NotifyEntryModifiedSeekableByteChannel(
-                FileByteChannel(this, resource, patchSupport, isAppend),
+                FileByteChannel(this, resource, patchSupport, isAppend, path.toString()),
                 path as Java8Path
             )
         } catch (e: IOException) {
