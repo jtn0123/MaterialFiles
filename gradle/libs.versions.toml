@@ -1,6 +1,6 @@
 [versions]
 # Build
-android-gradle-plugin = "9.4.0"
+android-gradle-plugin = "9.4.1"
 kotlin = "2.4.10"
 ktlint-gradle = "14.2.0"
 jacoco = "0.8.14"
@@ -35,8 +35,7 @@ advrecyclerview = "1.0.0"
 # was tried on 2026-09-06 against an impacket SMB2 guest share: anonymous connect, listing, read
 # and write all worked. If a NAS refuses anonymous or guest access, go back to "0.11.5".
 smbj = "0.14.0"
-bouncycastle = "1.85"
-bouncycastle-util = "1.85.1"
+bouncycastle = "1.86"
 sshj = "0.40.0"
 speed-dial = "3.3.0"
 dcerpc = "0.12.13"
@@ -118,7 +117,6 @@ advrecyclerview = { module = "com.h6ah4i.android.widget.advrecyclerview:advrecyc
 smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
 bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk15to18", version.ref = "bouncycastle" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bouncycastle" }
-bouncycastle-bcutil = { module = "org.bouncycastle:bcutil-jdk15to18", version.ref = "bouncycastle-util" }
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
 speed-dial = { module = "com.leinardi.android:speed-dial", version.ref = "speed-dial" }
 dcerpc = { module = "com.rapid7.client:dcerpc", version.ref = "dcerpc" }

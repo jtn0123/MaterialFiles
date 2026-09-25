@@ -5,7 +5,6 @@
 
 package me.zhanghai.android.files.provider.linux
 
-import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
 import java.io.File
@@ -17,7 +16,6 @@ import java8.nio.file.WatchEvent
 import java8.nio.file.WatchKey
 import java8.nio.file.WatchService
 import me.zhanghai.android.files.app.application
-import me.zhanghai.android.files.compat.isPrimaryCompat
 import me.zhanghai.android.files.compat.pathFileCompat
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.ByteStringListPath
@@ -82,46 +80,15 @@ internal class LinuxPath :
     override fun isRootRequired(isAttributeAccess: Boolean): Boolean {
         val file = toFile()
         return StorageVolumeListLiveData.valueCompat.none {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && !it.isPrimaryCompat) {
-                return@none false
-            }
             val storageVolumeDirectory = it.pathFileCompat
-            if (!file.startsWith(storageVolumeDirectory)) {
-                return@none false
-            }
-            return@none file.isAccessibleInStorageVolume(storageVolumeDirectory, isAttributeAccess)
+            file.startsWith(storageVolumeDirectory) &&
+                file.isAccessibleInStorageVolume(
+                    storageVolumeDirectory,
+                    isAttributeAccess,
+                    application.packageName,
+                    RequestInstallPackagesAppOp::isAllowed
+                )
         }
-    }
-
-    private fun File.isAccessibleInStorageVolume(
-        storageVolumeDirectory: File,
-        isAttributeAccess: Boolean
-    ): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val parentDirectory = parentFile
-            val androidDataDirectory = storageVolumeDirectory.resolve(FILE_ANDROID_DATA)
-            val isInAndroidDataDirectory = if (isAttributeAccess && parentDirectory != null) {
-                parentDirectory.startsWith(androidDataDirectory)
-            } else {
-                startsWith(androidDataDirectory)
-            }
-            val appPackageName = application.packageName
-            if (isInAndroidDataDirectory) {
-                val appDataDirectory = androidDataDirectory.resolve(appPackageName)
-                return startsWith(appDataDirectory)
-            }
-            val androidObbDirectory = storageVolumeDirectory.resolve(FILE_ANDROID_OBB)
-            val isInAndroidObbDirectory = if (isAttributeAccess && parentDirectory != null) {
-                parentDirectory.startsWith(androidObbDirectory)
-            } else {
-                startsWith(androidObbDirectory)
-            }
-            if (isInAndroidObbDirectory) {
-                val appObbDirectory = androidObbDirectory.resolve(appPackageName)
-                return startsWith(appObbDirectory)
-            }
-        }
-        return true
     }
 
     private constructor(source: Parcel) : super(source) {
@@ -135,9 +102,6 @@ internal class LinuxPath :
     }
 
     companion object {
-        private val FILE_ANDROID_DATA = File("Android/data")
-        private val FILE_ANDROID_OBB = File("Android/obb")
-
         @JvmField
         val CREATOR = object : Parcelable.Creator<LinuxPath> {
             override fun createFromParcel(source: Parcel): LinuxPath = LinuxPath(source)

@@ -8,11 +8,8 @@ package me.zhanghai.android.files.filejob
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
-import android.widget.Toast
 import androidx.annotation.MainThread
-import androidx.annotation.RequiresApi
 import java8.nio.file.Path
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -30,7 +27,6 @@ import me.zhanghai.android.files.provider.common.PosixUser
 import me.zhanghai.android.files.util.ForegroundNotificationManager
 import me.zhanghai.android.files.util.WakeWifiLock
 import me.zhanghai.android.files.util.removeFirst
-import me.zhanghai.android.files.util.showToast
 
 class FileJobService : Service() {
     private lateinit var wakeWifiLock: WakeWifiLock
@@ -62,22 +58,6 @@ class FileJobService : Service() {
     override fun onBind(intent: Intent): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
-
-    /**
-     * Android 15 gives a data sync foreground service 6 hours a day; after that we have to stop,
-     * or be treated as not responding.
-     */
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    override fun onTimeout(startId: Int, fgsType: Int) {
-        super.onTimeout(startId, fgsType)
-
-        val hadJobs = jobCount > 0
-        cancelAllJobs()
-        if (hadJobs) {
-            showToast(R.string.file_job_timeout_message, Toast.LENGTH_LONG)
-        }
-        stopSelf()
-    }
 
     private val jobCount: Int
         get() = synchronized(runningJobs) { runningJobs.size }
