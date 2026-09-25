@@ -10,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import coil.ImageLoader
 import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
+import coil.request.Disposable
 import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.request.ImageResult
@@ -60,9 +61,9 @@ class ThumbnailLoading(private val directory: File) {
         return Paths.get(zipFile.path).createArchiveRootPath().resolve(names.first())
     }
 
-    fun load(path: Path, width: Int, height: Int, isPreview: Boolean = false): ImageResult {
+    fun newRequest(path: Path, width: Int, height: Int, isPreview: Boolean = false): ImageRequest {
         val attributes = path.readAttributes(BasicFileAttributes::class.java)
-        val request = ImageRequest.Builder(context)
+        return ImageRequest.Builder(context)
             .data(path to attributes)
             .size(width, height)
             .allowHardware(false)
@@ -72,8 +73,21 @@ class ThumbnailLoading(private val directory: File) {
                 }
             }
             .build()
-        return runBlocking { imageLoader.execute(request) }
     }
+
+    fun load(path: Path, width: Int, height: Int, isPreview: Boolean = false): ImageResult =
+        runBlocking { execute(path, width, height, isPreview) }
+
+    suspend fun execute(
+        path: Path,
+        width: Int,
+        height: Int,
+        isPreview: Boolean = false
+    ): ImageResult = imageLoader.execute(newRequest(path, width, height, isPreview))
+
+    /** Starts loading as a row that comes into view does; disposing it is scrolling it away. */
+    fun enqueue(path: Path, width: Int, height: Int): Disposable =
+        imageLoader.enqueue(newRequest(path, width, height))
 
     fun loadSuccessfully(
         path: Path,
