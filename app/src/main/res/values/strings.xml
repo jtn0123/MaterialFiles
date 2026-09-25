@@ -743,6 +743,8 @@
     <string name="video_viewer_screen_orientation_landscape">Landscape</string>
     <string name="video_viewer_screen_orientation_portrait">Portrait</string>
     <string name="video_viewer_error_format">Cannot play %1$s</string>
+    <string name="video_viewer_error_unsupported">This device cannot play this video format</string>
+    <string name="video_viewer_error_malformed">The video file is damaged or incomplete</string>
     <string name="save_as_title">Save as</string>
     <string name="save_as_error">Error while saving file</string>
     <string name="save_as_success_format">“%1$s” has been saved to “%2$s”</string>

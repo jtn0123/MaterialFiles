@@ -21,6 +21,35 @@
         app:show_subtitle_button="true"
         app:surface_type="surface_view" />
 
+    <LinearLayout
+        android:id="@+id/errorLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="@dimen/screen_edge_margin"
+        android:padding="16dp"
+        android:background="#cc000000"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/errorText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:accessibilityLiveRegion="polite"
+            android:gravity="center_horizontal"
+            android:textAppearance="?textAppearanceBodyLarge"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/retryButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/retry" />
+    </LinearLayout>
+
     <FrameLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
