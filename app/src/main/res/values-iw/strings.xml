@@ -21,6 +21,18 @@
     <string name="empty">ריק</string>
     <string name="empty_placeholder">(ריק)</string>
     <string name="error">שגיאה</string>
+    <string name="error_access_denied">הגישה נדחתה</string>
+    <string name="error_file_not_found">הקובץ לא נמצא</string>
+    <string name="error_file_already_exists">כבר קיים קובץ בשם הזה</string>
+    <string name="error_directory_not_empty">התיקיה אינה ריקה</string>
+    <string name="error_not_a_directory">זו אינה תיקיה</string>
+    <string name="error_is_a_directory">זו תיקיה</string>
+    <string name="error_read_only_file_system">האחסון מיועד לקריאה בלבד</string>
+    <string name="error_invalid_file_name">שם קובץ לא תקין</string>
+    <string name="error_unknown_host">מארח לא ידוע</string>
+    <string name="error_connection_timed_out">הזמן הקצוב לחיבור פג</string>
+    <string name="error_connection_failed">לא ניתן להתחבר</string>
+    <string name="error_interrupted">הפעולה נקטעה</string>
     <string name="hide">הסתרה</string>
     <string name="install">התקנה</string>
     <string name="keep_editing">המשך עריכה</string>
@@ -41,6 +53,7 @@
     <string name="search">חיפוש</string>
     <string name="select">בחירה</string>
     <string name="select_all">לבחור הכול</string>
+    <string name="select_range">בחירת טווח</string>
     <string name="share">שיתוף</string>
     <string name="show">הצגה</string>
     <string name="skip">דילוג</string>
@@ -125,6 +138,12 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">הסתיים, קובץ אחד דולג בגלל שגיאה</item>
+        <item quantity="two">הסתיים, %1$,d קבצים דולגו בגלל שגיאות</item>
+        <item quantity="other">הסתיים, %1$,d קבצים דולגו בגלל שגיאות</item>
+    </plurals>
+    <string name="file_job_failed_format">נכשל: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">מתכונן למחיקת קובץ אחד</item>
         <item quantity="two">מתכונן למחיקת %1$,d קבצים</item>
@@ -225,6 +244,9 @@
     <string name="file_job_move_error_message_format">שגיאה בעת העברת הקובץ אל “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">שגיאה במהלך המחיקה</string>
     <string name="file_job_delete_error_message_format">שגיאה בעת מחיקת “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">שגיאה במהלך הקריאה</string>
+    <string name="file_job_read_error_message_format">שגיאה בעת קריאת “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">שגיאה בעת הצגת התוכן של “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">שגיאה במהלך שינוי השם של \"%1$s\"</string>
     <string name="file_job_rename_error_message_format">שגיאה בעת שינוי שם הקובץ לשם “%1$s”.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">שגיאה במהלך החלפת בעלים עבור “%1$s”</string>
@@ -344,6 +366,7 @@
     <string name="file_list_action_create_directory">תיקייה</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">אפשרויות נוספות</string>
     <string name="file_item_action_open_with">פתיחה באמצעות</string>
     <string name="file_item_action_extract">חילוץ</string>
     <string name="file_item_action_archive">דחיסה</string>
@@ -466,6 +489,7 @@
     <string name="storage_file_system_root_title">שורש</string>
     <string name="storage_list_title">אחסון</string>
     <string name="storage_list_empty">ללא אחסון</string>
+    <string name="list_item_drag_handle">גרירה לשינוי הסדר</string>
     <string name="storage_add_storage_title">הוספת אחסון</string>
     <string name="storage_add_storage_document_tree">אחסון חיצוני</string>
     <string name="storage_add_storage_ftp_server">שרת FTP</string>
@@ -540,6 +564,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">ניתן להשאיר ריק</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">סיסמת מפתח פרטי לא חוקית</string>
     <string name="storage_edit_sftp_server_connect_and_add">התחברות והוספה</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">מפתח המארח השתנה</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">מפתח ה־%2$s של %1$s אינו זה שנשמר בחיבור הראשון. ייתכן שמישהו מיירט את החיבור, או שהשרת הותקן מחדש.\n\nנשמר: %3$s\nהוצג: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">מתן אמון במפתח החדש</string>
     <string name="storage_edit_sftp_server_add">הוספה</string>
     <string name="storage_add_lan_smb_server_loading">מחפש שרת SMB…</string>
     <string name="storage_add_lan_smb_server_add">הוספה ידנית</string>
@@ -564,6 +591,8 @@
     <string name="storage_edit_smb_server_username_error_empty">הזנת שם משתמש</string>
     <string name="storage_edit_smb_server_password">סיסמה</string>
     <string name="storage_edit_smb_server_domain">שם תחום</string>
+    <string name="storage_edit_smb_server_encrypt">הצפנת החיבור</string>
+    <string name="storage_edit_smb_server_encrypt_summary">בקשת הצפנת SMB3. נדרשת לשיתופים שמחייבים אותה; שרתים שאינם תומכים בה יתעלמו ממנה.</string>
     <string name="storage_edit_smb_server_connect_and_add">התחברות והוספה</string>
     <string name="storage_edit_smb_server_add">הוספה</string>
     <string name="storage_edit_webdav_server_title_edit">עריכת שרת WebDAV</string>
@@ -613,9 +642,22 @@
     <string name="archive_viewer_title">מציג ארכיונים</string>
     <string name="image_viewer_title">מציג התמונות</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">נגן וידאו</string>
+    <string name="video_viewer_picture_in_picture">תמונה בתוך תמונה</string>
+    <string name="video_viewer_play_from_beginning">ניגון מההתחלה</string>
+    <string name="video_viewer_screen_orientation">כיוון המסך</string>
+    <string name="video_viewer_screen_orientation_auto">סיבוב אוטומטי</string>
+    <string name="video_viewer_screen_orientation_landscape">לרוחב</string>
+    <string name="video_viewer_screen_orientation_portrait">לאורך</string>
+    <string name="video_viewer_error_format">לא ניתן לנגן את %1$s</string>
     <string name="save_as_title">שמירה בשם</string>
     <string name="save_as_error">שגיאה בשמירת הקובץ</string>
     <string name="save_as_success_format">„%1$s” נשמר אל „%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">קובץ %1$d נשמר אל “%2$s”</item>
+        <item quantity="two">%1$d קבצים נשמרו אל “%2$s”</item>
+        <item quantity="other">%1$d קבצים נשמרו אל “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">עורך טקסט</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -640,9 +682,14 @@
     <string name="ftp_server_add_tile_result_error">שגיאה בעת הוספת \"שרת FTP\" להגדרות המהירות</string>
     <string name="ftp_server_configuration_title">תצורה</string>
     <string name="ftp_server_anonymous_login_title">כניסה בעילום שם</string>
+    <string name="ftp_server_error_password_empty">יש להגדיר סיסמה, או להפעיל כניסה בעילום שם, לפני הפעלת שרת ה־FTP</string>
     <string name="ftp_server_username_title">שם משתמש</string>
     <string name="ftp_server_password_title">סיסמה</string>
     <string name="ftp_server_port_title">פתחה</string>
+    <string name="ftp_server_passive_ports_title">פתחות נתונים פסיביות</string>
+    <string name="ftp_server_passive_ports_summary_any">כל פתחה פנויה</string>
+    <string name="ftp_server_passive_ports_dialog_message">פתחות או טווחים לחיבורי נתונים, למשל 2300-2400 או 2300, 2301. יש להשאיר ריק כדי להשתמש בכל פתחה פנויה. יש להגדיר זאת כשהגישה לשרת היא דרך העברת פתחות או מנהרה.</string>
+    <string name="ftp_server_passive_ports_error_invalid">יש להזין פתחות בין 1 ל־65535, כמספרים או כטווחים מופרדים בפסיקים</string>
     <string name="ftp_server_home_directory_title">תיקיית שורש</string>
     <string name="ftp_server_writable_title">איפשור כתיבה</string>
     <string name="settings_title">הגדרות</string>
@@ -670,6 +717,8 @@
     </string-array>
     <string name="settings_behavior_title">התנהגות</string>
     <string name="settings_default_directory_title">תיקיית ברירת מחדל</string>
+    <string name="settings_remember_last_directory_title">פתיחה מחדש של התיקיה האחרונה</string>
+    <string name="settings_remember_last_directory_summary">להתחיל מהמקום שבו הפסקת במקום בתיקיית ברירת המחדל</string>
     <string name="settings_standard_directories_title">תיקיות סטנדרטיות</string>
     <string name="settings_standard_directories_summary_empty">תיקיות סטנדרטיות לא מופעל</string>
     <string name="settings_bookmark_directory_screenshots">צילומי מסך</string>
@@ -696,6 +745,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">הצגת תמונה ממוזערת למסמכי PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">עלול להפוך את היישום לבלתי יציב בגרסאות ישנות יותר של אנדרואיד</string>
     <string name="settings_read_remote_files_for_thumbnail_title">קרא קבצים מרוחקים עבור תמונה ממוזערת</string>
+    <string name="settings_video_remember_playback_position_title">זכירת מיקום הניגון של סרטונים</string>
 
     <string name="about_title">אודות</string>
     <string name="about_version_title">גירסה</string>
@@ -705,4 +755,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">לעקוב ב-GitHub</string>
     <string name="about_author_twitter_title">לעקוב בטוויטר</string>
+    <string name="text_editor_draft_save_failed">לא ניתן לשמור טיוטת שחזור. יש לשמור את העריכות לפני היציאה.</string>
+    <string name="text_editor_draft_restored">העריכות שלא נשמרו שוחזרו</string>
+    <string name="text_editor_draft_restore_failed">לא ניתן לשחזר את העריכות שלא נשמרו</string>
+    <string name="password_save_failed">לא ניתן לשמור את הסיסמה</string>
+    <string name="file_list_partial_error">לא ניתן היה לקרוא חלק מהקבצים (%1$d חסרים). יש לרענן כדי לנסות שוב.</string>
 </resources>

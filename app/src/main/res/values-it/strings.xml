@@ -19,6 +19,18 @@
     <string name="empty">Vuoto</string>
     <string name="empty_placeholder">(Vuoto)</string>
     <string name="error">Errore</string>
+    <string name="error_access_denied">Accesso negato</string>
+    <string name="error_file_not_found">File non trovato</string>
+    <string name="error_file_already_exists">Esiste già un file con questo nome</string>
+    <string name="error_directory_not_empty">La cartella non è vuota</string>
+    <string name="error_not_a_directory">Non è una cartella</string>
+    <string name="error_is_a_directory">Questa è una cartella</string>
+    <string name="error_read_only_file_system">L\'archiviazione è di sola lettura</string>
+    <string name="error_invalid_file_name">Nome file non valido</string>
+    <string name="error_unknown_host">Host sconosciuto</string>
+    <string name="error_connection_timed_out">Timeout della connessione</string>
+    <string name="error_connection_failed">Impossibile connettersi</string>
+    <string name="error_interrupted">L\'operazione è stata interrotta</string>
     <string name="hide">Nascondi</string>
     <string name="install">Installa</string>
     <string name="keep_editing">Continua a modificare</string>
@@ -39,6 +51,7 @@
     <string name="search">Cerca</string>
     <string name="select">Seleziona</string>
     <string name="select_all">Seleziona tutto</string>
+    <string name="select_range">Seleziona intervallo</string>
     <string name="share">Condividi</string>
     <string name="show">Mostra</string>
     <string name="skip">Salta</string>
@@ -123,6 +136,12 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Completato, %1$,d file saltato a causa di un errore</item>
+        <item quantity="many">Completato, %1$,d file saltati a causa di errori</item>
+        <item quantity="other">Completato, %1$,d file saltati a causa di errori</item>
+    </plurals>
+    <string name="file_job_failed_format">Non riuscito: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Preparazione per eliminare %1$,d file</item>
         <item quantity="many">Preparazione per eliminare %1$,d file</item>
@@ -223,6 +242,9 @@
     <string name="file_job_move_error_message_format">Si è verificato un errore spostando il file in “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">Errore nell\'eliminazione</string>
     <string name="file_job_delete_error_message_format">Si è verificato un errore eliminando “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">Errore nella lettura</string>
+    <string name="file_job_read_error_message_format">Si è verificato un errore leggendo “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Si è verificato un errore elencando il contenuto di “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Errore nella rinominazione di “%1$s”</string>
     <string name="file_job_rename_error_message_format">Si è verificato un errore rinominando il file in “%1$s”.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Errore nel cambio di proprietario di “%1$s”</string>
@@ -342,6 +364,7 @@
     <string name="file_list_action_create_directory">Cartella</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Altre opzioni</string>
     <string name="file_item_action_open_with">Apri con</string>
     <string name="file_item_action_extract">Estrai</string>
     <string name="file_item_action_archive">Comprimi</string>
@@ -464,6 +487,7 @@
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Archiviazione</string>
     <string name="storage_list_empty">Nessuna archiviazione</string>
+    <string name="list_item_drag_handle">Trascina per riordinare</string>
     <string name="storage_add_storage_title">Aggiungi archiviazione</string>
     <string name="storage_add_storage_document_tree">Archiviazione esterna</string>
     <string name="storage_add_storage_ftp_server">Server FTP</string>
@@ -538,6 +562,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Può essere lasciata vuota</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Password chiave privata non valida</string>
     <string name="storage_edit_sftp_server_connect_and_add">Connetti e aggiungi</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Chiave host modificata</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">La chiave %2$s di %1$s non è quella memorizzata alla prima connessione. Qualcuno potrebbe intercettare la connessione, oppure il server è stato reinstallato.\n\nMemorizzata: %3$s\nPresentata: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Considera attendibile la nuova chiave</string>
     <string name="storage_edit_sftp_server_add">Aggiungi</string>
     <string name="storage_add_lan_smb_server_loading">Ricerca di server SMB…</string>
     <string name="storage_add_lan_smb_server_add">Aggiungi manualmente</string>
@@ -562,6 +589,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Inserisci un nome utente</string>
     <string name="storage_edit_smb_server_password">Password</string>
     <string name="storage_edit_smb_server_domain">Dominio</string>
+    <string name="storage_edit_smb_server_encrypt">Crittografa connessione</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Richiede la crittografia SMB3. Necessaria per le condivisioni che la richiedono; ignorata dai server che non la supportano.</string>
     <string name="storage_edit_smb_server_connect_and_add">Connetti e aggiungi</string>
     <string name="storage_edit_smb_server_add">Aggiungi</string>
     <string name="storage_edit_webdav_server_title_edit">Modifica server WebDAV</string>
@@ -611,9 +640,22 @@
     <string name="archive_viewer_title">Visualizzatore archivio</string>
     <string name="image_viewer_title">Visualizzatore di immagini</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Lettore video</string>
+    <string name="video_viewer_picture_in_picture">Picture-in-picture</string>
+    <string name="video_viewer_play_from_beginning">Riproduci dall\'inizio</string>
+    <string name="video_viewer_screen_orientation">Orientamento schermo</string>
+    <string name="video_viewer_screen_orientation_auto">Rotazione automatica</string>
+    <string name="video_viewer_screen_orientation_landscape">Orizzontale</string>
+    <string name="video_viewer_screen_orientation_portrait">Verticale</string>
+    <string name="video_viewer_error_format">Impossibile riprodurre %1$s</string>
     <string name="save_as_title">Salva come</string>
     <string name="save_as_error">Errore durante il salvataggio del file</string>
     <string name="save_as_success_format">\"%1$s\" è stato salvato in \"%2$s\"</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d file è stato salvato in “%2$s”</item>
+        <item quantity="many">%1$d file sono stati salvati in “%2$s”</item>
+        <item quantity="other">%1$d file sono stati salvati in “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">Editor di testo</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -638,9 +680,14 @@
     <string name="ftp_server_add_tile_result_error">Errore durante l\'aggiunta di \"Server FTP\" alle impostazioni rapide</string>
     <string name="ftp_server_configuration_title">Configurazione</string>
     <string name="ftp_server_anonymous_login_title">Accesso anonimo</string>
+    <string name="ftp_server_error_password_empty">Imposta una password, o attiva l\'accesso anonimo, prima di avviare il server FTP</string>
     <string name="ftp_server_username_title">Nome utente</string>
     <string name="ftp_server_password_title">Password</string>
     <string name="ftp_server_port_title">Porta</string>
+    <string name="ftp_server_passive_ports_title">Porte dati passive</string>
+    <string name="ftp_server_passive_ports_summary_any">Qualsiasi porta libera</string>
+    <string name="ftp_server_passive_ports_dialog_message">Porte o intervalli per le connessioni dati, ad es. 2300-2400 o 2300, 2301. Lascia vuoto per usare qualsiasi porta libera. Impostalo quando il server è raggiunto tramite un inoltro di porta o un tunnel.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Inserisci porte tra 1 e 65535, come numeri o intervalli separati da virgole</string>
     <string name="ftp_server_home_directory_title">Cartella root</string>
     <string name="ftp_server_writable_title">Consenti scrittura</string>
     <string name="settings_title">Impostazioni</string>
@@ -668,6 +715,8 @@
     </string-array>
     <string name="settings_behavior_title">Comportamento</string>
     <string name="settings_default_directory_title">Cartella predefinita</string>
+    <string name="settings_remember_last_directory_title">Riapri l\'ultima cartella</string>
+    <string name="settings_remember_last_directory_summary">Riprendi da dove avevi lasciato invece che dalla cartella predefinita</string>
     <string name="settings_standard_directories_title">Cartelle standard</string>
     <string name="settings_standard_directories_summary_empty">Nessuna cartella standard attivata</string>
     <string name="settings_bookmark_directory_screenshots">Screenshot</string>
@@ -694,6 +743,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Mostra miniature per i documenti PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Può rendere l\'app instabile su versioni vecchie di Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Leggi file remoti per miniatura</string>
+    <string name="settings_video_remember_playback_position_title">Ricorda la posizione di riproduzione dei video</string>
 
     <string name="about_title">Al riguardo</string>
     <string name="about_version_title">Versione</string>
@@ -703,4 +753,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Segui su GitHub</string>
     <string name="about_author_twitter_title">Segui su Twitter</string>
+    <string name="text_editor_draft_save_failed">Impossibile salvare una bozza di recupero. Salva le modifiche prima di uscire.</string>
+    <string name="text_editor_draft_restored">Modifiche non salvate recuperate</string>
+    <string name="text_editor_draft_restore_failed">Impossibile recuperare le modifiche non salvate</string>
+    <string name="password_save_failed">Impossibile salvare la password</string>
+    <string name="file_list_partial_error">Non è stato possibile leggere alcuni file (%1$d mancanti). Aggiorna per riprovare.</string>
 </resources>

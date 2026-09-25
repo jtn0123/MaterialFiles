@@ -19,6 +19,18 @@
     <string name="empty">Baleiro</string>
     <string name="empty_placeholder">(Baleiro)</string>
     <string name="error">Erro</string>
+    <string name="error_access_denied">Acceso denegado</string>
+    <string name="error_file_not_found">Non se atopou o ficheiro</string>
+    <string name="error_file_already_exists">Xa existe un ficheiro con ese nome</string>
+    <string name="error_directory_not_empty">O cartafol non está baleiro</string>
+    <string name="error_not_a_directory">Non é un cartafol</string>
+    <string name="error_is_a_directory">Isto é un cartafol</string>
+    <string name="error_read_only_file_system">O almacenamento é de só lectura</string>
+    <string name="error_invalid_file_name">Nome de ficheiro non válido</string>
+    <string name="error_unknown_host">Servidor descoñecido</string>
+    <string name="error_connection_timed_out">Esgotouse o tempo de espera da conexión</string>
+    <string name="error_connection_failed">Non se puido conectar</string>
+    <string name="error_interrupted">Interrompeuse a operación</string>
     <string name="hide">Agochar</string>
     <string name="install">Instalar</string>
     <string name="keep_editing">Continuar edición</string>
@@ -39,6 +51,7 @@
     <string name="search">Procurar</string>
     <string name="select">Escoller</string>
     <string name="select_all">Escoller todo</string>
+    <string name="select_range">Escoller intervalo</string>
     <string name="share">Compartir</string>
     <string name="show">Amosar</string>
     <string name="skip">Omitir</string>
@@ -114,6 +127,11 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Rematado, omitiuse %1$,d ficheiro por mor dun erro</item>
+        <item quantity="other">Rematado, omitíronse %1$,d ficheiros por mor de erros</item>
+    </plurals>
+    <string name="file_job_failed_format">Fallou: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Preparando a eliminación do ficheiro %1$,d</item>
         <item quantity="other">Preparando a eliminación de %1$,d ficheiros</item>
@@ -202,6 +220,9 @@
     <string name="file_job_move_error_message_format">Houbo un erro ao mover o ficheiro a “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">Erro ao eliminar</string>
     <string name="file_job_delete_error_message_format">Houbo un erro ao eliminar “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">Erro ao ler</string>
+    <string name="file_job_read_error_message_format">Houbo un erro ao ler “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Houbo un erro ao listar o contido de “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Erro ao renomear \"%1$s\"</string>
     <string name="file_job_rename_error_message_format">Houbo un erro ao renomear o ficheiro a “%1$s”.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Produciuse un erro ao trocar o propietario de \"%1$s\"</string>
@@ -314,6 +335,7 @@
     <string name="file_list_action_create_directory">Cartafol</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Máis opcións</string>
     <string name="file_item_action_open_with">Abrir con</string>
     <string name="file_item_action_extract">Extraer</string>
     <string name="file_item_action_archive">Comprimir</string>
@@ -434,6 +456,7 @@
     <string name="storage_file_system_root_title">Raiz</string>
     <string name="storage_list_title">Storage</string>
     <string name="storage_list_empty">No storage</string>
+    <string name="list_item_drag_handle">Arrastra para reordenar</string>
     <string name="storage_add_storage_title">Add storage</string>
     <string name="storage_add_storage_document_tree">almacenamento externo</string>
     <string name="storage_add_storage_ftp_server">Servidor FTP</string>
@@ -508,6 +531,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Pódese deixar baleiro</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Contrasinal de chave privada non válido</string>
     <string name="storage_edit_sftp_server_connect_and_add">Conectar e engadir</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">A chave do servidor cambiou</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">A chave %2$s de %1$s non é a que se lembrou da primeira conexión. Alguén podería estar interceptando a conexión, ou o servidor foi reinstalado.\n\nLembrada: %3$s\nPresentada: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Confiar na nova chave</string>
     <string name="storage_edit_sftp_server_add">Engadir</string>
     <string name="storage_add_lan_smb_server_loading">Procurando servidores SMB…</string>
     <string name="storage_add_lan_smb_server_add">Engadir manualmente</string>
@@ -532,6 +558,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Introduza un nome de usuario</string>
     <string name="storage_edit_smb_server_password">Contrasinal</string>
     <string name="storage_edit_smb_server_domain">Dominio</string>
+    <string name="storage_edit_smb_server_encrypt">Cifrar a conexión</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Solicitar cifrado SMB3. Necesario para as unidades compartidas que o requiren; os servidores sen el ignórano.</string>
     <string name="storage_edit_smb_server_connect_and_add">Conectar e engadir</string>
     <string name="storage_edit_smb_server_add">Engadir</string>
     <string name="storage_edit_webdav_server_title_edit">Editar o servidor WebDAV</string>
@@ -581,9 +609,21 @@
     <string name="archive_viewer_title">Visor de arquivos</string>
     <string name="image_viewer_title">Visor de imaxes</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Reprodutor de vídeo</string>
+    <string name="video_viewer_picture_in_picture">Imaxe superposta</string>
+    <string name="video_viewer_play_from_beginning">Reproducir desde o principio</string>
+    <string name="video_viewer_screen_orientation">Orientación da pantalla</string>
+    <string name="video_viewer_screen_orientation_auto">Xirar automaticamente</string>
+    <string name="video_viewer_screen_orientation_landscape">Horizontal</string>
+    <string name="video_viewer_screen_orientation_portrait">Vertical</string>
+    <string name="video_viewer_error_format">Non se pode reproducir %1$s</string>
     <string name="save_as_title">Gardar como</string>
     <string name="save_as_error">Erro ao gardar o ficheiro</string>
     <string name="save_as_success_format">\"%1$s\" foi gardado en \"%2$s\"</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">Gardouse %1$d ficheiro en “%2$s”</item>
+        <item quantity="other">Gardáronse %1$d ficheiros en “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">Editor de texto</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -608,9 +648,14 @@
     <string name="ftp_server_add_tile_result_error">Erro ao engadir o \"servidor FTP\" á Configuración rápida</string>
     <string name="ftp_server_configuration_title">Configuración</string>
     <string name="ftp_server_anonymous_login_title">Inicio de sesión anónimo</string>
+    <string name="ftp_server_error_password_empty">Define un contrasinal ou activa o inicio de sesión anónimo antes de iniciar o servidor FTP</string>
     <string name="ftp_server_username_title">Nome de usuario</string>
     <string name="ftp_server_password_title">Contrasinal</string>
     <string name="ftp_server_port_title">Porto</string>
+    <string name="ftp_server_passive_ports_title">Portos de datos pasivos</string>
+    <string name="ftp_server_passive_ports_summary_any">Calquera porto libre</string>
+    <string name="ftp_server_passive_ports_dialog_message">Portos ou intervalos para as conexións de datos, p. ex. 2300-2400 ou 2300, 2301. Déixao baleiro para usar calquera porto libre. Configúrao cando se acceda ao servidor a través dun reenvío de portos ou dun túnel.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Introduce portos entre 1 e 65535, como números ou intervalos separados por comas</string>
     <string name="ftp_server_home_directory_title">Cartafol raíz</string>
     <string name="ftp_server_writable_title">Permitir escritura</string>
     <string name="settings_title">Configuración</string>
@@ -638,6 +683,8 @@
     </string-array>
     <string name="settings_behavior_title">Comportamento</string>
     <string name="settings_default_directory_title">Cartafol predeterminado</string>
+    <string name="settings_remember_last_directory_title">Reabrir o último cartafol</string>
+    <string name="settings_remember_last_directory_summary">Continuar onde o deixaches en lugar de no cartafol predeterminado</string>
     <string name="settings_standard_directories_title">Cartafoles estándar</string>
     <string name="settings_standard_directories_summary_empty">Non hai cartafoles estándar activados</string>
     <string name="settings_bookmark_directory_screenshots">Capturas de pantalla</string>
@@ -663,6 +710,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Amosar miniaturas para documentos PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Podería facer ca aplicación sexa inestable en versións antigas de Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Ler ficheiros remotos para miniaturas</string>
+    <string name="settings_video_remember_playback_position_title">Lembrar a posición de reprodución dos vídeos</string>
 
     <string name="about_title">Sobre</string>
     <string name="about_version_title">Versión</string>
@@ -672,4 +720,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Seguir en GitHub</string>
     <string name="about_author_twitter_title">Seguir en Twitter</string>
+    <string name="text_editor_draft_save_failed">Non se puido gardar un borrador de recuperación. Garda os trocos antes de saír.</string>
+    <string name="text_editor_draft_restored">Recuperáronse os trocos non gardados</string>
+    <string name="text_editor_draft_restore_failed">Non se puideron recuperar os trocos non gardados</string>
+    <string name="password_save_failed">Non se puido gardar o contrasinal</string>
+    <string name="file_list_partial_error">Non se puideron ler algúns ficheiros (faltan %1$d). Actualiza para tentalo de novo.</string>
 </resources>

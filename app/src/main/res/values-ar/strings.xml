@@ -19,6 +19,18 @@
     <string name="empty">فارغ</string>
     <string name="empty_placeholder">(فارغ)</string>
     <string name="error">خطأ</string>
+    <string name="error_access_denied">رُفض الوصول</string>
+    <string name="error_file_not_found">الملف غير موجود</string>
+    <string name="error_file_already_exists">يوجد ملف بهذا الاسم بالفعل</string>
+    <string name="error_directory_not_empty">المجلد ليس فارغًا</string>
+    <string name="error_not_a_directory">ليس مجلدًا</string>
+    <string name="error_is_a_directory">هذا مجلد</string>
+    <string name="error_read_only_file_system">التخزين للقراءة فقط</string>
+    <string name="error_invalid_file_name">اسم ملف غير صالح</string>
+    <string name="error_unknown_host">مضيف غير معروف</string>
+    <string name="error_connection_timed_out">انتهت مهلة الاتصال</string>
+    <string name="error_connection_failed">تعذّر الاتصال</string>
+    <string name="error_interrupted">قُطعت العملية</string>
     <string name="hide">أخفِ</string>
     <string name="install">ثبِّت</string>
     <string name="keep_editing">استمر في التحرير</string>
@@ -39,6 +51,7 @@
     <string name="search">ابحث</string>
     <string name="select">حدّد</string>
     <string name="select_all">حدّد الكل</string>
+    <string name="select_range">حدّد نطاقًا</string>
     <string name="share">شارك</string>
     <string name="show">أظهر</string>
     <string name="skip">تخطى</string>
@@ -150,6 +163,15 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="zero">اكتمل، مع تخطّي %1$,d ملف بسبب أخطاء</item>
+        <item quantity="one">اكتمل، مع تخطّي %1$,d ملف بسبب خطأ</item>
+        <item quantity="two">اكتمل، مع تخطّي %1$,d ملفان بسبب أخطاء</item>
+        <item quantity="few">اكتمل، مع تخطّي %1$,d ملفات بسبب أخطاء</item>
+        <item quantity="many">اكتمل، مع تخطّي %1$,d ملفًا بسبب أخطاء</item>
+        <item quantity="other">اكتمل، مع تخطّي %1$,d ملف بسبب أخطاء</item>
+    </plurals>
+    <string name="file_job_failed_format">فشل: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="zero">التحضير لحذف %1$,d ملف</item>
         <item quantity="one">التحضير لحذف %1$,d ملف</item>
@@ -286,6 +308,9 @@
     <string name="file_job_move_error_message_format">حدث خطأ أثناء نقل الملف إلى ”%1$s“.\n%2$s</string>
     <string name="file_job_delete_error_title">خطأ أثناء الحذف</string>
     <string name="file_job_delete_error_message_format">حدث خطأ أثناء حذف ”%1$s“.\n%2$s</string>
+    <string name="file_job_read_error_title">خطأ أثناء القراءة</string>
+    <string name="file_job_read_error_message_format">حدث خطأ أثناء قراءة ”%1$s“.\n%2$s</string>
+    <string name="file_job_list_error_message_format">حدث خطأ أثناء سرد محتويات ”%1$s“.\n%2$s</string>
     <string name="file_job_rename_error_title_format">خطأ أثناء إعادة تسمية ”%1$s“</string>
     <string name="file_job_rename_error_message_format">حدث خطأ أثناء إعادة تسمية الملف إلى ”%1$s“.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">خطأ أثناء تغيير مالك لـ ”%1$s“</string>
@@ -426,6 +451,7 @@
     <string name="file_list_action_create_directory">مجلد</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">خيارات أخرى</string>
     <string name="file_item_action_open_with">افتح بـ</string>
     <string name="file_item_action_extract">استخرِج</string>
     <string name="file_item_action_archive">اضغط</string>
@@ -554,6 +580,7 @@
     <string name="storage_file_system_root_title">الجذر</string>
     <string name="storage_list_title">وحدة تخزين</string>
     <string name="storage_list_empty">لا توجد وحدة تخزين</string>
+    <string name="list_item_drag_handle">اسحب لإعادة الترتيب</string>
     <string name="storage_add_storage_title">أضف وحدة تخزين</string>
     <string name="storage_add_storage_document_tree">وحدة التخزين الخارجية</string>
     <string name="storage_add_storage_ftp_server">خادم FTP </string>
@@ -628,6 +655,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">يمكن تركه فارغًا</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">كلمة سر المفتاح الخاص غير صالحة</string>
     <string name="storage_edit_sftp_server_connect_and_add">اتصل وأضف</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">تغيّر مفتاح المضيف</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">مفتاح %2$s الخاص بـ %1$s ليس المفتاح المحفوظ منذ الاتصال الأول. قد يكون أحدهم يعترض الاتصال، أو أُعيد تثبيت الخادم.\n\nالمحفوظ: %3$s\nالمُقدَّم: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">ثق بالمفتاح الجديد</string>
     <string name="storage_edit_sftp_server_add">أضف</string>
     <string name="storage_add_lan_smb_server_loading">يبحث عن خوادم SMB…</string>
     <string name="storage_add_lan_smb_server_add">أضف يدويًا</string>
@@ -652,6 +682,8 @@
     <string name="storage_edit_smb_server_username_error_empty">أدخل اسم مستخدم</string>
     <string name="storage_edit_smb_server_password">كلمة السر</string>
     <string name="storage_edit_smb_server_domain">النطاق</string>
+    <string name="storage_edit_smb_server_encrypt">شفّر الاتصال</string>
+    <string name="storage_edit_smb_server_encrypt_summary">اطلب تشفير SMB3. مطلوب للمشاركات التي تشترطه؛ وتتجاهله الخوادم التي لا تدعمه.</string>
     <string name="storage_edit_smb_server_connect_and_add">اتصل وأضف</string>
     <string name="storage_edit_smb_server_add">أضف</string>
     <string name="storage_edit_webdav_server_title_edit">حرّر خادم WebDAV</string>
@@ -701,9 +733,25 @@
     <string name="archive_viewer_title">عارض الأرشيف</string>
     <string name="image_viewer_title">عارض الصور</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">مشغّل الفيديو</string>
+    <string name="video_viewer_picture_in_picture">صورة داخل صورة</string>
+    <string name="video_viewer_play_from_beginning">شغّل من البداية</string>
+    <string name="video_viewer_screen_orientation">اتجاه الشاشة</string>
+    <string name="video_viewer_screen_orientation_auto">تدوير تلقائي</string>
+    <string name="video_viewer_screen_orientation_landscape">أفقي</string>
+    <string name="video_viewer_screen_orientation_portrait">عمودي</string>
+    <string name="video_viewer_error_format">تعذّر تشغيل %1$s</string>
     <string name="save_as_title">احفظ كـ</string>
     <string name="save_as_error">خطأ أثناء حفظ الملف</string>
     <string name="save_as_success_format">حُفظ ”%1$s“ إلى ”%2$s“</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="zero">حُفظ %1$d ملف إلى ”%2$s“</item>
+        <item quantity="one">حُفظ %1$d ملف إلى ”%2$s“</item>
+        <item quantity="two">حُفظ %1$d ملفان إلى ”%2$s“</item>
+        <item quantity="few">حُفظت %1$d ملفات إلى ”%2$s“</item>
+        <item quantity="many">حُفظ %1$d ملفًا إلى ”%2$s“</item>
+        <item quantity="other">حُفظ %1$d ملف إلى ”%2$s“</item>
+    </plurals>
     <string name="text_editor_title">محرِّر النصوص</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -728,9 +776,14 @@
     <string name="ftp_server_add_tile_result_error">حدث خطأ أثناء إضافة \"خادم FTP\" إلى الإعدادات السريعة</string>
     <string name="ftp_server_configuration_title">التهيئة</string>
     <string name="ftp_server_anonymous_login_title">تسجيل دخول مجهول</string>
+    <string name="ftp_server_error_password_empty">عيّن كلمة سر، أو فعّل تسجيل الدخول المجهول، قبل بدء خادم FTP</string>
     <string name="ftp_server_username_title">اسم المستخدم</string>
     <string name="ftp_server_password_title">كلمة السر</string>
     <string name="ftp_server_port_title">منفذ</string>
+    <string name="ftp_server_passive_ports_title">منافذ البيانات السلبية</string>
+    <string name="ftp_server_passive_ports_summary_any">أي منفذ متاح</string>
+    <string name="ftp_server_passive_ports_dialog_message">منافذ أو نطاقات لاتصالات البيانات، مثل 2300-2400 أو 2300, 2301. اتركه فارغًا لاستخدام أي منفذ متاح. عيّنه عندما يُوصل إلى الخادم عبر إعادة توجيه منفذ أو نفق.</string>
+    <string name="ftp_server_passive_ports_error_invalid">أدخل منافذ بين 1 و65535، كأرقام أو نطاقات مفصولة بفواصل</string>
     <string name="ftp_server_home_directory_title">المجلد الرئيسي</string>
     <string name="ftp_server_writable_title">اسمح بالكتابة</string>
     <string name="settings_title">الإعدادات</string>
@@ -758,6 +811,8 @@
     </string-array>
     <string name="settings_behavior_title">السلوك</string>
     <string name="settings_default_directory_title">المجلد الإفتراضى</string>
+    <string name="settings_remember_last_directory_title">أعد فتح آخر مجلد</string>
+    <string name="settings_remember_last_directory_summary">تابع من حيث توقفت بدلًا من المجلد الافتراضي</string>
     <string name="settings_standard_directories_title">المجلدات الأساسية</string>
     <string name="settings_standard_directories_summary_empty">لم يتم تفعيل المجلدات الأساسية</string>
     <string name="settings_bookmark_directory_screenshots">لقطات الشاشة</string>
@@ -787,6 +842,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">أظهر الصور المصغرة لمستندات PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">قد يجعل التطبيق غير مستقر على الإصدارات الأقدم من Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">قراءة الملفات البعيدة للصور المصغرة</string>
+    <string name="settings_video_remember_playback_position_title">تذكّر موضع تشغيل الفيديو</string>
 
     <string name="about_title">حول</string>
     <string name="about_version_title">الإصدار</string>
@@ -796,4 +852,9 @@
     <string name="about_author_name_title">هاي تشانغ Hai Zhang</string>
     <string name="about_author_github_title">تابعني على GitHub</string>
     <string name="about_author_twitter_title">متابعة على Twitter</string>
+    <string name="text_editor_draft_save_failed">تعذّر حفظ مسودة الاسترداد. احفظ تعديلاتك قبل المغادرة.</string>
+    <string name="text_editor_draft_restored">استُعيدت تعديلاتك غير المحفوظة</string>
+    <string name="text_editor_draft_restore_failed">تعذّرت استعادة تعديلاتك غير المحفوظة</string>
+    <string name="password_save_failed">تعذّر حفظ كلمة السر</string>
+    <string name="file_list_partial_error">تعذّرت قراءة بعض الملفات (%1$d مفقودة). حدّث للمحاولة مجددًا.</string>
 </resources>
