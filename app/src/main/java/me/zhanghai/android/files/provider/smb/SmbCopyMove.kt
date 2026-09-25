@@ -18,6 +18,8 @@ import me.zhanghai.android.files.provider.common.replacementSibling
 import me.zhanghai.android.files.provider.smb.client.Client
 import me.zhanghai.android.files.provider.smb.client.ClientException
 import me.zhanghai.android.files.provider.smb.client.FileInformation
+import me.zhanghai.android.files.provider.smb.client.getPathInformation
+import me.zhanghai.android.files.provider.smb.client.setFileInformation
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.hasBits
 import me.zhanghai.android.files.util.logWarning

@@ -233,7 +233,9 @@ class Client(internal val authenticator: Authenticator) {
         if (isSuccess()) {
             return
         }
-        val status = status!!
+        // A response without a status counts as a success, but don't rely on that to keep a
+        // malformed one from crashing.
+        val status = status ?: throw DavException("Response for $href has no status")
         throw when (status.code) {
             HttpURLConnection.HTTP_UNAUTHORIZED -> UnauthorizedException(status.message)
             HttpURLConnection.HTTP_FORBIDDEN -> ForbiddenException(status.message)

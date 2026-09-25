@@ -8,7 +8,6 @@ package me.zhanghai.android.files.provider.smb.client
 import com.hierynomus.msdtyp.AccessMask
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.msfscc.FileAttributes
-import com.hierynomus.msfscc.fileinformation.FileSettableInformation
 import com.hierynomus.mssmb2.SMB2CompletionFilter
 import com.hierynomus.mssmb2.SMB2CreateDisposition
 import com.hierynomus.mssmb2.SMB2CreateOptions
@@ -27,7 +26,6 @@ import java.util.concurrent.Future
 import java8.nio.channels.SeekableByteChannel
 import me.zhanghai.android.files.provider.common.CloseableIterator
 import me.zhanghai.android.files.util.enumSetOf
-import me.zhanghai.android.files.util.hasBits
 import me.zhanghai.android.files.util.logWarning
 
 /**
@@ -364,89 +362,6 @@ class Client(internal val authenticator: Authenticator) {
             }
             directoryFileInformationCache -= path
             directoryFileInformationCache -= newPath
-        }
-    }
-
-    @Throws(ClientException::class)
-    fun getPathInformation(path: Path, openReparsePoint: Boolean): PathInformation {
-        val sharePath = path.sharePath ?: throw ClientException("$path does not have a share path")
-        if (sharePath.path.isNotEmpty()) {
-            synchronized(directoryFileInformationCache) {
-                directoryFileInformationCache[path]?.let {
-                    if (openReparsePoint || !it.fileAttributes.hasBits(
-                            FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT.value
-                        )
-                    ) {
-                        return it.also { directoryFileInformationCache -= path }
-                    }
-                }
-            }
-        }
-        return withSession(path.authority) { session ->
-            if (sharePath.path.isEmpty()) {
-                getShareInformation(session, sharePath.name)
-            } else {
-                getFileInformation(session, sharePath, openReparsePoint)
-            }
-        }
-    }
-
-    @Throws(ClientException::class)
-    fun setFileInformation(
-        path: Path,
-        openReparsePoint: Boolean,
-        fileInformation: FileSettableInformation
-    ) {
-        withDiskShare(path) { share, sharePath ->
-            val diskEntry = try {
-                share.open(
-                    sharePath.path,
-                    enumSetOf(AccessMask.FILE_WRITE_ATTRIBUTES, AccessMask.FILE_WRITE_EA),
-                    null,
-                    SMB2ShareAccess.ALL,
-                    SMB2CreateDisposition.FILE_OPEN,
-                    if (openReparsePoint) {
-                        enumSetOf(SMB2CreateOptions.FILE_OPEN_REPARSE_POINT)
-                    } else {
-                        null
-                    }
-                )
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
-            try {
-                diskEntry.use { it.setFileInformation(fileInformation) }
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
-            directoryFileInformationCache -= path
-        }
-    }
-
-    @Throws(ClientException::class)
-    fun checkAccess(path: Path, desiredAccess: Set<AccessMask>, openReparsePoint: Boolean) {
-        withDiskShare(path) { share, sharePath ->
-            val diskEntry = try {
-                share.open(
-                    sharePath.path,
-                    desiredAccess,
-                    null,
-                    SMB2ShareAccess.ALL,
-                    SMB2CreateDisposition.FILE_OPEN,
-                    if (openReparsePoint) {
-                        enumSetOf(SMB2CreateOptions.FILE_OPEN_REPARSE_POINT)
-                    } else {
-                        null
-                    }
-                )
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
-            try {
-                diskEntry.close()
-            } catch (e: SMBRuntimeException) {
-                throw ClientException(e)
-            }
         }
     }
 

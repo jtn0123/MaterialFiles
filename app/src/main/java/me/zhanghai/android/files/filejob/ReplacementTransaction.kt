@@ -4,6 +4,7 @@ import java.io.IOException
 import java.io.InterruptedIOException
 import java.util.concurrent.locks.ReentrantLock
 import java8.nio.file.Path
+import me.zhanghai.android.files.util.logWarning
 
 internal class ReplacementCommit<T>(
     val atomicReplace: ((T, T) -> Unit)? = null,
@@ -90,13 +91,13 @@ private fun <T> replaceLocked(
         try {
             delete(backup)
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("ReplacementTransaction", "delete($backup)")
         }
     } finally {
         try {
             delete(staged)
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("ReplacementTransaction", "delete($staged)")
         }
     }
 }

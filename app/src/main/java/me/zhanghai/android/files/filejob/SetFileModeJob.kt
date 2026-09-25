@@ -46,20 +46,32 @@ class SetFileModeJob(
         if (file == path || !uppercaseX) {
             return mode
         }
-        val mode = mode.toEnumSet()
-        val currentMode = file.getMode(LinkOption.NOFOLLOW_LINKS)!!
-        if (PosixFileModeBit.OWNER_EXECUTE !in currentMode) {
-            mode -= PosixFileModeBit.OWNER_EXECUTE
-        }
-        if (PosixFileModeBit.GROUP_EXECUTE !in currentMode) {
-            mode -= PosixFileModeBit.GROUP_EXECUTE
-        }
-        if (PosixFileModeBit.OTHERS_EXECUTE !in currentMode) {
-            mode -= PosixFileModeBit.OTHERS_EXECUTE
-        }
-        return mode
+        return mode.withExecuteOnlyWhereSet(file.getMode(LinkOption.NOFOLLOW_LINKS))
     }
 }
+
+/**
+ * The mode for an uppercase X on a file: execute is only kept for the classes that can already
+ * execute it. A file system without POSIX modes has no current mode, so nothing counts as
+ * executable there and no execute bit is added.
+ */
+internal fun Set<PosixFileModeBit>.withExecuteOnlyWhereSet(
+    currentMode: Set<PosixFileModeBit>?
+): Set<PosixFileModeBit> {
+    val mode = toEnumSet()
+    for (bit in EXECUTE_BITS) {
+        if (currentMode == null || bit !in currentMode) {
+            mode -= bit
+        }
+    }
+    return mode
+}
+
+private val EXECUTE_BITS = listOf(
+    PosixFileModeBit.OWNER_EXECUTE,
+    PosixFileModeBit.GROUP_EXECUTE,
+    PosixFileModeBit.OTHERS_EXECUTE
+)
 
 @Throws(IOException::class)
 private fun FileJob.setMode(

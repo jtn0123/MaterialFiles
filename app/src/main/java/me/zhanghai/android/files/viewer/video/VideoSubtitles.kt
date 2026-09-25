@@ -10,7 +10,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import java.util.Locale
 import java8.nio.file.Path
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withTimeoutOrNull
 import me.zhanghai.android.files.file.fileProviderUri
+import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.filelist.name
 import me.zhanghai.android.files.provider.common.newDirectoryStream
 import me.zhanghai.android.files.util.asFileNameOrNull
@@ -32,6 +36,27 @@ object VideoSubtitles {
 
     /** Whether [path] has a subtitle extension and so could be a sidecar for some video. */
     fun isSidecarCandidate(path: Path): Boolean = path.extension in MIME_TYPES_BY_EXTENSION
+
+    private const val LOAD_TIMEOUT_MILLIS = 5_000L
+
+    /**
+     * Returns the sidecar subtitles for each of [videoPaths] as the video viewer wants them:
+     * matched against [knownSubtitlePaths] when our file list already listed the directory,
+     * nothing for remote files (listing a remote directory just for subtitles is slower than it is
+     * worth), and otherwise from listing the local directories, given up on after a while.
+     */
+    suspend fun load(
+        videoPaths: List<Path>,
+        knownSubtitlePaths: List<Path>?
+    ): Map<Path, List<MediaItem.SubtitleConfiguration>> = when {
+        knownSubtitlePaths != null -> findForAll(videoPaths, knownSubtitlePaths)
+
+        videoPaths.any { it.isRemotePath } -> emptyMap()
+
+        else -> withTimeoutOrNull(LOAD_TIMEOUT_MILLIS) {
+            runInterruptible(Dispatchers.IO) { findForAll(videoPaths) }
+        } ?: emptyMap()
+    }
 
     /**
      * Returns the sidecar subtitles for each of [videoPaths], matching against

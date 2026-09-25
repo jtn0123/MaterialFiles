@@ -5,6 +5,7 @@ import java.io.IOException
 import java.net.InetSocketAddress
 import me.zhanghai.android.files.provider.smb.client.Client as SmbClient
 import me.zhanghai.android.files.provider.smb.client.getDiskShare
+import me.zhanghai.android.files.provider.smb.client.getPathInformation
 import me.zhanghai.android.files.provider.smb.client.getSession
 import me.zhanghai.android.files.provider.webdav.client.AccessTokenAuthentication
 import me.zhanghai.android.files.provider.webdav.client.Authenticator

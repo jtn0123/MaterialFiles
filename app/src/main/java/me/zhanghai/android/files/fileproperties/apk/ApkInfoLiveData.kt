@@ -62,6 +62,7 @@ class ApkInfoLiveData(path: Path) : PathObserverLiveData<Stateful<ApkInfo>>(path
             val signingCertificates = signingInfo?.apkContentsSigners ?: emptyArray()
             ApkInfo(
                 packageInfo,
+                applicationInfo,
                 label,
                 signingCertificates.map { it.toSha1HexString() },
                 getPastSigningCertificates(signingInfo, signingCertificates)

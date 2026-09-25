@@ -13,6 +13,7 @@ import com.hierynomus.smbj.share.DiskShare
 import com.hierynomus.smbj.share.Share
 import java.io.IOException
 import java.net.Inet4Address
+import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import jcifs.context.SingletonContext
@@ -127,8 +128,16 @@ private fun resolveHostName(hostName: String): String {
     } catch (e: UnknownHostException) {
         throw ClientException(e)
     }
-    val address = addresses.firstOrNull { it is Inet4Address } ?: addresses.first()
-    return address.hostAddress!!
+    return pickHostAddress(hostName, addresses)
+}
+
+// An IPv4 address is preferred. A name service may answer with nothing usable (no address it could
+// convert), which is reported as an unknown host rather than a crash.
+@Throws(ClientException::class)
+internal fun pickHostAddress(hostName: String, addresses: List<InetAddress>): String {
+    val address = addresses.firstOrNull { it is Inet4Address } ?: addresses.firstOrNull()
+    return address?.hostAddress
+        ?: throw ClientException(UnknownHostException("No address found for $hostName"))
 }
 
 @Throws(ClientException::class)
