@@ -37,6 +37,7 @@ import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getTextArray
 import me.zhanghai.android.files.util.hideTextInputLayoutErrorOnTextChange
 import me.zhanghai.android.files.util.isReady
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.setResult
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
@@ -268,7 +269,7 @@ class EditWebDavServerFragment : Fragment() {
 
             is ActionState.Error -> {
                 val throwable = state.throwable
-                throwable.printStackTrace()
+                throwable.logWarning("EditWebDavServerFragment", "Connect to the WebDAV server")
                 showToast(throwable.toString())
                 viewModel.finishConnecting()
             }

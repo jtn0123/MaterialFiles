@@ -33,6 +33,7 @@ import me.zhanghai.android.files.util.createViewLocation
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.isGeocoderPresent
 import me.zhanghai.android.files.util.layoutInflater
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.userFriendlyString
@@ -63,7 +64,7 @@ abstract class FilePropertiesTabFragment : Fragment() {
         binding.swipeRefreshLayout.isRefreshing = stateful is Loading && hasValue
         binding.errorText.fadeToVisibilityUnsafe(stateful is Failure && !hasValue)
         if (stateful is Failure) {
-            stateful.throwable.printStackTrace()
+            stateful.throwable.logWarning("FilePropertiesTabFragment", "Load the file properties")
             val error = stateful.throwable.toString()
             if (hasValue) {
                 showToast(error)

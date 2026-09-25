@@ -35,7 +35,7 @@ fun KClass<InetAddress>.getLocalAddress(): InetAddress? {
             }
         }
     } catch (e: SocketException) {
-        e.printStackTrace()
+        e.logWarning("InetAddressExtensions", "Get the local address")
     }
     return null
 }

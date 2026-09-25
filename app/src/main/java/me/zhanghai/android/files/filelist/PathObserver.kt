@@ -15,6 +15,7 @@ import me.zhanghai.android.files.provider.common.PathObservable
 import me.zhanghai.android.files.provider.common.observe
 import me.zhanghai.android.files.util.backgroundExecutor
 import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.logWarning
 
 class PathObserver(path: Path, @MainThread onChange: () -> Unit) : Closeable {
     private var pathObservable: PathObservable? = null
@@ -34,8 +35,7 @@ class PathObserver(path: Path, @MainThread onChange: () -> Unit) : Closeable {
                     // Ignored.
                     return@execute
                 } catch (e: IOException) {
-                    // Ignored.
-                    e.printStackTrace()
+                    e.logWarning("PathObserver", "Observe $path for changes")
                     return@execute
                 }.apply {
                     val mainHandler = Handler(Looper.getMainLooper())

@@ -47,6 +47,7 @@ import me.zhanghai.android.files.util.createSendStreamIntent
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
@@ -118,7 +119,7 @@ class VideoViewerFragment :
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            error.printStackTrace()
+            error.logWarning("VideoViewerFragment", "Play the video")
             val fileName = playbackPosition.currentPath?.fileName?.toString() ?: return
             showToast(getString(R.string.video_viewer_error_format, fileName))
         }
@@ -344,7 +345,7 @@ class VideoViewerFragment :
         try {
             path.delete()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("VideoViewerFragment", "Delete $path")
             showToast(e.toUserMessage(requireContext()))
             return
         }

@@ -25,6 +25,7 @@ import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
 import me.zhanghai.android.files.util.getLocalAddress
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toLinkedSet
 import me.zhanghai.android.files.util.valueCompat
 
@@ -85,7 +86,7 @@ class LanSmbServerListLiveData : CloseableLiveData<Stateful<List<LanSmbServer>>>
                         val nbtAddresses = try {
                             nameServiceClient.getNbtAllByAddress(address.hostAddress)
                         } catch (e: UnknownHostException) {
-                            e.printStackTrace()
+                            e.logWarning("LanSmbServerListLiveData", "Get the NBT name of $address")
                             return@launch
                         }
                         val host = nbtAddresses.firstOrNull()?.hostName ?: return@launch

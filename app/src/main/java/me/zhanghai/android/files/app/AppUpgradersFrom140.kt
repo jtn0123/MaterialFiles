@@ -25,6 +25,7 @@ import me.zhanghai.android.files.provider.sftp.SftpFileSystem
 import me.zhanghai.android.files.provider.smb.SmbFileSystem
 import me.zhanghai.android.files.util.StableUriParceler
 import me.zhanghai.android.files.util.asBase64
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.readParcelable
 import me.zhanghai.android.files.util.readParcelableListCompat
 import me.zhanghai.android.files.util.toBase64
@@ -54,7 +55,7 @@ private fun migratePathSetting1_4_0(@StringRes keyRes: Int) {
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AppUpgradersFrom140", "Migrate the path setting $key to 1.4.0")
         null
     }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
@@ -83,7 +84,10 @@ private fun migrateBookmarkDirectoriesSetting1_4_0() {
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning(
+            "AppUpgradersFrom140",
+            "Migrate the bookmark directories setting $key to 1.4.0"
+        )
         null
     }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
@@ -172,7 +176,7 @@ private fun migrateSftpServersSetting1_4_0() {
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AppUpgradersFrom140", "Migrate the SFTP servers setting $key to 1.4.0")
         null
     }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
@@ -247,7 +251,7 @@ private fun migrateSftpServersSetting1_5_0() {
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AppUpgradersFrom140", "Migrate the SFTP servers setting $key to 1.5.0")
         null
     }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
@@ -293,7 +297,10 @@ private fun migrateDocumentManagerShortcutSetting1_7_2() {
                 newParcel.marshall()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning(
+                "AppUpgradersFrom140",
+                "Migrate the document manager shortcut setting $key to 1.7.2"
+            )
             null
         }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }

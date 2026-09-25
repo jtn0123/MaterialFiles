@@ -24,7 +24,7 @@ class RemoteCallback : Parcelable {
             try {
                 remoteCallback.sendResult(result)
             } catch (e: RemoteException) {
-                e.printStackTrace()
+                e.logWarning("RemoteCallback", "Send the result $result")
             }
         } else {
             localCallback!!(result)

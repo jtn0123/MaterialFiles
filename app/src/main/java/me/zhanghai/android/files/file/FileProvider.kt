@@ -58,6 +58,7 @@ import me.zhanghai.android.files.provider.document.isDocumentPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException
 import me.zhanghai.android.files.util.hasBits
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.withoutPenaltyDeathOnNetwork
 
 class FileProvider : ContentProvider() {
@@ -98,7 +99,7 @@ class FileProvider : ContentProvider() {
                     val size = cachedAttributes[path]?.size ?: try {
                         path.size()
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        e.logWarning("FileProvider", "Get the size of $path")
                         null
                     }
                     columns += column
@@ -126,7 +127,7 @@ class FileProvider : ContentProvider() {
                     val lastModified = cachedAttributes[path]?.lastModifiedMillis ?: try {
                         path.getLastModifiedTime().toMillis()
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        e.logWarning("FileProvider", "Get the last modified time of $path")
                         null
                     }
                     columns += column
@@ -342,7 +343,7 @@ class FileProvider : ContentProvider() {
             try {
                 channel.close()
             } catch (e: IOException) {
-                e.printStackTrace()
+                e.logWarning("FileProvider", "Close the channel $channel")
             }
             released = true
             // This runs on the thread itself; the quit takes effect once this callback returns.
@@ -408,7 +409,7 @@ val Path.fileProviderUri: Uri
             try {
                 return documentUri
             } catch (e: IOException) {
-                e.printStackTrace()
+                e.logWarning("FileProvider", "Get the document URI of $this")
             }
         }
         val uriPath = Uri.encode(toUri().toString())

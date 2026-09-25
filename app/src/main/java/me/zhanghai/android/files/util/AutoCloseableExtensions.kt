@@ -9,7 +9,7 @@ fun AutoCloseable.closeSafe() {
     try {
         close()
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AutoCloseableExtensions", "Close $this")
     }
 }
 

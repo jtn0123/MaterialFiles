@@ -32,6 +32,7 @@ import me.zhanghai.android.files.storage.DocumentTree
 import me.zhanghai.android.files.storage.FileSystemRoot
 import me.zhanghai.android.files.storage.PrimaryStorageVolume
 import me.zhanghai.android.files.util.asBase64
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.readParcelable
 import me.zhanghai.android.files.util.toBase64
 import me.zhanghai.android.files.util.toByteArray
@@ -68,7 +69,7 @@ private fun migratePathSetting1_1_0(@StringRes keyRes: Int) {
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AppUpgraders", "Migrate the path setting $key to 1.1.0")
         null
     }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
@@ -97,7 +98,7 @@ private fun migrateFileSortOptionsSetting1_1_0(sharedPreferences: SharedPreferen
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AppUpgraders", "Migrate the file sort options setting $key to 1.1.0")
         null
     }
     sharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
@@ -141,7 +142,7 @@ private fun migrateStandardDirectorySettingsSetting1_1_0() {
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AppUpgraders", "Migrate the standard directory settings $key to 1.1.0")
         null
     }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
@@ -171,7 +172,7 @@ private fun migrateBookmarkDirectoriesSetting1_1_0() {
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AppUpgraders", "Migrate the bookmark directories setting $key to 1.1.0")
         null
     }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }
@@ -307,7 +308,7 @@ private fun migrateSmbServersSetting1_3_0() {
             newParcel.marshall()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("AppUpgraders", "Migrate the SMB servers setting $key to 1.3.0")
         null
     }
     defaultSharedPreferences.edit { putString(key, newBytes?.toBase64()?.value) }

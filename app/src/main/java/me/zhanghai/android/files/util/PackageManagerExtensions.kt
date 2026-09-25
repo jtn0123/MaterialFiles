@@ -26,7 +26,7 @@ private inline fun <T> getPackageManagerInfoOrNull(block: () -> T): T? {
     return try {
         block()
     } catch (e: PackageManager.NameNotFoundException) {
-        e.printStackTrace()
+        e.logWarning("PackageManagerExtensions", "Get the package manager info")
         null
     }
 }

@@ -12,7 +12,7 @@ fun Uri.takePersistablePermission(modeFlags: Int): Boolean = try {
     contentResolver.takePersistableUriPermission(this, modeFlags)
     true
 } catch (e: SecurityException) {
-    e.printStackTrace()
+    e.logWarning("UriExtensions", "Take the persistable permission of $this")
     false
 }
 
@@ -20,6 +20,6 @@ fun Uri.releasePersistablePermission(modeFlags: Int): Boolean = try {
     contentResolver.releasePersistableUriPermission(this, modeFlags)
     true
 } catch (e: SecurityException) {
-    e.printStackTrace()
+    e.logWarning("UriExtensions", "Release the persistable permission of $this")
     false
 }

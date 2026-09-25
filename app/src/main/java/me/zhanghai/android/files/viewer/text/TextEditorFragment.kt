@@ -38,6 +38,7 @@ import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.fadeInUnsafe
 import me.zhanghai.android.files.util.fadeOutUnsafe
 import me.zhanghai.android.files.util.isReady
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.viewModels
 
@@ -185,7 +186,7 @@ class TextEditorFragment :
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.logWarning("TextEditorFragment", "Restore the draft")
                 showToast(R.string.text_editor_draft_restore_failed)
             }
         }
@@ -281,7 +282,7 @@ class TextEditorFragment :
                     binding.textEdit.fadeInUnsafe()
                     return
                 }
-                state.throwable.printStackTrace()
+                state.throwable.logWarning("TextEditorFragment", "Load the text file")
                 binding.progress.fadeOutUnsafe()
                 binding.errorText.fadeInUnsafe()
                 binding.errorText.text = state.throwable.toString()

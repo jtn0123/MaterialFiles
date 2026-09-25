@@ -30,6 +30,7 @@ import me.zhanghai.android.files.provider.common.newInputStream
 import me.zhanghai.android.files.provider.common.newOutputStream
 import me.zhanghai.android.files.provider.common.setLastModifiedTime
 import me.zhanghai.android.files.provider.common.size
+import me.zhanghai.android.files.util.logWarning
 import org.apache.ftpserver.ftplet.FtpFile
 import org.apache.ftpserver.ftplet.User
 import org.apache.ftpserver.usermanager.impl.WriteRequest
@@ -82,7 +83,7 @@ class ProviderFtpFile(
     } catch (ignored: UnsupportedOperationException) {
         null
     } catch (e: IOException) {
-        e.printStackTrace()
+        e.logWarning("ProviderFtpFile", "Get the owner name of $path")
         null
     } ?: "user"
 
@@ -92,7 +93,7 @@ class ProviderFtpFile(
             try {
                 attributeView.readAttributes().group().name
             } catch (e: IOException) {
-                e.printStackTrace()
+                e.logWarning("ProviderFtpFile", "Get the group name of $path")
                 null
             }
         } else {
@@ -105,7 +106,7 @@ class ProviderFtpFile(
     override fun getLastModified(): Long = try {
         path.getLastModifiedTime().toMillis()
     } catch (e: IOException) {
-        e.printStackTrace()
+        e.logWarning("ProviderFtpFile", "Get the last modified time of $path")
         0
     }
 
@@ -116,7 +117,7 @@ class ProviderFtpFile(
             path.setLastModifiedTime(FileTime.fromMillis(time))
             true
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("ProviderFtpFile", "Set the last modified time of $path")
             false
         }
     }
@@ -124,7 +125,7 @@ class ProviderFtpFile(
     override fun getSize(): Long = try {
         path.size()
     } catch (e: IOException) {
-        e.printStackTrace()
+        e.logWarning("ProviderFtpFile", "Get the size of $path")
         0
     }
 
@@ -137,7 +138,7 @@ class ProviderFtpFile(
             path.createDirectory()
             true
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("ProviderFtpFile", "Create the directory $path")
             false
         }
     }
@@ -149,7 +150,7 @@ class ProviderFtpFile(
             path.delete()
             true
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("ProviderFtpFile", "Delete $path")
             false
         }
     }
@@ -163,7 +164,7 @@ class ProviderFtpFile(
             path.moveTo(targetPath)
             true
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("ProviderFtpFile", "Move $path to $targetPath")
             false
         }
     }
@@ -172,7 +173,7 @@ class ProviderFtpFile(
         val directoryStream = try {
             path.newDirectoryStream()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("ProviderFtpFile", "List the files of $path")
             return null
         }
         return directoryStream.map {

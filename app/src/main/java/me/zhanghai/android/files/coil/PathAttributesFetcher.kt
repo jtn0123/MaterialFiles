@@ -24,6 +24,7 @@ import coil.request.Options
 import coil.size.Size
 import java.io.Closeable
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicReference
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
 import kotlin.coroutines.cancellation.CancellationException
@@ -197,10 +198,14 @@ class PathAttributesFetcher(
                 return fetchImage(mimeType, remoteThumbnailSizePx, options)
 
             mimeType.isMedia && path.isMediaMetadataRetrieverCompatible -> {
-                fetchOrLogWarning("Read the picture or a frame of $path") {
+                // A server that failed to answer is asked again later rather than taken to mean
+                // that the file has no picture.
+                fetchOrLogWarning(
+                    "Read the picture or a frame of $path",
+                    rethrowIoException = remoteThumbnailSizePx != null
+                ) {
                     return fetchMedia(path, mimeType.isVideo, options)
                 }
-                currentCoroutineContext().ensureActive()
             }
 
             mimeType.isPdf && (path.isLinuxPath || path.isDocumentPath) ->
@@ -213,15 +218,24 @@ class PathAttributesFetcher(
 
     /**
      * Runs [block], which returns from the caller when it succeeds, and logs whatever went wrong
-     * so that the caller can fall back to the generic icon.
+     * so that the caller can fall back to the generic icon. A failure because the request was
+     * cancelled, which is how a read for a row that scrolled away ends, is not worth a warning.
      */
-    private inline fun fetchOrLogWarning(operation: String, block: () -> Unit) {
+    private suspend inline fun fetchOrLogWarning(
+        operation: String,
+        rethrowIoException: Boolean = false,
+        block: () -> Unit
+    ) {
         try {
             block()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            currentCoroutineContext().ensureActive()
             e.logWarning(TAG, operation)
+            if (rethrowIoException && e is IOException) {
+                throw e
+            }
         }
     }
 
@@ -241,10 +255,10 @@ class PathAttributesFetcher(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                currentCoroutineContext().ensureActive()
                 e.logWarning(TAG, "Read the embedded thumbnail of $path")
                 null
             }
-            currentCoroutineContext().ensureActive()
             if (thumbnail != null) {
                 return toDrawableResult(thumbnail)
             }
@@ -254,30 +268,48 @@ class PathAttributesFetcher(
 
     /**
      * Asks one retriever for the embedded picture and then for a video frame, so that a file on a
-     * server is opened and its header parsed only once.
+     * server is opened and its header parsed only once. A retriever reports only that it failed,
+     * so a read that failed on the way is what is thrown instead.
      */
     private suspend fun fetchMedia(path: Path, isVideo: Boolean, options: Options): FetchResult? =
         runAbortable { abortHandle ->
-            MediaMetadataRetriever().use { retriever ->
-                retriever.setDataSource(path) { abortHandle.set(it) }
-                val embeddedPicture = retriever.embeddedPicture
-                when {
-                    embeddedPicture != null ->
-                        SourceResult(
-                            ImageSource(
-                                embeddedPicture.inputStream().source().buffer(),
-                                options.context
-                            ),
-                            null,
-                            path.dataSource
-                        )
-
-                    isVideo -> retriever.decodeVideoFrame(options)
-
-                    else -> null
-                }
+            val readFailure = AtomicReference<IOException>()
+            try {
+                fetchMedia(path, isVideo, options, abortHandle, readFailure)
+            } catch (e: RuntimeException) {
+                throw readFailure.get()?.apply { addSuppressed(e) }
+                    ?: (e.cause as? IOException)?.apply { addSuppressed(e) }
+                    ?: e
             }
         }
+
+    private fun fetchMedia(
+        path: Path,
+        isVideo: Boolean,
+        options: Options,
+        abortHandle: AbortHandle,
+        readFailure: AtomicReference<IOException>
+    ): FetchResult? = MediaMetadataRetriever().use { retriever ->
+        retriever.setDataSource(path, { abortHandle.set(it) }) {
+            readFailure.compareAndSet(null, it)
+        }
+        val embeddedPicture = retriever.embeddedPicture
+        when {
+            embeddedPicture != null ->
+                SourceResult(
+                    ImageSource(
+                        embeddedPicture.inputStream().source().buffer(),
+                        options.context
+                    ),
+                    null,
+                    path.dataSource
+                )
+
+            isVideo -> retriever.decodeVideoFrame(options)
+
+            else -> null
+        }
+    }
 
     private fun toDrawableResult(bitmap: Bitmap): DrawableResult =
         DrawableResult(bitmap.toDrawable(options.context.resources), true, data.first.dataSource)
