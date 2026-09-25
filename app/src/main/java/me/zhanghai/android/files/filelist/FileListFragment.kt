@@ -142,6 +142,7 @@ class FileListFragment :
             )
         }
         binding.swipeRefreshLayout.setOnRefreshListener { content.refresh() }
+        content.onViewCreated()
         layoutManager = GridLayoutManager(activity, 1)
         binding.recyclerView.layoutManager = layoutManager
         adapter = FileListAdapter(this)
@@ -247,6 +248,7 @@ class FileListFragment :
         super.onResume()
 
         permissions.onResume()
+        content.onResume()
     }
 
     override fun onStop() {
