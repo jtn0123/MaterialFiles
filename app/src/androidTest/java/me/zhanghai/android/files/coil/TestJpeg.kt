@@ -13,6 +13,7 @@ import androidx.core.graphics.createBitmap
 import androidx.exifinterface.media.ExifInterface
 import java.io.ByteArrayOutputStream
 import java.io.File
+import kotlin.random.Random
 
 /**
  * Writes the kind of JPEG a camera produces: a photo with a small thumbnail of it embedded in an
@@ -22,15 +23,29 @@ object TestJpeg {
     /** A red-and-blue image, recognizable after scaling and rotation. */
     fun createImage(width: Int, height: Int): Bitmap = createBitmap(width, height).applyPattern()
 
+    /**
+     * An image of random pixels, which JPEG cannot compress much: a few megapixels of it make a
+     * file as large as a camera's.
+     */
+    fun createNoisyImage(width: Int, height: Int): Bitmap {
+        val random = Random(width * 31 + height)
+        val pixels = IntArray(width * height) { random.nextInt() or 0xFF000000.toInt() }
+        return createBitmap(width, height).apply {
+            setPixels(pixels, 0, width, 0, 0, width, height)
+        }
+    }
+
     fun write(
         file: File,
         width: Int,
         height: Int,
         thumbnailWidth: Int = 0,
         thumbnailHeight: Int = 0,
-        orientation: Int = ORIENTATION_NORMAL
+        orientation: Int = ORIENTATION_NORMAL,
+        isNoisy: Boolean = false
     ) {
-        val image = createImage(width, height).toJpegBytes()
+        val image = (if (isNoisy) createNoisyImage(width, height) else createImage(width, height))
+            .toJpegBytes()
         val thumbnail = if (thumbnailWidth > 0 && thumbnailHeight > 0) {
             createImage(thumbnailWidth, thumbnailHeight).toJpegBytes()
         } else {
