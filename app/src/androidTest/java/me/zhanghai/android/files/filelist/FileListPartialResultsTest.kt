@@ -2,7 +2,6 @@ package me.zhanghai.android.files.filelist
 
 import android.content.Intent
 import android.net.Uri
-import android.view.accessibility.AccessibilityEvent
 import androidx.lifecycle.MutableLiveData
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -41,7 +40,7 @@ class FileListPartialResultsTest {
         val device = UiDevice.getInstance(instrumentation)
         val configurator = Configurator.getInstance()
         val previousIdleTimeout = configurator.waitForIdleTimeout
-        // Observe short-lived toasts without waiting for animations to become idle.
+        // Observe the loading and error states without waiting for animations to become idle.
         configurator.waitForIdleTimeout = 0
         val directory = File(context.filesDir, "Project files").apply { mkdirs() }
         listOf("Meeting notes.txt", "Shopping list.txt", "Weekend plans.txt").forEach {
@@ -73,33 +72,19 @@ class FileListPartialResultsTest {
                     )
                 )
                 captureReviewScreenshot("folder-loading")
-                val notification = instrumentation.uiAutomation.executeAndWaitForEvent(
-                    {
-                        scenario.onActivity { activity ->
-                            val fragment = activity.supportFragmentManager.fragments
-                                .filterIsInstance<FileListFragment>().single()
-                            val state = fragment.viewModel.fileListLiveData
-                                as MutableLiveData<Stateful<List<FileItem>>>
-                            state.value = Failure(
-                                checkNotNull(state.value?.value),
-                                PartialFileListException(
-                                    2,
-                                    java.io.IOException("Fixture metadata failure")
-                                )
-                            )
-                        }
-                    },
-                    { event ->
-                        event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED &&
-                            event.text.any { it.toString() == expectedError }
-                    },
-                    5000
-                )
-                org.junit.Assert.assertTrue(
-                    notification.text.any {
-                        it.toString() == expectedError
-                    }
-                )
+                scenario.onActivity { activity ->
+                    val fragment = activity.supportFragmentManager.fragments
+                        .filterIsInstance<FileListFragment>().single()
+                    val state = fragment.viewModel.fileListLiveData
+                        as MutableLiveData<Stateful<List<FileItem>>>
+                    state.value = Failure(
+                        checkNotNull(state.value?.value),
+                        PartialFileListException(2, java.io.IOException("Fixture metadata failure"))
+                    )
+                }
+                // The rows that were listed stay, so the error is a snackbar that offers a retry.
+                assertNotNull(device.wait(Until.findObject(By.text(expectedError)), 5000))
+                assertNotNull(device.findObject(By.text(context.getString(R.string.retry))))
                 assertNotNull(
                     device.wait(Until.findObject(By.text(context.getString(R.string.error))), 3000)
                 )

@@ -49,6 +49,7 @@ import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.putState
+import me.zhanghai.android.files.util.showActionSnackbar
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.toUserMessage
@@ -76,6 +77,8 @@ class VideoViewerFragment :
 
     private var pictureInPicture by autoCleared<VideoViewerPictureInPicture>()
 
+    private var errorOverlay by autoCleared<VideoViewerErrorOverlay>()
+
     private lateinit var systemUiHelper: SystemUiHelper
 
     private var player: ExoPlayer? = null
@@ -89,6 +92,7 @@ class VideoViewerFragment :
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             updateTitle()
+            errorOverlay.hide()
             // A (re)set playlist already starts where it should, and seeking now would jump away
             // from wherever the user has scrubbed to since.
             if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
@@ -107,6 +111,10 @@ class VideoViewerFragment :
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             playbackPosition.onPlaybackStateChanged(playbackState)
+            // The playback controls can start a failed video again as well.
+            if (playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_READY) {
+                errorOverlay.hide()
+            }
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -121,7 +129,7 @@ class VideoViewerFragment :
         override fun onPlayerError(error: PlaybackException) {
             error.logWarning("VideoViewerFragment", "Play the video")
             val fileName = playbackPosition.currentPath?.fileName?.toString() ?: return
-            showToast(getString(R.string.video_viewer_error_format, fileName))
+            errorOverlay.show(error, fileName)
         }
     }
 
@@ -156,6 +164,7 @@ class VideoViewerFragment :
         pictureInPicture = VideoViewerPictureInPicture(requireActivity(), binding.playerView) {
             player
         }
+        errorOverlay = VideoViewerErrorOverlay(binding) { player }
         if (paths.isEmpty()) {
             finish()
             return
@@ -283,6 +292,8 @@ class VideoViewerFragment :
             }
         this.player = player
         binding.playerView.player = player
+        // A new player tries the video again.
+        errorOverlay.hide()
         setMediaItems()
     }
 
@@ -346,7 +357,9 @@ class VideoViewerFragment :
             path.delete()
         } catch (e: IOException) {
             e.logWarning("VideoViewerFragment", "Delete $path")
-            showToast(e.toUserMessage(requireContext()))
+            binding.root.showActionSnackbar(e.toUserMessage(requireContext()), R.string.retry) {
+                delete(path)
+            }
             return
         }
         VideoPlaybackPositions.remove(path)

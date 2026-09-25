@@ -18,6 +18,7 @@ import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.NotDirectoryException
 import me.zhanghai.android.files.R
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import me.zhanghai.android.files.provider.common.IsDirectoryException
 import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException
@@ -41,10 +42,12 @@ fun Throwable.toUserMessage(context: Context): String {
  * Without a resource the detail is never null.
  */
 internal fun Throwable.toUserMessageParts(): Pair<Int?, String?> {
-    val fileSystemException = findCauseByClass<FileSystemException>()
-    if (fileSystemException != null) {
-        return fileSystemException.toFileSystemUserMessageParts()
+    val fileSystemParts = findCauseByClass<FileSystemException>()?.toFileSystemUserMessageParts()
+    if (fileSystemParts?.first != null) {
+        return fileSystemParts
     }
+    // A remote file system reports not reaching its server as a plain FileSystemException, whose
+    // cause says what actually went wrong.
     val stringRes = when {
         findCauseByClass<FileNotFoundException>() != null -> R.string.error_file_not_found
         findCauseByClass<UnknownHostException>() != null -> R.string.error_unknown_host
@@ -53,23 +56,34 @@ internal fun Throwable.toUserMessageParts(): Pair<Int?, String?> {
         findCauseByClass<InterruptedIOException>() != null -> R.string.error_interrupted
         else -> null
     }
-    return if (stringRes != null) {
-        stringRes to rootMessage
-    } else {
-        null to (rootMessage ?: javaClass.simpleName)
+    return when {
+        stringRes != null -> stringRes to rootMessage
+        fileSystemParts != null -> fileSystemParts
+        else -> null to (rootMessage ?: javaClass.simpleName)
     }
 }
 
 private fun FileSystemException.toFileSystemUserMessageParts(): Pair<Int?, String?> {
     val stringRes = when (this) {
+        // Before AccessDeniedException, which it is too.
+        is AuthenticationFailedException -> R.string.error_authentication_failed
+
         is AccessDeniedException -> R.string.error_access_denied
+
         is NoSuchFileException -> R.string.error_file_not_found
+
         is FileAlreadyExistsException -> R.string.error_file_already_exists
+
         is DirectoryNotEmptyException -> R.string.error_directory_not_empty
+
         is NotDirectoryException -> R.string.error_not_a_directory
+
         is IsDirectoryException -> R.string.error_is_a_directory
+
         is ReadOnlyFileSystemException -> R.string.error_read_only_file_system
+
         is InvalidFileNameException -> R.string.error_invalid_file_name
+
         else -> null
     }
     val detail = listOfNotNull(file, reason?.takeIf { it.isNotBlank() }).joinToString(": ")

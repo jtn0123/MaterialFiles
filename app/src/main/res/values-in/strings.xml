@@ -19,6 +19,19 @@
     <string name="empty">Kosong</string>
     <string name="empty_placeholder">(Kosong)</string>
     <string name="error">kesalahan</string>
+    <string name="error_access_denied">Akses ditolak</string>
+    <string name="error_authentication_failed">Gagal masuk</string>
+    <string name="error_file_not_found">Berkas tidak ditemukan</string>
+    <string name="error_file_already_exists">Berkas dengan nama tersebut sudah ada</string>
+    <string name="error_directory_not_empty">Folder tidak kosong</string>
+    <string name="error_not_a_directory">Bukan folder</string>
+    <string name="error_is_a_directory">Ini adalah folder</string>
+    <string name="error_read_only_file_system">Penyimpanan hanya dapat dibaca</string>
+    <string name="error_invalid_file_name">Nama berkas tidak valid</string>
+    <string name="error_unknown_host">Hos tidak dikenal</string>
+    <string name="error_connection_timed_out">Waktu koneksi habis</string>
+    <string name="error_connection_failed">Tidak dapat terhubung</string>
+    <string name="error_interrupted">Operasi terputus</string>
     <string name="hide">Sembunyikan</string>
     <string name="install">Pasang</string>
     <string name="keep_editing">Tetap mengedit</string>
@@ -39,6 +52,7 @@
     <string name="search">Cari</string>
     <string name="select">Pilih</string>
     <string name="select_all">Pilih semua</string>
+    <string name="select_range">Pilih rentang</string>
     <string name="share">Bagikan</string>
     <string name="show">Tampilkan</string>
     <string name="skip">Lewati</string>
@@ -105,6 +119,10 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="other">Selesai, %1$,d berkas dilewati karena kesalahan</item>
+    </plurals>
+    <string name="file_job_failed_format">Gagal: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="other">Mempersiapkan untuk menghapus %1$,d berkas</item>
     </plurals>
@@ -170,6 +188,8 @@
     <string name="file_job_merge_target_name">Folder asli</string>
     <string name="file_job_merge_source_name">Gabung dengan</string>
     <string name="file_job_conflict_show_name">Pilih nama baru</string>
+    <string name="file_job_conflict_show_name_expanded">Diluaskan</string>
+    <string name="file_job_conflict_show_name_collapsed">Diciutkan</string>
     <string name="file_job_conflict_name_hint">Nama baru</string>
     <string name="file_job_archive_error_title_format">Terjadi kesalahan saat mengompres “%1$s”</string>
     <string name="file_job_archive_error_message_format">Telah terjadi kesalahan saat mengompres berkas ke dalam “%1$s”.\n%2$s</string>
@@ -181,6 +201,9 @@
     <string name="file_job_move_error_message_format">Telah terjadi kesalahan saat memindahkan berkas ke dalam “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">Terjadi kesalahan saat menghapus</string>
     <string name="file_job_delete_error_message_format">Terjadi kesalahan saat menghapus “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">Terjadi kesalahan saat membaca</string>
+    <string name="file_job_read_error_message_format">Telah terjadi kesalahan saat membaca “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Telah terjadi kesalahan saat menampilkan isi “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Terjadi kesalahan saat mengubah nama “%1$s”</string>
     <string name="file_job_rename_error_message_format">Telah terjadi kesalahan saat mengubah nama berkas ke “%1$s”.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Terjadi kesalahan saat mengubah pemilik untuk “%1$s”</string>
@@ -281,11 +304,25 @@
     <string name="file_list_paste_copy_title_format">Menyalin %1$,d</string>
     <string name="file_list_paste_extract_title_format">Mengekstrak %1$,d</string>
     <string name="file_list_paste_action_extract_here">Ekstrak di sini</string>
+    <string name="file_list_edit_server">Sunting server</string>
     <string name="file_list_empty">Tidak ada berkas</string>
     <string name="file_list_action_create_file">Berkas</string>
     <string name="file_list_action_create_directory">Folder</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Opsi lainnya</string>
+    <string name="file_item_menu_format">Opsi lainnya untuk %1$s</string>
+    <string name="file_item_select_format">Pilih %1$s</string>
+    <string name="file_item_deselect_format">Batalkan pilihan %1$s</string>
+    <string name="file_item_action_open">Buka</string>
+    <string name="file_item_action_deselect">Batalkan pilihan</string>
+    <string name="file_item_state_selected">Dipilih</string>
+    <string name="file_item_state_not_selected">Tidak dipilih</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Tautan</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Tautan rusak</string>
+    <string name="file_item_accessibility_encrypted">Terenkripsi</string>
+    <string name="file_item_accessibility_app_directory">Folder aplikasi</string>
     <string name="file_item_action_open_with">Buka dengan</string>
     <string name="file_item_action_extract">Ekstrak</string>
     <string name="file_item_action_archive">Kompres</string>
@@ -337,9 +374,11 @@
         <item>Atur GID</item>
         <item>Sticky bit</item>
     </string-array>
+    <string name="file_properties_permission_set_mode_uppercase_x">Jangan tambahkan “Eksekusi” untuk berkas di dalamnya</string>
     <string name="file_properties_permission_selinux_context">Konteks SELinux</string>
     <string name="file_properties_permission_set_selinux_context_title">Ubah konteks SELinux</string>
     <string name="file_properties_permission_set_selinux_context_restore">Pulihkan</string>
+    <string name="file_properties_permission_recursive">Terapkan ke berkas di dalamnya</string>
     <string name="file_properties_image">Gambar</string>
     <string name="file_properties_media_dimensions">Dimensi</string>
     <string name="file_properties_media_dimensions_format">%1$d \u00d7 %2$d</string>
@@ -402,6 +441,7 @@
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Penyimpanan</string>
     <string name="storage_list_empty">Tidak ada penyimpanan</string>
+    <string name="list_item_drag_handle">Seret untuk mengatur ulang urutan</string>
     <string name="storage_add_storage_title">Tambah penyimpanan</string>
     <string name="storage_add_storage_document_tree">Penyimpanan eksternal</string>
     <string name="storage_add_storage_ftp_server">Server FTP</string>
@@ -476,6 +516,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Boleh dikosongkan</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Sandi kunci privat tidak valid</string>
     <string name="storage_edit_sftp_server_connect_and_add">Sambung dan tambah</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Kunci hos berubah</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">Kunci %2$s dari %1$s bukan kunci yang diingat dari koneksi pertama. Seseorang mungkin sedang menyadap koneksi, atau server telah dipasang ulang.\n\nDiingat: %3$s\nDiterima: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Percayai kunci baru</string>
     <string name="storage_edit_sftp_server_add">Tambah</string>
     <string name="storage_add_lan_smb_server_loading">Mencari server SMB…</string>
     <string name="storage_add_lan_smb_server_add">Tambah secara manual</string>
@@ -500,6 +543,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Masukkan nama pengguna</string>
     <string name="storage_edit_smb_server_password">Sandi</string>
     <string name="storage_edit_smb_server_domain">Domain</string>
+    <string name="storage_edit_smb_server_encrypt">Enkripsi koneksi</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Minta enkripsi SMB3. Diperlukan untuk berbagi yang mewajibkannya; diabaikan oleh server yang tidak mendukungnya.</string>
     <string name="storage_edit_smb_server_connect_and_add">Sambung dan tambah</string>
     <string name="storage_edit_smb_server_add">Tambah</string>
     <string name="storage_edit_webdav_server_title_edit">Sunting peladen WebDAV</string>
@@ -549,9 +594,22 @@
     <string name="archive_viewer_title">Penilik arsip</string>
     <string name="image_viewer_title">Penampil gambar</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Pemutar video</string>
+    <string name="video_viewer_picture_in_picture">Picture-in-picture</string>
+    <string name="video_viewer_play_from_beginning">Putar dari awal</string>
+    <string name="video_viewer_screen_orientation">Orientasi layar</string>
+    <string name="video_viewer_screen_orientation_auto">Putar otomatis</string>
+    <string name="video_viewer_screen_orientation_landscape">Lanskap</string>
+    <string name="video_viewer_screen_orientation_portrait">Potret</string>
+    <string name="video_viewer_error_format">Tidak dapat memutar %1$s</string>
+    <string name="video_viewer_error_unsupported">Perangkat ini tidak dapat memutar format video ini</string>
+    <string name="video_viewer_error_malformed">Berkas video rusak atau tidak lengkap</string>
     <string name="save_as_title">Simpan sebagai</string>
     <string name="save_as_error">Galat saat menyimpan berkas</string>
     <string name="save_as_success_format">“%1$s” berhasil disimpan ke “%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="other">%1$d berkas berhasil disimpan ke “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">Penyunting teks</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -576,9 +634,14 @@
     <string name="ftp_server_add_tile_result_error">Terjadi kesalahan saat menambahkan “server FTP” ke Pengaturan Cepat</string>
     <string name="ftp_server_configuration_title">Konfigurasi</string>
     <string name="ftp_server_anonymous_login_title">Masuk secara anonim</string>
+    <string name="ftp_server_error_password_empty">Atur sandi, atau aktifkan masuk secara anonim, sebelum memulai server FTP</string>
     <string name="ftp_server_username_title">Nama pengguna</string>
     <string name="ftp_server_password_title">Sandi</string>
     <string name="ftp_server_port_title">Port</string>
+    <string name="ftp_server_passive_ports_title">Port data pasif</string>
+    <string name="ftp_server_passive_ports_summary_any">Port kosong apa pun</string>
+    <string name="ftp_server_passive_ports_dialog_message">Port atau rentang untuk koneksi data, mis. 2300-2400 atau 2300, 2301. Biarkan kosong untuk menggunakan port kosong apa pun. Atur ini jika server diakses melalui penerusan port atau terowongan.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Masukkan port antara 1 dan 65535, berupa angka atau rentang yang dipisahkan dengan koma</string>
     <string name="ftp_server_home_directory_title">Folder root</string>
     <string name="ftp_server_writable_title">Izinkan menyimpan</string>
     <string name="settings_title">Pengaturan</string>
@@ -586,6 +649,7 @@
     <string name="settings_locale_title">Bahasa</string>
     <string name="settings_theme_color_title">Warna tema</string>
     <string name="settings_theme_color_summary">Warna yang muncul paling sering di dalam apl</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 menggunakan warna wallpaper Anda sebagai gantinya</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Mode malam</string>
     <string-array name="settings_night_mode_entries">
@@ -606,6 +670,8 @@
     </string-array>
     <string name="settings_behavior_title">Perilaku</string>
     <string name="settings_default_directory_title">Folder default</string>
+    <string name="settings_remember_last_directory_title">Buka kembali folder terakhir</string>
+    <string name="settings_remember_last_directory_summary">Lanjutkan dari posisi terakhir, bukan dari folder default</string>
     <string name="settings_standard_directories_title">Folder standar</string>
     <string name="settings_standard_directories_summary_empty">Tidak ada folder standar yang diaktifkan</string>
     <string name="settings_bookmark_directory_screenshots">Screenshot</string>
@@ -630,6 +696,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Tampilkan thumbnail untuk dokumen PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Mungkin membuat apl tidak stabil pada versi Android lama</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Baca berkas remote untuk thumbnail</string>
+    <string name="settings_video_remember_playback_position_title">Ingat posisi pemutaran video</string>
 
     <string name="about_title">Tentang</string>
     <string name="about_version_title">Versi</string>
@@ -639,4 +706,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Ikuti di GitHub</string>
     <string name="about_author_twitter_title">Ikuti di Twitter</string>
+    <string name="text_editor_draft_save_failed">Tidak dapat menyimpan draf pemulihan. Simpan perubahan Anda sebelum keluar.</string>
+    <string name="text_editor_draft_restored">Perubahan Anda yang belum disimpan telah dipulihkan</string>
+    <string name="text_editor_draft_restore_failed">Tidak dapat memulihkan perubahan Anda yang belum disimpan</string>
+    <string name="password_save_failed">Tidak dapat menyimpan sandi</string>
+    <string name="file_list_partial_error">Beberapa berkas tidak dapat dibaca (%1$d hilang). Muat ulang untuk mencoba lagi.</string>
 </resources>

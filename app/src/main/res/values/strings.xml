@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Empty)</string>
     <string name="error">Error</string>
     <string name="error_access_denied">Access denied</string>
+    <string name="error_authentication_failed">Sign-in failed</string>
     <string name="error_file_not_found">File not found</string>
     <string name="error_file_already_exists">A file with that name already exists</string>
     <string name="error_directory_not_empty">The folder is not empty</string>
@@ -210,6 +211,8 @@
     <string name="file_job_merge_target_name">Original folder</string>
     <string name="file_job_merge_source_name">Merge with</string>
     <string name="file_job_conflict_show_name">Select a new name for the destination</string>
+    <string name="file_job_conflict_show_name_expanded">Expanded</string>
+    <string name="file_job_conflict_show_name_collapsed">Collapsed</string>
     <string name="file_job_conflict_name_hint">New name</string>
     <string name="file_job_archive_error_title_format">Error while compressing “%1$s”</string>
     <string name="file_job_archive_error_message_format">There was an error compressing the file into “%1$s”.\n%2$s</string>
@@ -338,12 +341,26 @@
     <string name="file_list_paste_copy_title_format">Copying %1$,d</string>
     <string name="file_list_paste_extract_title_format">Extracting %1$,d</string>
     <string name="file_list_paste_action_extract_here">Extract here</string>
+    <string name="file_list_edit_server">Edit server</string>
     <string name="file_list_empty">No files</string>
     <string name="file_list_action_create_file">File</string>
     <string name="file_list_action_create_directory">Folder</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_menu">More options</string>
+    <string name="file_item_menu_format">More options for %1$s</string>
+    <string name="file_item_select_format">Select %1$s</string>
+    <string name="file_item_deselect_format">Deselect %1$s</string>
+    <string name="file_item_action_open">Open</string>
+    <string name="file_item_action_deselect">Deselect</string>
+    <string name="file_item_state_selected">Selected</string>
+    <string name="file_item_state_not_selected">Not selected</string>
+    <!-- Separates the parts of a file list item read aloud by a screen reader. -->
+    <string name="file_item_accessibility_separator">,\u0020</string>
+    <string name="file_item_accessibility_symbolic_link">Link</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Broken link</string>
+    <string name="file_item_accessibility_encrypted">Encrypted</string>
+    <string name="file_item_accessibility_app_directory">App folder</string>
     <string name="file_item_action_open_with">Open with</string>
     <string name="file_item_action_extract">Extract</string>
     <string name="file_item_action_archive">Compress</string>
@@ -741,6 +758,8 @@
     <string name="video_viewer_screen_orientation_landscape">Landscape</string>
     <string name="video_viewer_screen_orientation_portrait">Portrait</string>
     <string name="video_viewer_error_format">Cannot play %1$s</string>
+    <string name="video_viewer_error_unsupported">This device cannot play this video format</string>
+    <string name="video_viewer_error_malformed">The video file is damaged or incomplete</string>
     <string name="save_as_title">Save as</string>
     <string name="save_as_error">Error while saving file</string>
     <string name="save_as_success_format">“%1$s” has been saved to “%2$s”</string>
@@ -790,6 +809,7 @@
     <string name="settings_locale_title">Language</string>
     <string name="settings_theme_color_title">Theme color</string>
     <string name="settings_theme_color_summary">Color that appears most frequently in the app</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 uses your wallpaper colors instead</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Night mode</string>
     <string-array name="settings_night_mode_entries">

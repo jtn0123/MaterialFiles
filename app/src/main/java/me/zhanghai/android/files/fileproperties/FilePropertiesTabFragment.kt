@@ -34,8 +34,9 @@ import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.isGeocoderPresent
 import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.logWarning
-import me.zhanghai.android.files.util.showToast
+import me.zhanghai.android.files.util.showActionSnackbar
 import me.zhanghai.android.files.util.startActivitySafe
+import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.userFriendlyString
 
 abstract class FilePropertiesTabFragment : Fragment() {
@@ -65,9 +66,10 @@ abstract class FilePropertiesTabFragment : Fragment() {
         binding.errorText.fadeToVisibilityUnsafe(stateful is Failure && !hasValue)
         if (stateful is Failure) {
             stateful.throwable.logWarning("FilePropertiesTabFragment", "Load the file properties")
-            val error = stateful.throwable.toString()
+            val error = stateful.throwable.toUserMessage(requireContext())
             if (hasValue) {
-                showToast(error)
+                // What was loaded before stays, so offer to load it again without covering it.
+                binding.root.showActionSnackbar(error, R.string.retry) { refresh() }
             } else {
                 binding.errorText.text = error
             }

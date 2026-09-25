@@ -40,6 +40,7 @@ import me.zhanghai.android.files.util.fadeOutUnsafe
 import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.shortAnimTime
+import me.zhanghai.android.files.util.toUserMessage
 
 class ImageViewerAdapter(
     private val lifecycleOwner: LifecycleOwner,
@@ -73,7 +74,7 @@ class ImageViewerAdapter(
 
     private fun loadImage(binding: ImageViewerItemBinding, path: Path) {
         binding.progress.fadeInUnsafe(true)
-        binding.errorText.fadeOutUnsafe()
+        binding.errorLayout.fadeOutUnsafe()
         binding.image.isVisible = false
         binding.largeImage.isVisible = false
         lifecycleOwner.lifecycleScope.launch {
@@ -81,7 +82,7 @@ class ImageViewerAdapter(
                 withContext(ioDispatcher) { path.loadImageInfo() }
             } catch (e: Exception) {
                 e.logWarning("ImageViewerAdapter", "Load the image info of $path")
-                showError(binding, e)
+                showError(binding, path, e)
                 return@launch
             }
             loadImageWithInfo(binding, path, imageInfo)
@@ -114,7 +115,7 @@ class ImageViewerAdapter(
                     fadeIn(context.shortAnimTime)
                     listener(
                         onSuccess = { _, _ -> binding.progress.fadeOutUnsafe() },
-                        onError = { _, result -> showError(binding, result.throwable) }
+                        onError = { _, result -> showError(binding, path, result.throwable) }
                     )
                 }
             }
@@ -134,7 +135,7 @@ class ImageViewerAdapter(
 
                     override fun onImageLoadError(e: Exception) {
                         e.logWarning("ImageViewerAdapter", "Load the large image $path")
-                        showError(binding, e)
+                        showError(binding, path, e)
                     }
                 })
                 setImageRestoringSavedState(ImageSource.uri(path.fileProviderUri))
@@ -176,10 +177,12 @@ class ImageViewerAdapter(
             return max(viewWidth.toFloat() / imageWidth, viewHeight.toFloat() / imageHeight)
         }
 
-    private fun showError(binding: ImageViewerItemBinding, throwable: Throwable) {
+    private fun showError(binding: ImageViewerItemBinding, path: Path, throwable: Throwable) {
         binding.progress.fadeOutUnsafe()
-        binding.errorText.text = throwable.toString()
-        binding.errorText.fadeInUnsafe(true)
+        binding.errorText.text = throwable.toUserMessage(binding.errorText.context)
+        // A remote image often fails only because the connection dropped for a moment.
+        binding.retryButton.setOnClickListener { loadImage(binding, path) }
+        binding.errorLayout.fadeInUnsafe(true)
         binding.image.isVisible = false
         binding.largeImage.isVisible = false
     }

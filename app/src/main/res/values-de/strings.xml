@@ -19,6 +19,19 @@
     <string name="empty">Leer</string>
     <string name="empty_placeholder">(Leer)</string>
     <string name="error">Fehler</string>
+    <string name="error_access_denied">Zugriff verweigert</string>
+    <string name="error_authentication_failed">Anmeldung fehlgeschlagen</string>
+    <string name="error_file_not_found">Datei nicht gefunden</string>
+    <string name="error_file_already_exists">Eine Datei mit diesem Namen existiert bereits</string>
+    <string name="error_directory_not_empty">Der Ordner ist nicht leer</string>
+    <string name="error_not_a_directory">Kein Ordner</string>
+    <string name="error_is_a_directory">Dies ist ein Ordner</string>
+    <string name="error_read_only_file_system">Der Speicher ist schreibgeschützt</string>
+    <string name="error_invalid_file_name">Ungültiger Dateiname</string>
+    <string name="error_unknown_host">Unbekannter Host</string>
+    <string name="error_connection_timed_out">Zeitüberschreitung der Verbindung</string>
+    <string name="error_connection_failed">Verbindung nicht möglich</string>
+    <string name="error_interrupted">Der Vorgang wurde unterbrochen</string>
     <string name="hide">Ausblenden</string>
     <string name="install">Installieren</string>
     <string name="keep_editing">Weiter bearbeiten</string>
@@ -39,6 +52,7 @@
     <string name="search">Suchen</string>
     <string name="select">Auswählen</string>
     <string name="select_all">Alles auswählen</string>
+    <string name="select_range">Bereich auswählen</string>
     <string name="share">Teilen</string>
     <string name="show">Anzeigen</string>
     <string name="skip">Überspringen</string>
@@ -114,6 +128,11 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Fertig, %1$,d Datei wegen eines Fehlers übersprungen</item>
+        <item quantity="other">Fertig, %1$,d Dateien wegen Fehlern übersprungen</item>
+    </plurals>
+    <string name="file_job_failed_format">Fehlgeschlagen: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Bereite Löschen von %1$,d Datei vor</item>
         <item quantity="other">Bereite Löschen von %1$,d Dateien vor</item>
@@ -191,6 +210,8 @@
     <string name="file_job_merge_target_name">Ursprungsordner</string>
     <string name="file_job_merge_source_name">Zusammenführen mit</string>
     <string name="file_job_conflict_show_name">Einen neuen Namen für das Ziel angeben</string>
+    <string name="file_job_conflict_show_name_expanded">Ausgeklappt</string>
+    <string name="file_job_conflict_show_name_collapsed">Eingeklappt</string>
     <string name="file_job_conflict_name_hint">Neuer Name</string>
     <string name="file_job_archive_error_title_format">Fehler beim Komprimieren von \"%1$s\"</string>
     <string name="file_job_archive_error_message_format">Es ist ein Fehler beim Komprimieren der Datei nach \"%1$s\" aufgetreten.\n%2$s</string>
@@ -202,6 +223,9 @@
     <string name="file_job_move_error_message_format">Es ist ein Fehler beim Verschieben der Datei nach \"%1$s\" aufgetreten.\n%2$s</string>
     <string name="file_job_delete_error_title">Fehler beim Löschen</string>
     <string name="file_job_delete_error_message_format">Es ist ein Fehler beim Löschen von \"%1$s\" aufgetreten.\n%2$s</string>
+    <string name="file_job_read_error_title">Fehler beim Lesen</string>
+    <string name="file_job_read_error_message_format">Es ist ein Fehler beim Lesen von \"%1$s\" aufgetreten.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Es ist ein Fehler beim Auflisten des Inhalts von \"%1$s\" aufgetreten.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Fehler beim Umbenennen von \"%1$s\"</string>
     <string name="file_job_rename_error_message_format">Es ist ein Fehler beim Umbenennen der Datei nach \"%1$s\" aufgetreten.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Fehler beim Ändern des Besitzers von \"%1$s\"</string>
@@ -309,11 +333,25 @@
     <string name="file_list_paste_copy_title_format">Kopiere %1$,d</string>
     <string name="file_list_paste_extract_title_format">Extrahiere %1$,d</string>
     <string name="file_list_paste_action_extract_here">Extrahiere hier</string>
+    <string name="file_list_edit_server">Server bearbeiten</string>
     <string name="file_list_empty">Keine Dateien</string>
     <string name="file_list_action_create_file">Datei</string>
     <string name="file_list_action_create_directory">Ordner</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Weitere Optionen</string>
+    <string name="file_item_menu_format">Weitere Optionen für %1$s</string>
+    <string name="file_item_select_format">%1$s auswählen</string>
+    <string name="file_item_deselect_format">Auswahl von %1$s aufheben</string>
+    <string name="file_item_action_open">Öffnen</string>
+    <string name="file_item_action_deselect">Auswahl aufheben</string>
+    <string name="file_item_state_selected">Ausgewählt</string>
+    <string name="file_item_state_not_selected">Nicht ausgewählt</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Verknüpfung</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Defekte Verknüpfung</string>
+    <string name="file_item_accessibility_encrypted">Verschlüsselt</string>
+    <string name="file_item_accessibility_app_directory">App-Ordner</string>
     <string name="file_item_action_open_with">Öffnen mit</string>
     <string name="file_item_action_extract">Extrahieren</string>
     <string name="file_item_action_archive">Komprimieren </string>
@@ -434,6 +472,7 @@
     <string name="storage_file_system_root_title">Stammverzeichnis</string>
     <string name="storage_list_title">Speicher</string>
     <string name="storage_list_empty">Kein Speicher</string>
+    <string name="list_item_drag_handle">Zum Neuanordnen ziehen</string>
     <string name="storage_add_storage_title">Speicher hinzufügen</string>
     <string name="storage_add_storage_document_tree">Externer Speicher</string>
     <string name="storage_add_storage_ftp_server">FTP-Server</string>
@@ -508,6 +547,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Kann leer gelassen werden</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Passwort des privaten Schlüssels ungültig</string>
     <string name="storage_edit_sftp_server_connect_and_add">Verbinden und hinzufügen</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Host-Schlüssel geändert</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">Der %2$s-Schlüssel von %1$s entspricht nicht dem, der bei der ersten Verbindung gespeichert wurde. Jemand könnte die Verbindung abfangen, oder der Server wurde neu installiert.\n\nGespeichert: %3$s\nVorgelegt: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Neuem Schlüssel vertrauen</string>
     <string name="storage_edit_sftp_server_add">Hinzufügen</string>
     <string name="storage_add_lan_smb_server_loading">Suche nach SMB-Servern…</string>
     <string name="storage_add_lan_smb_server_add">Manuell hinzufügen</string>
@@ -532,6 +574,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Benutzernamen eingeben</string>
     <string name="storage_edit_smb_server_password">Passwort</string>
     <string name="storage_edit_smb_server_domain">Domain</string>
+    <string name="storage_edit_smb_server_encrypt">Verbindung verschlüsseln</string>
+    <string name="storage_edit_smb_server_encrypt_summary">SMB3-Verschlüsselung anfordern. Nötig für Freigaben, die sie verlangen; wird von Servern ohne Unterstützung ignoriert.</string>
     <string name="storage_edit_smb_server_connect_and_add">Verbinden und hinzufügen</string>
     <string name="storage_edit_smb_server_add">Hinzufügen</string>
     <string name="storage_edit_webdav_server_title_edit">WebDAV-Server bearbeiten</string>
@@ -581,9 +625,23 @@
     <string name="archive_viewer_title">Archivbetrachter</string>
     <string name="image_viewer_title">Bildbetrachter</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Videoplayer</string>
+    <string name="video_viewer_picture_in_picture">Bild-im-Bild</string>
+    <string name="video_viewer_play_from_beginning">Von Anfang an abspielen</string>
+    <string name="video_viewer_screen_orientation">Bildschirmausrichtung</string>
+    <string name="video_viewer_screen_orientation_auto">Automatisch drehen</string>
+    <string name="video_viewer_screen_orientation_landscape">Querformat</string>
+    <string name="video_viewer_screen_orientation_portrait">Hochformat</string>
+    <string name="video_viewer_error_format">%1$s kann nicht abgespielt werden</string>
+    <string name="video_viewer_error_unsupported">Dieses Gerät kann dieses Videoformat nicht abspielen</string>
+    <string name="video_viewer_error_malformed">Die Videodatei ist beschädigt oder unvollständig</string>
     <string name="save_as_title">Speichern als</string>
     <string name="save_as_error">Fehler beim Speichern der Datei</string>
     <string name="save_as_success_format">\"%1$s\" wurde als \"%2$s\" gespeichert</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d Datei wurde in \"%2$s\" gespeichert</item>
+        <item quantity="other">%1$d Dateien wurden in \"%2$s\" gespeichert</item>
+    </plurals>
     <string name="text_editor_title">Textbearbeitung</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -608,9 +666,14 @@
     <string name="ftp_server_add_tile_result_error">Fehler beim Hinzufügen von \"FTP-Server\" zu den Schnelleinstellungen</string>
     <string name="ftp_server_configuration_title">Konfiguration</string>
     <string name="ftp_server_anonymous_login_title">Anonymer Login</string>
+    <string name="ftp_server_error_password_empty">Legen Sie ein Passwort fest oder aktivieren Sie den anonymen Login, bevor Sie den FTP-Server starten</string>
     <string name="ftp_server_username_title">Benutzername</string>
     <string name="ftp_server_password_title">Passwort</string>
     <string name="ftp_server_port_title">Port</string>
+    <string name="ftp_server_passive_ports_title">Passive Datenports</string>
+    <string name="ftp_server_passive_ports_summary_any">Beliebiger freier Port</string>
+    <string name="ftp_server_passive_ports_dialog_message">Ports oder Bereiche für Datenverbindungen, z. B. 2300-2400 oder 2300, 2301. Leer lassen, um einen beliebigen freien Port zu verwenden. Legen Sie dies fest, wenn der Server über eine Portweiterleitung oder einen Tunnel erreicht wird.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Geben Sie Ports zwischen 1 und 65535 ein, als Zahlen oder durch Kommas getrennte Bereiche</string>
     <string name="ftp_server_home_directory_title">Stammverzeichnis</string>
     <string name="ftp_server_writable_title">Erlaube Schreiben</string>
     <string name="settings_title">Einstellungen</string>
@@ -618,6 +681,7 @@
     <string name="settings_locale_title">Sprache</string>
     <string name="settings_theme_color_title">Themenfarbe</string>
     <string name="settings_theme_color_summary">Die am häufigsten vorkommende Farbe in der App</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 verwendet stattdessen die Farben Ihres Hintergrundbilds</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Nachtmodus</string>
     <string-array name="settings_night_mode_entries">
@@ -638,6 +702,8 @@
     </string-array>
     <string name="settings_behavior_title">Verhalten</string>
     <string name="settings_default_directory_title">Startordner</string>
+    <string name="settings_remember_last_directory_title">Letzten Ordner wieder öffnen</string>
+    <string name="settings_remember_last_directory_summary">Dort weitermachen, wo Sie aufgehört haben, statt im Standardordner zu starten</string>
     <string name="settings_standard_directories_title">Standardordner</string>
     <string name="settings_standard_directories_summary_empty">Keine Standardordner aktiviert</string>
     <string name="settings_bookmark_directory_screenshots">Screenshots</string>
@@ -663,6 +729,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Miniaturansicht für PDF-Dateien anzeigen</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Kann die App auf älteren Versionen von Android instabil machen</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Remote-Dateien für Miniaturansichten lesen</string>
+    <string name="settings_video_remember_playback_position_title">Wiedergabeposition von Videos merken</string>
 
     <string name="about_title">Über</string>
     <string name="about_version_title">Version</string>
@@ -672,4 +739,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Auf GitHub folgen</string>
     <string name="about_author_twitter_title">Auf Twitter folgen</string>
+    <string name="text_editor_draft_save_failed">Wiederherstellungsentwurf konnte nicht gespeichert werden. Speichern Sie Ihre Änderungen, bevor Sie die Bearbeitung verlassen.</string>
+    <string name="text_editor_draft_restored">Nicht gespeicherte Änderungen wiederhergestellt</string>
+    <string name="text_editor_draft_restore_failed">Nicht gespeicherte Änderungen konnten nicht wiederhergestellt werden</string>
+    <string name="password_save_failed">Passwort konnte nicht gespeichert werden</string>
+    <string name="file_list_partial_error">Einige Dateien konnten nicht gelesen werden (%1$d fehlen). Zum erneuten Versuch aktualisieren.</string>
 </resources>

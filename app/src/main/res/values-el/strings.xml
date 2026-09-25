@@ -19,6 +19,19 @@
     <string name="empty">Κενό</string>
     <string name="empty_placeholder">(Κενό)</string>
     <string name="error">Σφάλμα</string>
+    <string name="error_access_denied">Δεν επιτρέπεται η πρόσβαση</string>
+    <string name="error_authentication_failed">Η είσοδος απέτυχε</string>
+    <string name="error_file_not_found">Το αρχείο δεν βρέθηκε</string>
+    <string name="error_file_already_exists">Υπάρχει ήδη αρχείο με αυτό το όνομα</string>
+    <string name="error_directory_not_empty">Ο φάκελος δεν είναι κενός</string>
+    <string name="error_not_a_directory">Δεν είναι φάκελος</string>
+    <string name="error_is_a_directory">Αυτό είναι φάκελος</string>
+    <string name="error_read_only_file_system">Ο αποθηκευτικός χώρος είναι μόνο για ανάγνωση</string>
+    <string name="error_invalid_file_name">Μη έγκυρο όνομα αρχείου</string>
+    <string name="error_unknown_host">Άγνωστος υπολογιστής</string>
+    <string name="error_connection_timed_out">Το χρονικό όριο της σύνδεσης έληξε</string>
+    <string name="error_connection_failed">Δεν ήταν δυνατή η σύνδεση</string>
+    <string name="error_interrupted">Η λειτουργία διακόπηκε</string>
     <string name="hide">Απόκρυψη</string>
     <string name="install">Εγκατάσταση</string>
     <string name="keep_editing">Συνέχεια επεξεργασίας</string>
@@ -39,6 +52,7 @@
     <string name="search">Αναζήτηση</string>
     <string name="select">Επιλογή</string>
     <string name="select_all">Επιλογή όλων</string>
+    <string name="select_range">Επιλογή εύρους</string>
     <string name="share">Κοινή χρήση</string>
     <string name="show">Εμφάνιση</string>
     <string name="skip">Παράλειψη</string>
@@ -114,6 +128,11 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Ολοκληρώθηκε, παραλείφθηκε %1$,d αρχείο λόγω σφάλματος</item>
+        <item quantity="other">Ολοκληρώθηκε, παραλείφθηκαν %1$,d αρχεία λόγω σφαλμάτων</item>
+    </plurals>
+    <string name="file_job_failed_format">Απέτυχε: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Προετοιμασία για διαγραφή %1$,d αρχείο</item>
         <item quantity="other">Προετοιμασία για διαγραφή %1$,d αρχείων</item>
@@ -191,6 +210,8 @@
     <string name="file_job_merge_target_name">Αρχικός φάκελος</string>
     <string name="file_job_merge_source_name">Συγχώνευση με</string>
     <string name="file_job_conflict_show_name">Επιλέξτε ένα νέο όνομα για τον προορισμό</string>
+    <string name="file_job_conflict_show_name_expanded">Αναπτυγμένο</string>
+    <string name="file_job_conflict_show_name_collapsed">Συμπτυγμένο</string>
     <string name="file_job_conflict_name_hint">Νέο όνομα</string>
     <string name="file_job_archive_error_title_format">Σφάλμα κατά τη συμπίεση “%1$s”</string>
     <string name="file_job_archive_error_message_format">Υπήρξε σφάλμα συμπίεσης του αρχείου σε “%1$s”.\n%2$s</string>
@@ -202,6 +223,9 @@
     <string name="file_job_move_error_message_format">Υπήρξε σφάλμα κατά τη μετακίνηση του αρχείου στο “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">Σφάλμα κατά τη διαγραφή</string>
     <string name="file_job_delete_error_message_format">Υπήρξε σφάλμα κατά τη διαγραφή “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">Σφάλμα κατά την ανάγνωση</string>
+    <string name="file_job_read_error_message_format">Υπήρξε σφάλμα κατά την ανάγνωση του “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Υπήρξε σφάλμα κατά την εμφάνιση των περιεχομένων του “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Σφάλμα κατά τη μετονομασία “%1$s”</string>
     <string name="file_job_rename_error_message_format">Υπήρξε σφάλμα κατά τη μετονομασία του αρχείου σε “%1$s”.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Σφάλμα κατά την αλλαγή κατόχου για “%1$s”</string>
@@ -309,11 +333,25 @@
     <string name="file_list_paste_copy_title_format">Αντιγραφή %1$,d</string>
     <string name="file_list_paste_extract_title_format">Εξαγωγή %1$,d</string>
     <string name="file_list_paste_action_extract_here">Εξαγωγή εδώ</string>
+    <string name="file_list_edit_server">Επεξεργασία διακομιστή</string>
     <string name="file_list_empty">Χωρίς αρχεία</string>
     <string name="file_list_action_create_file">Αρχείο</string>
     <string name="file_list_action_create_directory">Φάκελος</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Περισσότερες επιλογές</string>
+    <string name="file_item_menu_format">Περισσότερες επιλογές για %1$s</string>
+    <string name="file_item_select_format">Επιλογή %1$s</string>
+    <string name="file_item_deselect_format">Αποεπιλογή %1$s</string>
+    <string name="file_item_action_open">Άνοιγμα</string>
+    <string name="file_item_action_deselect">Αποεπιλογή</string>
+    <string name="file_item_state_selected">Επιλεγμένο</string>
+    <string name="file_item_state_not_selected">Μη επιλεγμένο</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Σύνδεσμος</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Κατεστραμμένος σύνδεσμος</string>
+    <string name="file_item_accessibility_encrypted">Κρυπτογραφημένο</string>
+    <string name="file_item_accessibility_app_directory">Φάκελος εφαρμογής</string>
     <string name="file_item_action_open_with">Άνοιγμα με</string>
     <string name="file_item_action_extract">Εξαγωγή</string>
     <string name="file_item_action_archive">Συμπίεση</string>
@@ -434,6 +472,7 @@
     <string name="storage_file_system_root_title">Ρίζα</string>
     <string name="storage_list_title">Χώρος αποθήκευσης</string>
     <string name="storage_list_empty">Χωρίς χώρο αποθήκευσης</string>
+    <string name="list_item_drag_handle">Σύρετε για αναδιάταξη</string>
     <string name="storage_add_storage_title">Προσθήκη χώρου αποθήκευσης</string>
     <string name="storage_add_storage_document_tree">Εξωτερικός χώρος αποθήκευσης</string>
     <string name="storage_add_storage_ftp_server">Διακομιστής FTP</string>
@@ -508,6 +547,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Μπορεί να μείνει κενό</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Μη έγκυρος κωδικός ιδιωτικού κλειδιού</string>
     <string name="storage_edit_sftp_server_connect_and_add">Σύνδεση και προσθήκη</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Το κλειδί του υπολογιστή άλλαξε</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">Το κλειδί %2$s του %1$s δεν είναι αυτό που απομνημονεύτηκε στην πρώτη σύνδεση. Κάποιος μπορεί να υποκλέπτει τη σύνδεση ή ο διακομιστής επανεγκαταστάθηκε.\n\nΑπομνημονευμένο: %3$s\nΠαρουσιαζόμενο: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Εμπιστοσύνη στο νέο κλειδί</string>
     <string name="storage_edit_sftp_server_add">Προσθήκη</string>
     <string name="storage_add_lan_smb_server_loading">Αναζήτηση για διακομιστές SMB…</string>
     <string name="storage_add_lan_smb_server_add">Χειροκίνητη προσθήκη</string>
@@ -532,6 +574,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Εισάγετε ένα όνομα χρήστη</string>
     <string name="storage_edit_smb_server_password">Κωδικός</string>
     <string name="storage_edit_smb_server_domain">Τομέας</string>
+    <string name="storage_edit_smb_server_encrypt">Κρυπτογράφηση σύνδεσης</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Αίτημα για κρυπτογράφηση SMB3. Απαιτείται για κοινόχρηστους φακέλους που την απαιτούν· αγνοείται από διακομιστές που δεν την υποστηρίζουν.</string>
     <string name="storage_edit_smb_server_connect_and_add">Σύνδεση και προσθήκη</string>
     <string name="storage_edit_smb_server_add">Προσθήκη</string>
     <string name="storage_edit_webdav_server_title_edit">Επεξεργασία διακομιστή WebDAV</string>
@@ -581,9 +625,23 @@
     <string name="archive_viewer_title">Προβολέας αρχειοθήκης</string>
     <string name="image_viewer_title">Προβολέας εικόνων</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Πρόγραμμα αναπαραγωγής βίντεο</string>
+    <string name="video_viewer_picture_in_picture">Εικόνα σε εικόνα</string>
+    <string name="video_viewer_play_from_beginning">Αναπαραγωγή από την αρχή</string>
+    <string name="video_viewer_screen_orientation">Προσανατολισμός οθόνης</string>
+    <string name="video_viewer_screen_orientation_auto">Αυτόματη περιστροφή</string>
+    <string name="video_viewer_screen_orientation_landscape">Οριζόντιος</string>
+    <string name="video_viewer_screen_orientation_portrait">Κατακόρυφος</string>
+    <string name="video_viewer_error_format">Δεν είναι δυνατή η αναπαραγωγή του %1$s</string>
+    <string name="video_viewer_error_unsupported">Αυτή η συσκευή δεν μπορεί να αναπαράγει αυτή τη μορφή βίντεο</string>
+    <string name="video_viewer_error_malformed">Το αρχείο βίντεο είναι κατεστραμμένο ή ημιτελές</string>
     <string name="save_as_title">Αποθήκευση ως</string>
     <string name="save_as_error">Σφάλμα κατά την αποθήκευση του αρχείου</string>
     <string name="save_as_success_format">“%1$s” αποθηκεύτηκε στο “%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d αρχείο αποθηκεύτηκε στο “%2$s”</item>
+        <item quantity="other">%1$d αρχεία αποθηκεύτηκαν στο “%2$s”</item>
+    </plurals>
     <string name="text_editor_title">Επεξεργαστής κειμένου</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -608,9 +666,14 @@
     <string name="ftp_server_add_tile_result_error">Σφάλμα κατά την προσθήκη “Διακομιστής FTP” στις Γρήγορες Ρυθμίσεις</string>
     <string name="ftp_server_configuration_title">Διαμόρφωση</string>
     <string name="ftp_server_anonymous_login_title">Ανώνυμη σύνδεση</string>
+    <string name="ftp_server_error_password_empty">Ορίστε κωδικό ή ενεργοποιήστε την ανώνυμη σύνδεση πριν από την εκκίνηση του διακομιστή FTP</string>
     <string name="ftp_server_username_title">Όνομα χρήστη</string>
     <string name="ftp_server_password_title">Κωδικός</string>
     <string name="ftp_server_port_title">Θύρα</string>
+    <string name="ftp_server_passive_ports_title">Παθητικές θύρες δεδομένων</string>
+    <string name="ftp_server_passive_ports_summary_any">Οποιαδήποτε ελεύθερη θύρα</string>
+    <string name="ftp_server_passive_ports_dialog_message">Θύρες ή εύρη για συνδέσεις δεδομένων, π.χ. 2300-2400 ή 2300, 2301. Αφήστε το κενό για χρήση οποιασδήποτε ελεύθερης θύρας. Ορίστε το όταν η πρόσβαση στον διακομιστή γίνεται μέσω προώθησης θυρών ή σήραγγας.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Εισάγετε θύρες από 1 έως 65535, ως αριθμούς ή εύρη χωρισμένα με κόμματα</string>
     <string name="ftp_server_home_directory_title">Φάκελος ρίζας</string>
     <string name="ftp_server_writable_title">Αποδοχή εγγραφής</string>
     <string name="settings_title">Ρυθμίσεις</string>
@@ -618,6 +681,7 @@
     <string name="settings_locale_title">Γλώσσα</string>
     <string name="settings_theme_color_title">Χρώμα θέματος</string>
     <string name="settings_theme_color_summary">Χρώμα που εμφανίζεται συχνότερα στην εφαρμογή</string>
+    <string name="settings_theme_color_summary_material_design_3">Η Σχεδίαση Υλικού 3 χρησιμοποιεί τα χρώματα της ταπετσαρίας σας</string>
     <string name="settings_material_design_3_title">Σχεδίαση Υλικού 3</string>
     <string name="settings_night_mode_title">Νυχτερινή λειτουργία</string>
     <string-array name="settings_night_mode_entries">
@@ -638,6 +702,8 @@
     </string-array>
     <string name="settings_behavior_title">Συμπεριφορά</string>
     <string name="settings_default_directory_title">Προεπιλεγμένος φάκελος</string>
+    <string name="settings_remember_last_directory_title">Επαναφορά τελευταίου φακέλου</string>
+    <string name="settings_remember_last_directory_summary">Συνέχεια από εκεί που σταματήσατε αντί για τον προεπιλεγμένο φάκελο</string>
     <string name="settings_standard_directories_title">Τυπικοί φάκελοι</string>
     <string name="settings_standard_directories_summary_empty">Χωρίς ενεργούς τυπικούς φακέλους</string>
     <string name="settings_bookmark_directory_screenshots">Στιγμιότυπα οθόνης</string>
@@ -663,6 +729,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Εμφάνιση μικρογραφίας για έγγραφα PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Μπορεί να κάνει την εφαρμογή ασταθή σε παλαιότερες εκδόσεις Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Ανάγνωση απόμακρων αρχείων για μικρογραφία</string>
+    <string name="settings_video_remember_playback_position_title">Απομνημόνευση θέσης αναπαραγωγής βίντεο</string>
 
     <string name="about_title">Σχετικά</string>
     <string name="about_version_title">Έκδοση</string>
@@ -672,4 +739,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Ακολουθήστε στο GitHub</string>
     <string name="about_author_twitter_title">Ακολουθήστε στο Twitter</string>
+    <string name="text_editor_draft_save_failed">Δεν ήταν δυνατή η αποθήκευση πρόχειρου ανάκτησης. Αποθηκεύστε τις αλλαγές σας πριν φύγετε.</string>
+    <string name="text_editor_draft_restored">Οι μη αποθηκευμένες αλλαγές σας ανακτήθηκαν</string>
+    <string name="text_editor_draft_restore_failed">Δεν ήταν δυνατή η ανάκτηση των μη αποθηκευμένων αλλαγών σας</string>
+    <string name="password_save_failed">Δεν ήταν δυνατή η αποθήκευση του κωδικού</string>
+    <string name="file_list_partial_error">Δεν ήταν δυνατή η ανάγνωση ορισμένων αρχείων (λείπουν %1$d). Ανανεώστε για να δοκιμάσετε ξανά.</string>
 </resources>

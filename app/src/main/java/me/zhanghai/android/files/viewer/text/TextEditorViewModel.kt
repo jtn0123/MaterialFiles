@@ -35,6 +35,7 @@ import me.zhanghai.android.files.util.isReady
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toError
 import me.zhanghai.android.files.util.toLoading
+import me.zhanghai.android.files.util.toUserMessage
 
 class TextEditorViewModel(file: Path) : ViewModel() {
     internal val drafts = TextDraftSession(
@@ -180,7 +181,7 @@ class TextEditorViewModel(file: Path) : ViewModel() {
                 if (e is CancellationException) throw e
                 android.widget.Toast.makeText(
                     context,
-                    e.message,
+                    e.toUserMessage(context),
                     android.widget.Toast.LENGTH_LONG
                 ).show()
             }

@@ -11,6 +11,7 @@ import java8.nio.file.AccessDeniedException
 import java8.nio.file.FileAlreadyExistsException
 import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.DelegateOutputStream
 import me.zhanghai.android.files.provider.webdav.client.DavIOException
 
@@ -19,8 +20,11 @@ fun DavException.toFileSystemException(file: String?, other: String? = null): Fi
         is DavIOException ->
             return FileSystemException(file, other, message).apply { initCause(cause) }
 
-        is UnauthorizedException, is ForbiddenException ->
-            AccessDeniedException(file, other, message)
+        // A 401 means the server wants other credentials, a 403 that ours are fine but not
+        // enough for this resource.
+        is UnauthorizedException -> AuthenticationFailedException(file, other, message)
+
+        is ForbiddenException -> AccessDeniedException(file, other, message)
 
         is NotFoundException -> NoSuchFileException(file, other, message)
 

@@ -13,14 +13,19 @@ import java8.nio.file.FileSystemException
 import java8.nio.file.FileSystemLoopException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.NotDirectoryException
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import me.zhanghai.android.files.provider.common.IsDirectoryException
 import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException
+import me.zhanghai.android.files.provider.common.isAuthenticationFailure
 import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPException
+import net.schmizz.sshj.userauth.UserAuthException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** The status an SFTP server answers with has to become the matching file system exception. */
@@ -78,6 +83,19 @@ class ClientExceptionTest {
             FileSystemException::class.java,
             ClientException().toFileSystemException("/file").javaClass
         )
+    }
+
+    @Test
+    fun aRejectedLoginIsAnAuthenticationFailure() {
+        val exception = ClientException(UserAuthException("Exhausted available authentication"))
+        val mapped = exception.toFileSystemException("/file", "/other")
+        assertEquals(AuthenticationFailedException::class.java, mapped.javaClass)
+        assertTrue(mapped.isAuthenticationFailure)
+        assertSame(exception, mapped.cause)
+        assertEquals("/file", mapped.file)
+        assertEquals("/other", mapped.otherFile)
+        // A file the server keeps from us is not about our login.
+        assertFalse(mapped(Response.StatusCode.PERMISSION_DENIED).isAuthenticationFailure)
     }
 
     @Test

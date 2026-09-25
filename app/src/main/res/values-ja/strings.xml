@@ -19,6 +19,19 @@
     <string name="empty">空白</string>
     <string name="empty_placeholder">(空白)</string>
     <string name="error">エラー</string>
+    <string name="error_access_denied">アクセスが拒否されました</string>
+    <string name="error_authentication_failed">ログインに失敗しました</string>
+    <string name="error_file_not_found">ファイルが見つかりません</string>
+    <string name="error_file_already_exists">同じ名前のファイルが既に存在します</string>
+    <string name="error_directory_not_empty">フォルダが空ではありません</string>
+    <string name="error_not_a_directory">フォルダではありません</string>
+    <string name="error_is_a_directory">これはフォルダです</string>
+    <string name="error_read_only_file_system">ストレージは読み取り専用です</string>
+    <string name="error_invalid_file_name">無効なファイル名です</string>
+    <string name="error_unknown_host">不明なホストです</string>
+    <string name="error_connection_timed_out">接続がタイムアウトしました</string>
+    <string name="error_connection_failed">接続できませんでした</string>
+    <string name="error_interrupted">操作が中断されました</string>
     <string name="hide">隠す</string>
     <string name="install">インストール</string>
     <string name="keep_editing">編集を続ける</string>
@@ -39,6 +52,7 @@
     <string name="search">検索</string>
     <string name="select">選択</string>
     <string name="select_all">すべて選択</string>
+    <string name="select_range">範囲を選択</string>
     <string name="share">共有</string>
     <string name="show">表示</string>
     <string name="skip">スキップ</string>
@@ -105,6 +119,10 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="other">完了しました。エラーのためファイル %1$,d 件をスキップしました</item>
+    </plurals>
+    <string name="file_job_failed_format">失敗しました: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="other">ファイル %1$,d 件の削除を準備中</item>
     </plurals>
@@ -170,6 +188,8 @@
     <string name="file_job_merge_target_name">元のフォルダ</string>
     <string name="file_job_merge_source_name">マージ</string>
     <string name="file_job_conflict_show_name">移動先の新しい名前を選択してください</string>
+    <string name="file_job_conflict_show_name_expanded">展開</string>
+    <string name="file_job_conflict_show_name_collapsed">折りたたみ</string>
     <string name="file_job_conflict_name_hint">新しい名前</string>
     <string name="file_job_archive_error_title_format">「%1$s」の圧縮中にエラーが発生しました</string>
     <string name="file_job_archive_error_message_format">ファイルを「%1$s」に圧縮中にエラーが発生しました。\n%2$s</string>
@@ -181,6 +201,9 @@
     <string name="file_job_move_error_message_format">ファイルを「%1$s」に移動中にエラーが発生しました。\n%2$s</string>
     <string name="file_job_delete_error_title">削除中にエラーが発生しました</string>
     <string name="file_job_delete_error_message_format">「%1$s」の削除中にエラーが発生しました。\n%2$s</string>
+    <string name="file_job_read_error_title">読み込み中にエラーが発生しました</string>
+    <string name="file_job_read_error_message_format">「%1$s」の読み込み中にエラーが発生しました。\n%2$s</string>
+    <string name="file_job_list_error_message_format">「%1$s」の内容の取得中にエラーが発生しました。\n%2$s</string>
     <string name="file_job_rename_error_title_format">「%1$s」の名前を変更中にエラーが発生しました</string>
     <string name="file_job_rename_error_message_format">ファイル名を「%1$s」に変更中にエラーが発生しました。\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">「%1$s」の所有者を変更中にエラーが発生しました</string>
@@ -281,11 +304,25 @@
     <string name="file_list_paste_copy_title_format">%1$,d 件をコピー中</string>
     <string name="file_list_paste_extract_title_format">%1$,d 件を展開中</string>
     <string name="file_list_paste_action_extract_here">ここに展開</string>
+    <string name="file_list_edit_server">サーバーを編集</string>
     <string name="file_list_empty">ファイルがありません</string>
     <string name="file_list_action_create_file">ファイル</string>
     <string name="file_list_action_create_directory">フォルダ</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">その他のオプション</string>
+    <string name="file_item_menu_format">%1$s のその他のオプション</string>
+    <string name="file_item_select_format">%1$s を選択</string>
+    <string name="file_item_deselect_format">%1$s の選択を解除</string>
+    <string name="file_item_action_open">開く</string>
+    <string name="file_item_action_deselect">選択を解除</string>
+    <string name="file_item_state_selected">選択済み</string>
+    <string name="file_item_state_not_selected">未選択</string>
+    <string name="file_item_accessibility_separator">、</string>
+    <string name="file_item_accessibility_symbolic_link">リンク</string>
+    <string name="file_item_accessibility_broken_symbolic_link">壊れたリンク</string>
+    <string name="file_item_accessibility_encrypted">暗号化</string>
+    <string name="file_item_accessibility_app_directory">アプリフォルダ</string>
     <string name="file_item_action_open_with">アプリで開く</string>
     <string name="file_item_action_extract">展開</string>
     <string name="file_item_action_archive">圧縮</string>
@@ -404,6 +441,7 @@
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">ストレージ</string>
     <string name="storage_list_empty">ストレージがありません</string>
+    <string name="list_item_drag_handle">ドラッグして並べ替え</string>
     <string name="storage_add_storage_title">ストレージを追加</string>
     <string name="storage_add_storage_document_tree">外部ストレージ</string>
     <string name="storage_add_storage_ftp_server">FTP サーバー</string>
@@ -478,6 +516,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">空白にもできます</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">無効な秘密鍵のパスワードです</string>
     <string name="storage_edit_sftp_server_connect_and_add">接続して追加</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">ホスト鍵が変更されました</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">%1$s の %2$s 鍵が、最初の接続時に記録したものと一致しません。接続が傍受されているか、サーバーが再インストールされた可能性があります。\n\n記録済み: %3$s\n提示: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">新しい鍵を信頼</string>
     <string name="storage_edit_sftp_server_add">追加</string>
     <string name="storage_add_lan_smb_server_loading">SMB サーバーを検索中…</string>
     <string name="storage_add_lan_smb_server_add">手動で追加</string>
@@ -502,6 +543,8 @@
     <string name="storage_edit_smb_server_username_error_empty">ユーザー名を入力してください</string>
     <string name="storage_edit_smb_server_password">パスワード</string>
     <string name="storage_edit_smb_server_domain">ドメイン</string>
+    <string name="storage_edit_smb_server_encrypt">接続を暗号化</string>
+    <string name="storage_edit_smb_server_encrypt_summary">SMB3 暗号化を要求します。暗号化が必須の共有では必要です。対応していないサーバーでは無視されます。</string>
     <string name="storage_edit_smb_server_connect_and_add">接続して追加</string>
     <string name="storage_edit_smb_server_add">追加</string>
     <string name="storage_edit_webdav_server_title_edit">WebDAV サーバーを編集</string>
@@ -551,9 +594,22 @@
     <string name="archive_viewer_title">アーカイブビューアー</string>
     <string name="image_viewer_title">画像ビューアー</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">動画プレーヤー</string>
+    <string name="video_viewer_picture_in_picture">ピクチャー イン ピクチャー</string>
+    <string name="video_viewer_play_from_beginning">最初から再生</string>
+    <string name="video_viewer_screen_orientation">画面の向き</string>
+    <string name="video_viewer_screen_orientation_auto">自動回転</string>
+    <string name="video_viewer_screen_orientation_landscape">横向き</string>
+    <string name="video_viewer_screen_orientation_portrait">縦向き</string>
+    <string name="video_viewer_error_format">%1$s を再生できません</string>
+    <string name="video_viewer_error_unsupported">このデバイスではこの動画形式を再生できません</string>
+    <string name="video_viewer_error_malformed">動画ファイルが破損しているか、不完全です</string>
     <string name="save_as_title">保存</string>
     <string name="save_as_error">ファイルを保存中にエラーが発生しました</string>
     <string name="save_as_success_format">「%1$s」は「%2$s」に保存されました</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="other">ファイル %1$d 件を「%2$s」に保存しました</item>
+    </plurals>
     <string name="text_editor_title">テキストエディター</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -578,9 +634,14 @@
     <string name="ftp_server_add_tile_result_error">クイック設定に「FTP サーバー」を追加中にエラーが発生しました</string>
     <string name="ftp_server_configuration_title">設定</string>
     <string name="ftp_server_anonymous_login_title">匿名ログイン</string>
+    <string name="ftp_server_error_password_empty">FTP サーバーを開始する前に、パスワードを設定するか匿名ログインを有効にしてください</string>
     <string name="ftp_server_username_title">ユーザー名</string>
     <string name="ftp_server_password_title">パスワード</string>
     <string name="ftp_server_port_title">ポート</string>
+    <string name="ftp_server_passive_ports_title">パッシブ データポート</string>
+    <string name="ftp_server_passive_ports_summary_any">任意の空きポート</string>
+    <string name="ftp_server_passive_ports_dialog_message">データ接続に使用するポートまたは範囲 (例: 2300-2400、2300, 2301)。空欄にすると任意の空きポートを使用します。ポート転送やトンネル経由でサーバーに接続する場合に設定してください。</string>
+    <string name="ftp_server_passive_ports_error_invalid">1～65535 のポートを、数値または範囲をカンマ区切りで入力してください</string>
     <string name="ftp_server_home_directory_title">Root フォルダ</string>
     <string name="ftp_server_writable_title">書き込みを許可</string>
     <string name="settings_title">設定</string>
@@ -588,6 +649,7 @@
     <string name="settings_locale_title">言語</string>
     <string name="settings_theme_color_title">テーマカラー</string>
     <string name="settings_theme_color_summary">アプリ内で優先して使用する色です</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 では代わりに壁紙の色が使用されます</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">夜間モード</string>
     <string-array name="settings_night_mode_entries">
@@ -608,6 +670,8 @@
     </string-array>
     <string name="settings_behavior_title">動作</string>
     <string name="settings_default_directory_title">デフォルトのフォルダ</string>
+    <string name="settings_remember_last_directory_title">前回のフォルダを開く</string>
+    <string name="settings_remember_last_directory_summary">デフォルトのフォルダではなく、前回終了した場所から開始します</string>
     <string name="settings_standard_directories_title">標準フォルダ</string>
     <string name="settings_standard_directories_summary_empty">標準フォルダが有効化されていません</string>
     <string name="settings_bookmark_directory_screenshots">スクリーンショット</string>
@@ -632,6 +696,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">PDF ドキュメントのサムネイルを表示する</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">古いバージョンの Android ではアプリが不安定になる可能性があります</string>
     <string name="settings_read_remote_files_for_thumbnail_title">リモートファイルのサムネイルを読み込む</string>
+    <string name="settings_video_remember_playback_position_title">動画の再生位置を記憶</string>
 
     <string name="about_title">このアプリについて</string>
     <string name="about_version_title">バージョン</string>
@@ -641,4 +706,9 @@
     <string name="about_author_name_title">張海</string>
     <string name="about_author_github_title">GitHub でフォロー</string>
     <string name="about_author_twitter_title">Twitter でフォロー</string>
+    <string name="text_editor_draft_save_failed">復元用の下書きを保存できませんでした。終了する前に編集内容を保存してください。</string>
+    <string name="text_editor_draft_restored">未保存の編集内容を復元しました</string>
+    <string name="text_editor_draft_restore_failed">未保存の編集内容を復元できませんでした</string>
+    <string name="password_save_failed">パスワードを保存できませんでした</string>
+    <string name="file_list_partial_error">一部のファイルを読み込めませんでした (%1$d 件不足)。更新して再試行してください。</string>
 </resources>
