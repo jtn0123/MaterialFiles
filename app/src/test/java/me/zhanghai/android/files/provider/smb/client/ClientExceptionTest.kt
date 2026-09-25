@@ -17,11 +17,15 @@ import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.NotDirectoryException
 import java8.nio.file.NotLinkException
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import me.zhanghai.android.files.provider.common.IsDirectoryException
+import me.zhanghai.android.files.provider.common.isAuthenticationFailure
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** The NT status a server answers with has to become the matching file system exception. */
@@ -35,20 +39,34 @@ class ClientExceptionTest {
         exception(status).toFileSystemException("/share/file", "/share/other")
 
     @Test
-    fun deniedAndLockedOutStatusesAreAccessDenied() {
+    fun deniedStatusesAreAccessDenied() {
         for (status in listOf(
             NtStatus.STATUS_ACCESS_DENIED,
             NtStatus.STATUS_SHARING_VIOLATION,
             NtStatus.STATUS_PRIVILEGE_NOT_HELD,
+            NtStatus.STATUS_OPLOCK_NOT_GRANTED,
+            NtStatus.STATUS_CANNOT_DELETE,
+            NtStatus.STATUS_FILE_ENCRYPTED
+        )) {
+            val mapped = mapped(status)
+            assertEquals(status.name, AccessDeniedException::class.java, mapped.javaClass)
+            assertFalse(status.name, mapped.isAuthenticationFailure)
+        }
+    }
+
+    @Test
+    fun rejectedLogonsAreAuthenticationFailuresThatAreStillAccessDenied() {
+        for (status in listOf(
             NtStatus.STATUS_LOGON_FAILURE,
             NtStatus.STATUS_PASSWORD_EXPIRED,
             NtStatus.STATUS_ACCOUNT_DISABLED,
-            NtStatus.STATUS_OPLOCK_NOT_GRANTED,
-            NtStatus.STATUS_CANNOT_DELETE,
-            NtStatus.STATUS_LOGON_TYPE_NOT_GRANTED,
-            NtStatus.STATUS_FILE_ENCRYPTED
+            NtStatus.STATUS_LOGON_TYPE_NOT_GRANTED
         )) {
-            assertEquals(status.name, AccessDeniedException::class.java, mapped(status).javaClass)
+            val mapped = mapped(status)
+            assertEquals(status.name, AuthenticationFailedException::class.java, mapped.javaClass)
+            assertTrue(status.name, mapped is AccessDeniedException)
+            assertTrue(status.name, mapped.isAuthenticationFailure)
+            assertEquals("/share/file", mapped.file)
         }
     }
 

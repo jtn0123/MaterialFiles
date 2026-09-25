@@ -9,9 +9,11 @@ import java.io.IOException
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import me.zhanghai.android.files.provider.ftp.client.NegativeReplyCodeException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -26,6 +28,9 @@ class FtpExceptionsTest {
         assertTrue(exceptionFor(550) is NoSuchFileException)
         assertTrue(exceptionFor(530) is AccessDeniedException)
         assertTrue(exceptionFor(532) is AccessDeniedException)
+        // Only the rejected login is about who we are; the account 532 asks for is about storing.
+        assertTrue(exceptionFor(530) is AuthenticationFailedException)
+        assertFalse(exceptionFor(532) is AuthenticationFailedException)
         assertTrue(exceptionFor(553) is InvalidFileNameException)
     }
 

@@ -20,6 +20,7 @@
     <string name="empty_placeholder">(Empty)</string>
     <string name="error">Error</string>
     <string name="error_access_denied">Access denied</string>
+    <string name="error_authentication_failed">Sign-in failed</string>
     <string name="error_file_not_found">File not found</string>
     <string name="error_file_already_exists">A file with that name already exists</string>
     <string name="error_directory_not_empty">The folder is not empty</string>
