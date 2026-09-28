@@ -35,7 +35,8 @@ e push "$CLIP" "$DIR/Clip A.mp4" >/dev/null; e push "$CLIP" "$DIR/Clip B.mp4" >/
 e push "$OUT/shot.png" "$DIR/shot.png" >/dev/null; rm -f "$OUT/shot.png"
 e shell "echo 'Some notes for the screenshot run.' > '$DIR/notes.txt'"
 # The list shows each file's time, so it must not depend on when the run happened.
-e shell "touch -m -t 202601021030.00 '$DIR'/*"
+# This year's date, since an older one would also show the year.
+e shell "touch -m -t \$(date +%Y)01021030.00 '$DIR'/*"
 e shell "appops set $PKG MANAGE_EXTERNAL_STORAGE allow; pm grant $PKG android.permission.POST_NOTIFICATIONS" >/dev/null 2>&1
 e shell "settings put global window_animation_scale 0; settings put global transition_animation_scale 0; settings put global animator_duration_scale 0" >/dev/null
 
