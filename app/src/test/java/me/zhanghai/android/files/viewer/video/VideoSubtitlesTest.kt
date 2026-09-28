@@ -5,6 +5,10 @@
 
 package me.zhanghai.android.files.viewer.video
 
+import androidx.media3.common.MediaItem
+import java8.nio.file.Path
+import me.zhanghai.android.files.provider.common.FailingFileSystem
+import me.zhanghai.android.files.util.recordWarnings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -54,5 +58,16 @@ class VideoSubtitlesTest {
         assertNull(VideoSubtitles.languageFromSuffix("mp4"))
         assertNull(VideoSubtitles.languageFromSuffix("forced.en"))
         assertNull(VideoSubtitles.languageFromSuffix("e"))
+    }
+
+    @Test
+    fun aFolderThatCannotBeListedMeansNoSubtitlesRatherThanNoVideo() {
+        val video = FailingFileSystem(setOf("/share")).getPath("/share/Movie.mp4")
+        lateinit var subtitles: Map<Path, List<MediaItem.SubtitleConfiguration>>
+        val warnings = recordWarnings { subtitles = VideoSubtitles.findForAll(listOf(video)) }
+        assertEquals(mapOf(video to emptyList<MediaItem.SubtitleConfiguration>()), subtitles)
+        val warning = warnings.single()
+        assertEquals("VideoSubtitles", warning.tag)
+        assertEquals("List the subtitles in /share", warning.operation)
     }
 }

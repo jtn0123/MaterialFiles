@@ -107,7 +107,8 @@ class TextEditorViewModel(file: Path) : ViewModel() {
             currentCoroutineContext().ensureActive()
             bytesState.value = DataState.Success(bytes)
         } catch (e: CancellationException) {
-            e.logWarning("TextEditorViewModel", "Load the bytes of $file")
+            // A newer load or the screen going away cancelled this one; nothing went wrong.
+            throw e
         } catch (e: Exception) {
             bytesState.value = bytesState.value.toError(e)
         }
@@ -134,7 +135,8 @@ class TextEditorViewModel(file: Path) : ViewModel() {
                                 currentCoroutineContext().ensureActive()
                                 _textState.value = DataState.Success(text)
                             } catch (e: CancellationException) {
-                                e.logWarning("TextEditorViewModel", "Decode the text of $file")
+                                // A newer file or encoding replaced this one; nothing went wrong.
+                                throw e
                             } catch (e: Exception) {
                                 _textState.value = _textState.value.toError(e)
                             }

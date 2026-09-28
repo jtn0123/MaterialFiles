@@ -20,6 +20,7 @@ import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -128,6 +129,25 @@ class FileProviderTest {
 
         assertThrows(FileNotFoundException::class.java) {
             context.contentResolver.openInputStream(goneUri)
+        }
+    }
+
+    @Test
+    fun aFileThatIsGoneStillHasANameButNoSizeOrTime() {
+        // An app may ask about a file it was handed long after it was deleted.
+        val goneUri = Paths.get(File(directory, "Gone.txt").path).fileProviderUri
+
+        query(
+            goneUri,
+            OpenableColumns.DISPLAY_NAME,
+            OpenableColumns.SIZE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED
+        ).use { cursor ->
+            assertEquals(1, cursor.count)
+            cursor.moveToFirst()
+            assertEquals("Gone.txt", cursor.getString(0))
+            assertTrue(cursor.isNull(1))
+            assertTrue(cursor.isNull(2))
         }
     }
 

@@ -77,4 +77,18 @@ class StuckOperationsTest {
         }
         assertEquals(0, operations.runningCount)
     }
+
+    @Test
+    fun theAppReportsAStuckOperationAsAWarningNamingIt() {
+        val stuck = StuckOperations.Stuck("Read /share/a.mp4", Thread.currentThread(), 61_000)
+        val warnings = recordWarnings { StuckOperations.logStuck(stuck) }
+        val warning = warnings.single()
+        assertEquals("StuckOperations", warning.tag)
+        assertEquals(
+            "Read /share/a.mp4 has been running for 61000 ms on ${Thread.currentThread().name}",
+            warning.operation
+        )
+        assertSame(stuck, warning.throwable)
+        assertEquals(0, StuckOperations.instance.runningCount)
+    }
 }

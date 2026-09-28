@@ -57,6 +57,14 @@ class DocumentUriTest {
     }
 
     @Test
+    fun aDocumentTheAppMayNotReadHasNoNameRatherThanCrashing() {
+        // The storage provider refuses a tree the user never picked, with a SecurityException.
+        val document = primaryTreeUri.asDocumentTreeUri().buildDocumentUri("primary:Download")
+
+        assertNull(document.displayName)
+    }
+
+    @Test
     fun aPermissionThatWasNeverGrantedIsNotHeldAndCannotBeGivenUp() {
         val tree = primaryTreeUri.asDocumentTreeUri()
 
