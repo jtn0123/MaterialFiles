@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.util
 
+import androidx.annotation.VisibleForTesting
 import java.io.File
 import java.io.IOException
 import java.time.Instant
@@ -34,6 +35,12 @@ object DiagnosticLog {
 
     fun initialize(directory: File) {
         file = DiagnosticLogFile(directory, MAX_FILE_BYTES)
+    }
+
+    /** Stops keeping entries again, for a JVM test that initialized the log. */
+    @VisibleForTesting
+    fun uninitialize() {
+        file = null
     }
 
     /** Appends on a worker, so that a warning on the main thread never waits for the disk. */

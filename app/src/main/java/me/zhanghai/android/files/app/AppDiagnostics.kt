@@ -12,6 +12,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import me.zhanghai.android.files.compat.getSystemServiceCompat
 import me.zhanghai.android.files.util.DiagnosticLog
 import me.zhanghai.android.files.util.StuckOperations
@@ -28,11 +29,9 @@ private const val MAX_EXIT_INFOS = 16
 fun initializeDiagnostics() {
     DiagnosticLog.initialize(application.filesDir.resolve("diagnostics"))
     DiagnosticLog.append('I', TAG, "Process started")
-    val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
-    Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-        DiagnosticLog.appendNow('E', TAG, "Crashed on ${thread.name}", throwable)
-        defaultHandler?.uncaughtException(thread, throwable)
-    }
+    Thread.setDefaultUncaughtExceptionHandler(
+        CrashRecorder(Thread.getDefaultUncaughtExceptionHandler())
+    )
     StuckOperations.startChecking()
     ProcessLifecycleOwner.get().lifecycle.addObserver(
         object : DefaultLifecycleObserver {
@@ -54,25 +53,49 @@ fun initializeDiagnostics() {
     backgroundExecutor.execute { recordPreviousExits() }
 }
 
-/**
- * Records how earlier processes of the app ended, since Android keeps that (a kill for using too
- * much, an ANR with its trace) but nobody looks unless something already seemed wrong.
- */
+/** Keeps a crash in [DiagnosticLog] before handing it on to the handler that ends the process. */
+internal class CrashRecorder(private val defaultHandler: Thread.UncaughtExceptionHandler?) :
+    Thread.UncaughtExceptionHandler {
+    override fun uncaughtException(thread: Thread, throwable: Throwable) {
+        DiagnosticLog.appendNow('E', TAG, "Crashed on ${thread.name}", throwable)
+        defaultHandler?.uncaughtException(thread, throwable)
+    }
+}
+
 private fun recordPreviousExits() {
     val directory = DiagnosticLog.directory ?: return
+    recordPreviousExits(directory, { DiagnosticLog.append('I', TAG, it) }) {
+        application.getSystemServiceCompat(ActivityManager::class.java)
+            .getHistoricalProcessExitReasons(application.packageName, 0, MAX_EXIT_INFOS)
+            .map { ProcessExit(it.timestamp, it.processName) { it.format() + it.readTrace() } }
+    }
+}
+
+/** An earlier process of the app, and how to describe the way it ended. */
+internal class ProcessExit(val timestamp: Long, val processName: String, val describe: () -> String)
+
+/**
+ * Records how earlier processes of the app ended, since Android keeps that (a kill for using too
+ * much, an ANR with its trace) but nobody looks unless something already seemed wrong. Each exit
+ * is recorded once: the time of the last one recorded is kept in [directory].
+ */
+internal fun recordPreviousExits(
+    directory: File,
+    record: (String) -> Unit,
+    readExits: () -> List<ProcessExit>
+) {
     val lastRecordedFile = File(directory, "last_recorded_exit")
     try {
         val lastRecorded = lastRecordedFile.takeIf { it.exists() }?.readText()?.trim()
             ?.toLongOrNull() ?: 0L
-        val exitInfos = application.getSystemServiceCompat(ActivityManager::class.java)
-            .getHistoricalProcessExitReasons(application.packageName, 0, MAX_EXIT_INFOS)
+        val exits = readExits()
             // Not the WebView's own sandboxed processes, which end whenever it is done.
             .filter { it.timestamp > lastRecorded && ':' !in it.processName }
             .sortedBy { it.timestamp }
-        for (exitInfo in exitInfos) {
-            DiagnosticLog.append('I', TAG, exitInfo.format() + exitInfo.readTrace())
+        for (exit in exits) {
+            record(exit.describe())
         }
-        exitInfos.lastOrNull()?.let {
+        exits.lastOrNull()?.let {
             directory.mkdirs()
             lastRecordedFile.writeText(it.timestamp.toString())
         }
@@ -92,14 +115,19 @@ private fun ApplicationExitInfo.format(): String = formatProcessExit(
     description
 )
 
-private fun ApplicationExitInfo.readTrace(): String {
+private fun ApplicationExitInfo.readTrace(): String = readExitTrace(reason, pid) {
+    traceInputStream
+}
+
+/** The start of the trace of an ANR or a native crash, the only exits that have one. */
+internal fun readExitTrace(reason: Int, pid: Int, openTrace: () -> InputStream?): String {
     if (reason != ApplicationExitInfo.REASON_ANR &&
         reason != ApplicationExitInfo.REASON_CRASH_NATIVE
     ) {
         return ""
     }
     return try {
-        traceInputStream?.bufferedReader()?.use { reader ->
+        openTrace()?.bufferedReader()?.use { reader ->
             reader.lineSequence().take(MAX_TRACE_LINES).joinToString("\n", prefix = "\n")
         } ?: ""
     } catch (e: IOException) {

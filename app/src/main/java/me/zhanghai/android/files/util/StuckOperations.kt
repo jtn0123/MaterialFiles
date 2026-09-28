@@ -83,8 +83,11 @@ class StuckOperations(
 
         private const val CHECK_INTERVAL_MILLIS = 15_000L
 
-        val instance = StuckOperations(THRESHOLD_MILLIS, System::currentTimeMillis) {
-            it.logWarning("StuckOperations", it.message!!)
+        val instance = StuckOperations(THRESHOLD_MILLIS, System::currentTimeMillis, ::logStuck)
+
+        /** How [instance] reports: as a warning, which also keeps it in [DiagnosticLog]. */
+        internal fun logStuck(stuck: Stuck) {
+            stuck.logWarning("StuckOperations", stuck.message!!)
         }
 
         private val checker: ScheduledExecutorService by lazy {

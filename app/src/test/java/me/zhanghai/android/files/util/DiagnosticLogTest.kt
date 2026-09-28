@@ -7,8 +7,10 @@ package me.zhanghai.android.files.util
 
 import java.io.File
 import java.io.IOException
+import java.io.PrintWriter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -70,5 +72,84 @@ class DiagnosticLogTest {
         val blocker = temporaryFolder.newFile("blocker")
         val file = DiagnosticLogFile(File(blocker, "diagnostics"), 1024)
         assertThrows(IOException::class.java) { file.append("entry\n") }
+    }
+
+    @Test
+    fun anEntryLargerThanAWholeFileIsStillWrittenToAnEmptyLog() {
+        val file = DiagnosticLogFile(temporaryFolder.root, 10)
+        file.append("a long entry\n")
+        assertEquals("a long entry\n", file.file.readText())
+        assertFalse(file.previousFile.exists())
+    }
+
+    @Test
+    fun aFullFileWhoseOlderOneCannotBeDroppedFailsTheAppend() {
+        val file = DiagnosticLogFile(temporaryFolder.root, 10)
+        file.append("aaaaaaaa\n")
+        // A directory with something in it cannot be deleted like a file.
+        File(file.previousFile, "child").apply { parentFile!!.mkdirs() }.writeText("child")
+        val exception = assertThrows(IOException::class.java) { file.append("bbbbbbbb\n") }
+        assertTrue(exception.message!!, exception.message!!.startsWith("Cannot delete"))
+        assertEquals("aaaaaaaa\n", file.file.readText())
+    }
+
+    @Test
+    fun aFullFileThatCannotBeMovedAsideFailsTheAppend() {
+        val directory = temporaryFolder.newFolder("read-only")
+        val file = DiagnosticLogFile(directory, 10)
+        file.append("aaaaaaaa\n")
+        assertTrue(directory.setWritable(false))
+        try {
+            val exception = assertThrows(IOException::class.java) { file.append("bbbbbbbb\n") }
+            assertTrue(exception.message!!, exception.message!!.startsWith("Cannot move"))
+        } finally {
+            directory.setWritable(true)
+        }
+        assertEquals("aaaaaaaa\n", file.file.readText())
+        assertFalse(file.previousFile.exists())
+    }
+
+    @Test
+    fun aStackTraceWithoutAFinalNewlineStillEndsTheEntry() {
+        val throwable = object : Throwable("No newline") {
+            override fun printStackTrace(s: PrintWriter) {
+                s.print("Throwable: No newline")
+            }
+        }
+        val entry = formatDiagnosticEntry(0, 'W', "Tag", "Read", throwable)
+        assertTrue(entry, entry.endsWith(" W/Tag: Read\nThrowable: No newline\n"))
+    }
+
+    @Test
+    fun appendNowHasWrittenTheEntryWhenItReturns() {
+        val directory = File(temporaryFolder.root, "diagnostics")
+        DiagnosticLog.initialize(directory)
+        try {
+            assertEquals(directory, DiagnosticLog.directory)
+            DiagnosticLog.appendNow('E', "Tag", "Crashed", IOException("Broken pipe"))
+        } finally {
+            DiagnosticLog.uninitialize()
+        }
+        val text = File(directory, "diagnostics.log").readText()
+        assertTrue(text, text.contains(" E/Tag: Crashed\njava.io.IOException: Broken pipe\n"))
+    }
+
+    @Test
+    fun appendNowBeforeTheLogIsInitializedIsIgnored() {
+        DiagnosticLog.uninitialize()
+        DiagnosticLog.appendNow('E', "Tag", "Crashed")
+        assertNull(DiagnosticLog.directory)
+    }
+
+    @Test
+    fun aLogThatCannotBeWrittenLosesTheEntryRatherThanFailingTheCaller() {
+        val blocker = temporaryFolder.newFile("blocker")
+        DiagnosticLog.initialize(File(blocker, "diagnostics"))
+        try {
+            DiagnosticLog.appendNow('E', "Tag", "Crashed")
+        } finally {
+            DiagnosticLog.uninitialize()
+        }
+        assertTrue(blocker.isFile)
     }
 }
