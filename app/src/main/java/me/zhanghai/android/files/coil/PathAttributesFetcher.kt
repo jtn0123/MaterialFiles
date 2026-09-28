@@ -277,8 +277,12 @@ class PathAttributesFetcher(
             try {
                 fetchMedia(path, isVideo, options, abortHandle, readFailure)
             } catch (e: RuntimeException) {
+                // A file that cannot be read at arbitrary offsets, such as one inside an archive,
+                // never will be, so that is not a failure worth reading the file again for.
                 throw readFailure.get()?.apply { addSuppressed(e) }
-                    ?: (e.cause as? IOException)?.apply { addSuppressed(e) }
+                    ?: (e.cause as? IOException)
+                        ?.takeUnless { it.cause is UnsupportedOperationException }
+                        ?.apply { addSuppressed(e) }
                     ?: e
             }
         }
