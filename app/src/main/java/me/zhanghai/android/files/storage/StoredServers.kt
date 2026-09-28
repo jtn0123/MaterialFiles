@@ -14,12 +14,15 @@ import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.valueCompat
 
 /**
- * The stored server that [path] is on, whose edit screen is where its credentials are fixed, or
- * null if [path] is not on a stored server.
+ * The stored server in [storages] that [path] is on, whose edit screen is where its credentials
+ * are fixed, or null if [path] is not on a stored server.
  */
-fun findStoredServer(path: Path): Storage? {
+fun findStoredServer(
+    path: Path,
+    storages: List<Storage> = Settings.STORAGES.valueCompat
+): Storage? {
     val authority = path.serverAuthority ?: return null
-    return findStoredServer(authority, Settings.STORAGES.valueCompat)
+    return findStoredServer(authority, storages)
 }
 
 /**
