@@ -17,8 +17,12 @@ import me.zhanghai.android.files.provider.webdav.client.DavIOException
 
 fun DavException.toFileSystemException(file: String?, other: String? = null): FileSystemException {
     return when (this) {
-        is DavIOException ->
-            return FileSystemException(file, other, message).apply { initCause(cause) }
+        // Keep what actually went wrong, e.g. a refused connection, as the cause. (Inside apply,
+        // a bare cause would be the new exception's own, which is still null.)
+        is DavIOException -> {
+            val ioException = cause
+            return FileSystemException(file, other, message).apply { initCause(ioException) }
+        }
 
         // A 401 means the server wants other credentials, a 403 that ours are fine but not
         // enough for this resource.

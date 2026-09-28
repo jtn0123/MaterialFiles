@@ -46,6 +46,8 @@ class ServerConnectViews(
         hostField: ServerFormField,
         credentialsField: ServerFormField?
     ) {
+        // A disabled field cannot take the focus, so the form has to be usable again first.
+        setConnecting(false)
         val context = errorText.context
         errorText.text = throwable.toUserMessage(context)
         errorText.isVisible = true

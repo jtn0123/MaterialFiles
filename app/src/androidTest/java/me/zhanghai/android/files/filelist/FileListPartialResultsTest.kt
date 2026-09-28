@@ -19,6 +19,7 @@ import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Render controlled partial/loading states with real file rows, without a flaky network outage. */
@@ -89,6 +90,11 @@ class FileListPartialResultsTest {
                     device.wait(Until.findObject(By.text(context.getString(R.string.error))), 3000)
                 )
                 captureReviewScreenshot("folder-partial-results")
+                assertNotNull(device.findObject(By.text("Meeting notes.txt")))
+
+                // Retrying lists the folder again, which now works, so the error goes away.
+                device.findObject(By.text(context.getString(R.string.retry))).click()
+                assertTrue(device.wait(Until.gone(By.text(expectedError)), 10000))
                 assertNotNull(device.findObject(By.text("Meeting notes.txt")))
             }
         } finally {
