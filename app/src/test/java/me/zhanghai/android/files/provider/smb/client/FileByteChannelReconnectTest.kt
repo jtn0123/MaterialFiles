@@ -13,6 +13,7 @@ import com.hierynomus.mssmb2.SMB2ShareAccess
 import java.nio.ByteBuffer
 import java.util.EnumSet
 import kotlin.random.Random
+import me.zhanghai.android.files.util.warningLogger
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -31,8 +32,13 @@ class FileByteChannelReconnectTest {
 
     private lateinit var authority: Authority
 
+    private val defaultWarningLogger = warningLogger
+
     @Before
     fun setUp() {
+        // Reconnecting closes the dead session and logs that, which android.jar cannot do here.
+        warningLogger =
+            { tag, operation, throwable -> System.err.println("W/$tag: $operation: $throwable") }
         val port = System.getProperty("material.smb.port")
         assumeNotNull("Run tools/network-tests.py to provision the SMB fixture", port)
         authority = Authority("127.0.0.1", port!!.toInt(), "test", null)
@@ -45,6 +51,7 @@ class FileByteChannelReconnectTest {
 
     @After
     fun tearDown() {
+        warningLogger = defaultWarningLogger
         if (::client.isInitialized) {
             client.clientFor(authority).close()
         }
