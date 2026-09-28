@@ -74,7 +74,9 @@ class DiagnosticLogFile(val directory: File, val maxBytes: Long) {
             throw IOException("Cannot create $directory")
         }
         if (file.length() + entry.length > maxBytes && file.exists()) {
-            previousFile.delete()
+            if (previousFile.exists() && !previousFile.delete()) {
+                throw IOException("Cannot delete $previousFile")
+            }
             if (!file.renameTo(previousFile)) {
                 throw IOException("Cannot move $file aside")
             }
