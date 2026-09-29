@@ -9,6 +9,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -45,7 +46,13 @@ class FileJobResultNotificationTest {
     @Before
     fun setUp() {
         shell("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS")
-        directory = File(context.filesDir, "result-notification-${UUID.randomUUID()}")
+        shell("appops set ${context.packageName} MANAGE_EXTERNAL_STORAGE allow")
+        // Shared storage, as the user's files are: a copy out of the app's own private folder is
+        // taken for one that needs root and stops on an error dialog instead.
+        directory = File(
+            Environment.getExternalStorageDirectory(),
+            "Download/FileJobResultNotificationTest-${UUID.randomUUID()}"
+        )
         sourceDirectory = File(directory, "source").apply { mkdirs() }
         targetDirectory = File(directory, "Target").apply { mkdirs() }
         notificationManager.cancelAll()

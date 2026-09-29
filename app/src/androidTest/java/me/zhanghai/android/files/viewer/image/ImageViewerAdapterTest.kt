@@ -106,7 +106,9 @@ class ImageViewerAdapterTest {
         return holder
     }
 
-    private fun await(what: String, condition: () -> Boolean) {
+    private fun await(what: String, condition: () -> Boolean) = await({ what }, condition)
+
+    private fun await(what: () -> String, condition: () -> Boolean) {
         val deadline = System.currentTimeMillis() + 20_000
         while (System.currentTimeMillis() < deadline) {
             var satisfied = false
@@ -116,7 +118,7 @@ class ImageViewerAdapterTest {
             }
             Thread.sleep(100)
         }
-        throw AssertionError(what)
+        throw AssertionError(what())
     }
 
     @Test
@@ -205,8 +207,14 @@ class ImageViewerAdapterTest {
         fileSystem.reads.latencyMillis = 400
         val holder = show(fileSystem.path("Camera.jpg"))
 
-        await("The embedded thumbnail was not shown while the photo was read") {
-            holder.binding.image.isVisible && holder.binding.image.drawable.bitmapWidth() == 160
+        // What the page went through, for when the thumbnail never shows.
+        val states = linkedSetOf<String>()
+        await({ "The embedded thumbnail was not shown while the photo was read; saw $states" }) {
+            val binding = holder.binding
+            states += "image=${binding.image.isVisible}/${binding.image.drawable.bitmapWidth()}" +
+                " large=${binding.largeImage.isVisible} progress=${binding.progress.isVisible}" +
+                " error=${binding.errorLayout.isVisible}"
+            binding.image.isVisible && binding.image.drawable.bitmapWidth() == 160
         }
         assertTrue(
             "The progress is hidden behind the placeholder",
@@ -217,6 +225,22 @@ class ImageViewerAdapterTest {
         }
         // One read for the size, the orientation and the thumbnail, and one for the photo.
         assertEquals(2, fileSystem.reads.openedChannels("Camera.jpg"))
+    }
+
+    @Test
+    fun theHeaderReadFindsTheEmbeddedThumbnailOfARemoteCameraPhoto() {
+        val file = File(directory, "Camera.jpg")
+        TestJpeg.write(file, 2400, 1800, 160, 120, isNoisy = true)
+        val path = SlowRemoteFileSystem(directory).path("Camera.jpg")
+
+        val imageInfo = path.readImageInfo(
+            path.readAttributes(BasicFileAttributes::class.java),
+            true
+        )
+
+        assertEquals(2400, imageInfo.width)
+        assertEquals(1800, imageInfo.height)
+        assertEquals("File of ${file.length()} bytes", 160, imageInfo.preview?.width)
     }
 
     @Test

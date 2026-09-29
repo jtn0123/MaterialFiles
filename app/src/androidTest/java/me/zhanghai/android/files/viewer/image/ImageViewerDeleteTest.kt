@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.viewer.image
 
 import android.content.Intent
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import androidx.test.core.app.ActivityScenario
@@ -50,7 +51,15 @@ class ImageViewerDeleteTest {
 
     @Before
     fun setUp() {
-        directory = File(context.filesDir, "image-delete-${UUID.randomUUID()}").apply { mkdirs() }
+        instrumentation.uiAutomation
+            .executeShellCommand("appops set ${context.packageName} MANAGE_EXTERNAL_STORAGE allow")
+            .close()
+        // Shared storage, as the user's photos are: the app's own private folder is taken for one
+        // that needs root, which the emulator does not have.
+        directory = File(
+            Environment.getExternalStorageDirectory(),
+            "Pictures/ImageViewerDeleteTest-${UUID.randomUUID()}"
+        ).apply { mkdirs() }
         for (name in PHOTO_NAMES) {
             TestJpeg.write(File(directory, name), 320, 240)
         }
