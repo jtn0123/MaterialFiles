@@ -134,6 +134,28 @@
         <item quantity="other">Finished, %1$,d files skipped because of errors</item>
     </plurals>
     <string name="file_job_failed_format">Failed: %1$s</string>
+    <string name="file_job_copy_finished_title_one_format">Copied “%1$s” to “%2$s”</string>
+    <plurals name="file_job_copy_finished_title_multiple_format">
+        <item quantity="one">Copied %1$,d item to “%2$s”</item>
+        <item quantity="other">Copied %1$,d items to “%2$s”</item>
+    </plurals>
+    <string name="file_job_extract_finished_title_one_format">Extracted “%1$s” to “%2$s”</string>
+    <plurals name="file_job_extract_finished_title_multiple_format">
+        <item quantity="one">Extracted %1$,d item to “%2$s”</item>
+        <item quantity="other">Extracted %1$,d items to “%2$s”</item>
+    </plurals>
+    <string name="file_job_move_finished_title_one_format">Moved “%1$s” to “%2$s”</string>
+    <plurals name="file_job_move_finished_title_multiple_format">
+        <item quantity="one">Moved %1$,d item to “%2$s”</item>
+        <item quantity="other">Moved %1$,d items to “%2$s”</item>
+    </plurals>
+    <string name="file_job_copy_failed_title">Copy failed</string>
+    <string name="file_job_extract_failed_title">Extraction failed</string>
+    <string name="file_job_move_failed_title">Move failed</string>
+    <string name="file_job_transfer_rate_format">%1$s/s</string>
+    <string name="file_job_remaining_seconds_format">%1$d s left</string>
+    <string name="file_job_remaining_minutes_format">%1$d min left</string>
+    <string name="file_job_remaining_hours_format">%1$d h %2$d min left</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Preparing to delete %1$,d file</item>
         <item quantity="other">Preparing to delete %1$,d files</item>
@@ -665,7 +687,13 @@
     <string name="storage_add_lan_smb_server_title" translatable="false">@string/storage_edit_smb_server_title_add</string>
     <string name="storage_add_lan_smb_server_loading">Searching for SMB servers…</string>
     <string name="storage_add_lan_smb_server_add">Add manually</string>
+    <string name="storage_add_lan_smb_server_none_found">No servers found. Make sure this device is on the same Wi-Fi as the server, or add one manually.</string>
+    <string name="storage_add_lan_smb_server_not_on_local_network">Not connected to a local network. Connect to Wi-Fi to search for servers, or add one manually.</string>
+    <string name="storage_add_lan_smb_server_failed_format">Couldn’t search for servers: %1$s</string>
+    <string name="storage_add_lan_smb_server_search_again">Search again</string>
     <string name="storage_edit_smb_server_title_edit">Edit SMB server</string>
+    <string name="storage_edit_server_remove_title_format">Remove “%1$s”?</string>
+    <string name="storage_edit_server_remove_message">Its saved password is removed from this device too.</string>
     <string name="storage_edit_smb_server_title_add">Add SMB server</string>
     <string name="storage_edit_smb_server_host">Hostname</string>
     <string name="storage_edit_smb_server_host_error_empty">Enter a hostname</string>

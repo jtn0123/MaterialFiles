@@ -45,13 +45,17 @@ class LanSmbServerListLiveData : CloseableLiveData<Stateful<List<LanSmbServer>>>
 
     private suspend fun loadServers() {
         try {
+            val localAddress = InetAddress::class.getLocalAddress()
+            if (!localAddress.isSearchableLocalAddress) {
+                throw NotOnLocalNetworkException()
+            }
             val newServerSet = mutableSetOf<LanSmbServer>()
             // Each probe blocks on a NetBIOS query, so allow many of them at once.
             withContext(Dispatchers.IO.limitedParallelism(PROBE_PARALLELISM)) {
                 // The NetBIOS computer-browser service (NetServerEnum) needs SMB1, which the app
                 // no longer negotiates; Windows stopped providing it years ago in any case.
                 // Scanning the subnet is the only source.
-                val serverChannel = getServersByScanningSubnet()
+                val serverChannel = getServersByScanningSubnet(localAddress as Inet4Address)
                 serverChannel.consumeEach {
                     // Use linked set to preserve UI stability.
                     val serverSet = valueCompat.value?.toLinkedSet() ?: linkedSetOf()
@@ -73,28 +77,25 @@ class LanSmbServerListLiveData : CloseableLiveData<Stateful<List<LanSmbServer>>>
         }
     }
 
-    private fun CoroutineScope.getServersByScanningSubnet(): ReceiveChannel<LanSmbServer> =
-        produce {
-            launch {
-                val localAddress = InetAddress::class.getLocalAddress()
-                if (localAddress !is Inet4Address || !localAddress.isSiteLocalAddress) {
-                    return@launch
-                }
-                val nameServiceClient = SingletonContext.getInstance().nameServiceClient
-                for (address in localAddress.getSubnetAddresses()) {
-                    launch {
-                        val nbtAddresses = try {
-                            nameServiceClient.getNbtAllByAddress(address.hostAddress)
-                        } catch (e: UnknownHostException) {
-                            e.logWarning("LanSmbServerListLiveData", "Get the NBT name of $address")
-                            return@launch
-                        }
-                        val host = nbtAddresses.firstOrNull()?.hostName ?: return@launch
-                        send(LanSmbServer(host, address))
+    private fun CoroutineScope.getServersByScanningSubnet(
+        localAddress: Inet4Address
+    ): ReceiveChannel<LanSmbServer> = produce {
+        launch {
+            val nameServiceClient = SingletonContext.getInstance().nameServiceClient
+            for (address in localAddress.getSubnetAddresses()) {
+                launch {
+                    val nbtAddresses = try {
+                        nameServiceClient.getNbtAllByAddress(address.hostAddress)
+                    } catch (e: UnknownHostException) {
+                        e.logWarning("LanSmbServerListLiveData", "Get the NBT name of $address")
+                        return@launch
                     }
+                    val host = nbtAddresses.firstOrNull()?.hostName ?: return@launch
+                    send(LanSmbServer(host, address))
                 }
             }
         }
+    }
 
     private fun Inet4Address.getSubnetAddresses(): Sequence<Inet4Address> = sequence {
         val addressBytes = address

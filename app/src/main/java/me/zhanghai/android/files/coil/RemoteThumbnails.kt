@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.coil
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
@@ -178,6 +179,41 @@ internal object RemoteThumbnails {
         return SourceResult(source, CACHE_MIME_TYPE, DataSource.DISK)
     }
 
+    /**
+     * The sizes a thumbnail can be kept on disk at, largest first, which is the order worth trying
+     * them in when any of them will do.
+     */
+    val cachedSizesLargestFirst: List<Pair<Int, Int>> by lazy {
+        val sides = (SIZE_STEP_PX..MAX_SIZE_PX step SIZE_STEP_PX).toList()
+        sides.flatMap { width -> sides.map { height -> width to height } }
+            .sortedWith(
+                compareByDescending<Pair<Int, Int>> { it.first * it.second }
+                    .thenByDescending { maxOf(it.first, it.second) }
+            )
+    }
+
+    /**
+     * Decodes the largest thumbnail of [path] kept on disk at any size, such as the one its grid
+     * cell showed, without reading the file itself; `null` if there is none.
+     */
+    fun readCachedBitmap(path: Path, attributes: BasicFileAttributes): Bitmap? {
+        for ((width, height) in cachedSizesLargestFirst) {
+            val key = createKey(path, attributes, width, height)
+            val snapshot = try {
+                diskCache.openSnapshot(key)
+            } catch (e: Exception) {
+                e.logWarning(TAG, "Open the cached thumbnail $key")
+                null
+            } ?: continue
+            snapshot.use {
+                diskCache.fileSystem.source(it.data).buffer().inputStream().use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)?.let { bitmap -> return bitmap }
+                }
+            }
+        }
+        return null
+    }
+
     fun put(key: String, drawable: Drawable) {
         // An animated drawable is kept as its first frame, which is all a list shows anyway.
         val bitmap = (drawable as? BitmapDrawable)?.bitmap
@@ -280,10 +316,15 @@ internal fun Path.readExifThumbnail(minSizePx: Int): Bitmap? = newInputStream().
     if (!isLargeEnough) {
         return null
     }
+    thumbnail.toUpright(exifInterface)
+}
+
+/** Turns an image the way the EXIF data it came with asks for it to be shown. */
+internal fun Bitmap.toUpright(exifInterface: ExifInterface): Bitmap {
     val rotationDegrees = exifInterface.rotationDegrees
     val isFlipped = exifInterface.isFlipped
     if (rotationDegrees == 0 && !isFlipped) {
-        return thumbnail
+        return this
     }
     val matrix = Matrix().apply {
         if (isFlipped) {
@@ -291,5 +332,5 @@ internal fun Path.readExifThumbnail(minSizePx: Int): Bitmap? = newInputStream().
         }
         postRotate(rotationDegrees.toFloat())
     }
-    Bitmap.createBitmap(thumbnail, 0, 0, thumbnail.width, thumbnail.height, matrix, true)
+    return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
 }
