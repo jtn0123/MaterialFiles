@@ -692,6 +692,8 @@
     <string name="storage_add_lan_smb_server_failed_format">Couldn’t search for servers: %1$s</string>
     <string name="storage_add_lan_smb_server_search_again">Search again</string>
     <string name="storage_edit_smb_server_title_edit">Edit SMB server</string>
+    <string name="storage_edit_server_remove_title_format">Remove “%1$s”?</string>
+    <string name="storage_edit_server_remove_message">Its saved password is removed from this device too.</string>
     <string name="storage_edit_smb_server_title_add">Add SMB server</string>
     <string name="storage_edit_smb_server_host">Hostname</string>
     <string name="storage_edit_smb_server_host_error_empty">Enter a hostname</string>

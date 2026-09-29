@@ -38,7 +38,9 @@ import me.zhanghai.android.files.util.setResult
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
 
-class EditSmbServerFragment : Fragment() {
+class EditSmbServerFragment :
+    Fragment(),
+    ConfirmRemoveServerDialogFragment.Listener {
     private val args by args<Args>()
 
     private val viewModel by viewModels { { EditSmbServerViewModel() } }
@@ -140,7 +142,7 @@ class EditSmbServerFragment : Fragment() {
         )
         binding.removeOrAddButton.setOnClickListener {
             if (args.server != null) {
-                remove()
+                confirmRemove()
             } else {
                 saveOrAdd()
             }
@@ -275,7 +277,12 @@ class EditSmbServerFragment : Fragment() {
         )
     }
 
-    private fun remove() {
+    private fun confirmRemove() {
+        val server = args.server ?: return
+        ConfirmRemoveServerDialogFragment.show(server.getName(requireContext()), this)
+    }
+
+    override fun removeServer() {
         Storages.remove(args.server ?: return)
         setResult(Activity.RESULT_OK)
         finish()

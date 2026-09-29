@@ -39,7 +39,9 @@ import me.zhanghai.android.files.util.setResult
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
 
-class EditFtpServerFragment : Fragment() {
+class EditFtpServerFragment :
+    Fragment(),
+    ConfirmRemoveServerDialogFragment.Listener {
     private val args by args<Args>()
 
     private val viewModel by viewModels { { EditFtpServerViewModel() } }
@@ -168,7 +170,7 @@ class EditFtpServerFragment : Fragment() {
         )
         binding.removeOrAddButton.setOnClickListener {
             if (args.server != null) {
-                remove()
+                confirmRemove()
             } else {
                 saveOrAdd()
             }
@@ -326,7 +328,12 @@ class EditFtpServerFragment : Fragment() {
         )
     }
 
-    private fun remove() {
+    private fun confirmRemove() {
+        val server = args.server ?: return
+        ConfirmRemoveServerDialogFragment.show(server.getName(requireContext()), this)
+    }
+
+    override fun removeServer() {
         Storages.remove(args.server ?: return)
         setResult(Activity.RESULT_OK)
         finish()
