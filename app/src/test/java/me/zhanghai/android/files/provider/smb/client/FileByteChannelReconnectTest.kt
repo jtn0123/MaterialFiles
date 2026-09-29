@@ -18,6 +18,8 @@ import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.Test
@@ -106,6 +108,21 @@ class FileByteChannelReconnectTest {
                 String(buffer.array(), 0, buffer.position())
             }
         assertEquals("first second", read)
+    }
+
+    @Test
+    fun aDeadConnectionIsClosedAndTheNextSessionConnectsAgain() {
+        val session = client.getSession(authority)
+        client.dropConnection(authority, session)
+        assertFalse(session.connection.isConnected)
+        val newSession = client.getSession(authority)
+        assertNotSame(session, newSession)
+        assertTrue(newSession.connection.isConnected)
+        val information = client.getPathInformation(
+            TestPath(authority, Client.Path.SharePath("test", "hello.txt")),
+            false
+        )
+        assertEquals(6L, (information as FileInformation).endOfFile)
     }
 
     private fun openChannel(

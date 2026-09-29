@@ -92,7 +92,7 @@ fun Client.getPathInformation(path: Path, openReparsePoint: Boolean): PathInform
             }
         }
     }
-    return withSession(path.authority) { session ->
+    return withSession(path.authority, isIdempotent = true) { session ->
         if (sharePath.path.isEmpty()) {
             getShareInformation(session, sharePath.name)
         } else {
@@ -135,7 +135,7 @@ fun Client.setFileInformation(
 
 @Throws(ClientException::class)
 fun Client.checkAccess(path: Path, desiredAccess: Set<AccessMask>, openReparsePoint: Boolean) {
-    withDiskShare(path) { share, sharePath ->
+    withDiskShare(path, isIdempotent = true) { share, sharePath ->
         val diskEntry = try {
             share.open(
                 sharePath.path,

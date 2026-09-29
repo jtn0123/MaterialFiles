@@ -18,6 +18,7 @@ import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import jcifs.context.SingletonContext
 import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.logWarning
 
 // Without a socket timeout a connection that died silently (the server went away, a NAT forgot
 // us) stays "connected" in SMBJ forever and every request on it waits out its own timeout. SMB is
@@ -76,39 +77,55 @@ internal fun Client.getSession(authority: Authority): Session {
  * on their own schedule while the connection stays up, so when [block] fails because the server
  * no longer knows the session, the session is dropped from the cache and [block] runs once more
  * with a fresh one.
+ *
+ * With [isIdempotent], [block] also runs once more when the connection under the session died
+ * (see [ClientException.isConnectionGone]): the connection is closed so that the retry connects
+ * again. Only an operation that is safe to repeat may ask for this, since the failed attempt may
+ * have reached the server before the connection went.
  */
 @Throws(ClientException::class)
-internal inline fun <T> Client.withSession(authority: Authority, block: (Session) -> T): T =
-    retryWithFreshSession(
-        { getSession(authority) },
-        { evictSession(authority, it) },
-        block
-    )
+internal inline fun <T> Client.withSession(
+    authority: Authority,
+    isIdempotent: Boolean = false,
+    block: (Session) -> T
+): T = retryWithFreshSession(
+    { getSession(authority) },
+    { evictSession(authority, it) },
+    isIdempotent,
+    { dropConnection(authority, it) },
+    block
+)
 
 /** [withSession], then the disk share that [path] is on. */
 @Throws(ClientException::class)
 internal inline fun <T> Client.withDiskShare(
     path: Client.Path,
+    isIdempotent: Boolean = false,
     block: (DiskShare, Client.Path.SharePath) -> T
 ): T {
     val sharePath = path.sharePath ?: throw ClientException("$path does not have a share path")
-    return withSession(path.authority) { block(getDiskShare(it, sharePath.name), sharePath) }
+    return withSession(path.authority, isIdempotent) {
+        block(getDiskShare(it, sharePath.name), sharePath)
+    }
 }
 
 @Throws(ClientException::class)
 internal inline fun <S, T> retryWithFreshSession(
     getSession: () -> S,
     evictSession: (S) -> Unit,
+    isIdempotent: Boolean = false,
+    dropConnection: (S) -> Unit = {},
     block: (S) -> T
 ): T {
     val session = getSession()
     return try {
         block(session)
     } catch (e: ClientException) {
-        if (!e.isSessionGone) {
-            throw e
+        when {
+            e.isSessionGone -> evictSession(session)
+            isIdempotent && e.isConnectionGone -> dropConnection(session)
+            else -> throw e
         }
-        evictSession(session)
         block(getSession())
     }
 }
@@ -118,6 +135,19 @@ internal inline fun <S, T> retryWithFreshSession(
 // would cut off the files still open through it. SMBJ lets go of it with its connection.
 internal fun Client.evictSession(authority: Authority, session: Session) {
     sessions.remove(authority, session)
+}
+
+// SMBJ hands out a connection it still thinks is up again, so a dead one has to be closed for the
+// retry to get a new one. Forced: a polite close logs every session off first, and each logoff
+// would wait out the timeout on a dead socket. Files still open on it fail and open themselves
+// again on the next connection (see FileByteChannel).
+internal fun Client.dropConnection(authority: Authority, session: Session) {
+    evictSession(authority, session)
+    try {
+        session.connection.close(true)
+    } catch (e: IOException) {
+        e.logWarning("SmbClient", "Close the dead connection to $authority")
+    }
 }
 
 @Throws(ClientException::class)

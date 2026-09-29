@@ -8,6 +8,13 @@ package me.zhanghai.android.files.provider.smb.client
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.mssmb2.SMB2MessageCommandCode
 import com.hierynomus.mssmb2.SMBApiException
+import com.hierynomus.protocol.transport.TransportException
+import com.hierynomus.smbj.common.SMBRuntimeException
+import java.io.EOFException
+import java.io.IOException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.util.concurrent.TimeoutException
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.NoSuchFileException
 import org.junit.Assert.assertEquals
@@ -21,13 +28,20 @@ class ClientSessionRetryTest {
     private class Sessions {
         var created = 0
         val evicted = mutableListOf<String>()
+        val dropped = mutableListOf<String>()
 
         fun get(): String = "session${++created}"
 
         fun evict(session: String) {
             evicted += session
         }
+
+        fun drop(session: String) {
+            dropped += session
+        }
     }
+
+    private fun connectionLost(cause: Throwable) = ClientException(SMBRuntimeException(cause))
 
     private fun exception(status: NtStatus) =
         ClientException(SMBApiException(status.value, SMB2MessageCommandCode.SMB2_CREATE, null))
@@ -99,5 +113,93 @@ class ClientSessionRetryTest {
         assertSame(denied, thrown)
         assertEquals(1, attempts)
         assertTrue(sessions.evicted.isEmpty())
+    }
+
+    @Test
+    fun aDeadConnectionAnywhereInTheCausesIsGone() {
+        assertTrue(connectionLost(TransportException("Connection closed")).isConnectionGone)
+        assertTrue(connectionLost(TimeoutException("No answer in 60 s")).isConnectionGone)
+        assertTrue(
+            connectionLost(IOException(SocketException("Connection reset"))).isConnectionGone
+        )
+        assertTrue(connectionLost(SocketTimeoutException("Read timed out")).isConnectionGone)
+        assertTrue(connectionLost(EOFException()).isConnectionGone)
+        assertTrue(ClientException(TransportException("Not connected")).isConnectionGone)
+    }
+
+    @Test
+    fun aServerAnswerOrALocalFailureIsNotADeadConnection() {
+        assertFalse(exception(NtStatus.STATUS_ACCESS_DENIED).isConnectionGone)
+        assertFalse(exception(NtStatus.STATUS_NETWORK_SESSION_EXPIRED).isConnectionGone)
+        assertFalse(ClientException("No password found").isConnectionGone)
+        assertFalse(connectionLost(IllegalStateException("Bad state")).isConnectionGone)
+        assertFalse(ClientException(SMBRuntimeException("Unknown")).isConnectionGone)
+    }
+
+    @Test
+    fun anIdempotentOperationRunsOnceMoreOnAFreshConnection() {
+        val sessions = Sessions()
+        val used = mutableListOf<String>()
+        val result = retryWithFreshSession(
+            sessions::get,
+            sessions::evict,
+            isIdempotent = true,
+            dropConnection = sessions::drop
+        ) {
+            used += it
+            if (used.size == 1) {
+                throw connectionLost(TimeoutException())
+            }
+            "listed"
+        }
+        assertEquals("listed", result)
+        assertEquals(listOf("session1", "session2"), used)
+        assertEquals(listOf("session1"), sessions.dropped)
+        assertTrue(sessions.evicted.isEmpty())
+    }
+
+    @Test
+    fun aDeadConnectionIsRetriedOnlyOnce() {
+        val sessions = Sessions()
+        var attempts = 0
+        assertThrows(ClientException::class.java) {
+            retryWithFreshSession(sessions::get, sessions::evict, true, sessions::drop) {
+                attempts++
+                throw connectionLost(TransportException("Connection closed"))
+            }
+        }
+        assertEquals(2, attempts)
+        assertEquals(listOf("session1"), sessions.dropped)
+    }
+
+    @Test
+    fun anOperationThatMayHaveHappenedIsNotRepeatedOnADeadConnection() {
+        val sessions = Sessions()
+        var attempts = 0
+        val lost = connectionLost(TransportException("Connection closed"))
+        val thrown = assertThrows(ClientException::class.java) {
+            retryWithFreshSession(sessions::get, sessions::evict, false, sessions::drop) {
+                attempts++
+                throw lost
+            }
+        }
+        assertSame(lost, thrown)
+        assertEquals(1, attempts)
+        assertTrue(sessions.dropped.isEmpty())
+        assertTrue(sessions.evicted.isEmpty())
+    }
+
+    @Test
+    fun aGoneSessionIsStillRetriedForAnIdempotentOperationWithoutDroppingTheConnection() {
+        val sessions = Sessions()
+        var attempts = 0
+        retryWithFreshSession(sessions::get, sessions::evict, true, sessions::drop) {
+            if (++attempts == 1) {
+                throw exception(NtStatus.STATUS_USER_SESSION_DELETED)
+            }
+        }
+        assertEquals(2, attempts)
+        assertEquals(listOf("session1"), sessions.evicted)
+        assertTrue(sessions.dropped.isEmpty())
     }
 }

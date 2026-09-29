@@ -60,7 +60,13 @@ class Client(internal val authenticator: Authenticator) {
         createOptions: Set<SMB2CreateOptions>,
         isAppend: Boolean
     ): SeekableByteChannel {
-        fun open(disposition: SMB2CreateDisposition) = withDiskShare(path) { share, sharePath ->
+        // Opening an existing file changes nothing on the server, so it can be tried again on a
+        // new connection; creating, replacing or deleting on close might already have happened.
+        fun open(disposition: SMB2CreateDisposition) = withDiskShare(
+            path,
+            disposition == SMB2CreateDisposition.FILE_OPEN &&
+                SMB2CreateOptions.FILE_DELETE_ON_CLOSE !in createOptions
+        ) { share, sharePath ->
             share.openFileOrThrow(
                 sharePath.path,
                 desiredAccess,
@@ -78,7 +84,7 @@ class Client(internal val authenticator: Authenticator) {
 
     @Throws(ClientException::class)
     fun openDirectoryIterator(path: Path): CloseableIterator<Path> =
-        withSession(path.authority) { session ->
+        withSession(path.authority, isIdempotent = true) { session ->
             val sharePath = path.sharePath
             if (sharePath == null) {
                 openShareIterator(path, session)
@@ -248,7 +254,7 @@ class Client(internal val authenticator: Authenticator) {
     //      cli_readlink_send
     @Throws(ClientException::class)
     fun readSymbolicLink(path: Path): SymbolicLinkReparseData =
-        withDiskShare(path) { share, sharePath ->
+        withDiskShare(path, isIdempotent = true) { share, sharePath ->
             val diskEntry = try {
                 share.open(
                     sharePath.path,
