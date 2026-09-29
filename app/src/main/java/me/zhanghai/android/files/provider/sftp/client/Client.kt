@@ -13,9 +13,12 @@ import java.util.concurrent.ConcurrentHashMap
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.provider.common.LocalWatchService
+import me.zhanghai.android.files.provider.common.NetworkTimeouts
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedOutputStream
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedSeekableByteChannel
 import me.zhanghai.android.files.util.closeSafe
+import net.schmizz.keepalive.KeepAliveProvider
+import net.schmizz.sshj.DefaultConfig
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.FileMode
@@ -30,10 +33,14 @@ import net.schmizz.sshj.userauth.UserAuthException
 
 /**
  * The SFTP sessions of the app, one per [Authority], created on demand with credentials from
- * [authenticator] and host keys checked against [hostKeyStore]. Owned by the file system
- * provider; a test constructs its own with fakes.
+ * [authenticator] and host keys checked against [hostKeyStore], waiting on the network no longer
+ * than [timeouts] allow. Owned by the file system provider; a test constructs its own with fakes.
  */
-class Client(internal val authenticator: Authenticator, internal val hostKeyStore: HostKeyStore) {
+class Client(
+    internal val authenticator: Authenticator,
+    internal val hostKeyStore: HostKeyStore,
+    private val timeouts: NetworkTimeouts = NetworkTimeouts()
+) {
     private val clients = ConcurrentHashMap<Authority, SFTPClient>()
 
     // One lock per authority: connecting and authenticating to a host that does not answer
@@ -276,7 +283,7 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
             val hostKeyVerifier =
                 TrustOnFirstUseHostKeyVerifier(authority.host, authority.port, hostKeyStore)
             SecurityProviderHelper.ensureInitialized()
-            val sshClient = SSHClient().apply { addHostKeyVerifier(hostKeyVerifier) }
+            val sshClient = newSshClient().apply { addHostKeyVerifier(hostKeyVerifier) }
             try {
                 sshClient.connect(authority.host, authority.port)
             } catch (e: IOException) {
@@ -301,9 +308,28 @@ class Client(internal val authenticator: Authenticator, internal val hostKeyStor
             // at it.
             reversedSymlinkArguments[authority] =
                 OPENSSH_IDENTIFICATION in sshClient.transport.serverVersion
-            client = sshClient.newSFTPClient()
+            client = try {
+                sshClient.newSFTPClient()
+            } catch (e: IOException) {
+                sshClient.closeSafe()
+                throw ClientException(e)
+            }
+            client.sftpEngine.timeoutMs = timeouts.readMillis
             clients[authority] = client
             return client
+        }
+    }
+
+    // A connection that died silently fails within the timeouts instead of hanging, and the
+    // keep-alive requests (which, unlike sshj's default heartbeat, the server has to answer) notice
+    // one that went away while idle.
+    internal fun newSshClient(): SSHClient {
+        val config = DefaultConfig().apply { keepAliveProvider = KeepAliveProvider.KEEP_ALIVE }
+        return SSHClient(config).apply {
+            connectTimeout = timeouts.connectMillis
+            timeout = timeouts.readMillis
+            transport.timeoutMs = timeouts.readMillis
+            connection.keepAlive.keepAliveInterval = timeouts.keepAliveSeconds
         }
     }
 

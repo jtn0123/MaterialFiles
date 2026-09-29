@@ -20,6 +20,7 @@ import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.provider.common.DelegateInputStream
 import me.zhanghai.android.files.provider.common.DelegateOutputStream
 import me.zhanghai.android.files.provider.common.LocalWatchService
+import me.zhanghai.android.files.provider.common.NetworkTimeouts
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedOutputStream
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedSeekableByteChannel
 import me.zhanghai.android.files.util.logWarning
@@ -32,9 +33,13 @@ import org.apache.commons.net.ftp.FTPSClient
 
 /**
  * The connections of this provider, one pool per authority, created on demand with credentials
- * from [authenticator]. Owned by the file system provider; a test constructs its own with a fake.
+ * from [authenticator], waiting on the network no longer than [timeouts] allow. Owned by the file
+ * system provider; a test constructs its own with a fake.
  */
-class Client(internal val authenticator: Authenticator) {
+class Client(
+    internal val authenticator: Authenticator,
+    private val timeouts: NetworkTimeouts = NetworkTimeouts()
+) {
     private val TIMESTAMP_FORMATTER =
         DateTimeFormatter.ofPattern("yyyyMMddHHmmss", Locale.ROOT)
             .withChronology(IsoChronology.INSTANCE)
@@ -114,8 +119,13 @@ class Client(internal val authenticator: Authenticator) {
             // This has to be set before connect().
             controlEncoding = authority.encoding
             listHiddenFiles = true
-            connect(authority.host, authority.port)
+            applyTimeouts(timeouts)
             try {
+                // A server that accepts and never greets fails connect() on the read timeout,
+                // and its socket has to be closed like after any other failure.
+                connect(authority.host, authority.port)
+                // Lets the system notice a server that vanished while the connection sat idle.
+                keepAlive = true
                 if (!FTPReply.isPositiveCompletion(replyCode)) {
                     throwNegativeReplyCodeException()
                 }
