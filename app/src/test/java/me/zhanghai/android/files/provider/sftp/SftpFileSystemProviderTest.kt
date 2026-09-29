@@ -105,6 +105,26 @@ class SftpFileSystemProviderTest {
     }
 
     @Test
+    fun aLargeDirectoryIsListedAcrossBatchesWithTheAttributesItCameWith() {
+        // OpenSSH answers a READDIR with at most 100 entries.
+        val count = 250
+        repeat(count) { write("file$it.txt", "x".repeat(it)) }
+        val sizes = SftpFileSystemProvider.newDirectoryStream(directory, AcceptAll).use { stream ->
+            stream.associate {
+                it.fileName.toString() to SftpFileSystemProvider
+                    .readAttributes(it, BasicFileAttributes::class.java)
+                    .size()
+            }
+        }
+        assertEquals((0 until count).map { "file$it.txt" }.toSet(), sizes.keys)
+        assertEquals(42L, sizes["file42.txt"])
+        // Closing with most of the directory unread is fine.
+        SftpFileSystemProvider.newDirectoryStream(directory, AcceptAll).use { stream ->
+            assertTrue(stream.iterator().hasNext())
+        }
+    }
+
+    @Test
     fun listingSomethingThatIsNotThereFails() {
         assertThrows(NoSuchFileException::class.java) {
             SftpFileSystemProvider.newDirectoryStream(path("missing"), AcceptAll)

@@ -12,6 +12,7 @@ import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.file.Path as Java8Path
+import me.zhanghai.android.files.provider.common.CloseableIterator
 import me.zhanghai.android.files.provider.common.LocalWatchService
 import me.zhanghai.android.files.provider.common.NetworkTimeouts
 import me.zhanghai.android.files.provider.common.NotifyEntryModifiedOutputStream
@@ -24,7 +25,6 @@ import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.FileMode
 import net.schmizz.sshj.sftp.OpenMode
 import net.schmizz.sshj.sftp.RemoteFile
-import net.schmizz.sshj.sftp.RemoteResourceInfo
 import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPClient
 import net.schmizz.sshj.sftp.SFTPException
@@ -194,18 +194,20 @@ class Client(
         LocalWatchService.onEntryDeleted(path as Java8Path)
     }
 
+    /**
+     * The entries of the directory at [path], read from the server a batch at a time as they are
+     * asked for, so that a large folder fills in progressively.
+     */
     @Throws(ClientException::class)
-    fun scandir(path: Path): List<Path> {
+    fun openDirectoryIterator(path: Path): CloseableIterator<Path> {
         val client = getClient(path.authority)
-        val files: List<RemoteResourceInfo> = try {
-            client.ls(path.remotePath)
-        } catch (e: IOException) {
-            throw ClientException(e)
-        }
-        return files.map { file ->
+        return openDirectoryEntryIterator(
+            path,
+            { RemoteDirectoryReader.open(client.sftpEngine, path.remotePath) }
+        ) { entry, attributes ->
             // The attributes here are from lstat().
             // https://github.com/openssh/openssh-portable/blob/71241fc05db4bbb11bb29340b44b92e2575373d8/sftp-server.c#L1110
-            path.resolve(file.name).also { directoryFileAttributesCache[it] = file.attributes }
+            directoryFileAttributesCache[entry] = attributes
         }
     }
 
