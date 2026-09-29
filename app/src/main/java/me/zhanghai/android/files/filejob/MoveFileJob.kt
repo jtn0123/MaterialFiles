@@ -16,6 +16,9 @@ import me.zhanghai.android.files.provider.common.resolveForeign
 import me.zhanghai.android.files.util.logWarning
 
 class MoveFileJob(private val sources: List<Path>, private val targetDirectory: Path) : FileJob() {
+    override val transferResult: TransferResult
+        get() = TransferResult(TransferKind.MOVE, sources, targetDirectory)
+
     @Throws(IOException::class)
     override fun run() {
         val sourcesToMove = mutableListOf<Path>()

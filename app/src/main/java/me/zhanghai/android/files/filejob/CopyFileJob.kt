@@ -20,6 +20,13 @@ import me.zhanghai.android.files.provider.common.resolveForeign
 import me.zhanghai.android.files.util.asFileName
 
 class CopyFileJob(private val sources: List<Path>, private val targetDirectory: Path) : FileJob() {
+    override val transferResult: TransferResult
+        get() = TransferResult(
+            if (sources.all { it.isArchivePath }) TransferKind.EXTRACT else TransferKind.COPY,
+            sources,
+            targetDirectory
+        )
+
     @Throws(IOException::class)
     override fun run() {
         val isExtract = sources.all { it.isArchivePath }
