@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.sftp.client
 
+import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.util.Base64
 import me.zhanghai.android.files.provider.sftp.client.TrustOnFirstUseHostKeyVerifier.Companion.toSha256Fingerprint
@@ -48,6 +49,44 @@ class TrustOnFirstUseHostKeyVerifierTest {
         assertArrayEquals(KEY_2.toSshEncoding(), change.newKey)
         // The refused key must not replace the stored one.
         assertArrayEquals(KEY_1.toSshEncoding(), store.getHostKeys(HOST, PORT)["ssh-ed25519"])
+    }
+
+    @Test
+    fun keyOfUnrememberedTypeIsRefusedWhenHostHasOtherKeys() {
+        // Stored ed25519, offered RSA: a man in the middle offering only ssh-rsa must not be
+        // trusted silently.
+        assertTrue(verifier.verify(HOST, PORT, KEY_1))
+        val second = TrustOnFirstUseHostKeyVerifier(HOST, PORT, store)
+        assertFalse(second.verify(HOST, PORT, RSA_KEY))
+        val change = requireNotNull(second.hostKeyChangedException).change
+        assertEquals("ssh-rsa", change.keyType)
+        assertEquals("$FINGERPRINT_1 (ssh-ed25519)", change.oldFingerprint)
+        assertEquals(RSA_KEY.toSshEncoding().toSha256Fingerprint(), change.newFingerprint)
+        assertArrayEquals(RSA_KEY.toSshEncoding(), change.newKey)
+        assertEquals(setOf("ssh-ed25519"), store.getHostKeys(HOST, PORT).keys)
+    }
+
+    @Test
+    fun refusalOfUnrememberedTypeListsEveryStoredKey() {
+        store.putHostKey(HOST, PORT, "ssh-ed25519", KEY_1.toSshEncoding())
+        store.putHostKey(HOST, PORT, "ecdsa-sha2-nistp256", KEY_2.toSshEncoding())
+        assertFalse(verifier.verify(HOST, PORT, RSA_KEY))
+        assertEquals(
+            "$FINGERPRINT_2 (ecdsa-sha2-nistp256)\n$FINGERPRINT_1 (ssh-ed25519)",
+            requireNotNull(verifier.hostKeyChangedException).change.oldFingerprint
+        )
+    }
+
+    @Test
+    fun trustedKeyOfNewTypeIsAcceptedAlongsideTheOldOne() {
+        assertTrue(verifier.verify(HOST, PORT, KEY_1))
+        val refused = TrustOnFirstUseHostKeyVerifier(HOST, PORT, store)
+        assertFalse(refused.verify(HOST, PORT, RSA_KEY))
+        // What the "Host key changed" dialog does when the user trusts the new key.
+        val change = requireNotNull(refused.hostKeyChangedException).change
+        store.putHostKey(change.host, change.port, change.keyType, change.newKey)
+        assertTrue(TrustOnFirstUseHostKeyVerifier(HOST, PORT, store).verify(HOST, PORT, RSA_KEY))
+        assertTrue(TrustOnFirstUseHostKeyVerifier(HOST, PORT, store).verify(HOST, PORT, KEY_1))
     }
 
     @Test
@@ -99,6 +138,9 @@ class TrustOnFirstUseHostKeyVerifierTest {
         )
         private const val FINGERPRINT_1 = "SHA256:tC0IAOxoNUW+xDvkPZhr/raHLHKYKaTHgxb59dzBNW0"
         private const val FINGERPRINT_2 = "SHA256:JKFmqhDc5OQ9mraQM1LoQBxDq5nfDIPcdlBOkYwHg7c"
+
+        private val RSA_KEY: PublicKey =
+            KeyPairGenerator.getInstance("RSA").apply { initialize(1024) }.generateKeyPair().public
 
         private fun publicKey(base64: String): PublicKey =
             Buffer.PlainBuffer(Base64.getDecoder().decode(base64)).readPublicKey()
