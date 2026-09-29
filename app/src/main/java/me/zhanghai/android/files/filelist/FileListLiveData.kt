@@ -21,14 +21,15 @@ class FileListLiveData(private val path: Path) : CloseableLiveData<Stateful<List
     private var future: Future<Unit>? = null
     private var generation = 0
 
-    private val observer: PathObserver
+    // Before the first load, which waits for it: a change between listing the folder and
+    // starting to observe it would otherwise never be shown.
+    private val observer = PathObserver(path) { onChangeObserved() }
 
     @Volatile
     private var isChangedWhileInactive = false
 
     init {
         loadValue()
-        observer = PathObserver(path) { onChangeObserved() }
     }
 
     fun loadValue() {
@@ -44,6 +45,7 @@ class FileListLiveData(private val path: Path) : CloseableLiveData<Stateful<List
             val result =
                 ProgressiveFileList<Path, FileItem>({ it.loadFileItem() }, { publish(Loading(it)) })
             try {
+                observer.awaitObserving(OBSERVER_WAIT_MILLIS)
                 path.newDirectoryStream().use { result.add(it) }
                 val error = result.problem
                 publish(
@@ -80,5 +82,11 @@ class FileListLiveData(private val path: Path) : CloseableLiveData<Stateful<List
         ++generation
         observer.close()
         future?.cancel(true)
+    }
+
+    companion object {
+        // Long enough for a slow server to set up its watch; after that the list is loaded anyway
+        // and loaded again once the observer is in place.
+        private const val OBSERVER_WAIT_MILLIS = 5_000L
     }
 }

@@ -131,6 +131,7 @@ fun Client.setFileInformation(
         }
         directoryFileInformationCache -= path
     }
+    path.notifyModified()
 }
 
 @Throws(ClientException::class)

@@ -24,7 +24,10 @@ import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java8.nio.channels.SeekableByteChannel
+import java8.nio.file.Path as Java8Path
 import me.zhanghai.android.files.provider.common.CloseableIterator
+import me.zhanghai.android.files.provider.common.LocalWatchService
+import me.zhanghai.android.files.provider.common.NotifyEntryModifiedSeekableByteChannel
 import me.zhanghai.android.files.util.enumSetOf
 import me.zhanghai.android.files.util.logWarning
 
@@ -77,8 +80,22 @@ class Client(internal val authenticator: Authenticator) {
             )
         }
         // Whatever the first open created or replaced is there by the time it is reopened.
-        return FileByteChannel(open(createDisposition), isAppend) {
+        val channel = FileByteChannel(open(createDisposition), isAppend) {
             open(SMB2CreateDisposition.FILE_OPEN)
+        }
+        if (createDisposition != SMB2CreateDisposition.FILE_OPEN) {
+            path.notifyCreated()
+        }
+        // Only a channel that can change the file tells observers, or every thumbnail read would
+        // reload the folder it is in.
+        val changesFile = createDisposition != SMB2CreateDisposition.FILE_OPEN ||
+            SMB2CreateOptions.FILE_DELETE_ON_CLOSE in createOptions ||
+            desiredAccess.any { it in WRITE_ACCESS }
+        val javaPath = path as? Java8Path
+        return if (changesFile && javaPath != null) {
+            NotifyEntryModifiedSeekableByteChannel(channel, javaPath)
+        } else {
+            channel
         }
     }
 
@@ -117,6 +134,7 @@ class Client(internal val authenticator: Authenticator) {
                 throw ClientException(e)
             }
         }
+        path.notifyCreated()
     }
 
     // @see https://gitlab.com/samba-team/devel/samba/-/blob/master/source3/libsmb/clisymlink.c
@@ -176,6 +194,7 @@ class Client(internal val authenticator: Authenticator) {
                 throw ClientException(e)
             }
         }
+        path.notifyCreated()
     }
 
     // @see https://gitlab.com/samba-team/devel/samba/-/blob/master/source3/libsmb/clifile.c
@@ -218,6 +237,7 @@ class Client(internal val authenticator: Authenticator) {
                 throw ClientException(e)
             }
         }
+        link.notifyCreated()
     }
 
     @Throws(ClientException::class)
@@ -248,6 +268,7 @@ class Client(internal val authenticator: Authenticator) {
             }
             directoryFileInformationCache -= path
         }
+        path.notifyDeleted()
     }
 
     // @see https://gitlab.com/samba-team/devel/samba/-/blob/master/source3/libsmb/clisymlink.c
@@ -330,6 +351,7 @@ class Client(internal val authenticator: Authenticator) {
                 }
             }
         }
+        target.notifyCreated()
     }
 
     // @see https://gitlab.com/samba-team/devel/samba/-/blob/master/source3/libsmb/cli_smb2_fnum.c
@@ -369,6 +391,8 @@ class Client(internal val authenticator: Authenticator) {
             directoryFileInformationCache -= path
             directoryFileInformationCache -= newPath
         }
+        path.notifyDeleted()
+        newPath.notifyCreated()
     }
 
     // @see https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/05869c32-39f0-4726-afc9-671b76ae5ca7
@@ -399,6 +423,16 @@ class Client(internal val authenticator: Authenticator) {
         throw ClientException(e)
     }
 
+    companion object {
+        private val WRITE_ACCESS = setOf(
+            AccessMask.GENERIC_WRITE,
+            AccessMask.GENERIC_ALL,
+            AccessMask.MAXIMUM_ALLOWED,
+            AccessMask.FILE_WRITE_DATA,
+            AccessMask.FILE_APPEND_DATA
+        )
+    }
+
     interface Path {
         val authority: Authority
         val sharePath: SharePath?
@@ -406,4 +440,19 @@ class Client(internal val authenticator: Authenticator) {
 
         data class SharePath(val name: String, val path: String)
     }
+}
+
+// Like the SFTP, FTP and WebDAV clients, tell this process's observers of each change it makes: the
+// server's own change notification can be off or its watch gone (see WatchServicePoller), and the
+// folder the user just changed has to show the change either way.
+internal fun Client.Path.notifyCreated() {
+    (this as? Java8Path)?.let { LocalWatchService.onEntryCreated(it) }
+}
+
+internal fun Client.Path.notifyDeleted() {
+    (this as? Java8Path)?.let { LocalWatchService.onEntryDeleted(it) }
+}
+
+internal fun Client.Path.notifyModified() {
+    (this as? Java8Path)?.let { LocalWatchService.onEntryModified(it) }
 }

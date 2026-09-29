@@ -87,6 +87,34 @@ Notes that cost time to rediscover:
   with `ffmpeg -f lavfi -i color=c=black:s=64x64:r=5:d=30 -f lavfi -i anullsrc=r=8000:cl=mono -t 30 -c:v libx264 -crf 51 -pix_fmt yuv420p -c:a aac -b:a 8k -shortest clip.mp4`.
 - Android 16 ignores the video player's orientation lock on screens 600 dp and wider. Known.
 
+### SambaThumbnailTest
+
+`coil/SambaThumbnailTest` loads thumbnails of files on a real Samba share through SMBJ. It only
+runs when the `smbHost` instrumentation argument names a server; CI starts the fixture of
+`tools/network-tests.py` for it and also passes `requireFixtures=true`, which turns a missing
+`smbHost` into a failure rather than a silently empty test class. To run it locally the way CI
+does (Docker required; never point it at a real NAS):
+
+```sh
+python3 tools/network-tests.py --serve materialfiles-thumbnail-smb 4451
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=me.zhanghai.android.files.coil.SambaThumbnailTest \
+    -Pandroid.testInstrumentationRunnerArguments.smbHost=10.0.2.2 \
+    -Pandroid.testInstrumentationRunnerArguments.smbPort=4451 \
+    -Pandroid.testInstrumentationRunnerArguments.smbShare=test \
+    -Pandroid.testInstrumentationRunnerArguments.smbUser=test \
+    -Pandroid.testInstrumentationRunnerArguments.smbPassword=test-only
+docker rm -f materialfiles-thumbnail-smb
+```
+
+The emulator reaches the host at `10.0.2.2`, so the container's SMB port must be published on the
+host's loopback (`--serve` publishes it on `127.0.0.1:<port>`); if Docker runs in a VM that no
+longer forwards new ports (colima), tunnel the port through the VM instead. The test writes
+`camera.jpg` (a photo with a 320x240 Exif thumbnail), `plain.jpg` and `clip.mp4` into
+`ThumbnailTest` on the share when they are missing and only reads files that are already there.
+Without `smbUser` it connects as a guest, with `smbShare` defaulting to `share`, as for a guest
+share of your own.
+
 ## Debugging on a device without logcat
 
 - `adb shell dumpsys activity exit-info me.zhanghai.android.files` and

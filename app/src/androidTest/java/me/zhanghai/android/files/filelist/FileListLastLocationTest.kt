@@ -7,6 +7,7 @@ package me.zhanghai.android.files.filelist
 
 import android.content.Intent
 import android.os.Environment
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -16,6 +17,7 @@ import androidx.test.uiautomator.Until
 import java.io.File
 import java.io.FileInputStream
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import me.zhanghai.android.files.UiFailureDiagnosticsRule
 import me.zhanghai.android.files.settings.Settings
 import org.junit.After
@@ -66,6 +68,8 @@ class FileListLastLocationTest {
                 FileSortOptions(FileSortOptions.By.NAME, FileSortOptions.Order.ASCENDING, true)
             )
         }
+        // A window another test left can still be on screen, and would answer for this test's.
+        awaitNoAppWindow()
     }
 
     @After
@@ -85,6 +89,16 @@ class FileListLastLocationTest {
         }
     }
 
+    private fun awaitNoAppWindow() {
+        device.wait(Until.gone(By.pkg(context.packageName)), WINDOW_GONE_TIMEOUT_MILLIS)
+    }
+
+    /** Runs [block] on a fresh start from the launcher, and waits for its window to go after. */
+    private fun withLaunchFromLauncher(block: (ActivityScenario<FileListActivity>) -> Unit) {
+        launchFromLauncher().use(block)
+        awaitNoAppWindow()
+    }
+
     private fun launchFromLauncher(): ActivityScenario<FileListActivity> {
         val intent = Intent(context, FileListActivity::class.java)
             .setAction(Intent.ACTION_MAIN)
@@ -94,12 +108,26 @@ class FileListLastLocationTest {
         // the launcher; start again instead of waiting out the search on an empty screen.
         repeat(LAUNCH_ATTEMPTS - 1) {
             val scenario = ActivityScenario.launch<FileListActivity>(intent)
-            if (device.wait(Until.hasObject(By.pkg(context.packageName).depth(0)), 10_000)) {
+            if (scenario.awaitResumed() &&
+                device.wait(Until.hasObject(By.pkg(context.packageName).depth(0)), 10_000)
+            ) {
                 return scenario
             }
             scenario.close()
+            awaitNoAppWindow()
         }
         return ActivityScenario.launch(intent)
+    }
+
+    private fun ActivityScenario<FileListActivity>.awaitResumed(): Boolean {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+        while (state != Lifecycle.State.RESUMED) {
+            if (System.nanoTime() >= deadline) {
+                return false
+            }
+            Thread.sleep(100)
+        }
+        return true
     }
 
     private fun openTestDirectory(scenario: ActivityScenario<FileListActivity>) {
@@ -110,7 +138,18 @@ class FileListLastLocationTest {
         assertNotNull("The test folder never appeared", folder)
         folder.click()
         assertNotNull(device.wait(Until.findObject(By.text("Inside.txt")), 20_000))
-        assertEquals(directory.path, scenario.currentPath())
+        scenario.assertPathBecomes(directory.path)
+    }
+
+    /** The path is set as the fragment gets to it, which can be just after its list shows. */
+    private fun ActivityScenario<FileListActivity>.assertPathBecomes(expected: String) {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+        var path = currentPath()
+        while (path != expected && System.nanoTime() < deadline) {
+            Thread.sleep(100)
+            path = currentPath()
+        }
+        assertEquals(expected, path)
     }
 
     private fun ActivityScenario<FileListActivity>.currentPath(): String {
@@ -129,13 +168,13 @@ class FileListLastLocationTest {
             Settings.FILE_LIST_REMEMBER_LAST_DIRECTORY.putValue(true)
             Settings.FILE_LIST_LAST_LOCATION.putValue(null)
         }
-        launchFromLauncher().use { scenario ->
+        withLaunchFromLauncher { scenario ->
             openTestDirectory(scenario)
         }
 
-        launchFromLauncher().use { scenario ->
+        withLaunchFromLauncher { scenario ->
             assertNotNull(device.wait(Until.findObject(By.text("Inside.txt")), 20_000))
-            assertEquals(directory.path, scenario.currentPath())
+            scenario.assertPathBecomes(directory.path)
         }
     }
 
@@ -145,20 +184,17 @@ class FileListLastLocationTest {
             Settings.FILE_LIST_REMEMBER_LAST_DIRECTORY.putValue(false)
             Settings.FILE_LIST_LAST_LOCATION.putValue(null)
         }
-        launchFromLauncher().use { scenario ->
+        withLaunchFromLauncher { scenario ->
             openTestDirectory(scenario)
         }
 
         instrumentation.runOnMainSync {
             assertEquals(null, Settings.FILE_LIST_LAST_LOCATION.value)
         }
-        launchFromLauncher().use { scenario ->
+        withLaunchFromLauncher { scenario ->
             assertNotNull(device.wait(Until.findObject(By.text(directoryName)), 20_000))
             @Suppress("DEPRECATION")
-            assertEquals(
-                Environment.getExternalStorageDirectory().path,
-                scenario.currentPath()
-            )
+            scenario.assertPathBecomes(Environment.getExternalStorageDirectory().path)
         }
     }
 
@@ -168,17 +204,18 @@ class FileListLastLocationTest {
             Settings.FILE_LIST_REMEMBER_LAST_DIRECTORY.putValue(false)
             Settings.FILE_LIST_LAST_LOCATION.putValue(null)
         }
-        launchFromLauncher().use { scenario ->
+        withLaunchFromLauncher { scenario ->
             openTestDirectory(scenario)
 
             scenario.recreate()
 
             assertNotNull(device.wait(Until.findObject(By.text("Inside.txt")), 20_000))
-            assertEquals(directory.path, scenario.currentPath())
+            scenario.assertPathBecomes(directory.path)
         }
     }
 
     companion object {
         private const val LAUNCH_ATTEMPTS = 3
+        private const val WINDOW_GONE_TIMEOUT_MILLIS = 10_000L
     }
 }
