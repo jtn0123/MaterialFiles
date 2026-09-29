@@ -687,6 +687,10 @@
     <string name="storage_add_lan_smb_server_title" translatable="false">@string/storage_edit_smb_server_title_add</string>
     <string name="storage_add_lan_smb_server_loading">Searching for SMB servers…</string>
     <string name="storage_add_lan_smb_server_add">Add manually</string>
+    <string name="storage_add_lan_smb_server_none_found">No servers found. Make sure this device is on the same Wi-Fi as the server, or add one manually.</string>
+    <string name="storage_add_lan_smb_server_not_on_local_network">Not connected to a local network. Connect to Wi-Fi to search for servers, or add one manually.</string>
+    <string name="storage_add_lan_smb_server_failed_format">Couldn’t search for servers: %1$s</string>
+    <string name="storage_add_lan_smb_server_search_again">Search again</string>
     <string name="storage_edit_smb_server_title_edit">Edit SMB server</string>
     <string name="storage_edit_smb_server_title_add">Add SMB server</string>
     <string name="storage_edit_smb_server_host">Hostname</string>
