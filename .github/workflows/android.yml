@@ -230,6 +230,11 @@ jobs:
         emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none -camera-front none
         disable-animations: false
         script: echo "AVD snapshot generated"
+    - name: Start the Samba server for SambaThumbnailTest
+      # The fixture of tools/network-tests.py, with SMB on 127.0.0.1:4451, which the emulator
+      # reaches at 10.0.2.2:4451. The test writes the photos and the clip it reads into the share
+      # when they are not there yet.
+      run: python3 tools/network-tests.py --serve materialfiles-thumbnail-smb 4451
     - name: Run the instrumented tests
       uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
       with:
@@ -240,7 +245,19 @@ jobs:
         force-avd-creation: false
         emulator-options: -no-snapshot-save -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none -camera-front none
         disable-animations: true
-        script: ./gradlew createDebugAndroidTestCoverageReport
+        # Folded into one line: the action runs each line of a script as its own command.
+        # requireFixtures turns a missing server argument into a failure instead of a skip.
+        script: >-
+          ./gradlew createDebugAndroidTestCoverageReport
+          -Pandroid.testInstrumentationRunnerArguments.requireFixtures=true
+          -Pandroid.testInstrumentationRunnerArguments.smbHost=10.0.2.2
+          -Pandroid.testInstrumentationRunnerArguments.smbPort=4451
+          -Pandroid.testInstrumentationRunnerArguments.smbShare=test
+          -Pandroid.testInstrumentationRunnerArguments.smbUser=test
+          -Pandroid.testInstrumentationRunnerArguments.smbPassword=test-only
+    - name: Stop the Samba server
+      if: always()
+      run: docker rm -f materialfiles-thumbnail-smb || true
     - name: Collect Android coverage report
       run: python3 tools/coverage-reports.py android --api-level ${{ matrix.api-level }}
     - name: Upload Android coverage

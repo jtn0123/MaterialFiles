@@ -10,6 +10,9 @@ import coil.decode.DataSource
 import com.hierynomus.smbj.auth.AuthenticationContext
 import java.io.File
 import java8.nio.file.Path
+import me.zhanghai.android.files.provider.common.createDirectories
+import me.zhanghai.android.files.provider.common.exists
+import me.zhanghai.android.files.provider.common.newOutputStream
 import me.zhanghai.android.files.provider.smb.client.Authority
 import me.zhanghai.android.files.provider.smb.createSmbRootPath
 import me.zhanghai.android.files.storage.SmbServer
@@ -17,6 +20,7 @@ import me.zhanghai.android.files.storage.SmbServerAuthenticator
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
@@ -35,10 +39,14 @@ import org.junit.runners.model.FrameworkMethod
  *     -Pandroid.testInstrumentationRunnerArguments.smbHost=10.0.2.2
  * ```
  *
- * The share is opened as a guest and only read. `smbPort` (4451), `smbShare` (`share`) and
- * `smbDirectory` (`ThumbnailTest`) can be given too; the directory holds `camera.jpg`, a 4 MB
- * photo with a 320x240 thumbnail in its Exif data, `plain.jpg`, a photo without one, and
- * `clip.mp4`, a short video.
+ * The share is opened as a guest unless `smbUser` (and `smbPassword`) are given. `smbPort` (4451),
+ * `smbShare` (`share`) and `smbDirectory` (`ThumbnailTest`) can be given too; the directory holds
+ * `camera.jpg`, a photo with a 320x240 thumbnail in its Exif data, `plain.jpg`, a photo without
+ * one, and `clip.mp4`, a short video. Whichever of them is missing is written there first, so an
+ * empty writable share is enough; files already there are only read.
+ *
+ * CI passes `requireFixtures=true`, which makes a missing `smbHost` a failure instead of leaving
+ * the tests out, so that the Samba container not being passed on cannot go unnoticed.
  */
 @RunWith(SambaThumbnailTest.Runner::class)
 class SambaThumbnailTest {
@@ -49,17 +57,26 @@ class SambaThumbnailTest {
     @Before
     fun setUp() {
         val host = arguments.getString(ARGUMENT_HOST)
+        if (host == null && isFixtureRequired) {
+            fail("requireFixtures is set but there is no $ARGUMENT_HOST argument")
+        }
         assumeTrue("No $ARGUMENT_HOST argument, so no Samba server to test against", host != null)
         val port = arguments.getString("smbPort")?.toInt() ?: 4451
         val share = arguments.getString("smbShare") ?: "share"
         val directoryName = arguments.getString("smbDirectory") ?: "ThumbnailTest"
-        val guest = AuthenticationContext.guest()
-        val authority = Authority(host!!, port, guest.username, guest.domain)
-        server = SmbServer(null, null, authority, "", "")
+        val user = arguments.getString("smbUser")
+        val authority = if (user != null) {
+            Authority(host!!, port, user, null)
+        } else {
+            val guest = AuthenticationContext.guest()
+            Authority(host!!, port, guest.username, guest.domain)
+        }
+        server = SmbServer(null, null, authority, arguments.getString("smbPassword") ?: "", "")
         SmbServerAuthenticator.addTransientServer(server)
         directory = authority.createSmbRootPath().resolve(share).resolve(directoryName)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         loading = ThumbnailLoading(File(context.filesDir, "samba-thumbnails"))
+        writeMissingFixtures(File(context.filesDir, "samba-fixtures"))
     }
 
     @After
@@ -67,6 +84,30 @@ class SambaThumbnailTest {
         if (::server.isInitialized) {
             SmbServerAuthenticator.removeTransientServer(server)
         }
+    }
+
+    private fun writeMissingFixtures(localDirectory: File) {
+        directory.createDirectories()
+        localDirectory.mkdirs()
+        writeIfMissing(localDirectory, "camera.jpg") {
+            TestJpeg.write(it, 1600, 1200, 320, 240)
+        }
+        writeIfMissing(localDirectory, "plain.jpg") { TestJpeg.write(it, 1600, 1200) }
+        writeIfMissing(localDirectory, "clip.mp4") { file ->
+            InstrumentationRegistry.getInstrumentation().context.assets.open("clip.mp4")
+                .use { input -> file.outputStream().use { input.copyTo(it) } }
+        }
+        localDirectory.deleteRecursively()
+    }
+
+    private fun writeIfMissing(localDirectory: File, name: String, write: (File) -> Unit) {
+        val path = directory.resolve(name)
+        if (path.exists()) {
+            return
+        }
+        val file = File(localDirectory, name)
+        write(file)
+        file.inputStream().use { input -> path.newOutputStream().use { input.copyTo(it) } }
     }
 
     @Test
@@ -109,12 +150,17 @@ class SambaThumbnailTest {
     }
 
     /**
-     * Leaves the tests out when no server is given. The assumption above alone would skip them,
-     * but the Android test engine reports a skipped test as a failure in its XML and HTML reports.
+     * Leaves the tests out when no server is given and none is required. The assumption above
+     * alone would skip them, but the Android test engine reports a skipped test as a failure in its
+     * XML and HTML reports.
      */
     class Runner(testClass: Class<*>) : BlockJUnit4ClassRunner(testClass) {
         override fun getChildren(): List<FrameworkMethod> =
-            if (arguments.getString(ARGUMENT_HOST) != null) super.getChildren() else emptyList()
+            if (arguments.getString(ARGUMENT_HOST) != null || isFixtureRequired) {
+                super.getChildren()
+            } else {
+                emptyList()
+            }
     }
 
     companion object {
@@ -122,5 +168,8 @@ class SambaThumbnailTest {
 
         private val arguments
             get() = InstrumentationRegistry.getArguments()
+
+        private val isFixtureRequired: Boolean
+            get() = arguments.getString("requireFixtures").toBoolean()
     }
 }
