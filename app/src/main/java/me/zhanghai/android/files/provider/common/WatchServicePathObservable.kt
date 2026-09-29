@@ -7,7 +7,6 @@ package me.zhanghai.android.files.provider.common
 
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
-import java8.nio.file.ClosedWatchServiceException
 import java8.nio.file.Path
 import java8.nio.file.StandardWatchEventKinds
 import java8.nio.file.WatchService
@@ -17,22 +16,29 @@ class WatchServicePathObservable(path: Path, intervalMillis: Long) :
         intervalMillis
     ) {
     private val watchService: WatchService
-    private val poller: Poller
+    private val poller: Thread
 
     init {
         var watchService: WatchService? = null
-        var poller: Poller? = null
+        var poller: Thread? = null
         var successful = false
         try {
             watchService = path.fileSystem.newWatchService()
             this.watchService = watchService
-            path.register(
-                watchService,
-                StandardWatchEventKinds.ENTRY_CREATE,
-                StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.ENTRY_MODIFY
-            )
-            poller = Poller()
+            val register = {
+                path.register(
+                    watchService,
+                    StandardWatchEventKinds.ENTRY_CREATE,
+                    StandardWatchEventKinds.ENTRY_DELETE,
+                    StandardWatchEventKinds.ENTRY_MODIFY
+                )
+                Unit
+            }
+            register()
+            poller = Thread(
+                WatchServicePoller(watchService, register, { notifyObservers() }),
+                "WatchServicePathObservable.Poller-${pollerId.getAndIncrement()}"
+            ).apply { isDaemon = true }
             this.poller = poller
             poller.start()
             successful = true
@@ -52,32 +58,5 @@ class WatchServicePathObservable(path: Path, intervalMillis: Long) :
 
     companion object {
         private val pollerId = AtomicInteger()
-    }
-
-    private inner class Poller :
-        Thread(
-            "WatchServicePathObservable.Poller-${pollerId.getAndIncrement()}"
-        ) {
-        init {
-            isDaemon = true
-        }
-
-        override fun run() {
-            while (true) {
-                val key = try {
-                    watchService.take()
-                } catch (e: ClosedWatchServiceException) {
-                    break
-                } catch (e: InterruptedException) {
-                    break
-                }
-                if (key.pollEvents().isNotEmpty()) {
-                    notifyObservers()
-                }
-                if (!key.reset()) {
-                    break
-                }
-            }
-        }
     }
 }
