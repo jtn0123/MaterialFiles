@@ -21,6 +21,12 @@ import me.zhanghai.android.files.util.logWarning
  * between. A key that stayed valid for [MAX_RETRY_DELAY_MILLIS] starts the next recovery from the
  * shortest wait again.
  *
+ * A key that goes invalid within [HEALTHY_MILLIS] of being registered, without having reported
+ * anything, is taken as the server refusing to watch the path (an SMB server with change
+ * notification turned off fails every watch at once), not as an outage: nothing is reloaded for it,
+ * and after [MAX_REFUSED_WATCHES] of those in a row the poller stops, rather than reloading a large
+ * remote folder every minute for as long as it is shown.
+ *
  * It runs until the thread is interrupted or [watchService] is closed.
  *
  * @param isRegistered whether [register] has already succeeded; if not, the poller starts by
@@ -38,10 +44,15 @@ class WatchServicePoller(
 
     private var retryDelayMillis = INITIAL_RETRY_DELAY_MILLIS
 
+    private var reloadWhenRegistered = !isRegistered
+
+    private var refusedWatches = 0
+
     override fun run() {
         if (!isRegistered && !registerAgain()) {
             return
         }
+        var hasReported = false
         while (true) {
             val key = try {
                 watchService.take()
@@ -51,18 +62,27 @@ class WatchServicePoller(
                 return
             }
             if (key.pollEvents().isNotEmpty()) {
+                hasReported = true
                 onChange()
             }
             if (key.reset()) {
                 continue
             }
-            onChange()
-            if (clockMillis() - registeredAtMillis >= MAX_RETRY_DELAY_MILLIS) {
-                retryDelayMillis = INITIAL_RETRY_DELAY_MILLIS
+            val validMillis = clockMillis() - registeredAtMillis
+            if (hasReported || validMillis >= HEALTHY_MILLIS) {
+                refusedWatches = 0
+                onChange()
+                reloadWhenRegistered = true
+                if (validMillis >= MAX_RETRY_DELAY_MILLIS) {
+                    retryDelayMillis = INITIAL_RETRY_DELAY_MILLIS
+                }
+            } else if (++refusedWatches >= MAX_REFUSED_WATCHES) {
+                return
             }
             if (!registerAgain()) {
                 return
             }
+            hasReported = false
         }
     }
 
@@ -92,7 +112,10 @@ class WatchServicePoller(
                 return false
             }
             registeredAtMillis = clockMillis()
-            onChange()
+            if (reloadWhenRegistered) {
+                reloadWhenRegistered = false
+                onChange()
+            }
             return true
         }
     }
@@ -100,5 +123,7 @@ class WatchServicePoller(
     companion object {
         const val INITIAL_RETRY_DELAY_MILLIS = 5_000L
         const val MAX_RETRY_DELAY_MILLIS = 60_000L
+        const val HEALTHY_MILLIS = 5_000L
+        const val MAX_REFUSED_WATCHES = 3
     }
 }

@@ -99,7 +99,13 @@ class WatchServicePollerTest {
         }
     }
 
+    /** Loses the key after it has been watching long enough to count as having worked. */
     private fun loseKey() {
+        nowMillis += WatchServicePoller.HEALTHY_MILLIS
+        loseKeyAtOnce()
+    }
+
+    private fun loseKeyAtOnce() {
         val key = key!!
         key.setInvalid()
         key.signal()
@@ -170,18 +176,55 @@ class WatchServicePollerTest {
         assertEquals(listOf(5_000L), awaitDelays(1))
         awaitChange()
 
-        // Lost again right away, as when the server takes the watch and then fails it.
-        loseKey()
-        awaitChange()
+        // Lost again right away, as when the server takes the watch and then fails it: nothing
+        // was learned, so nothing is reloaded, but the next wait is longer.
+        loseKeyAtOnce()
         assertEquals(listOf(10_000L), awaitDelays(1))
-        awaitChange()
+        assertNoMoreChanges()
+        assertEquals(3, registrations)
 
         // This one lasted a minute, so it was working.
         nowMillis += WatchServicePoller.MAX_RETRY_DELAY_MILLIS
-        loseKey()
+        loseKeyAtOnce()
         awaitChange()
         assertEquals(listOf(5_000L), awaitDelays(1))
         awaitChange()
+    }
+
+    @Test
+    fun aKeyThatReportedSomethingCountsAsWorkingHoweverShortItLasted() {
+        start()
+
+        key!!.addEvent(StandardWatchEventKinds.ENTRY_MODIFY, TestPath("file"))
+        awaitChange()
+        loseKeyAtOnce()
+
+        awaitChange()
+        assertEquals(listOf(5_000L), awaitDelays(1))
+        awaitChange()
+    }
+
+    @Test
+    fun aServerThatRefusesEveryWatchIsGivenUpOnWithoutReloading() {
+        val thread = start()
+
+        repeat(WatchServicePoller.MAX_REFUSED_WATCHES) {
+            val refused = key
+            loseKeyAtOnce()
+            if (it < WatchServicePoller.MAX_REFUSED_WATCHES - 1) {
+                awaitDelays(1)
+                // Wait for the new key before losing it too.
+                val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+                while (key === refused && System.currentTimeMillis() < deadline) {
+                    Thread.sleep(10)
+                }
+            }
+        }
+
+        thread.join(TIMEOUT_MILLIS)
+        assertFalse(thread.isAlive)
+        assertEquals(WatchServicePoller.MAX_REFUSED_WATCHES, registrations)
+        assertNoMoreChanges()
     }
 
     @Test
