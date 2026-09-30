@@ -18,6 +18,7 @@ import me.zhanghai.android.files.R
 import me.zhanghai.android.files.compat.mainExecutorCompat
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.WakeWifiLock
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.valueCompat
@@ -119,7 +120,7 @@ class FtpServerService : Service() {
         try {
             server.start()
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("FtpServerService", "Start the FTP server")
             this.server = null
             mainExecutorCompat.execute { onStartError(e) }
             return

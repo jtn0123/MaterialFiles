@@ -39,6 +39,7 @@ import me.zhanghai.android.files.util.createSendImageIntent
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.mediumAnimTime
 import me.zhanghai.android.files.util.putState
 import me.zhanghai.android.files.util.showToast
@@ -175,7 +176,7 @@ class ImageViewerFragment :
         try {
             path.delete()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.logWarning("ImageViewerFragment", "Delete $path")
             showToast(e.toUserMessage(requireContext()))
             return
         }

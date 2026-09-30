@@ -11,6 +11,7 @@ import androidx.annotation.StringRes
 import androidx.core.content.edit
 import me.zhanghai.android.files.util.CredentialCipher
 import me.zhanghai.android.files.util.asBase64
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toBase64
 import me.zhanghai.android.files.util.toByteArray
 
@@ -36,7 +37,10 @@ class EncryptedParcelValueSettingLiveData<T>(
         try {
             sharedPreferences.getString(key, null)?.let { decode<T>(it) }
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning(
+                "EncryptedParcelValueSettingLiveData",
+                "Decode the encrypted parcel for $key"
+            )
             null
         } ?: defaultValue
 

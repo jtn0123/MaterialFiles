@@ -35,6 +35,7 @@ import me.zhanghai.android.files.provider.archive.archiveFile
 import me.zhanghai.android.files.provider.archive.isArchivePath
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.getQuantityString
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.viewModels
 
 class FilePropertiesBasicTabFragment : FilePropertiesTabFragment() {
@@ -168,7 +169,10 @@ class FilePropertiesBasicTabFragment : FilePropertiesTabFragment() {
                         }
                         path?.let { ++count }
                         attributes?.let { size += it.size() }
-                        exception?.printStackTrace()
+                        exception?.logWarning(
+                            "FilePropertiesBasicTabFragment",
+                            "Walk the file tree at $path"
+                        )
                         val currentTimeMillis = System.currentTimeMillis()
                         if (currentTimeMillis >= lastTimeMillis + intervalMillis) {
                             notifyListener()

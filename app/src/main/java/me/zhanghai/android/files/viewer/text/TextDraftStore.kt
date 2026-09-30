@@ -9,6 +9,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.UUID
+import me.zhanghai.android.files.util.logWarning
 
 internal data class TextDraft(val text: String, val encoding: String, val start: Int, val end: Int)
 
@@ -73,7 +74,7 @@ internal class TextDraftStore(directory: File, identity: String) {
                 Files.deleteIfExists(temporary.toPath())
             } catch (e: java.io.IOException) {
                 // Cleanup must not hide a write failure or invalidate a committed draft.
-                e.printStackTrace()
+                e.logWarning("TextDraftStore", "Delete the temporary draft file $temporary")
             }
         }
     }

@@ -32,6 +32,7 @@ import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.DataState
 import me.zhanghai.android.files.util.isFinished
 import me.zhanghai.android.files.util.isReady
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toError
 import me.zhanghai.android.files.util.toLoading
 
@@ -45,7 +46,7 @@ class TextEditorViewModel(file: Path) : ViewModel() {
             file.toUri().toString()
         )
     ) { error ->
-        error.printStackTrace()
+        error.logWarning("TextEditorViewModel", "Save the draft of $file")
         me.zhanghai.android.files.app.mainExecutor.execute {
             android.widget.Toast.makeText(
                 me.zhanghai.android.files.app.application,
@@ -105,7 +106,8 @@ class TextEditorViewModel(file: Path) : ViewModel() {
             currentCoroutineContext().ensureActive()
             bytesState.value = DataState.Success(bytes)
         } catch (e: CancellationException) {
-            e.printStackTrace()
+            // A newer load or the screen going away cancelled this one; nothing went wrong.
+            throw e
         } catch (e: Exception) {
             bytesState.value = bytesState.value.toError(e)
         }
@@ -132,7 +134,8 @@ class TextEditorViewModel(file: Path) : ViewModel() {
                                 currentCoroutineContext().ensureActive()
                                 _textState.value = DataState.Success(text)
                             } catch (e: CancellationException) {
-                                e.printStackTrace()
+                                // A newer file or encoding replaced this one; nothing went wrong.
+                                throw e
                             } catch (e: Exception) {
                                 _textState.value = _textState.value.toError(e)
                             }

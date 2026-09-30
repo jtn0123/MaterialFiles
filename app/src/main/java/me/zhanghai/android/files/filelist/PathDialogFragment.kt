@@ -12,6 +12,7 @@ import java8.nio.file.Paths
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.storage.createOrLog
 import me.zhanghai.android.files.util.asPathNameOrNull
+import me.zhanghai.android.files.util.logWarning
 
 abstract class PathDialogFragment : NameDialogFragment() {
     override fun isNameValid(name: String): Boolean {
@@ -51,7 +52,7 @@ abstract class PathDialogFragment : NameDialogFragment() {
             try {
                 return Paths.get(uri)
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.logWarning("PathDialogFragment", "Get the path for the URI $uri of $this")
             }
         }
         if (startsWith('/')) {

@@ -18,11 +18,19 @@ import org.junit.Test
  */
 class AutoCloseableExtensionsTest {
     @Test
-    fun closeSafeClosesAndSwallowsAFailureToClose() {
+    fun closeSafeClosesAndSwallowsAFailureToCloseButLogsIt() {
         val closeable = TestCloseable()
         closeable.closeSafe()
         assertTrue(closeable.isClosed)
-        TestCloseable(failToClose = true).closeSafe()
+        val warnings = mutableListOf<Throwable>()
+        val defaultWarningLogger = warningLogger
+        warningLogger = { _, _, throwable -> warnings += throwable }
+        try {
+            TestCloseable(failToClose = true).closeSafe()
+        } finally {
+            warningLogger = defaultWarningLogger
+        }
+        assertEquals("close failed", warnings.single().message)
     }
 
     @Test

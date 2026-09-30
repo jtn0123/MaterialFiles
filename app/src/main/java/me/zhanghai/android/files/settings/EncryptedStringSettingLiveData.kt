@@ -3,6 +3,7 @@ package me.zhanghai.android.files.settings
 import android.content.SharedPreferences
 import androidx.annotation.StringRes
 import me.zhanghai.android.files.app.application
+import me.zhanghai.android.files.util.logWarning
 
 class EncryptedStringSettingLiveData(
     nameSuffix: String?,
@@ -24,7 +25,7 @@ class EncryptedStringSettingLiveData(
     ): String = try {
         EncryptedPasswordStore.read(sharedPreferences, key, defaultValue)
     } catch (e: Exception) {
-        e.printStackTrace()
+        e.logWarning("EncryptedStringSettingLiveData", "Read the encrypted string for $key")
         // A locked or invalidated key must never turn ciphertext into a login password.
         defaultValue
     }

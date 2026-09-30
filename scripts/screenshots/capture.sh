@@ -6,7 +6,7 @@ set -u
 SER=$1; OUT=$2; CLIP=$3; mkdir -p "$OUT"; S=$(cd "$(dirname "$0")" && pwd)
 PKG=me.zhanghai.android.files; DIR=/storage/emulated/0/Movies/ScreenshotTest
 # A step that can't find its target stops the run, rather than capturing the wrong screen.
-u() { python3 "$S/ui.py" "$SER" "$@" >/dev/null || { echo "ui: $* not found" >&2; exit 1; }; }
+u() { python3 "$S/ui.py" "$SER" "$@" >/dev/null || { echo "ui: $* not found" >&2; stuck; exit 1; }; }
 e() { adb -s "$SER" "$@"; }
 # Presses Back until the file list is in front again; a viewer may first use Back to hide its
 # controls.
@@ -15,7 +15,14 @@ list() {
         e shell dumpsys activity activities | grep -q "topResumedActivity=.*FileListActivity" && return
         e shell input keyevent BACK; sleep 1
     done
-    echo "capture: the file list did not come back" >&2; exit 1
+    echo "capture: the file list did not come back" >&2; stuck; exit 1
+}
+# What was on screen instead, for a run that cannot be repeated by hand.
+stuck() {
+    e exec-out screencap -p > "$OUT/stuck.png"
+    e shell dumpsys activity activities | grep -E "ResumedActivity|mFocusedApp" >&2
+    e shell dumpsys window | grep -E "mCurrentFocus|mFocusedApp" >&2
+    e shell logcat -d -t 300 | grep -E "ActivityTaskManager|AndroidRuntime|ANR|$PKG" | tail -60 >&2
 }
 shot() { sleep "${2:-1.5}"; e exec-out screencap -p > "$OUT/$1.png"; }
 open() { e shell "am force-stop $PKG; am start -W -n $PKG/.filelist.FileListActivity -a android.intent.action.VIEW -d file://$DIR -t inode/directory" >/dev/null; sleep 3; }
@@ -34,6 +41,9 @@ e shell "mkdir -p $DIR" >/dev/null
 e push "$CLIP" "$DIR/Clip A.mp4" >/dev/null; e push "$CLIP" "$DIR/Clip B.mp4" >/dev/null
 e push "$OUT/shot.png" "$DIR/shot.png" >/dev/null; rm -f "$OUT/shot.png"
 e shell "echo 'Some notes for the screenshot run.' > '$DIR/notes.txt'"
+# The list shows each file's time, so it must not depend on when the run happened.
+# This year's date, since an older one would also show the year.
+e shell "touch -m -t \$(date +%Y)01021030.00 '$DIR'/*"
 e shell "appops set $PKG MANAGE_EXTERNAL_STORAGE allow; pm grant $PKG android.permission.POST_NOTIFICATIONS" >/dev/null 2>&1
 e shell "settings put global window_animation_scale 0; settings put global transition_animation_scale 0; settings put global animator_duration_scale 0" >/dev/null
 

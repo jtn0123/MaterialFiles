@@ -25,6 +25,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeout
+import me.zhanghai.android.files.util.StuckOperations
 import me.zhanghai.android.files.util.closeSafe
 import me.zhanghai.android.files.util.logWarning
 
@@ -70,10 +71,12 @@ abstract class AbstractFileByteChannel(
         if (remaining == 0) {
             return 0
         }
-        return synchronized(ioLock) {
-            readBuffer.read(destination).also {
-                if (it != -1) {
-                    position += it
+        return StuckOperations.instance.track({ "Read from ${javaClass.name}" }) {
+            synchronized(ioLock) {
+                readBuffer.read(destination).also {
+                    if (it != -1) {
+                        position += it
+                    }
                 }
             }
         }
@@ -211,6 +214,10 @@ abstract class AbstractFileByteChannel(
                 return
             }
             isOpen = false
+        }
+        // Not under closeLock: a read holds ioLock and may close the channel itself when it is
+        // interrupted, which would deadlock with another thread closing it to abort that read.
+        StuckOperations.instance.track({ "Close ${javaClass.name}" }) {
             synchronized(ioLock) {
                 readBuffer.closeSafe()
                 onClose()

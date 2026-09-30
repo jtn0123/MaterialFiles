@@ -23,6 +23,7 @@ import me.zhanghai.android.files.util.autoCleared
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.launchSafe
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.viewModels
 
 class AddLanSmbServerFragment : Fragment() {
@@ -74,7 +75,7 @@ class AddLanSmbServerFragment : Fragment() {
 
     private fun onLanSmbServerListChanged(stateful: Stateful<List<LanSmbServer>>) {
         if (stateful is Failure) {
-            stateful.throwable.printStackTrace()
+            stateful.throwable.logWarning("AddLanSmbServerFragment", "List the LAN SMB servers")
         }
         val isLoading = stateful is Loading
         binding.swipeRefreshLayout.isEnabled = !isLoading

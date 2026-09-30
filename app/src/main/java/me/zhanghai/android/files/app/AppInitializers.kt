@@ -37,6 +37,7 @@ import me.zhanghai.android.files.util.backgroundExecutor
 
 val appInitializers = listOf(
     ::disableHiddenApiChecks,
+    ::initializeDiagnostics,
     ::preloadSharedPreferences,
     ::initializeWebViewDebugging,
     ::initializeStrictMode,

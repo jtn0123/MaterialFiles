@@ -13,6 +13,7 @@ import kotlinx.parcelize.WriteWith
 import me.zhanghai.android.files.app.contentResolver
 import me.zhanghai.android.files.compat.DocumentsContractCompat
 import me.zhanghai.android.files.util.StableUriParceler
+import me.zhanghai.android.files.util.logWarning
 
 @Parcelize
 @JvmInline
@@ -57,7 +58,7 @@ val DocumentUri.displayName: String?
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("DocumentUri", "Get the display name of $value")
         }
         return null
     }

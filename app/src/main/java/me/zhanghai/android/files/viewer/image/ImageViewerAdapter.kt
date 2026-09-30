@@ -38,6 +38,7 @@ import me.zhanghai.android.files.ui.SimpleAdapter
 import me.zhanghai.android.files.util.fadeInUnsafe
 import me.zhanghai.android.files.util.fadeOutUnsafe
 import me.zhanghai.android.files.util.layoutInflater
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.shortAnimTime
 
 class ImageViewerAdapter(
@@ -79,7 +80,7 @@ class ImageViewerAdapter(
             val imageInfo = try {
                 withContext(ioDispatcher) { path.loadImageInfo() }
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.logWarning("ImageViewerAdapter", "Load the image info of $path")
                 showError(binding, e)
                 return@launch
             }
@@ -132,7 +133,7 @@ class ImageViewerAdapter(
                     }
 
                     override fun onImageLoadError(e: Exception) {
-                        e.printStackTrace()
+                        e.logWarning("ImageViewerAdapter", "Load the large image $path")
                         showError(binding, e)
                     }
                 })

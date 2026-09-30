@@ -18,6 +18,7 @@ import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.filelist.name
 import me.zhanghai.android.files.provider.common.newDirectoryStream
 import me.zhanghai.android.files.util.asFileNameOrNull
+import me.zhanghai.android.files.util.logWarning
 
 /**
  * Finds sidecar subtitle files, i.e. subtitles that sit next to the video and share its base name,
@@ -85,7 +86,7 @@ object VideoSubtitles {
         // Remote providers can fail with unchecked exceptions too, e.g. SMBJ wraps the
         // InterruptedException of a timed-out scan in an SMBRuntimeException while closing the
         // directory, and no subtitle is worth crashing the player over.
-        e.printStackTrace()
+        e.logWarning("VideoSubtitles", "List the subtitles in $directory")
         null
     }
 

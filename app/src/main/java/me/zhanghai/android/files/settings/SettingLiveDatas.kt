@@ -22,6 +22,7 @@ import me.zhanghai.android.files.util.getBoolean
 import me.zhanghai.android.files.util.getFloat
 import me.zhanghai.android.files.util.getInteger
 import me.zhanghai.android.files.util.getStringArray
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.toBase64
 import me.zhanghai.android.files.util.toByteArray
 import me.zhanghai.android.files.util.use
@@ -306,7 +307,7 @@ class ParcelValueSettingLiveData<T>(
         try {
             sharedPreferences.getString(key, null)?.asBase64()?.toByteArray()?.toParcelValue<T>()
         } catch (e: Exception) {
-            e.printStackTrace()
+            e.logWarning("SettingLiveDatas", "Read the parcel value for $key")
             null
         } ?: defaultValue
 

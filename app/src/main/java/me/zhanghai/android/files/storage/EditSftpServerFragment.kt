@@ -41,6 +41,7 @@ import me.zhanghai.android.files.util.getTextArray
 import me.zhanghai.android.files.util.hideTextInputLayoutErrorOnTextChange
 import me.zhanghai.android.files.util.isReady
 import me.zhanghai.android.files.util.launchSafe
+import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
@@ -246,7 +247,7 @@ class EditSftpServerFragment :
 
             is ActionState.Error -> {
                 val throwable = state.throwable
-                throwable.printStackTrace()
+                throwable.logWarning("EditSftpServerFragment", "Read the private key file")
                 showToast(throwable.toString())
                 viewModel.finishReadingPrivateKeyFile()
             }
@@ -284,7 +285,7 @@ class EditSftpServerFragment :
 
             is ActionState.Error -> {
                 val throwable = state.throwable
-                throwable.printStackTrace()
+                throwable.logWarning("EditSftpServerFragment", "Connect to the SFTP server")
                 val hostKeyChange = throwable.hostKeyChange
                 if (hostKeyChange != null) {
                     SftpHostKeyChangedDialogFragment.show(hostKeyChange, this)
@@ -354,7 +355,7 @@ class EditSftpServerFragment :
         val privateKeyPassword = binding.privateKeyPasswordEdit.text.toString().takeIfNotEmpty()
         val exception = PublicKeyAuthentication.validate(privateKey, privateKeyPassword)
         if (exception != null) {
-            exception.printStackTrace()
+            exception.logWarning("EditSftpServerFragment", "Validate the private key")
             if (exception is KeyDecryptionFailedException) {
                 errors.add(
                     ServerFormField(
