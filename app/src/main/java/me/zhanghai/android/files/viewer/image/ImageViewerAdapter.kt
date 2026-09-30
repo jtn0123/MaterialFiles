@@ -153,8 +153,9 @@ class ImageViewerAdapter(
                     )
                     // Never scaled up to fill the box, only down.
                     precision(Precision.INEXACT)
-                    placeholder(placeholder)
                     fadeIn(context.shortAnimTime)
+                    // After fadeIn(), which sets a transparent one of its own.
+                    placeholder(placeholder)
                     listener(
                         onSuccess = { _, _ -> binding.progress.fadeOutUnsafe() },
                         onError = { _, result -> showError(binding, path, result.throwable) }
