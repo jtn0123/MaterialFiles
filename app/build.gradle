@@ -16,7 +16,7 @@ android {
     ndkVersion '28.1.13356709'
     defaultConfig {
         applicationId 'me.zhanghai.android.files'
-        minSdk 35
+        minSdk 36
         targetSdk 36
         versionCode 42
         versionName '1.7.7'

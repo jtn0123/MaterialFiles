@@ -7,8 +7,6 @@ package me.zhanghai.android.files.navigation
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
-import android.os.Build
 import android.util.AttributeSet
 import android.view.WindowInsets
 import androidx.annotation.AttrRes
@@ -17,7 +15,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.RecyclerView
 import me.zhanghai.android.files.R
-import me.zhanghai.android.files.util.activity
 import me.zhanghai.android.files.util.displayWidth
 import me.zhanghai.android.files.util.getDimensionPixelSize
 import me.zhanghai.android.files.util.getDimensionPixelSizeByAttr
@@ -103,18 +100,12 @@ class NavigationRecyclerView : RecyclerView {
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-        // Android 15+ (for apps targeting it) keeps the status bar transparent and no longer
-        // draws a scrim behind it, so we have to.
-        @Suppress("DEPRECATION")
-        val isStatusBarTransparent =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM ||
-                context.activity!!.window.statusBarColor == Color.TRANSPARENT
-        if (isStatusBarTransparent) {
-            canvas.withSave {
-                canvas.translate(scrollX.toFloat(), scrollY.toFloat())
-                scrim.setBounds(0, 0, width, insetTop)
-                scrim.draw(canvas)
-            }
+        // Android keeps the status bar transparent and no longer draws a scrim behind it, so we
+        // have to.
+        canvas.withSave {
+            canvas.translate(scrollX.toFloat(), scrollY.toFloat())
+            scrim.setBounds(0, 0, width, insetTop)
+            scrim.draw(canvas)
         }
     }
 }

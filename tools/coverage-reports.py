@@ -6,7 +6,7 @@ import shutil
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = ('app-unit.xml', 'dav4jvm-unit.xml', 'app-android-35.xml', 'app-android-36.xml')
+EXPECTED = ('app-unit.xml', 'dav4jvm-unit.xml', 'app-android-36.xml')
 
 
 def validate(path):
@@ -31,7 +31,7 @@ def collect(source, name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=('unit', 'android', 'verify'))
-    parser.add_argument('--api-level', choices=('35', '36'))
+    parser.add_argument('--api-level', choices=('36',))
     args = parser.parse_args()
     if args.mode == 'unit':
         collect(ROOT / 'app/build/reports/coverage/test/debug/report.xml', 'app-unit.xml')

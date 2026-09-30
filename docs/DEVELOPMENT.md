@@ -6,7 +6,7 @@ version of the build requirements.
 ## Toolchain
 
 - JDK 21 (`JAVA_HOME` must point at it; the Gradle daemon does not pick up a newer default).
-- Gradle 9.7 and AGP 9.4 via the wrapper (compileSdk 37, minSdk 35). Versions of everything else live in
+- Gradle 9.7 and AGP 9.4 via the wrapper (compileSdk 37, minSdk 36). Versions of everything else live in
   `gradle/libs.versions.toml`; Dependabot proposes bumps.
 - `local.properties` (git-ignored) with `sdk.dir=...`.
 - Only `libsu` still comes from JitPack; dav4jvm is vendored (see Checks).
@@ -39,9 +39,9 @@ version of the build requirements.
   everything on Linux in dry-run mode and fails with the missing entries as a diff, so add
   exactly those lines. Keep the file in Gradle's own ordering (versions sort as strings), or
   that diff is never empty.
-- **Screenshots.** The `screenshots` CI job installs the debug build on an API 35 emulator, runs
+- **Screenshots.** The `screenshots` CI job installs the debug build on an API 36 emulator, runs
   `scripts/screenshots/capture.sh` through the inset-sensitive screens and, once
-  `screenshots/baseline/api35/` exists, pixel-diffs against it with `scripts/screenshots/compare.py`
+  `screenshots/baseline/api36/` exists, pixel-diffs against it with `scripts/screenshots/compare.py`
   (more than 0.5 % of pixels changed fails). Commit the baseline from the job's artifact, not
   from a local emulator; see `screenshots/README.md`.
 - **Logging.** The provider and file-job layers record exceptions they survive with
@@ -60,7 +60,7 @@ servers in both implicit and explicit FTPS modes.
 ## Instrumented tests and the emulator
 
 The instrumented tests in `app/src/androidTest` use UiAutomator against a real Android build and
-run in CI on API 35 and 36 emulators. Locally, run them on one emulator, pinned by serial, because Gradle would otherwise
+run in CI on an API 36 emulator. Locally, run them on one emulator, pinned by serial, because Gradle would otherwise
 run them on every connected device:
 
 ```sh
@@ -165,7 +165,7 @@ to the original during staging. Required extended-attribute copy failures abort 
 
 SonarCloud automatic analysis reads source code but cannot import test coverage. This project
 uses CI-based analysis to import JaCoCo XML from the app's JVM tests, the vendored WebDAV
-library tests, and Android instrumented tests on API 35 and 36. Coverage describes Java/Kotlin
+library tests, and Android instrumented tests on API 36. Coverage describes Java/Kotlin
 execution; these reports do not measure native C execution or replace physical-device testing.
 
 Coverage is opt-in through `-Pcoverage=true` (or `ORG_GRADLE_PROJECT_coverage=true`). Normal
