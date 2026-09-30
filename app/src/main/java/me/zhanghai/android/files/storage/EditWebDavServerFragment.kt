@@ -32,14 +32,12 @@ import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.autoCleared
-import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getTextArray
 import me.zhanghai.android.files.util.hideTextInputLayoutErrorOnTextChange
 import me.zhanghai.android.files.util.isReady
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.setResult
-import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
 
@@ -49,6 +47,15 @@ class EditWebDavServerFragment : Fragment() {
     private val viewModel by viewModels { { EditWebDavServerViewModel() } }
 
     private var binding by autoCleared<EditWebdavServerFragmentBinding>()
+
+    private val connectViews: ServerConnectViews
+        get() = ServerConnectViews(
+            binding.scrollView,
+            binding.formLayout,
+            binding.progress,
+            binding.connectErrorText,
+            listOf(binding.saveOrConnectAndAddButton, binding.removeOrAddButton)
+        )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -123,6 +130,8 @@ class EditWebDavServerFragment : Fragment() {
             updateNamePlaceholder()
         }
         binding.usernameEdit.hideTextInputLayoutErrorOnTextChange(binding.usernameLayout)
+        binding.passwordEdit.hideTextInputLayoutErrorOnTextChange(binding.passwordLayout)
+        binding.accessTokenEdit.hideTextInputLayoutErrorOnTextChange(binding.accessTokenLayout)
         binding.usernameEdit.doAfterTextChanged { updateNamePlaceholder() }
     }
 
@@ -253,13 +262,8 @@ class EditWebDavServerFragment : Fragment() {
 
     private fun onConnectStateChanged(state: ActionState<WebDavServer, Unit>) {
         when (state) {
-            is ActionState.Ready, is ActionState.Running -> {
-                val isConnecting = state is ActionState.Running
-                binding.progress.fadeToVisibilityUnsafe(isConnecting)
-                binding.scrollView.fadeToVisibilityUnsafe(!isConnecting)
-                binding.saveOrConnectAndAddButton.isEnabled = !isConnecting
-                binding.removeOrAddButton.isEnabled = !isConnecting
-            }
+            is ActionState.Ready, is ActionState.Running ->
+                connectViews.setConnecting(state is ActionState.Running)
 
             is ActionState.Success -> {
                 Storages.addOrReplace(state.argument)
@@ -270,10 +274,27 @@ class EditWebDavServerFragment : Fragment() {
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.logWarning("EditWebDavServerFragment", "Connect to the WebDAV server")
-                showToast(throwable.toString())
+                showConnectError(throwable)
                 viewModel.finishConnecting()
             }
         }
+    }
+
+    private fun showConnectError(throwable: Throwable) {
+        connectViews.showError(
+            throwable,
+            ServerFormField(binding.hostLayout, binding.hostEdit),
+            getCredentialsField()
+        )
+    }
+
+    private fun getCredentialsField(): ServerFormField? = when (authenticationType) {
+        AuthenticationType.PASSWORD -> ServerFormField(binding.passwordLayout, binding.passwordEdit)
+
+        AuthenticationType.ACCESS_TOKEN ->
+            ServerFormField(binding.accessTokenLayout, binding.accessTokenEdit)
+
+        AuthenticationType.NONE -> null
     }
 
     private fun remove() {

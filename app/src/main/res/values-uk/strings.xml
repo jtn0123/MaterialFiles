@@ -21,6 +21,19 @@
     <string name="empty">Порожньо</string>
     <string name="empty_placeholder">(Порожньо)</string>
     <string name="error">Помилка</string>
+    <string name="error_access_denied">Доступ заборонено</string>
+    <string name="error_authentication_failed">Не вдалося увійти</string>
+    <string name="error_file_not_found">Файл не знайдено</string>
+    <string name="error_file_already_exists">Файл з такою назвою вже існує</string>
+    <string name="error_directory_not_empty">Тека не порожня</string>
+    <string name="error_not_a_directory">Це не тека</string>
+    <string name="error_is_a_directory">Це тека</string>
+    <string name="error_read_only_file_system">Сховище доступне лише для читання</string>
+    <string name="error_invalid_file_name">Недійсна назва файлу</string>
+    <string name="error_unknown_host">Невідомий хост</string>
+    <string name="error_connection_timed_out">Час очікування з\'єднання минув</string>
+    <string name="error_connection_failed">Не вдалося з\'єднатися</string>
+    <string name="error_interrupted">Операцію перервано</string>
     <string name="hide">Сховати</string>
     <string name="install">Встановити</string>
     <string name="keep_editing">Продовжити редагувати</string>
@@ -41,6 +54,7 @@
     <string name="search">Пошук</string>
     <string name="select">Вибрати</string>
     <string name="select_all">Вибрати все</string>
+    <string name="select_range">Вибрати діапазон</string>
     <string name="share">Поширити</string>
     <string name="show">Показати</string>
     <string name="skip">Пропустити</string>
@@ -134,6 +148,13 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Завершено, %1$,d файл пропущено через помилку</item>
+        <item quantity="few">Завершено, %1$,d файли пропущено через помилки</item>
+        <item quantity="many">Завершено, %1$,d файлів пропущено через помилки</item>
+        <item quantity="other">Завершено, %1$,d файлу пропущено через помилки</item>
+    </plurals>
+    <string name="file_job_failed_format">Помилка: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Підготовка до видалення %1$,d файлу</item>
         <item quantity="few">Підготовка до видалення %1$,d файлів</item>
@@ -235,6 +256,8 @@
     <string name="file_job_merge_target_name">Оригінальна тека</string>
     <string name="file_job_merge_source_name">Об\'єднати з</string>
     <string name="file_job_conflict_show_name">Виберіть нове ім\'я для цілі</string>
+    <string name="file_job_conflict_show_name_expanded">Розгорнуто</string>
+    <string name="file_job_conflict_show_name_collapsed">Згорнуто</string>
     <string name="file_job_conflict_name_hint">Нова назва</string>
     <string name="file_job_archive_error_title_format">Помилка під час стиснення «%1$s»</string>
     <string name="file_job_archive_error_message_format">Сталася помилка під час стиснення файлу в «%1$s».\n%2$s</string>
@@ -246,6 +269,9 @@
     <string name="file_job_move_error_message_format">Сталася помилка переміщення файлу в «%1$s».\n%2$s</string>
     <string name="file_job_delete_error_title">Помилка під час видалення</string>
     <string name="file_job_delete_error_message_format">Сталася помилка видалення «%1$s».\n%2$s</string>
+    <string name="file_job_read_error_title">Помилка під час читання</string>
+    <string name="file_job_read_error_message_format">Сталася помилка читання «%1$s».\n%2$s</string>
+    <string name="file_job_list_error_message_format">Сталася помилка отримання вмісту «%1$s».\n%2$s</string>
     <string name="file_job_rename_error_title_format">Помилка під час перейменування «%1$s»</string>
     <string name="file_job_rename_error_message_format">Сталася помилка перейменування файлу на «%1$s».\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Помилка під час зміни власника на «%1$s»</string>
@@ -367,11 +393,25 @@
     <string name="file_list_paste_copy_title_format">Копіювання %1$,d</string>
     <string name="file_list_paste_extract_title_format">Видобування %1$,d</string>
     <string name="file_list_paste_action_extract_here">Видобути тут</string>
+    <string name="file_list_edit_server">Змінити сервер</string>
     <string name="file_list_empty">Нема файлів</string>
     <string name="file_list_action_create_file">Файл</string>
     <string name="file_list_action_create_directory">Тека</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Інші параметри</string>
+    <string name="file_item_menu_format">Інші параметри для %1$s</string>
+    <string name="file_item_select_format">Вибрати %1$s</string>
+    <string name="file_item_deselect_format">Скасувати вибір %1$s</string>
+    <string name="file_item_action_open">Відкрити</string>
+    <string name="file_item_action_deselect">Скасувати вибір</string>
+    <string name="file_item_state_selected">Вибрано</string>
+    <string name="file_item_state_not_selected">Не вибрано</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Посилання</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Недійсне посилання</string>
+    <string name="file_item_accessibility_encrypted">Зашифровано</string>
+    <string name="file_item_accessibility_app_directory">Тека застосунку</string>
     <string name="file_item_action_open_with">Відкрити через</string>
     <string name="file_item_action_extract">Видобути</string>
     <string name="file_item_action_archive">Стиснути</string>
@@ -496,6 +536,7 @@
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Сховище</string>
     <string name="storage_list_empty">Нема сховища</string>
+    <string name="list_item_drag_handle">Перетягніть, щоб змінити порядок</string>
     <string name="storage_add_storage_title">Додати сховище</string>
     <string name="storage_add_storage_document_tree">Зовнішнє сховище</string>
     <string name="storage_add_storage_ftp_server">FTP-сервер</string>
@@ -570,6 +611,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Може бути порожнім</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Недійсний пароль закритого ключа</string>
     <string name="storage_edit_sftp_server_connect_and_add">З\'єднатися та додати</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Ключ хоста змінився</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">Ключ %2$s хоста %1$s не збігається із запам\'ятованим під час першого з\'єднання. Хтось може перехоплювати з\'єднання, або сервер було перевстановлено.\n\nЗапам\'ятований: %3$s\nОтриманий: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Довіряти новому ключу</string>
     <string name="storage_edit_sftp_server_add">Додати</string>
     <string name="storage_add_lan_smb_server_loading">Пошук SMB-серверів…</string>
     <string name="storage_add_lan_smb_server_add">Додати вручну</string>
@@ -594,6 +638,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Введіть ім\'я користувача</string>
     <string name="storage_edit_smb_server_password">Пароль</string>
     <string name="storage_edit_smb_server_domain">Домен</string>
+    <string name="storage_edit_smb_server_encrypt">Шифрувати з\'єднання</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Запитувати шифрування SMB3. Потрібно для спільних ресурсів, які його вимагають; ігнорується серверами без його підтримки.</string>
     <string name="storage_edit_smb_server_connect_and_add">З\'єднатися та додати</string>
     <string name="storage_edit_smb_server_add">Додати</string>
     <string name="storage_edit_webdav_server_title_edit">Змінити WebDAV сервер</string>
@@ -643,9 +689,25 @@
     <string name="archive_viewer_title">Переглядач архівів</string>
     <string name="image_viewer_title">Переглядач зображень</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Відеоплеєр</string>
+    <string name="video_viewer_picture_in_picture">Картинка в картинці</string>
+    <string name="video_viewer_play_from_beginning">Відтворити з початку</string>
+    <string name="video_viewer_screen_orientation">Орієнтація екрана</string>
+    <string name="video_viewer_screen_orientation_auto">Автоповорот</string>
+    <string name="video_viewer_screen_orientation_landscape">Альбомна</string>
+    <string name="video_viewer_screen_orientation_portrait">Портретна</string>
+    <string name="video_viewer_error_format">Не вдалося відтворити %1$s</string>
+    <string name="video_viewer_error_unsupported">Цей пристрій не може відтворити цей формат відео</string>
+    <string name="video_viewer_error_malformed">Відеофайл пошкоджений або неповний</string>
     <string name="save_as_title">Зберегти як</string>
     <string name="save_as_error">Помилка при збереженні файлу</string>
     <string name="save_as_success_format">“%1$s” збережено у “%2$s”</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d файл збережено в «%2$s»</item>
+        <item quantity="few">%1$d файли збережено в «%2$s»</item>
+        <item quantity="many">%1$d файлів збережено в «%2$s»</item>
+        <item quantity="other">%1$d файлу збережено в «%2$s»</item>
+    </plurals>
     <string name="text_editor_title">Текстовий редактор</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -670,9 +732,14 @@
     <string name="ftp_server_add_tile_result_error">Помилка під час додавання “FTP серверу” до швидких налаштувань</string>
     <string name="ftp_server_configuration_title">Конфігурація</string>
     <string name="ftp_server_anonymous_login_title">Анонімний вхід</string>
+    <string name="ftp_server_error_password_empty">Установіть пароль або увімкніть анонімний вхід перед запуском FTP-сервера</string>
     <string name="ftp_server_username_title">Імʼя користувача</string>
     <string name="ftp_server_password_title">Пароль</string>
     <string name="ftp_server_port_title">Порт</string>
+    <string name="ftp_server_passive_ports_title">Пасивні порти даних</string>
+    <string name="ftp_server_passive_ports_summary_any">Будь-який вільний порт</string>
+    <string name="ftp_server_passive_ports_dialog_message">Порти або діапазони для з\'єднань передачі даних, наприклад 2300-2400 або 2300, 2301. Залиште порожнім, щоб використовувати будь-який вільний порт. Задайте, якщо сервер доступний через переадресацію портів або тунель.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Введіть порти від 1 до 65535 у вигляді чисел або діапазонів через кому</string>
     <string name="ftp_server_home_directory_title">Тека Root</string>
     <string name="ftp_server_writable_title">Дозволити запис</string>
     <string name="settings_title">Налаштування</string>
@@ -680,6 +747,7 @@
     <string name="settings_locale_title">Мова</string>
     <string name="settings_theme_color_title">Колір теми</string>
     <string name="settings_theme_color_summary">Колір, який найчастіше з’являється у застосунку</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 натомість використовує кольори шпалер</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Нічний режим</string>
     <string-array name="settings_night_mode_entries">
@@ -700,6 +768,8 @@
     </string-array>
     <string name="settings_behavior_title">Поведінка</string>
     <string name="settings_default_directory_title">Типова тека</string>
+    <string name="settings_remember_last_directory_title">Відкривати останню теку</string>
+    <string name="settings_remember_last_directory_summary">Продовжувати з того місця, де ви зупинилися, а не з типової теки</string>
     <string name="settings_standard_directories_title">Стандартні теки</string>
     <string name="settings_standard_directories_summary_empty">Нема ввімкнених стандартних тек</string>
     <string name="settings_bookmark_directory_screenshots">Знімки екрана</string>
@@ -727,6 +797,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Показувати прев\'ю для PDF-документів</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Може зробити застосунок нестабільним на старих версіях Android</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Зчитувати віддалені файли для ескізів</string>
+    <string name="settings_video_remember_playback_position_title">Запам\'ятовувати позицію відтворення відео</string>
 
     <string name="about_title">Про застосунок</string>
     <string name="about_version_title">Версія</string>
@@ -736,4 +807,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Стежити на GitHub</string>
     <string name="about_author_twitter_title">Стежити у Twitter</string>
+    <string name="text_editor_draft_save_failed">Не вдалося зберегти чернетку для відновлення. Збережіть зміни перед виходом.</string>
+    <string name="text_editor_draft_restored">Незбережені зміни відновлено</string>
+    <string name="text_editor_draft_restore_failed">Не вдалося відновити незбережені зміни</string>
+    <string name="password_save_failed">Не вдалося зберегти пароль</string>
+    <string name="file_list_partial_error">Деякі файли не вдалося прочитати (відсутні: %1$d). Оновіть, щоб спробувати ще раз.</string>
 </resources>

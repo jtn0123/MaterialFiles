@@ -19,14 +19,31 @@
         android:visibility="gone"
         style="@style/Widget.AppCompat.ProgressBar" />
 
-    <TextView
-        android:id="@+id/errorText"
+    <LinearLayout
+        android:id="@+id/errorLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:paddingStart="@dimen/screen_edge_margin"
+        android:paddingEnd="@dimen/screen_edge_margin"
         android:gravity="center_horizontal"
-        android:textAppearance="@style/TextAppearance.AppCompat.Title"
-        android:visibility="gone" />
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/errorText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:textAppearance="@style/TextAppearance.AppCompat.Title" />
+
+        <Button
+            android:id="@+id/retryButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/retry" />
+    </LinearLayout>
 
     <io.getstream.photoview.PhotoView
         android:id="@+id/image"

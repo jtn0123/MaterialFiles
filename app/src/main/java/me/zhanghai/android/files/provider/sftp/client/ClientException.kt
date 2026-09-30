@@ -12,11 +12,13 @@ import java8.nio.file.FileSystemException
 import java8.nio.file.FileSystemLoopException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.NotDirectoryException
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import me.zhanghai.android.files.provider.common.IsDirectoryException
 import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException
 import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPException
+import net.schmizz.sshj.userauth.UserAuthException
 
 class ClientException : Exception {
     constructor() : super()
@@ -30,6 +32,14 @@ class ClientException : Exception {
     private val statusCode: Response.StatusCode? = (cause as? SFTPException)?.statusCode
 
     fun toFileSystemException(file: String?, other: String? = null): FileSystemException =
+        if (cause is UserAuthException) {
+            // Every method we offered was rejected at the SSH login, before SFTP even started.
+            AuthenticationFailedException(file, other, message)
+        } else {
+            toFileSystemExceptionByStatus(file, other)
+        }.apply { initCause(this@ClientException) }
+
+    private fun toFileSystemExceptionByStatus(file: String?, other: String?): FileSystemException =
         when (statusCode) {
             Response.StatusCode.NO_SUCH_FILE, Response.StatusCode.NO_SUCH_PATH,
             Response.StatusCode.DELETE_PENDING -> NoSuchFileException(file, other, message)
@@ -53,5 +63,5 @@ class ClientException : Exception {
             Response.StatusCode.FILE_IS_A_DIRECTORY -> IsDirectoryException(file, other, message)
 
             else -> FileSystemException(file, other, message)
-        }.apply { initCause(this@ClientException) }
+        }
 }

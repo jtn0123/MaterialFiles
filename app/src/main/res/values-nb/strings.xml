@@ -19,6 +19,19 @@
     <string name="empty">Tom</string>
     <string name="empty_placeholder">(Tom)</string>
     <string name="error">Feil</string>
+    <string name="error_access_denied">Tilgang nektet</string>
+    <string name="error_authentication_failed">Innlogging mislyktes</string>
+    <string name="error_file_not_found">Fant ikke filen</string>
+    <string name="error_file_already_exists">Det finnes allerede en fil med det navnet</string>
+    <string name="error_directory_not_empty">Mappen er ikke tom</string>
+    <string name="error_not_a_directory">Ikke en mappe</string>
+    <string name="error_is_a_directory">Dette er en mappe</string>
+    <string name="error_read_only_file_system">Lagringen er skrivebeskyttet</string>
+    <string name="error_invalid_file_name">Ugyldig filnavn</string>
+    <string name="error_unknown_host">Ukjent vert</string>
+    <string name="error_connection_timed_out">Tidsavbrudd for tilkoblingen</string>
+    <string name="error_connection_failed">Kunne ikke koble til</string>
+    <string name="error_interrupted">Operasjonen ble avbrutt</string>
     <string name="hide">Skjul</string>
     <string name="install">Installer</string>
     <string name="keep_editing">Fortsett å redigere</string>
@@ -39,6 +52,7 @@
     <string name="search">Søke</string>
     <string name="select">Velg</string>
     <string name="select_all">Velg alle</string>
+    <string name="select_range">Velg område</string>
     <string name="share">Del</string>
     <string name="show">Vis</string>
     <string name="skip">Hopp over</string>
@@ -114,6 +128,11 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Fullført, %1$,d fil hoppet over på grunn av en feil</item>
+        <item quantity="other">Fullført, %1$,d filer hoppet over på grunn av feil</item>
+    </plurals>
+    <string name="file_job_failed_format">Mislyktes: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Forbereder sletting av %1$,d fil</item>
         <item quantity="other">Forbereder sletting av %1$,d filer</item>
@@ -191,6 +210,8 @@
     <string name="file_job_merge_target_name">Opprinnelig mappe</string>
     <string name="file_job_merge_source_name">Slå sammen med</string>
     <string name="file_job_conflict_show_name">Velg et nytt navn for målet</string>
+    <string name="file_job_conflict_show_name_expanded">Utvidet</string>
+    <string name="file_job_conflict_show_name_collapsed">Skjult</string>
     <string name="file_job_conflict_name_hint">Nytt navn</string>
     <string name="file_job_archive_error_title_format">Feil under komprimering av «%1$s»</string>
     <string name="file_job_archive_error_message_format">Det oppsto en feil under komprimering av filen inn i «%1$s».\n%2$s</string>
@@ -202,6 +223,9 @@
     <string name="file_job_move_error_message_format">Det oppsto en feil under flytting av filen inn i «%1$s».\n%2$s</string>
     <string name="file_job_delete_error_title">Feil under sletting</string>
     <string name="file_job_delete_error_message_format">Det oppsto en feil under sletting av «%1$s».\n%2$s</string>
+    <string name="file_job_read_error_title">Feil under lesing</string>
+    <string name="file_job_read_error_message_format">Det oppsto en feil under lesing av «%1$s».\n%2$s</string>
+    <string name="file_job_list_error_message_format">Det oppsto en feil under opplisting av innholdet i «%1$s».\n%2$s</string>
     <string name="file_job_rename_error_title_format">Feil under endring av navn for «%1$s»</string>
     <string name="file_job_rename_error_message_format">Det oppsto en feil under endring av filnavnet til «%1$s».\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Feil under endring av eier for «%1$s»</string>
@@ -309,11 +333,25 @@
     <string name="file_list_paste_copy_title_format">Kopierer %1$,d</string>
     <string name="file_list_paste_extract_title_format">Pakker ut %1$,d</string>
     <string name="file_list_paste_action_extract_here">Pakk ut her</string>
+    <string name="file_list_edit_server">Rediger tjener</string>
     <string name="file_list_empty">Ingen filer</string>
     <string name="file_list_action_create_file">Fil</string>
     <string name="file_list_action_create_directory">Mappe</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Flere alternativer</string>
+    <string name="file_item_menu_format">Flere alternativer for %1$s</string>
+    <string name="file_item_select_format">Velg %1$s</string>
+    <string name="file_item_deselect_format">Fjern valg av %1$s</string>
+    <string name="file_item_action_open">Åpne</string>
+    <string name="file_item_action_deselect">Fjern valg</string>
+    <string name="file_item_state_selected">Valgt</string>
+    <string name="file_item_state_not_selected">Ikke valgt</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Lenke</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Brutt lenke</string>
+    <string name="file_item_accessibility_encrypted">Kryptert</string>
+    <string name="file_item_accessibility_app_directory">App-mappe</string>
     <string name="file_item_action_open_with">Åpne med</string>
     <string name="file_item_action_extract">Pakk ut</string>
     <string name="file_item_action_archive">Komprimer</string>
@@ -434,6 +472,7 @@
     <string name="storage_file_system_root_title">Rot</string>
     <string name="storage_list_title">Lagring</string>
     <string name="storage_list_empty">Ingen lagring</string>
+    <string name="list_item_drag_handle">Dra for å endre rekkefølge</string>
     <string name="storage_add_storage_title">Legg til lagring</string>
     <string name="storage_add_storage_document_tree">Ekstern lagring</string>
     <string name="storage_add_storage_ftp_server">FTP-tjener</string>
@@ -508,6 +547,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Kan være tomt</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Ugyldig passord for privat nøkkel</string>
     <string name="storage_edit_sftp_server_connect_and_add">Koble til og legg til</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Vertsnøkkelen er endret</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">%2$s-nøkkelen til %1$s er ikke den som ble husket fra første tilkobling. Noen kan avlytte tilkoblingen, eller tjeneren kan ha blitt installert på nytt.\n\nHusket: %3$s\nMottatt: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Stol på ny nøkkel</string>
     <string name="storage_edit_sftp_server_add">Legg til</string>
     <string name="storage_add_lan_smb_server_loading">Søker etter SMB-tjenere …</string>
     <string name="storage_add_lan_smb_server_add">Legg til manuelt</string>
@@ -532,6 +574,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Skriv inn et brukernavn</string>
     <string name="storage_edit_smb_server_password">Passord</string>
     <string name="storage_edit_smb_server_domain">Domene</string>
+    <string name="storage_edit_smb_server_encrypt">Krypter tilkoblingen</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Be om SMB3-kryptering. Nødvendig for delte ressurser som krever det; ignoreres av tjenere uten støtte for det.</string>
     <string name="storage_edit_smb_server_connect_and_add">Koble til og legg til</string>
     <string name="storage_edit_smb_server_add">Legg til</string>
     <string name="storage_edit_webdav_server_title_edit">Rediger WebDAV-tjener</string>
@@ -581,9 +625,23 @@
     <string name="archive_viewer_title">Arkivleser</string>
     <string name="image_viewer_title">Bildefremviser</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Videospiller</string>
+    <string name="video_viewer_picture_in_picture">Bilde-i-bilde</string>
+    <string name="video_viewer_play_from_beginning">Spill av fra begynnelsen</string>
+    <string name="video_viewer_screen_orientation">Skjermretning</string>
+    <string name="video_viewer_screen_orientation_auto">Automatisk rotering</string>
+    <string name="video_viewer_screen_orientation_landscape">Liggende</string>
+    <string name="video_viewer_screen_orientation_portrait">Stående</string>
+    <string name="video_viewer_error_format">Kan ikke spille av %1$s</string>
+    <string name="video_viewer_error_unsupported">Denne enheten kan ikke spille av dette videoformatet</string>
+    <string name="video_viewer_error_malformed">Videofilen er skadet eller ufullstendig</string>
     <string name="save_as_title">Lagre som</string>
     <string name="save_as_error">Feil under lagring av fil</string>
     <string name="save_as_success_format">«%1$s» er lagret i «%2$s»</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d fil er lagret i «%2$s»</item>
+        <item quantity="other">%1$d filer er lagret i «%2$s»</item>
+    </plurals>
     <string name="text_editor_title">Tekstredigering</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -608,9 +666,14 @@
     <string name="ftp_server_add_tile_result_error">Feil under tilføying av «FTP-tjener» til hurtiginnstillingene</string>
     <string name="ftp_server_configuration_title">Konfigurasjon</string>
     <string name="ftp_server_anonymous_login_title">Anonym innlogging</string>
+    <string name="ftp_server_error_password_empty">Angi et passord, eller slå på anonym innlogging, før du starter FTP-tjeneren</string>
     <string name="ftp_server_username_title">Brukernavn</string>
     <string name="ftp_server_password_title">Passord</string>
     <string name="ftp_server_port_title">Port</string>
+    <string name="ftp_server_passive_ports_title">Passive dataporter</string>
+    <string name="ftp_server_passive_ports_summary_any">Hvilken som helst ledig port</string>
+    <string name="ftp_server_passive_ports_dialog_message">Porter eller områder for datatilkoblinger, f.eks. 2300-2400 eller 2300, 2301. La stå tomt for å bruke en hvilken som helst ledig port. Angi dette når tjeneren nås via portvideresending eller en tunnel.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Skriv inn porter mellom 1 og 65535, som tall eller områder atskilt med komma</string>
     <string name="ftp_server_home_directory_title">Rotmappen</string>
     <string name="ftp_server_writable_title">Tillat skriving</string>
     <string name="settings_title">Innstillinger</string>
@@ -618,6 +681,7 @@
     <string name="settings_locale_title">Språk</string>
     <string name="settings_theme_color_title">Temafarge</string>
     <string name="settings_theme_color_summary">Den mest brukte fargen i appen</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 bruker fargene fra bakgrunnsbildet i stedet</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Nattmodus</string>
     <string-array name="settings_night_mode_entries">
@@ -638,6 +702,8 @@
     </string-array>
     <string name="settings_behavior_title">Atferd</string>
     <string name="settings_default_directory_title">Startmappe</string>
+    <string name="settings_remember_last_directory_title">Åpne siste mappe på nytt</string>
+    <string name="settings_remember_last_directory_summary">Start der du slapp i stedet for i standardmappen</string>
     <string name="settings_standard_directories_title">Standardmapper</string>
     <string name="settings_standard_directories_summary_empty">Ingen standardmapper er aktivert</string>
     <string name="settings_bookmark_directory_screenshots">Skjermdumper</string>
@@ -663,6 +729,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Vis miniatyrbilde for PDF-filer</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Kan gjøre appen ustabil på eldre Android-versjoner</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Les eksterne filer for miniatyrbilder</string>
+    <string name="settings_video_remember_playback_position_title">Husk avspillingsposisjon for video</string>
 
     <string name="about_title">Om appen</string>
     <string name="about_version_title">Versjon</string>
@@ -672,4 +739,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Følg på GitHub</string>
     <string name="about_author_twitter_title">Følg på Twitter</string>
+    <string name="text_editor_draft_save_failed">Kunne ikke lagre et gjenopprettingsutkast. Lagre endringene før du går ut.</string>
+    <string name="text_editor_draft_restored">Ulagrede endringer ble gjenopprettet</string>
+    <string name="text_editor_draft_restore_failed">Kunne ikke gjenopprette ulagrede endringer</string>
+    <string name="password_save_failed">Kunne ikke lagre passordet</string>
+    <string name="file_list_partial_error">Noen filer kunne ikke leses (%1$d mangler). Oppdater for å prøve igjen.</string>
 </resources>

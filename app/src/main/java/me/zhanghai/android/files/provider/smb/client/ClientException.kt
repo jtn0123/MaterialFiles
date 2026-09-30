@@ -15,6 +15,7 @@ import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
 import java8.nio.file.NotDirectoryException
 import java8.nio.file.NotLinkException
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import me.zhanghai.android.files.provider.common.IsDirectoryException
 
@@ -55,11 +56,13 @@ class ClientException : Exception {
 
     fun toFileSystemException(file: String?, other: String? = null): FileSystemException =
         when (status) {
+            NtStatus.STATUS_LOGON_FAILURE, NtStatus.STATUS_PASSWORD_EXPIRED,
+            NtStatus.STATUS_ACCOUNT_DISABLED, NtStatus.STATUS_LOGON_TYPE_NOT_GRANTED ->
+                AuthenticationFailedException(file, other, message)
+
             NtStatus.STATUS_ACCESS_DENIED, NtStatus.STATUS_SHARING_VIOLATION,
-            NtStatus.STATUS_PRIVILEGE_NOT_HELD, NtStatus.STATUS_LOGON_FAILURE,
-            NtStatus.STATUS_PASSWORD_EXPIRED, NtStatus.STATUS_ACCOUNT_DISABLED,
-            NtStatus.STATUS_OPLOCK_NOT_GRANTED, NtStatus.STATUS_CANNOT_DELETE,
-            NtStatus.STATUS_LOGON_TYPE_NOT_GRANTED, NtStatus.STATUS_FILE_ENCRYPTED ->
+            NtStatus.STATUS_PRIVILEGE_NOT_HELD, NtStatus.STATUS_OPLOCK_NOT_GRANTED,
+            NtStatus.STATUS_CANNOT_DELETE, NtStatus.STATUS_FILE_ENCRYPTED ->
                 AccessDeniedException(file, other, message)
 
             NtStatus.STATUS_OBJECT_NAME_COLLISION ->

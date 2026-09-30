@@ -42,7 +42,7 @@ import me.zhanghai.android.files.util.getState
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.mediumAnimTime
 import me.zhanghai.android.files.util.putState
-import me.zhanghai.android.files.util.showToast
+import me.zhanghai.android.files.util.showActionSnackbar
 import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.withChooser
@@ -177,7 +177,9 @@ class ImageViewerFragment :
             path.delete()
         } catch (e: IOException) {
             e.logWarning("ImageViewerFragment", "Delete $path")
-            showToast(e.toUserMessage(requireContext()))
+            binding.root.showActionSnackbar(e.toUserMessage(requireContext()), R.string.retry) {
+                delete(path)
+            }
             return
         }
         deletedPaths.add(path)

@@ -4,6 +4,7 @@ import java.io.IOException
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPReply
@@ -12,8 +13,11 @@ class NegativeReplyCodeException(private val replyCode: Int, replyString: String
     IOException(replyString) {
     fun toFileSystemException(file: String?, other: String? = null): FileSystemException =
         when (replyCode) {
-            FTPReply.NOT_LOGGED_IN, FTPReply.NEED_ACCOUNT_FOR_STORING_FILES ->
-                AccessDeniedException(file, other, message)
+            // 530 is the answer to a rejected USER/PASS; 532 asks for an account on top of a
+            // login that did work, which is about what may be stored and not about who we are.
+            FTPReply.NOT_LOGGED_IN -> AuthenticationFailedException(file, other, message)
+
+            FTPReply.NEED_ACCOUNT_FOR_STORING_FILES -> AccessDeniedException(file, other, message)
 
             FTPReply.FILE_UNAVAILABLE -> NoSuchFileException(file, other, message)
 

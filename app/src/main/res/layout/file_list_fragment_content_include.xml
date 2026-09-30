@@ -23,19 +23,6 @@
             android:visibility="gone" />
 
         <TextView
-            android:id="@+id/errorText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:paddingTop="12dp"
-            android:paddingBottom="32dp"
-            android:drawablePadding="8dp"
-            android:gravity="center_horizontal"
-            android:textAppearance="?textAppearanceListItem"
-            android:visibility="gone"
-            app:drawableTopCompat="@drawable/error_icon_240dp" />
-
-        <TextView
             android:id="@+id/emptyView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -63,5 +50,45 @@
                 android:fitsSystemWindows="true"
                 tools:listitem="@layout/file_item_list" />
         </androidx.swiperefreshlayout.widget.ThemedSwipeRefreshLayout>
+
+        <!-- Above the list, which would otherwise take the taps meant for its buttons. -->
+        <LinearLayout
+            android:id="@+id/errorLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:paddingStart="@dimen/screen_edge_margin"
+            android:paddingEnd="@dimen/screen_edge_margin"
+            android:paddingTop="12dp"
+            android:paddingBottom="32dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/errorText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawablePadding="8dp"
+                android:gravity="center_horizontal"
+                android:textAppearance="?textAppearanceListItem"
+                app:drawableTopCompat="@drawable/error_icon_240dp" />
+
+            <Button
+                android:id="@+id/retryButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/retry" />
+
+            <!-- Only for a server that turned away its credentials. -->
+            <Button
+                android:id="@+id/editServerButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/file_list_edit_server"
+                android:visibility="gone"
+                style="?materialButtonOutlinedStyle" />
+        </LinearLayout>
     </me.zhanghai.android.files.ui.CoordinatorScrollingFrameLayout>
 </merge>

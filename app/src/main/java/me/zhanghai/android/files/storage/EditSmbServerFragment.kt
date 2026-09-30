@@ -29,14 +29,12 @@ import me.zhanghai.android.files.util.ActionState
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.autoCleared
-import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getTextArray
 import me.zhanghai.android.files.util.hideTextInputLayoutErrorOnTextChange
 import me.zhanghai.android.files.util.isReady
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.setResult
-import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.viewModels
 
@@ -46,6 +44,15 @@ class EditSmbServerFragment : Fragment() {
     private val viewModel by viewModels { { EditSmbServerViewModel() } }
 
     private var binding by autoCleared<EditSmbServerFragmentBinding>()
+
+    private val connectViews: ServerConnectViews
+        get() = ServerConnectViews(
+            binding.scrollView,
+            binding.formLayout,
+            binding.progress,
+            binding.connectErrorText,
+            listOf(binding.saveOrConnectAndAddButton, binding.removeOrAddButton)
+        )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,6 +114,7 @@ class EditSmbServerFragment : Fragment() {
             updateNamePlaceholder()
         }
         binding.usernameEdit.hideTextInputLayoutErrorOnTextChange(binding.usernameLayout)
+        binding.passwordEdit.hideTextInputLayoutErrorOnTextChange(binding.passwordLayout)
         binding.usernameEdit.doAfterTextChanged { updateNamePlaceholder() }
         binding.domainEdit.doAfterTextChanged { updateNamePlaceholder() }
     }
@@ -241,13 +249,8 @@ class EditSmbServerFragment : Fragment() {
 
     private fun onConnectStateChanged(state: ActionState<SmbServer, Unit>) {
         when (state) {
-            is ActionState.Ready, is ActionState.Running -> {
-                val isConnecting = state is ActionState.Running
-                binding.progress.fadeToVisibilityUnsafe(isConnecting)
-                binding.scrollView.fadeToVisibilityUnsafe(!isConnecting)
-                binding.saveOrConnectAndAddButton.isEnabled = !isConnecting
-                binding.removeOrAddButton.isEnabled = !isConnecting
-            }
+            is ActionState.Ready, is ActionState.Running ->
+                connectViews.setConnecting(state is ActionState.Running)
 
             is ActionState.Success -> {
                 Storages.addOrReplace(state.argument)
@@ -258,10 +261,18 @@ class EditSmbServerFragment : Fragment() {
             is ActionState.Error -> {
                 val throwable = state.throwable
                 throwable.logWarning("EditSmbServerFragment", "Connect to the SMB server")
-                showToast(throwable.toString())
+                showConnectError(throwable)
                 viewModel.finishConnecting()
             }
         }
+    }
+
+    private fun showConnectError(throwable: Throwable) {
+        connectViews.showError(
+            throwable,
+            ServerFormField(binding.hostLayout, binding.hostEdit),
+            ServerFormField(binding.passwordLayout, binding.passwordEdit)
+        )
     }
 
     private fun remove() {

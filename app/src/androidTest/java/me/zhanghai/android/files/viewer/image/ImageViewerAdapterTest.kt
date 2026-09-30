@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import kotlin.coroutines.CoroutineContext
+import kotlin.random.Random
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import me.zhanghai.android.files.NoRootAccessRule
@@ -129,7 +130,7 @@ class ImageViewerAdapterTest {
             reads.get() > 0
         )
         assertTrue(holder.binding.image.isVisible)
-        assertFalse(holder.binding.errorText.isVisible)
+        assertFalse(holder.binding.errorLayout.isVisible)
     }
 
     /** The colours in the middle of the left and right halves of the photo that is shown. */
@@ -164,12 +165,27 @@ class ImageViewerAdapterTest {
     fun aPhotoThatIsGoneShowsWhyItCannotBeShown() {
         val holder = show(Paths.get(File(directory, "Gone.jpg").path))
 
-        await("The error was never shown") { holder.binding.errorText.isVisible }
+        await("The error was never shown") { holder.binding.errorLayout.isVisible }
 
         assertTrue(
             holder.binding.errorText.text.toString(),
             holder.binding.errorText.text.contains("Gone.jpg")
         )
+        assertFalse(holder.binding.image.isVisible)
+        assertFalse(holder.binding.largeImage.isVisible)
+    }
+
+    @Test
+    fun aDamagedPhotoShowsWhyItCannotBeShown() {
+        // The file is there and can be read, but is not a photo at all.
+        val file = File(directory, "Damaged.jpg").apply {
+            writeBytes(Random(7).nextBytes(4096))
+        }
+        val holder = show(Paths.get(file.path))
+
+        await("The error was never shown") { holder.binding.errorLayout.isVisible }
+
+        assertTrue(holder.binding.errorText.text.isNotBlank())
         assertFalse(holder.binding.image.isVisible)
         assertFalse(holder.binding.largeImage.isVisible)
     }

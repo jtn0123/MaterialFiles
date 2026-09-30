@@ -11,6 +11,7 @@ import android.view.View
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.theme.custom.CustomThemeHelper
 import me.zhanghai.android.files.theme.custom.ThemeColor
+import me.zhanghai.android.files.theme.custom.ThemeColorPreference
 import me.zhanghai.android.files.theme.night.NightMode
 import me.zhanghai.android.files.theme.night.NightModeHelper
 import me.zhanghai.android.files.ui.PreferenceFragmentCompat
@@ -18,10 +19,14 @@ import me.zhanghai.android.files.ui.PreferenceFragmentCompat
 class SettingsPreferenceFragment : PreferenceFragmentCompat() {
     private lateinit var localePreference: LocalePreference
 
+    private lateinit var themeColorPreference: ThemeColorPreference
+
     override fun onCreatePreferencesFix(savedInstanceState: Bundle?, rootKey: String?) {
         addPreferencesFromResource(R.xml.settings)
 
         localePreference = preferenceScreen.findPreference(getString(R.string.pref_key_locale))!!
+        themeColorPreference =
+            preferenceScreen.findPreference(getString(R.string.pref_key_theme_color))!!
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             localePreference.setApplicationLocalesPre33 = { locales ->
                 val activity = requireActivity() as SettingsActivity
@@ -54,6 +59,14 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
     }
 
     private fun onMaterialDesign3Changed(isMaterialDesign3: Boolean) {
+        // Material Design 3 disables the theme color; say why instead of just greying it out.
+        themeColorPreference.setSummary(
+            if (isMaterialDesign3) {
+                R.string.settings_theme_color_summary_material_design_3
+            } else {
+                R.string.settings_theme_color_summary
+            }
+        )
         CustomThemeHelper.sync()
     }
 

@@ -19,6 +19,19 @@
     <string name="empty">Празно</string>
     <string name="empty_placeholder">(Празно)</string>
     <string name="error">Грешка</string>
+    <string name="error_access_denied">Достъпът е отказан</string>
+    <string name="error_authentication_failed">Неуспешно вписване</string>
+    <string name="error_file_not_found">Файлът не е намерен</string>
+    <string name="error_file_already_exists">Вече съществува файл с това име</string>
+    <string name="error_directory_not_empty">Папката не е празна</string>
+    <string name="error_not_a_directory">Не е папка</string>
+    <string name="error_is_a_directory">Това е папка</string>
+    <string name="error_read_only_file_system">Хранилището е само за четене</string>
+    <string name="error_invalid_file_name">Недействително име на файл</string>
+    <string name="error_unknown_host">Непозната машина</string>
+    <string name="error_connection_timed_out">Времето за връзка изтече</string>
+    <string name="error_connection_failed">Неуспешно свързване</string>
+    <string name="error_interrupted">Действието беше прекъснато</string>
     <string name="hide">Скриване</string>
     <string name="install">Инсталиране</string>
     <string name="keep_editing">Продължаване редактирането</string>
@@ -39,6 +52,7 @@
     <string name="search">Търсене</string>
     <string name="select">Избиране</string>
     <string name="select_all">Избиране на всички</string>
+    <string name="select_range">Избиране на диапазон</string>
     <string name="share">Споделяне</string>
     <string name="show">Показване</string>
     <string name="skip">Пропускане</string>
@@ -114,6 +128,11 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Завършено, %1$,d файл е пропуснат поради грешка</item>
+        <item quantity="other">Завършено, %1$,d файла са пропуснати поради грешки</item>
+    </plurals>
+    <string name="file_job_failed_format">Неуспешно: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Подготвя се за изтриване %1$,d файл</item>
         <item quantity="other">Подготвят се за изтриване %1$,d файла</item>
@@ -191,6 +210,8 @@
     <string name="file_job_merge_target_name">Оригинална папка</string>
     <string name="file_job_merge_source_name">Обединяване с</string>
     <string name="file_job_conflict_show_name">Избиране на ново име</string>
+    <string name="file_job_conflict_show_name_expanded">Разгънато</string>
+    <string name="file_job_conflict_show_name_collapsed">Свито</string>
     <string name="file_job_conflict_name_hint">Ново име</string>
     <string name="file_job_archive_error_title_format">Грешка при компресирането на “%1$s”</string>
     <string name="file_job_archive_error_message_format">Възникна грешка докато файлът се компресираше в “%1$s”.\n%2$s</string>
@@ -202,6 +223,9 @@
     <string name="file_job_move_error_message_format">Възникна грешка при преместването на файла в “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">Грешка при изтриване</string>
     <string name="file_job_delete_error_message_format">Възникна грешка при изтриването на “%1$s”.\n%2$s</string>
+    <string name="file_job_read_error_title">Грешка при четене</string>
+    <string name="file_job_read_error_message_format">Възникна грешка при четенето на “%1$s”.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Възникна грешка при извеждането на съдържанието на “%1$s”.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Възникна грешка при преименуването на “%1$s”</string>
     <string name="file_job_rename_error_message_format">Възникна грешка при преименуването на файла на “%1$s”\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Грешка при смяната на притежателя на “%1$s”</string>
@@ -309,11 +333,25 @@
     <string name="file_list_paste_copy_title_format">Копиране на %1$,d</string>
     <string name="file_list_paste_extract_title_format">Извличане на %1$,d</string>
     <string name="file_list_paste_action_extract_here">Извличане тук</string>
+    <string name="file_list_edit_server">Редакция на сървъра</string>
     <string name="file_list_empty">Няма файлове</string>
     <string name="file_list_action_create_file">Файл</string>
     <string name="file_list_action_create_directory">Папка</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Още възможности</string>
+    <string name="file_item_menu_format">Още възможности за %1$s</string>
+    <string name="file_item_select_format">Избиране на %1$s</string>
+    <string name="file_item_deselect_format">Отмяна на избора на %1$s</string>
+    <string name="file_item_action_open">Отваряне</string>
+    <string name="file_item_action_deselect">Отмяна на избора</string>
+    <string name="file_item_state_selected">Избрано</string>
+    <string name="file_item_state_not_selected">Не е избрано</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Препратка</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Повредена препратка</string>
+    <string name="file_item_accessibility_encrypted">Шифровано</string>
+    <string name="file_item_accessibility_app_directory">Папка на приложение</string>
     <string name="file_item_action_open_with">Отваряне с</string>
     <string name="file_item_action_extract">Извличане</string>
     <string name="file_item_action_archive">Компресиране</string>
@@ -434,6 +472,7 @@
     <string name="storage_file_system_root_title">Коренова папка</string>
     <string name="storage_list_title">Хранилище</string>
     <string name="storage_list_empty">Няма хранилища</string>
+    <string name="list_item_drag_handle">Плъзнете за пренареждане</string>
     <string name="storage_add_storage_title">Добавяне на хранилище</string>
     <string name="storage_add_storage_document_tree">Външно хранилище</string>
     <string name="storage_add_storage_ftp_server">Сървър за FTP</string>
@@ -508,6 +547,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Може да бъде празно</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Неприемлива парола за скрит ключ</string>
     <string name="storage_edit_sftp_server_connect_and_add">Свързване и добавяне</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Ключът на машината е променен</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">Ключът %2$s на %1$s не е този, запомнен при първото свързване. Някой може да прихваща връзката или сървърът е бил преинсталиран.\n\nЗапомнен: %3$s\nПредставен: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Доверяване на новия ключ</string>
     <string name="storage_edit_sftp_server_add">Добавяне</string>
     <string name="storage_add_lan_smb_server_loading">Търсене на SMB сървъри…</string>
     <string name="storage_add_lan_smb_server_add">Ръчно добавяне</string>
@@ -532,6 +574,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Въведете потребителско име</string>
     <string name="storage_edit_smb_server_password">Парола</string>
     <string name="storage_edit_smb_server_domain">Домейн</string>
+    <string name="storage_edit_smb_server_encrypt">Шифроване на връзката</string>
+    <string name="storage_edit_smb_server_encrypt_summary">Изискване на SMB3 шифроване. Необходимо за споделени папки, които го изискват; сървъри без поддръжка го пренебрегват.</string>
     <string name="storage_edit_smb_server_connect_and_add">Свързване и добавяне</string>
     <string name="storage_edit_smb_server_add">Добавяне</string>
     <string name="storage_edit_webdav_server_title_edit">Променяне на сървър за WebDAV</string>
@@ -581,9 +625,23 @@
     <string name="archive_viewer_title">Преглед на архиви</string>
     <string name="image_viewer_title">Преглед на изображение</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Видеоплейър</string>
+    <string name="video_viewer_picture_in_picture">Картина в картината</string>
+    <string name="video_viewer_play_from_beginning">Възпроизвеждане от началото</string>
+    <string name="video_viewer_screen_orientation">Ориентация на екрана</string>
+    <string name="video_viewer_screen_orientation_auto">Автоматично завъртане</string>
+    <string name="video_viewer_screen_orientation_landscape">Хоризонтално</string>
+    <string name="video_viewer_screen_orientation_portrait">Вертикално</string>
+    <string name="video_viewer_error_format">%1$s не може да бъде възпроизведен</string>
+    <string name="video_viewer_error_unsupported">Това устройство не може да възпроизведе този видеоформат</string>
+    <string name="video_viewer_error_malformed">Видеофайлът е повреден или непълен</string>
     <string name="save_as_title">Запазване като</string>
     <string name="save_as_error">Грешка при запазване на файла</string>
     <string name="save_as_success_format">Файлът „%1$s“ е запазен в „%2$s“</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d файл е запазен в „%2$s“</item>
+        <item quantity="other">%1$d файла са запазени в „%2$s“</item>
+    </plurals>
     <string name="text_editor_title">Текстов редактор</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -608,9 +666,14 @@
     <string name="ftp_server_add_tile_result_error">Грешка при добавяне на „Сървър за FTP“ в бързите настройки</string>
     <string name="ftp_server_configuration_title">Настройки</string>
     <string name="ftp_server_anonymous_login_title">Анонимно вписване</string>
+    <string name="ftp_server_error_password_empty">Задайте парола или включете анонимното вписване, преди да стартирате FTP сървъра</string>
     <string name="ftp_server_username_title">Потребител</string>
     <string name="ftp_server_password_title">Парола</string>
     <string name="ftp_server_port_title">Порт</string>
+    <string name="ftp_server_passive_ports_title">Пасивни портове за данни</string>
+    <string name="ftp_server_passive_ports_summary_any">Всеки свободен порт</string>
+    <string name="ftp_server_passive_ports_dialog_message">Портове или диапазони за връзки за данни, напр. 2300-2400 или 2300, 2301. Оставете празно, за да се използва всеки свободен порт. Задайте това, когато сървърът е достъпен чрез пренасочване на портове или тунел.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Въведете портове между 1 и 65535 като числа или диапазони, разделени със запетаи</string>
     <string name="ftp_server_home_directory_title">Коренова папка</string>
     <string name="ftp_server_writable_title">Разрешаване на писане</string>
     <string name="settings_title">Настройки</string>
@@ -618,6 +681,7 @@
     <string name="settings_locale_title">Език</string>
     <string name="settings_theme_color_title">Цвят на темата</string>
     <string name="settings_theme_color_summary">Цвят, който се ползва най-често в приложението</string>
+    <string name="settings_theme_color_summary_material_design_3">Материален дизайн 3 използва вместо това цветовете на тапета ви</string>
     <string name="settings_material_design_3_title">Материален дизайн 3</string>
     <string name="settings_night_mode_title">Нощен режим</string>
     <string-array name="settings_night_mode_entries">
@@ -638,6 +702,8 @@
     </string-array>
     <string name="settings_behavior_title">Поведение</string>
     <string name="settings_default_directory_title">Папка по подразбиране</string>
+    <string name="settings_remember_last_directory_title">Отваряне на последната папка</string>
+    <string name="settings_remember_last_directory_summary">Продължаване оттам, където сте спрели, вместо от папката по подразбиране</string>
     <string name="settings_standard_directories_title">Стандартни папки</string>
     <string name="settings_standard_directories_summary_empty">Няма стандартни папки</string>
     <string name="settings_bookmark_directory_screenshots">Екранни снимки</string>
@@ -663,6 +729,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Миниатюра на документите на PDF</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Има опасност да направи приложението нестабилно под по-ранни издания на Андроид</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Четене на отдалечени файлове за миниатюри</string>
+    <string name="settings_video_remember_playback_position_title">Запомняне на позицията на възпроизвеждане на видео</string>
 
     <string name="about_title">Относно</string>
     <string name="about_version_title">Версия</string>
@@ -672,4 +739,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Следване в GitHub</string>
     <string name="about_author_twitter_title">Следване в Twitter</string>
+    <string name="text_editor_draft_save_failed">Неуспешно запазване на чернова за възстановяване. Запазете промените си, преди да излезете.</string>
+    <string name="text_editor_draft_restored">Незапазените промени са възстановени</string>
+    <string name="text_editor_draft_restore_failed">Неуспешно възстановяване на незапазените промени</string>
+    <string name="password_save_failed">Неуспешно запазване на паролата</string>
+    <string name="file_list_partial_error">Някои файлове не можаха да бъдат прочетени (липсват %1$d). Опреснете, за да опитате отново.</string>
 </resources>

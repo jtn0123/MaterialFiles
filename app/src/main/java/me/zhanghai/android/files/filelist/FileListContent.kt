@@ -7,16 +7,20 @@ package me.zhanghai.android.files.filelist
 
 import android.text.TextUtils
 import androidx.core.view.GravityCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.snackbar.Snackbar
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.file.FileItem
+import me.zhanghai.android.files.provider.common.isAuthenticationFailure
 import me.zhanghai.android.files.provider.sftp.client.hostKeyChange
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.storage.SftpHostKeyChangedDialogFragment
+import me.zhanghai.android.files.storage.findStoredServer
 import me.zhanghai.android.files.util.Failure
 import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.Stateful
@@ -25,7 +29,8 @@ import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.getDimensionDp
 import me.zhanghai.android.files.util.getQuantityString
 import me.zhanghai.android.files.util.logWarning
-import me.zhanghai.android.files.util.showToast
+import me.zhanghai.android.files.util.showActionSnackbar
+import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.valueCompat
 
@@ -42,6 +47,24 @@ internal class FileListContent(private val fragment: FileListFragment) {
 
     private var adapterFileListUpdateGeneration = 0
 
+    private var lastShownError: Throwable? = null
+
+    private var errorSnackbar: Snackbar? = null
+
+    /** Whether we sent the user to fix the server that turned us away, and should retry after. */
+    private var isEditingServer = false
+
+    fun onViewCreated() {
+        binding.retryButton.setOnClickListener { refresh() }
+    }
+
+    fun onResume() {
+        if (isEditingServer) {
+            isEditingServer = false
+            refresh()
+        }
+    }
+
     fun refresh() {
         viewModel.reload()
     }
@@ -53,9 +76,13 @@ internal class FileListContent(private val fragment: FileListFragment) {
         val visibility = FileListStateVisibility.of(stateful, isSearching)
         binding.swipeRefreshLayout.isRefreshing = visibility.isRefreshing
         binding.progress.fadeToVisibilityUnsafe(visibility.isProgressVisible)
-        binding.errorText.fadeToVisibilityUnsafe(visibility.isErrorVisible)
+        binding.errorLayout.fadeToVisibilityUnsafe(visibility.isErrorVisible)
         if (stateful is Failure) {
             showError(stateful.throwable, visibility.hasFiles)
+        } else {
+            // A reload is under way or done, so the old error no longer applies.
+            errorSnackbar?.dismiss()
+            errorSnackbar = null
         }
         binding.emptyView.fadeToVisibilityUnsafe(visibility.isEmptyVisible)
         if (files != null) {
@@ -80,12 +107,37 @@ internal class FileListContent(private val fragment: FileListFragment) {
     }
 
     private fun showError(throwable: Throwable, hasFiles: Boolean) {
-        throwable.logWarning("FileListContent", "list(${viewModel.currentPath})")
+        // The live data hands the same failure out again whenever the view is recreated or another
+        // observer attaches, and the user has already been told about it.
+        val isNewError = throwable !== lastShownError
+        lastShownError = throwable
+        if (isNewError) {
+            throwable.logWarning("FileListContent", "list(${viewModel.currentPath})")
+        }
         val error = throwable.toUserMessage(fragment.requireContext())
         if (hasFiles) {
-            fragment.showToast(error)
+            // What was listed stays useful, so the error goes where it doesn't cover it.
+            if (isNewError) {
+                errorSnackbar = binding.contentLayout.showActionSnackbar(
+                    error,
+                    R.string.retry,
+                    binding.speedDialView
+                ) { refresh() }
+            }
         } else {
             binding.errorText.text = error
+            // Only the server's edit screen can fix a password it turned away.
+            val server = if (throwable.isAuthenticationFailure) {
+                findStoredServer(viewModel.currentPath)
+            } else {
+                null
+            }
+            binding.editServerButton.isVisible = server != null
+            binding.editServerButton.setOnClickListener {
+                server ?: return@setOnClickListener
+                isEditingServer = true
+                fragment.startActivitySafe(server.createEditIntent())
+            }
         }
         val hostKeyChange = throwable.hostKeyChange
         if (hostKeyChange != null && !SftpHostKeyChangedDialogFragment.isShowing(fragment)) {

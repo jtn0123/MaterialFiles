@@ -18,6 +18,8 @@ import android.widget.TextView
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDialogFragment
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import androidx.core.widget.doAfterTextChanged
@@ -130,6 +132,7 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
             binding.sourceDescriptionText
         )
         binding.showNameLayout.setOnClickListener { toggleNameLayout() }
+        bindShowNameAccessibility()
         val targetFileName = args.targetFile.path.fileName.toString()
         binding.nameEdit.setTextWithSelection(targetFileName)
         binding.nameEdit.doAfterTextChanged { onNameChanged(positiveButtonRes) }
@@ -149,9 +152,37 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
             .setInterpolator(FastOutSlowInInterpolator())
             .start()
         binding.nameLayout.isVisible = visible
+        bindShowNameAccessibility()
         if (visible) {
             binding.nameEdit.requestFocus()
             binding.nameEdit.showSoftInput()
+        }
+    }
+
+    /** Lets TalkBack tell whether the name field is shown, which only the arrow shows otherwise. */
+    private fun bindShowNameAccessibility() {
+        val isExpanded = binding.nameLayout.isVisible
+        val showNameLayout = binding.showNameLayout
+        ViewCompat.setStateDescription(
+            showNameLayout,
+            getString(
+                if (isExpanded) {
+                    R.string.file_job_conflict_show_name_expanded
+                } else {
+                    R.string.file_job_conflict_show_name_collapsed
+                }
+            )
+        )
+        // Expand or collapse, whichever a tap does now, for TalkBack's actions menu.
+        val (action, removedAction) = if (isExpanded) {
+            AccessibilityActionCompat.ACTION_COLLAPSE to AccessibilityActionCompat.ACTION_EXPAND
+        } else {
+            AccessibilityActionCompat.ACTION_EXPAND to AccessibilityActionCompat.ACTION_COLLAPSE
+        }
+        ViewCompat.removeAccessibilityAction(showNameLayout, removedAction.id)
+        ViewCompat.replaceAccessibilityAction(showNameLayout, action, null) { _, _ ->
+            toggleNameLayout()
+            true
         }
     }
 

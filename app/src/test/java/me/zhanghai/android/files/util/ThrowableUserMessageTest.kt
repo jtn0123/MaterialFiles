@@ -6,11 +6,14 @@
 package me.zhanghai.android.files.util
 
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.FileSystemException
 import java8.nio.file.NoSuchFileException
 import me.zhanghai.android.files.R
+import me.zhanghai.android.files.provider.common.AuthenticationFailedException
 import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -54,6 +57,33 @@ class ThrowableUserMessageTest {
         assertEquals(R.string.error_access_denied to "/a", wrapped.toUserMessageParts())
         val host = IOException("Connect failed", UnknownHostException("nas.local"))
         assertEquals(R.string.error_unknown_host to "nas.local", host.toUserMessageParts())
+    }
+
+    @Test
+    fun aRejectedLoginIsASignInFailureAndNotAccessDenied() {
+        assertEquals(
+            R.string.error_authentication_failed to "/share: STATUS_LOGON_FAILURE",
+            AuthenticationFailedException("/share", null, "STATUS_LOGON_FAILURE")
+                .toUserMessageParts()
+        )
+        assertEquals(
+            R.string.error_authentication_failed to null,
+            IOException("list", AuthenticationFailedException(null)).toUserMessageParts()
+        )
+    }
+
+    @Test
+    fun aPlainFileSystemErrorAroundANetworkErrorSaysWhatTheNetworkDid() {
+        // What a remote provider throws when it cannot reach its server.
+        val refused = FileSystemException("/", null, "java.net.ConnectException: refused")
+            .apply { initCause(IOException("wrapped", ConnectException("refused"))) }
+        assertEquals(R.string.error_connection_failed to "refused", refused.toUserMessageParts())
+        val timedOut = FileSystemException("/", null, "timeout")
+            .apply { initCause(SocketTimeoutException("connect timed out")) }
+        assertEquals(
+            R.string.error_connection_timed_out to "connect timed out",
+            timedOut.toUserMessageParts()
+        )
     }
 
     @Test

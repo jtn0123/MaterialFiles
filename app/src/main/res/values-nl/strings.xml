@@ -19,6 +19,19 @@
     <string name="empty">Leeg</string>
     <string name="empty_placeholder">(leeg)</string>
     <string name="error">Fout</string>
+    <string name="error_access_denied">Toegang geweigerd</string>
+    <string name="error_authentication_failed">Inloggen mislukt</string>
+    <string name="error_file_not_found">Bestand niet gevonden</string>
+    <string name="error_file_already_exists">Er is al een bestand met deze naam</string>
+    <string name="error_directory_not_empty">De map is niet leeg</string>
+    <string name="error_not_a_directory">Geen map</string>
+    <string name="error_is_a_directory">Dit is een map</string>
+    <string name="error_read_only_file_system">De opslag is alleen-lezen</string>
+    <string name="error_invalid_file_name">Ongeldige bestandsnaam</string>
+    <string name="error_unknown_host">Onbekende host</string>
+    <string name="error_connection_timed_out">Er is een time-out opgetreden bij de verbinding</string>
+    <string name="error_connection_failed">Kan geen verbinding maken</string>
+    <string name="error_interrupted">De bewerking is onderbroken</string>
     <string name="hide">Verbergen</string>
     <string name="install">Installeren</string>
     <string name="keep_editing">Doorgaan met bewerken</string>
@@ -39,6 +52,7 @@
     <string name="search">Zoeken</string>
     <string name="select">Selecteren</string>
     <string name="select_all">Alles selecteren</string>
+    <string name="select_range">Bereik selecteren</string>
     <string name="share">Delen</string>
     <string name="show">Tonen</string>
     <string name="skip">Overslaan</string>
@@ -114,6 +128,11 @@
     </plurals>
     <string name="file_job_transfer_size_notification_text_one_format">%1$s / %2$s</string>
     <string name="file_job_transfer_size_notification_text_multiple_format">%1$,d / %2$,d</string>
+    <plurals name="file_job_finished_with_skipped_errors_format">
+        <item quantity="one">Voltooid, %1$,d bestand overgeslagen vanwege een fout</item>
+        <item quantity="other">Voltooid, %1$,d bestanden overgeslagen vanwege fouten</item>
+    </plurals>
+    <string name="file_job_failed_format">Mislukt: %1$s</string>
     <plurals name="file_job_delete_scan_notification_title_format">
         <item quantity="one">Bezig met voorbereiden van %1$,d bestand</item>
         <item quantity="other">Bezig met voorbereiden van %1$,d bestanden</item>
@@ -191,6 +210,8 @@
     <string name="file_job_merge_target_name">Oorspronkelijke map</string>
     <string name="file_job_merge_source_name">Samenvoegen met</string>
     <string name="file_job_conflict_show_name">Voer een nieuwe naam in</string>
+    <string name="file_job_conflict_show_name_expanded">Uitgevouwen</string>
+    <string name="file_job_conflict_show_name_collapsed">Samengevouwen</string>
     <string name="file_job_conflict_name_hint">Nieuwe naam</string>
     <string name="file_job_archive_error_title_format">Fout tijdens inpakken van ‘%1$s’</string>
     <string name="file_job_archive_error_message_format">Er is een fout opgetreden tijdens het inpakken in ‘%1$s’.\n%2$s</string>
@@ -202,6 +223,9 @@
     <string name="file_job_move_error_message_format">Er is een fout opgetreden tijdens het verplaatsen naar ‘%1$s’.\n%2$s</string>
     <string name="file_job_delete_error_title">Fout tijdens verwijderen</string>
     <string name="file_job_delete_error_message_format">Er is een fout opgetreden tijdens het verwijderen van ‘%1$s’.\n%2$s</string>
+    <string name="file_job_read_error_title">Fout tijdens lezen</string>
+    <string name="file_job_read_error_message_format">Er is een fout opgetreden tijdens het lezen van ‘%1$s’.\n%2$s</string>
+    <string name="file_job_list_error_message_format">Er is een fout opgetreden tijdens het ophalen van de inhoud van ‘%1$s’.\n%2$s</string>
     <string name="file_job_rename_error_title_format">Fout tijdens verplaatsen van ‘%1$s’</string>
     <string name="file_job_rename_error_message_format">Er is een fout opgetreden tijdens het wijzigen van de naam in ‘%1$s’.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Fout tijdens veranderen van eigenaar van ‘%1$s’</string>
@@ -309,11 +333,25 @@
     <string name="file_list_paste_copy_title_format">Bezig met kopiëren van %1$,d</string>
     <string name="file_list_paste_extract_title_format">Bezig met uitpakken van %1$,d</string>
     <string name="file_list_paste_action_extract_here">Hier uitpakken</string>
+    <string name="file_list_edit_server">Server bewerken</string>
     <string name="file_list_empty">Geen bestanden</string>
     <string name="file_list_action_create_file">Bestand</string>
     <string name="file_list_action_create_directory">Map</string>
 
     <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
+    <string name="file_item_menu">Meer opties</string>
+    <string name="file_item_menu_format">Meer opties voor %1$s</string>
+    <string name="file_item_select_format">%1$s selecteren</string>
+    <string name="file_item_deselect_format">%1$s deselecteren</string>
+    <string name="file_item_action_open">Openen</string>
+    <string name="file_item_action_deselect">Deselecteren</string>
+    <string name="file_item_state_selected">Geselecteerd</string>
+    <string name="file_item_state_not_selected">Niet geselecteerd</string>
+    <string name="file_item_accessibility_separator">,</string>
+    <string name="file_item_accessibility_symbolic_link">Verwijzing</string>
+    <string name="file_item_accessibility_broken_symbolic_link">Verbroken verwijzing</string>
+    <string name="file_item_accessibility_encrypted">Versleuteld</string>
+    <string name="file_item_accessibility_app_directory">App-map</string>
     <string name="file_item_action_open_with">Openen met</string>
     <string name="file_item_action_extract">Uitpakken</string>
     <string name="file_item_action_archive">Inpakken</string>
@@ -434,6 +472,7 @@
     <string name="storage_file_system_root_title">Root</string>
     <string name="storage_list_title">Opslag</string>
     <string name="storage_list_empty">Geen opslag</string>
+    <string name="list_item_drag_handle">Sleep om de volgorde te wijzigen</string>
     <string name="storage_add_storage_title">Opslagmedium toevoegen</string>
     <string name="storage_add_storage_document_tree">Externe opslag</string>
     <string name="storage_add_storage_ftp_server">FTP-server</string>
@@ -508,6 +547,9 @@
     <string name="storage_edit_sftp_server_private_key_password_placeholder">Mag leeg worden gelaten</string>
     <string name="storage_edit_sftp_server_private_key_password_error_invalid">Ongeldige privésleutel</string>
     <string name="storage_edit_sftp_server_connect_and_add">Verbinden en toevoegen</string>
+    <string name="storage_edit_sftp_server_host_key_changed_title">Hostsleutel gewijzigd</string>
+    <string name="storage_edit_sftp_server_host_key_changed_message_format">De %2$s-sleutel van %1$s is niet dezelfde als die van de eerste verbinding. Iemand kan de verbinding onderscheppen, of de server is opnieuw geïnstalleerd.\n\nOnthouden: %3$s\nOntvangen: %4$s</string>
+    <string name="storage_edit_sftp_server_host_key_changed_trust">Nieuwe sleutel vertrouwen</string>
     <string name="storage_edit_sftp_server_add">Toevoegen</string>
     <string name="storage_add_lan_smb_server_loading">Bezig met zoeken naar smb-servers…</string>
     <string name="storage_add_lan_smb_server_add">Handmatig toevoegen</string>
@@ -532,6 +574,8 @@
     <string name="storage_edit_smb_server_username_error_empty">Voer een gebruikersnaam in</string>
     <string name="storage_edit_smb_server_password">Wachtwoord</string>
     <string name="storage_edit_smb_server_domain">Domein</string>
+    <string name="storage_edit_smb_server_encrypt">Verbinding versleutelen</string>
+    <string name="storage_edit_smb_server_encrypt_summary">SMB3-versleuteling aanvragen. Nodig voor shares die het vereisen; wordt genegeerd door servers zonder ondersteuning.</string>
     <string name="storage_edit_smb_server_connect_and_add">Verbinden en toevoegen</string>
     <string name="storage_edit_smb_server_add">Toevoegen</string>
     <string name="storage_edit_webdav_server_title_edit">WebDAV-server bewerken</string>
@@ -581,9 +625,23 @@
     <string name="archive_viewer_title">Archiefweergave</string>
     <string name="image_viewer_title">Afbeeldingsweergave</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
+    <string name="video_viewer_title">Videospeler</string>
+    <string name="video_viewer_picture_in_picture">Scherm-in-scherm</string>
+    <string name="video_viewer_play_from_beginning">Vanaf het begin afspelen</string>
+    <string name="video_viewer_screen_orientation">Schermstand</string>
+    <string name="video_viewer_screen_orientation_auto">Automatisch draaien</string>
+    <string name="video_viewer_screen_orientation_landscape">Liggend</string>
+    <string name="video_viewer_screen_orientation_portrait">Staand</string>
+    <string name="video_viewer_error_format">Kan %1$s niet afspelen</string>
+    <string name="video_viewer_error_unsupported">Dit apparaat kan deze video-indeling niet afspelen</string>
+    <string name="video_viewer_error_malformed">Het videobestand is beschadigd of onvolledig</string>
     <string name="save_as_title">Opslaan als</string>
     <string name="save_as_error">Fout tijdens opslaan van bestand</string>
     <string name="save_as_success_format">“%1$s” is opgeslagen in ‘%2$s’</string>
+    <plurals name="save_as_files_success_format">
+        <item quantity="one">%1$d bestand is opgeslagen in ‘%2$s’</item>
+        <item quantity="other">%1$d bestanden zijn opgeslagen in ‘%2$s’</item>
+    </plurals>
     <string name="text_editor_title">Tekstbewerker</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -608,9 +666,14 @@
     <string name="ftp_server_add_tile_result_error">De ftp-server kan niet worden toegevoegd aan de snelle instellingen</string>
     <string name="ftp_server_configuration_title">Instellingen</string>
     <string name="ftp_server_anonymous_login_title">Anoniem inloggen</string>
+    <string name="ftp_server_error_password_empty">Stel een wachtwoord in of schakel anoniem inloggen in voordat je de FTP-server start</string>
     <string name="ftp_server_username_title">Gebruikersnaam</string>
     <string name="ftp_server_password_title">Wachtwoord</string>
     <string name="ftp_server_port_title">Poort</string>
+    <string name="ftp_server_passive_ports_title">Passieve datapoorten</string>
+    <string name="ftp_server_passive_ports_summary_any">Elke vrije poort</string>
+    <string name="ftp_server_passive_ports_dialog_message">Poorten of bereiken voor dataverbindingen, bijv. 2300-2400 of 2300, 2301. Laat leeg om een willekeurige vrije poort te gebruiken. Stel dit in wanneer de server via port forwarding of een tunnel wordt bereikt.</string>
+    <string name="ftp_server_passive_ports_error_invalid">Voer poorten tussen 1 en 65535 in, als getallen of bereiken gescheiden door komma\'s</string>
     <string name="ftp_server_home_directory_title">Hoofdmap</string>
     <string name="ftp_server_writable_title">Wegschrijven toestaan</string>
     <string name="settings_title">Instellingen</string>
@@ -618,6 +681,7 @@
     <string name="settings_locale_title">Taal</string>
     <string name="settings_theme_color_title">Themakleur</string>
     <string name="settings_theme_color_summary">De kleur die het vaakst wordt gebruikt in de app</string>
+    <string name="settings_theme_color_summary_material_design_3">Material Design 3 gebruikt in plaats daarvan de kleuren van je achtergrond</string>
     <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Nachtmodus</string>
     <string-array name="settings_night_mode_entries">
@@ -638,6 +702,8 @@
     </string-array>
     <string name="settings_behavior_title">Gedrag</string>
     <string name="settings_default_directory_title">Standaardmap</string>
+    <string name="settings_remember_last_directory_title">Laatste map opnieuw openen</string>
+    <string name="settings_remember_last_directory_summary">Verder gaan waar je gebleven was in plaats van in de standaardmap</string>
     <string name="settings_standard_directories_title">Standaardmappen</string>
     <string name="settings_standard_directories_summary_empty">Geen standaardmappen ingesteld</string>
     <string name="settings_bookmark_directory_screenshots">Schermfoto\'s</string>
@@ -663,6 +729,7 @@
     <string name="settings_show_pdf_thumbnail_pre_28_title">Miniaturen van pdf-bestanden tonen</string>
     <string name="settings_show_pdf_thumbnail_pre_28_summary">Dit kan leiden tot instabiliteit op oudere Android-versies</string>
     <string name="settings_read_remote_files_for_thumbnail_title">Miniaturen laden van externe bestanden</string>
+    <string name="settings_video_remember_playback_position_title">Afspeelpositie van video onthouden</string>
 
     <string name="about_title">Over</string>
     <string name="about_version_title">Versie</string>
@@ -672,4 +739,9 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Volgen op GitHub</string>
     <string name="about_author_twitter_title">Volgen op Twitter</string>
+    <string name="text_editor_draft_save_failed">Kan geen herstelconcept opslaan. Sla je wijzigingen op voordat je afsluit.</string>
+    <string name="text_editor_draft_restored">Je niet-opgeslagen wijzigingen zijn hersteld</string>
+    <string name="text_editor_draft_restore_failed">Kan je niet-opgeslagen wijzigingen niet herstellen</string>
+    <string name="password_save_failed">Kan wachtwoord niet opslaan</string>
+    <string name="file_list_partial_error">Sommige bestanden konden niet worden gelezen (%1$d ontbreken). Vernieuw om het opnieuw te proberen.</string>
 </resources>
