@@ -12,7 +12,6 @@ import kotlin.concurrent.Volatile
 import me.zhanghai.android.files.app.appOpsManager
 import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.compat.AppOpsManagerCompat
-import me.zhanghai.android.files.compat.checkOpRawNoThrowCompat
 
 private val FILE_ANDROID_DATA = File("Android/data")
 private val FILE_ANDROID_OBB = File("Android/obb")
@@ -67,7 +66,7 @@ internal object RequestInstallPackagesAppOp {
         }
         // We'll never have the signature|appop permission itself, so we only need to check the app
         // op against MODE_ALLOWED.
-        val mode = appOpsManager.checkOpRawNoThrowCompat(
+        val mode = appOpsManager.checkOpRawNoThrow(
             AppOpsManagerCompat.OPSTR_REQUEST_INSTALL_PACKAGES,
             Process.myUid(),
             application.opPackageName,

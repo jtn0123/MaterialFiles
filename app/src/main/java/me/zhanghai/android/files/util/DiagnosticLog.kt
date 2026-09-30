@@ -15,8 +15,9 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * What went wrong while nobody was watching logcat, kept in the app's own files so that it can be
- * read later (`run-as me.zhanghai.android.files cat files/diagnostics/diagnostics.log`). Holds the
+ * What went wrong while nobody was watching logcat, kept in the app's no-backup files so that it
+ * can be read later but never leaves the device in a backup
+ * (`run-as me.zhanghai.android.files cat no_backup/diagnostics/diagnostics.log`). Holds the
  * warnings [logWarning] records, crashes, the reasons earlier processes ended and anything that
  * stayed stuck; two files of [DiagnosticLogFile.maxBytes] at most.
  */

@@ -5,34 +5,35 @@
 
 package me.zhanghai.android.files.viewer.image
 
-import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import coil.dispose
 import coil.load
-import coil.size.Size
+import coil.size.Precision
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.DefaultOnImageEventListener
 import java8.nio.file.Path
 import java8.nio.file.attribute.BasicFileAttributes
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.max
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.zhanghai.android.files.R
+import me.zhanghai.android.files.coil.RemoteThumbnails
 import me.zhanghai.android.files.coil.fadeIn
 import me.zhanghai.android.files.databinding.ImageViewerItemBinding
 import me.zhanghai.android.files.file.MimeType
-import me.zhanghai.android.files.file.asMimeType
-import me.zhanghai.android.files.file.asMimeTypeOrNull
 import me.zhanghai.android.files.file.fileProviderUri
-import me.zhanghai.android.files.provider.common.AndroidFileTypeDetector
-import me.zhanghai.android.files.provider.common.newInputStream
+import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.provider.common.readAttributes
 import me.zhanghai.android.files.ui.SimpleAdapter
 import me.zhanghai.android.files.util.fadeInUnsafe
@@ -73,33 +74,58 @@ class ImageViewerAdapter(
     }
 
     private fun loadImage(binding: ImageViewerItemBinding, path: Path) {
+        // A holder is rebound to another photo while a read for the one before can still finish.
+        val load = Any()
+        binding.root.setTag(R.id.image_viewer_load, load)
+        val isCurrent = { binding.root.getTag(R.id.image_viewer_load) === load }
         binding.progress.fadeInUnsafe(true)
         binding.errorLayout.fadeOutUnsafe()
         binding.image.isVisible = false
+        binding.image.setImageDrawable(null)
         binding.largeImage.isVisible = false
         lifecycleOwner.lifecycleScope.launch {
+            val isRemote = path.isRemotePath
             val imageInfo = try {
-                withContext(ioDispatcher) { path.loadImageInfo() }
+                val attributes =
+                    withContext(ioDispatcher) {
+                        path.readAttributes(BasicFileAttributes::class.java)
+                    }
+                // What the grid showed is on disk, and is shown while the photo itself is read.
+                val cachedThumbnail = if (isRemote) {
+                    withContext(ioDispatcher) {
+                        RemoteThumbnails.readCachedBitmap(path, attributes)
+                    }
+                } else {
+                    null
+                }
+                if (cachedThumbnail != null && isCurrent()) {
+                    showPlaceholder(binding, cachedThumbnail)
+                }
+                withContext(ioDispatcher) {
+                    path.readImageInfo(attributes, isRemote && cachedThumbnail == null)
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 e.logWarning("ImageViewerAdapter", "Load the image info of $path")
-                showError(binding, path, e)
+                if (isCurrent()) {
+                    showError(binding, path, e)
+                }
                 return@launch
             }
+            if (!isCurrent()) {
+                return@launch
+            }
+            imageInfo.preview?.let { showPlaceholder(binding, it) }
             loadImageWithInfo(binding, path, imageInfo)
         }
     }
 
-    private fun Path.loadImageInfo(): ImageInfo {
-        val attributes = readAttributes(BasicFileAttributes::class.java)
-        val mimeType = AndroidFileTypeDetector.getMimeType(this, attributes).asMimeType()
-        val bitmapOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        newInputStream().use { BitmapFactory.decodeStream(it, null, bitmapOptions) }
-        return ImageInfo(
-            attributes,
-            bitmapOptions.outWidth,
-            bitmapOptions.outHeight,
-            bitmapOptions.outMimeType?.asMimeTypeOrNull() ?: mimeType
-        )
+    private fun showPlaceholder(binding: ImageViewerItemBinding, bitmap: Bitmap) {
+        binding.image.apply {
+            setImageDrawable(bitmap.toDrawable(resources))
+            isVisible = true
+        }
     }
 
     private fun loadImageWithInfo(
@@ -109,10 +135,27 @@ class ImageViewerAdapter(
     ) {
         if (!imageInfo.shouldUseLargeImageView) {
             binding.image.apply {
+                val placeholder = drawable
                 isVisible = true
+                val displayMetrics = resources.displayMetrics
+                val (width, height) = getViewerDecodeSize(
+                    imageInfo.width,
+                    imageInfo.height,
+                    imageInfo.rotationDegrees,
+                    displayMetrics.widthPixels,
+                    displayMetrics.heightPixels
+                )
                 load(path to imageInfo.attributes) {
-                    size(Size.ORIGINAL)
+                    // Larger than any thumbnail, so that it is never mistaken for one.
+                    size(
+                        width.coerceAtLeast(RemoteThumbnails.MAX_SIZE_PX + 1),
+                        height.coerceAtLeast(RemoteThumbnails.MAX_SIZE_PX + 1)
+                    )
+                    // Never scaled up to fill the box, only down.
+                    precision(Precision.INEXACT)
                     fadeIn(context.shortAnimTime)
+                    // After fadeIn(), which sets a transparent one of its own.
+                    placeholder(placeholder)
                     listener(
                         onSuccess = { _, _ -> binding.progress.fadeOutUnsafe() },
                         onError = { _, result -> showError(binding, path, result.throwable) }
@@ -131,6 +174,9 @@ class ImageViewerAdapter(
                         setDoubleTapZoomScale(binding.largeImage.cropScale)
                         binding.progress.fadeOutUnsafe()
                         binding.largeImage.fadeInUnsafe(true)
+                        // The placeholder, if there was one, has done its job.
+                        binding.image.isVisible = false
+                        binding.image.setImageDrawable(null)
                     }
 
                     override fun onImageLoadError(e: Exception) {
@@ -193,11 +239,4 @@ class ImageViewerAdapter(
     }
 
     class ViewHolder(val binding: ImageViewerItemBinding) : RecyclerView.ViewHolder(binding.root)
-
-    private class ImageInfo(
-        val attributes: BasicFileAttributes,
-        val width: Int,
-        val height: Int,
-        val mimeType: MimeType
-    )
 }

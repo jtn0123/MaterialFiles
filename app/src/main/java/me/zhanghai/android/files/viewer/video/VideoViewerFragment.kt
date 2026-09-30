@@ -27,7 +27,6 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
-import java.io.IOException
 import java8.nio.file.Path
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -37,7 +36,6 @@ import me.zhanghai.android.files.databinding.VideoViewerFragmentBinding
 import me.zhanghai.android.files.file.MimeType
 import me.zhanghai.android.files.file.fileProviderUri
 import me.zhanghai.android.files.file.guessFromPath
-import me.zhanghai.android.files.provider.common.delete
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableListParceler
 import me.zhanghai.android.files.util.ParcelableState
@@ -49,12 +47,11 @@ import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.putState
-import me.zhanghai.android.files.util.showActionSnackbar
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
-import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ConfirmDeleteDialogFragment
+import me.zhanghai.android.files.viewer.image.deleteViewedFile
 import me.zhanghai.android.systemuihelper.SystemUiHelper
 
 @UnstableApi
@@ -353,15 +350,10 @@ class VideoViewerFragment :
     }
 
     override fun delete(path: Path) {
-        try {
-            path.delete()
-        } catch (e: IOException) {
-            e.logWarning("VideoViewerFragment", "Delete $path")
-            binding.root.showActionSnackbar(e.toUserMessage(requireContext()), R.string.retry) {
-                delete(path)
-            }
-            return
-        }
+        deleteViewedFile(path, "VideoViewerFragment", { delete(path) }) { onDeleted(path) }
+    }
+
+    private fun onDeleted(path: Path) {
         VideoPlaybackPositions.remove(path)
         deletedPaths.add(path)
         val index = paths.indexOf(path)

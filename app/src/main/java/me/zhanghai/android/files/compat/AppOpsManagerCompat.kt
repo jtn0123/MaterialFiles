@@ -6,24 +6,10 @@
 package me.zhanghai.android.files.compat
 
 import android.app.AppOpsManager
-import android.os.Build
 
 object AppOpsManagerCompat {
     val OPSTR_REQUEST_INSTALL_PACKAGES =
         checkNotNull(
             AppOpsManager.permissionToOp(android.Manifest.permission.REQUEST_INSTALL_PACKAGES)
         )
-}
-
-fun AppOpsManager.checkOpRawNoThrowCompat(
-    op: String,
-    uid: Int,
-    packageName: String,
-    attributionTag: String?
-): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
-    checkOpRawNoThrow(op, uid, packageName, attributionTag)
-} else {
-    // checkOp*() never accepted attributionTag until Baklava so it's safe to ignore.
-    @Suppress("DEPRECATION")
-    unsafeCheckOpRawNoThrow(op, uid, packageName)
 }

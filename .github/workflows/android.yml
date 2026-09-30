@@ -104,7 +104,7 @@ jobs:
         retention-days: 10
 
   screenshots:
-    name: Screenshots (API 35 emulator)
+    name: Screenshots (API 36 emulator)
     runs-on: ubuntu-latest
     needs: checks
     timeout-minutes: 45
@@ -135,7 +135,7 @@ jobs:
         path: |
           ~/.android/avd/*
           ~/.android/adb*
-        key: avd-api35-google_apis-x86_64-v1
+        key: avd-api36-google_apis-x86_64-v1
     - name: Build the debug APK
       run: ./gradlew assembleDebug
     - name: Install Pillow for the comparison
@@ -146,7 +146,7 @@ jobs:
       # The screens the insets, the drawer and the viewers depend on; see scripts/screenshots.
       uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
       with:
-        api-level: 35
+        api-level: 36
         arch: x86_64
         target: google_apis
         profile: pixel_6
@@ -157,20 +157,20 @@ jobs:
           adb install -r -t app/build/outputs/apk/debug/app-debug.apk
           scripts/screenshots/capture.sh emulator-5554 screenshots/current app/src/androidTest/assets/clip.mp4
     - name: Compare with the committed baseline
-      # The baseline in screenshots/baseline/api35 comes from this job's artifact, since screenshots
+      # The baseline in screenshots/baseline/api36 comes from this job's artifact, since screenshots
       # from other emulators do not match pixel for pixel. After an intended UI change, replace it
       # with the artifact of the change's run (see screenshots/README.md).
       run: |
-        if [ -d screenshots/baseline/api35 ]; then
-          python3 scripts/screenshots/compare.py screenshots/baseline/api35 screenshots/current
+        if [ -d screenshots/baseline/api36 ]; then
+          python3 scripts/screenshots/compare.py screenshots/baseline/api36 screenshots/current
         else
-          echo "::notice::No screenshots/baseline/api35 yet; commit the artifact of this run to start comparing"
+          echo "::notice::No screenshots/baseline/api36 yet; commit the artifact of this run to start comparing"
         fi
     - name: Upload the screenshots
       if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
-        name: screenshots-api35
+        name: screenshots-api36
         path: screenshots/current
         retention-days: 30
 
@@ -188,8 +188,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # minSdk and the newest platform. Add a level here to widen coverage.
-        api-level: [35, 36]
+        # minSdk, which is also the platform the app targets. Add a level here to widen coverage.
+        api-level: [36]
 
     steps:
     - name: Check out repository
@@ -230,6 +230,11 @@ jobs:
         emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none -camera-front none
         disable-animations: false
         script: echo "AVD snapshot generated"
+    - name: Start the Samba server for SambaThumbnailTest
+      # The fixture of tools/network-tests.py, with SMB on 127.0.0.1:4451, which the emulator
+      # reaches at 10.0.2.2:4451. The test writes the photos and the clip it reads into the share
+      # when they are not there yet.
+      run: python3 tools/network-tests.py --serve materialfiles-thumbnail-smb 4451
     - name: Run the instrumented tests
       uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
       with:
@@ -240,7 +245,19 @@ jobs:
         force-avd-creation: false
         emulator-options: -no-snapshot-save -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -camera-back none -camera-front none
         disable-animations: true
-        script: ./gradlew createDebugAndroidTestCoverageReport
+        # Folded into one line: the action runs each line of a script as its own command.
+        # requireFixtures turns a missing server argument into a failure instead of a skip.
+        script: >-
+          ./gradlew createDebugAndroidTestCoverageReport
+          -Pandroid.testInstrumentationRunnerArguments.requireFixtures=true
+          -Pandroid.testInstrumentationRunnerArguments.smbHost=10.0.2.2
+          -Pandroid.testInstrumentationRunnerArguments.smbPort=4451
+          -Pandroid.testInstrumentationRunnerArguments.smbShare=test
+          -Pandroid.testInstrumentationRunnerArguments.smbUser=test
+          -Pandroid.testInstrumentationRunnerArguments.smbPassword=test-only
+    - name: Stop the Samba server
+      if: always()
+      run: docker rm -f materialfiles-thumbnail-smb || true
     - name: Collect Android coverage report
       run: python3 tools/coverage-reports.py android --api-level ${{ matrix.api-level }}
     - name: Upload Android coverage

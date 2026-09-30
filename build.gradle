@@ -147,7 +147,7 @@ sonar {
                 '**/src/main/java/me/zhanghai/android/files/ui/PersistentDrawerLayout.kt'
             ]],
             // Cleartext is allowed on purpose by network_security_config.xml, for FTP and WebDAV
-            // servers on the local network, and minSdk 35 has no older behaviour to worry about.
+            // servers on the local network, and minSdk 36 has no older behaviour to worry about.
             cleartextTraffic: ['xml:S5332', ['**/src/main/AndroidManifest.xml']],
             // Stored server passwords are decrypted for background jobs and thumbnails, so their key
             // cannot wait for the user to authenticate.

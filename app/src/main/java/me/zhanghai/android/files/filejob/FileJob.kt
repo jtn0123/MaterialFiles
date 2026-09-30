@@ -13,7 +13,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import me.zhanghai.android.files.R
-import me.zhanghai.android.files.util.getQuantityString
 import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.toUserMessage
@@ -41,6 +40,13 @@ abstract class FileJob {
     internal var skippedErrorCount = 0
         private set
 
+    /**
+     * What a copy, move or extraction reports when it ends, in a notification that outlives the
+     * progress one; other jobs have nothing to report beyond a toast on failure.
+     */
+    internal open val transferResult: TransferResult?
+        get() = null
+
     internal fun recordSkippedError() {
         ++skippedErrorCount
     }
@@ -49,15 +55,7 @@ abstract class FileJob {
         this.service = service
         try {
             runInterruptible(Dispatchers.IO) { run() }
-            if (skippedErrorCount > 0) {
-                service.showToast(
-                    service.getQuantityString(
-                        R.plurals.file_job_finished_with_skipped_errors_format,
-                        skippedErrorCount,
-                        skippedErrorCount
-                    )
-                )
-            }
+            onSucceeded()
         } catch (e: InterruptedIOException) {
             // Cancellation from the notification or a dialog arrives as a bare
             // InterruptedIOException; a socket timeout is a subclass, but a failure.
@@ -73,11 +71,24 @@ abstract class FileJob {
         }
     }
 
+    private fun onSucceeded() {
+        val transferResult = transferResult
+        if (transferResult != null) {
+            postFinishedNotification(transferResult)
+            return
+        }
+        getSkippedErrorsText()?.let { service.showToast(it) }
+    }
+
     private fun onFailed(e: Exception) {
         e.logWarning("FileJob", "onFailed")
-        service.showToast(
-            service.getString(R.string.file_job_failed_format, e.toUserMessage(service))
-        )
+        val message = e.toUserMessage(service)
+        val transferResult = transferResult
+        if (transferResult != null) {
+            postFailedNotification(transferResult, message)
+            return
+        }
+        service.showToast(service.getString(R.string.file_job_failed_format, message))
     }
 
     internal open fun onFinished() {

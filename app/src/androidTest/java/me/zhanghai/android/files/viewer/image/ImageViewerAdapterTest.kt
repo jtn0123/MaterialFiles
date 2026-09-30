@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.core.graphics.createBitmap
 import androidx.core.view.isVisible
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -23,14 +24,19 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import java8.nio.file.Path
 import java8.nio.file.Paths
+import java8.nio.file.attribute.BasicFileAttributes
 import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import me.zhanghai.android.files.NoRootAccessRule
+import me.zhanghai.android.files.coil.RemoteThumbnails
+import me.zhanghai.android.files.coil.SlowRemoteFileSystem
 import me.zhanghai.android.files.coil.TestJpeg
 import me.zhanghai.android.files.filelist.FileListActivity
+import me.zhanghai.android.files.provider.common.readAttributes
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -100,7 +106,9 @@ class ImageViewerAdapterTest {
         return holder
     }
 
-    private fun await(what: String, condition: () -> Boolean) {
+    private fun await(what: String, condition: () -> Boolean) = await({ what }, condition)
+
+    private fun await(what: () -> String, condition: () -> Boolean) {
         val deadline = System.currentTimeMillis() + 20_000
         while (System.currentTimeMillis() < deadline) {
             var satisfied = false
@@ -110,7 +118,7 @@ class ImageViewerAdapterTest {
             }
             Thread.sleep(100)
         }
-        throw AssertionError(what)
+        throw AssertionError(what())
     }
 
     @Test
@@ -189,4 +197,107 @@ class ImageViewerAdapterTest {
         assertFalse(holder.binding.image.isVisible)
         assertFalse(holder.binding.largeImage.isVisible)
     }
+
+    @Test
+    fun aRemoteCameraPhotoShowsItsEmbeddedThumbnailWhileItIsRead() {
+        val file = File(directory, "Camera.jpg")
+        TestJpeg.write(file, 2400, 1800, 160, 120, isNoisy = true)
+        val fileSystem = SlowRemoteFileSystem(directory)
+        // Each read is a slow round trip, and the whole photo takes several.
+        fileSystem.reads.latencyMillis = 400
+        val holder = show(fileSystem.path("Camera.jpg"))
+
+        // What the page went through, for when the thumbnail never shows.
+        val states = linkedSetOf<String>()
+        await({ "The embedded thumbnail was not shown while the photo was read; saw $states" }) {
+            val binding = holder.binding
+            states += "image=${binding.image.isVisible}/${binding.image.drawable.bitmapWidth()}" +
+                " large=${binding.largeImage.isVisible} progress=${binding.progress.isVisible}" +
+                " error=${binding.errorLayout.isVisible}"
+            binding.image.isVisible && binding.image.drawable.bitmapWidth() == 160
+        }
+        assertTrue(
+            "The progress is hidden behind the placeholder",
+            holder.binding.progress.isVisible
+        )
+        await("The photo itself never replaced the thumbnail") {
+            (holder.binding.image.drawable.bitmapWidth() ?: 0) > 160
+        }
+        // One read for the size, the orientation and the thumbnail, and one for the photo.
+        assertEquals(2, fileSystem.reads.openedChannels("Camera.jpg"))
+    }
+
+    @Test
+    fun theHeaderReadFindsTheEmbeddedThumbnailOfARemoteCameraPhoto() {
+        val file = File(directory, "Camera.jpg")
+        TestJpeg.write(file, 2400, 1800, 160, 120, isNoisy = true)
+        val path = SlowRemoteFileSystem(directory).path("Camera.jpg")
+
+        val imageInfo = path.readImageInfo(
+            path.readAttributes(BasicFileAttributes::class.java),
+            true
+        )
+
+        assertEquals(2400, imageInfo.width)
+        assertEquals(1800, imageInfo.height)
+        assertEquals("File of ${file.length()} bytes", 160, imageInfo.preview?.width)
+    }
+
+    @Test
+    fun aRemotePhotoShowsTheThumbnailTheGridKeptWhileItIsRead() {
+        val file = File(directory, "Plain.jpg")
+        TestJpeg.write(file, 2400, 1800, isNoisy = true)
+        val fileSystem = SlowRemoteFileSystem(directory)
+        val path = fileSystem.path("Plain.jpg")
+        val attributes = path.readAttributes(BasicFileAttributes::class.java)
+        val gridThumbnail = createBitmap(200, 150).apply { eraseColor(Color.GREEN) }
+        RemoteThumbnails.put(
+            RemoteThumbnails.createKey(path, attributes, 512, 512),
+            BitmapDrawable(context.resources, gridThumbnail)
+        )
+        fileSystem.reads.latencyMillis = 400
+        val holder = show(path)
+
+        await("The thumbnail the grid kept was not shown while the photo was read") {
+            holder.binding.image.isVisible && holder.binding.image.drawable.bitmapWidth() == 200
+        }
+        await("The photo itself never replaced the thumbnail") {
+            (holder.binding.image.drawable.bitmapWidth() ?: 0) > 200
+        }
+    }
+
+    @Test
+    fun aPhotoIsDecodedNoLargerThanTwiceTheScreen() {
+        val file = File(directory, "Wide.jpg")
+        TestJpeg.write(file, 4800, 2400)
+        val holder = show(Paths.get(file.path))
+
+        await("The photo was never shown") {
+            (holder.binding.image.drawable.bitmapWidth() ?: 0) > 0
+        }
+        var bitmap: Bitmap? = null
+        instrumentation.runOnMainSync { bitmap = holder.binding.image.drawable.bitmap() }
+        val displayMetrics = context.resources.displayMetrics
+        val (boxWidth, boxHeight) = getViewerDecodeSize(
+            4800,
+            2400,
+            0,
+            displayMetrics.widthPixels,
+            displayMetrics.heightPixels
+        )
+        val scale = minOf(1f, boxWidth / 4800f, boxHeight / 2400f)
+        val decoded = checkNotNull(bitmap)
+        val message = "Decoded ${decoded.width}x${decoded.height} for a $boxWidth x $boxHeight box"
+        assertTrue(message, decoded.width <= (4800 * scale).toInt() + 1)
+        assertTrue(message, decoded.height <= (2400 * scale).toInt() + 1)
+        // Scaled by as much as it needs, not a whole power of two more.
+        assertTrue(message, decoded.width >= (4800 * scale * 0.9f).toInt())
+    }
+
+    private fun Drawable?.bitmap(): Bitmap? {
+        val drawable = (this as? CrossfadeDrawable)?.end ?: this
+        return (drawable as? BitmapDrawable)?.bitmap
+    }
+
+    private fun Drawable?.bitmapWidth(): Int? = bitmap()?.width
 }

@@ -47,7 +47,8 @@ import me.zhanghai.android.files.util.viewModels
 
 class EditSftpServerFragment :
     Fragment(),
-    SftpHostKeyChangedDialogFragment.Listener {
+    SftpHostKeyChangedDialogFragment.Listener,
+    ConfirmRemoveServerDialogFragment.Listener {
     private val openPrivateKeyFileLauncher = registerForActivityResult(
         FileListActivity.OpenFileContract(),
         this::onOpenPrivateKeyFileResult
@@ -161,7 +162,7 @@ class EditSftpServerFragment :
         )
         binding.removeOrAddButton.setOnClickListener {
             if (args.server != null) {
-                remove()
+                confirmRemove()
             } else {
                 saveOrAdd()
             }
@@ -321,7 +322,12 @@ class EditSftpServerFragment :
         connectAndAdd()
     }
 
-    private fun remove() {
+    private fun confirmRemove() {
+        val server = args.server ?: return
+        ConfirmRemoveServerDialogFragment.show(server.getName(requireContext()), this)
+    }
+
+    override fun removeServer() {
         Storages.remove(args.server ?: return)
         finish()
     }

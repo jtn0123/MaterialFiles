@@ -5,10 +5,14 @@
 
 package me.zhanghai.android.files.provider.smb
 
+import java8.nio.file.ClosedWatchServiceException
+import java8.nio.file.StandardWatchEventKinds
+import java8.nio.file.WatchEvent
 import me.zhanghai.android.files.provider.smb.client.Authority
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -48,5 +52,18 @@ class SmbWatchServiceTest {
         key.cancel()
         assertFalse(key.isValid)
         assertNull(watchService.poll())
+    }
+
+    @Test
+    fun registeringAgainOnAClosedServiceStartsNoNotifier() {
+        // A poller that lost its key registers again on its own thread, possibly while the
+        // observable is being closed; that must not leave a notifier nobody stops.
+        watchService.close()
+        assertThrows(ClosedWatchServiceException::class.java) {
+            watchService.register(
+                fileSystem.getPath("/share/dir"),
+                arrayOf<WatchEvent.Kind<*>>(StandardWatchEventKinds.ENTRY_CREATE)
+            )
+        }
     }
 }

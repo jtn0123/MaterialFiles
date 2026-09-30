@@ -6,7 +6,7 @@ version of the build requirements.
 ## Toolchain
 
 - JDK 21 (`JAVA_HOME` must point at it; the Gradle daemon does not pick up a newer default).
-- Gradle 9.7 and AGP 9.4 via the wrapper (compileSdk 37, minSdk 35). Versions of everything else live in
+- Gradle 9.7 and AGP 9.4 via the wrapper (compileSdk 37, minSdk 36). Versions of everything else live in
   `gradle/libs.versions.toml`; Dependabot proposes bumps.
 - `local.properties` (git-ignored) with `sdk.dir=...`.
 - Only `libsu` still comes from JitPack; dav4jvm is vendored (see Checks).
@@ -39,9 +39,9 @@ version of the build requirements.
   everything on Linux in dry-run mode and fails with the missing entries as a diff, so add
   exactly those lines. Keep the file in Gradle's own ordering (versions sort as strings), or
   that diff is never empty.
-- **Screenshots.** The `screenshots` CI job installs the debug build on an API 35 emulator, runs
+- **Screenshots.** The `screenshots` CI job installs the debug build on an API 36 emulator, runs
   `scripts/screenshots/capture.sh` through the inset-sensitive screens and, once
-  `screenshots/baseline/api35/` exists, pixel-diffs against it with `scripts/screenshots/compare.py`
+  `screenshots/baseline/api36/` exists, pixel-diffs against it with `scripts/screenshots/compare.py`
   (more than 0.5 % of pixels changed fails). Commit the baseline from the job's artifact, not
   from a local emulator; see `screenshots/README.md`.
 - **Logging.** The provider and file-job layers record exceptions they survive with
@@ -60,7 +60,7 @@ servers in both implicit and explicit FTPS modes.
 ## Instrumented tests and the emulator
 
 The instrumented tests in `app/src/androidTest` use UiAutomator against a real Android build and
-run in CI on API 35 and 36 emulators. Locally, run them on one emulator, pinned by serial, because Gradle would otherwise
+run in CI on an API 36 emulator. Locally, run them on one emulator, pinned by serial, because Gradle would otherwise
 run them on every connected device:
 
 ```sh
@@ -86,6 +86,34 @@ Notes that cost time to rediscover:
 - The test clip `app/src/androidTest/assets/clip.mp4` is a 30 s, 10 KB black video. Regenerate it
   with `ffmpeg -f lavfi -i color=c=black:s=64x64:r=5:d=30 -f lavfi -i anullsrc=r=8000:cl=mono -t 30 -c:v libx264 -crf 51 -pix_fmt yuv420p -c:a aac -b:a 8k -shortest clip.mp4`.
 - Android 16 ignores the video player's orientation lock on screens 600 dp and wider. Known.
+
+### SambaThumbnailTest
+
+`coil/SambaThumbnailTest` loads thumbnails of files on a real Samba share through SMBJ. It only
+runs when the `smbHost` instrumentation argument names a server; CI starts the fixture of
+`tools/network-tests.py` for it and also passes `requireFixtures=true`, which turns a missing
+`smbHost` into a failure rather than a silently empty test class. To run it locally the way CI
+does (Docker required; never point it at a real NAS):
+
+```sh
+python3 tools/network-tests.py --serve materialfiles-thumbnail-smb 4451
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=me.zhanghai.android.files.coil.SambaThumbnailTest \
+    -Pandroid.testInstrumentationRunnerArguments.smbHost=10.0.2.2 \
+    -Pandroid.testInstrumentationRunnerArguments.smbPort=4451 \
+    -Pandroid.testInstrumentationRunnerArguments.smbShare=test \
+    -Pandroid.testInstrumentationRunnerArguments.smbUser=test \
+    -Pandroid.testInstrumentationRunnerArguments.smbPassword=test-only
+docker rm -f materialfiles-thumbnail-smb
+```
+
+The emulator reaches the host at `10.0.2.2`, so the container's SMB port must be published on the
+host's loopback (`--serve` publishes it on `127.0.0.1:<port>`); if Docker runs in a VM that no
+longer forwards new ports (colima), tunnel the port through the VM instead. The test writes
+`camera.jpg` (a photo with a 320x240 Exif thumbnail), `plain.jpg` and `clip.mp4` into
+`ThumbnailTest` on the share when they are missing and only reads files that are already there.
+Without `smbUser` it connects as a guest, with `smbShare` defaulting to `share`, as for a guest
+share of your own.
 
 ## Debugging on a device without logcat
 
@@ -137,7 +165,7 @@ to the original during staging. Required extended-attribute copy failures abort 
 
 SonarCloud automatic analysis reads source code but cannot import test coverage. This project
 uses CI-based analysis to import JaCoCo XML from the app's JVM tests, the vendored WebDAV
-library tests, and Android instrumented tests on API 35 and 36. Coverage describes Java/Kotlin
+library tests, and Android instrumented tests on API 36. Coverage describes Java/Kotlin
 execution; these reports do not measure native C execution or replace physical-device testing.
 
 Coverage is opt-in through `-Pcoverage=true` (or `ORG_GRADLE_PROJECT_coverage=true`). Normal

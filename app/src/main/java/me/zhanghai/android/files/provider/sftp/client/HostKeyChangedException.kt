@@ -10,8 +10,9 @@ import java.io.IOException
 import kotlinx.parcelize.Parcelize
 
 /**
- * The server presented a host key of a type we have a remembered key for, and the two differ. The
- * connection was refused; the user has to decide whether to trust [change].
+ * The server presented a host key that is not one we remembered for it: either it differs from the
+ * remembered key of the same type, or we remember only keys of other types. The connection was
+ * refused; the user has to decide whether to trust [change].
  */
 class HostKeyChangedException(val change: HostKeyChange) :
     IOException(

@@ -15,6 +15,7 @@ import java.io.IOException
 import java.io.InterruptedIOException
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
+import java8.nio.file.ClosedWatchServiceException
 import java8.nio.file.Path
 import java8.nio.file.StandardWatchEventKinds
 import java8.nio.file.WatchEvent
@@ -29,6 +30,10 @@ import me.zhanghai.android.files.util.logWarning
 // @see https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/05869c32-39f0-4726-afc9-671b76ae5ca7
 internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
     private val notifiers = mutableMapOf<SmbPath, Notifier>()
+
+    // Guarded by notifiers. A poller that lost its key registers again on its own thread, which
+    // can be while the service is being closed; a notifier started then would never be stopped.
+    private var isClosing = false
 
     @Throws(IOException::class)
     fun register(
@@ -53,6 +58,9 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
             throw UnsupportedOperationException(modifier.name())
         }
         synchronized(notifiers) {
+            if (isClosing) {
+                throw ClosedWatchServiceException()
+            }
             var notifier = notifiers[path]
             if (notifier != null) {
                 notifier.kinds = kindSet
@@ -66,7 +74,12 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
     }
 
     private fun removeNotifier(notifier: Notifier) {
-        synchronized(notifiers) { notifiers -= notifier.key.watchable() }
+        synchronized(notifiers) {
+            val path = notifier.key.watchable()
+            if (notifiers[path] === notifier) {
+                notifiers -= path
+            }
+        }
     }
 
     override fun cancel(key: SmbWatchKey) {
@@ -85,6 +98,7 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
     override fun onClose() {
         // Don't keep synchronized on notifiers, or we may get a deadlock when joining.
         val notifiers = synchronized(notifiers) {
+            isClosing = true
             notifiers.values.toList().also { notifiers.clear() }
         }
         var exception: IOException? = null
@@ -171,11 +185,13 @@ internal class SmbWatchService : AbstractWatchService<SmbWatchKey>() {
                 ) {
                     e.logWarning("SmbWatchService", "Watch ${key.watchable()} for changes")
                 }
+                // Gone before the key says so, so that registering the path again, which is what
+                // the poller does when it sees the key invalid, starts a new notifier.
+                watchService.removeNotifier(this)
                 key.setInvalid()
                 if (!(e is InterruptedException || e is InterruptedIOException)) {
                     key.signal()
                 }
-                watchService.removeNotifier(this)
             } finally {
                 // FIXME: We should cancel the CHANGE_NOTIFY request, but it currently crashes SMBJ.
                 // https://github.com/hierynomus/smbj/issues/572

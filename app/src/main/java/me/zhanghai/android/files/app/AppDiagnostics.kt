@@ -26,8 +26,14 @@ private const val MAX_TRACE_LINES = 150
 
 private const val MAX_EXIT_INFOS = 16
 
+private const val DIAGNOSTICS_DIRECTORY_NAME = "diagnostics"
+
 fun initializeDiagnostics() {
-    DiagnosticLog.initialize(application.filesDir.resolve("diagnostics"))
+    // Out of backups: the log holds paths, host names and stack traces. Runs before StrictMode is
+    // set up, and the move is a few renames within the app's own data directory.
+    val directory = application.noBackupFilesDir.resolve(DIAGNOSTICS_DIRECTORY_NAME)
+    moveLegacyDiagnostics(application.filesDir.resolve(DIAGNOSTICS_DIRECTORY_NAME), directory)
+    DiagnosticLog.initialize(directory)
     DiagnosticLog.append('I', TAG, "Process started")
     Thread.setDefaultUncaughtExceptionHandler(
         CrashRecorder(Thread.getDefaultUncaughtExceptionHandler())
@@ -51,6 +57,28 @@ fun initializeDiagnostics() {
         }
     )
     backgroundExecutor.execute { recordPreviousExits() }
+}
+
+/**
+ * Moves what an earlier version kept in [legacyDirectory] (under `files/`, which is backed up) into
+ * [directory] and removes the old one. Anything that cannot be moved is deleted rather than left
+ * where a backup would pick it up.
+ */
+internal fun moveLegacyDiagnostics(legacyDirectory: File, directory: File) {
+    if (!legacyDirectory.exists()) {
+        return
+    }
+    val files = legacyDirectory.listFiles().orEmpty()
+    if (files.isNotEmpty()) {
+        directory.mkdirs()
+    }
+    for (file in files) {
+        val target = File(directory, file.name)
+        if (target.exists() || !file.renameTo(target)) {
+            file.deleteRecursively()
+        }
+    }
+    legacyDirectory.deleteRecursively()
 }
 
 /** Keeps a crash in [DiagnosticLog] before handing it on to the handler that ends the process. */

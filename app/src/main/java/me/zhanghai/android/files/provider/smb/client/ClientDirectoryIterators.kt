@@ -16,6 +16,7 @@ import com.rapid7.client.dcerpc.mssrvs.dto.NetShareInfo1
 import com.rapid7.client.dcerpc.transport.SMBTransportFactories
 import java.io.Closeable
 import java.io.IOException
+import java8.nio.file.DirectoryIteratorException
 import me.zhanghai.android.files.provider.common.CloseableIterator
 import me.zhanghai.android.files.provider.smb.client.Client.Path
 import me.zhanghai.android.files.util.enumSetOf
@@ -80,7 +81,12 @@ internal fun Client.openDirectoryEntryIterator(
     } catch (e: SMBRuntimeException) {
         throw ClientException(e)
     }
-    val directoryIterator = directory.iterator(FileIdFullDirectoryInformation::class.java)
+    // SMBJ sends the first QUERY_DIRECTORY right here, so a failure here is a failure to list: it
+    // has to reach withSession as a ClientException, and the handle must not be left open.
+    val fileInformations = closeOnSmbFailure(directory) {
+        directory.iterator(FileIdFullDirectoryInformation::class.java)
+    }
+    val directoryIterator = fileInformations
         .asSequence()
         .filter { fileInformation ->
             !fileInformation.fileName.let { it == "." || it == ".." }
@@ -91,8 +97,44 @@ internal fun Client.openDirectoryEntryIterator(
             }
         }
         .iterator()
+        .mapSmbFailures(path.toString())
     return object :
         CloseableIterator<Path>,
         Iterator<Path> by directoryIterator,
         Closeable by directory {}
+}
+
+/** Runs [block], closing [closeable] and throwing a [ClientException] if SMBJ fails in it. */
+@Throws(ClientException::class)
+internal inline fun <T> closeOnSmbFailure(closeable: AutoCloseable, block: () -> T): T = try {
+    block()
+} catch (e: SMBRuntimeException) {
+    val exception = ClientException(e)
+    try {
+        closeable.close()
+    } catch (closeException: Exception) {
+        exception.addSuppressed(closeException)
+    }
+    throw exception
+}
+
+/**
+ * Later batches of a listing are fetched from `hasNext()`, which can only throw unchecked. A
+ * failure there is thrown as the [DirectoryIteratorException] that directory streams use for it,
+ * around the same [java8.nio.file.FileSystemException] the provider would throw for [path], so
+ * that it reads "Could not connect" or "Sign-in failed" rather than SMBJ's own message.
+ */
+internal fun <T> Iterator<T>.mapSmbFailures(path: String): Iterator<T> {
+    val iterator = this
+    return object : Iterator<T> {
+        override fun hasNext(): Boolean = mapSmbFailure { iterator.hasNext() }
+
+        override fun next(): T = mapSmbFailure { iterator.next() }
+
+        private inline fun <R> mapSmbFailure(block: () -> R): R = try {
+            block()
+        } catch (e: SMBRuntimeException) {
+            throw DirectoryIteratorException(ClientException(e).toFileSystemException(path))
+        }
+    }
 }

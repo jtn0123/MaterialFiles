@@ -37,6 +37,7 @@ class AddLanSmbServerFragment : Fragment() {
     private var binding by autoCleared<AddLanSmbServerFragmentBinding>()
 
     private lateinit var loadingAdapter: StaticAdapter
+    private lateinit var statusAdapter: LanSmbServerStatusAdapter
     private lateinit var serverListAdapter: LanSmbServerListAdapter
 
     override fun onCreateView(
@@ -57,6 +58,7 @@ class AddLanSmbServerFragment : Fragment() {
         binding.swipeRefreshLayout.setOnRefreshListener { viewModel.reload() }
         binding.recyclerView.layoutManager = LinearLayoutManager(activity)
         loadingAdapter = StaticAdapter(R.layout.lan_smb_server_loading_item)
+        statusAdapter = LanSmbServerStatusAdapter { viewModel.reload() }
         serverListAdapter = LanSmbServerListAdapter { addSmbServer(it) }
         val addAdapter = StaticAdapter(R.layout.lan_smb_server_add_item) { addSmbServer(null) }
         binding.recyclerView.adapter = ConcatAdapter(
@@ -64,6 +66,7 @@ class AddLanSmbServerFragment : Fragment() {
                 .setStableIdMode(ConcatAdapter.Config.StableIdMode.ISOLATED_STABLE_IDS)
                 .build(),
             loadingAdapter,
+            statusAdapter,
             serverListAdapter,
             addAdapter
         )
@@ -74,7 +77,8 @@ class AddLanSmbServerFragment : Fragment() {
     }
 
     private fun onLanSmbServerListChanged(stateful: Stateful<List<LanSmbServer>>) {
-        if (stateful is Failure) {
+        // Being off a local network is not a fault, and is shown as such.
+        if (stateful is Failure && stateful.throwable !is NotOnLocalNetworkException) {
             stateful.throwable.logWarning("AddLanSmbServerFragment", "List the LAN SMB servers")
         }
         val isLoading = stateful is Loading
@@ -83,6 +87,7 @@ class AddLanSmbServerFragment : Fragment() {
         binding.progress.fadeToVisibilityUnsafe(isLoading)
         val servers = stateful.value ?: emptyList()
         loadingAdapter.itemCount = if (isLoading && servers.isEmpty()) 1 else 0
+        statusAdapter.status = LanSmbServerDiscoveryStatus.of(stateful)
         serverListAdapter.replace(servers)
     }
 

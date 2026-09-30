@@ -6,4 +6,5 @@
 
 <resources>
     <item name="thumbnail_load" type="id" />
+    <item name="image_viewer_load" type="id" />
 </resources>

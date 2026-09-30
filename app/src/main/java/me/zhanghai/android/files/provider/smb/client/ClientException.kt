@@ -7,6 +7,11 @@ package me.zhanghai.android.files.provider.smb.client
 
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.mssmb2.SMBApiException
+import com.hierynomus.protocol.transport.TransportException
+import java.io.EOFException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.util.concurrent.TimeoutException
 import java8.nio.file.AccessDeniedException
 import java8.nio.file.AtomicMoveNotSupportedException
 import java8.nio.file.DirectoryNotEmptyException
@@ -37,6 +42,16 @@ class ClientException : Exception {
      */
     internal val isSessionGone: Boolean
         get() = status in SESSION_GONE_STATUSES
+
+    /**
+     * Whether the connection under the session died: the socket failed or was closed, or a request
+     * on it timed out (a half-open connection after the phone slept or changed networks looks like
+     * that). An idempotent operation may succeed on a fresh connection. See [withSession].
+     */
+    internal val isConnectionGone: Boolean
+        get() = generateSequence(cause) { it.cause }
+            .take(MAX_CAUSE_DEPTH)
+            .any { cause -> CONNECTION_GONE_CAUSES.any { it.isInstance(cause) } }
 
     @Throws(AtomicMoveNotSupportedException::class)
     fun maybeThrowAtomicMoveNotSupportedException(file: String?, other: String?) {
@@ -91,6 +106,19 @@ class ClientException : Exception {
         }.apply { initCause(this@ClientException) }
 
     companion object {
+        private const val MAX_CAUSE_DEPTH = 16
+
+        // SMBJ reports a closed or failed connection as a TransportException, and a request that
+        // got no answer in time with a TimeoutException, both usually wrapped in an
+        // SMBRuntimeException.
+        private val CONNECTION_GONE_CAUSES = listOf(
+            TransportException::class.java,
+            SocketException::class.java,
+            SocketTimeoutException::class.java,
+            EOFException::class.java,
+            TimeoutException::class.java
+        )
+
         private val SESSION_GONE_STATUSES = setOf(
             NtStatus.STATUS_USER_SESSION_DELETED,
             NtStatus.STATUS_NETWORK_SESSION_EXPIRED,

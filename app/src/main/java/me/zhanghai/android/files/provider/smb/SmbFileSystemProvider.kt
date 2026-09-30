@@ -32,6 +32,7 @@ import me.zhanghai.android.files.provider.common.InvalidFileNameException
 import me.zhanghai.android.files.provider.common.PathIteratorDirectoryStream
 import me.zhanghai.android.files.provider.common.PathObservable
 import me.zhanghai.android.files.provider.common.PathObservableProvider
+import me.zhanghai.android.files.provider.common.PathWatchSource
 import me.zhanghai.android.files.provider.common.Searchable
 import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
 import me.zhanghai.android.files.provider.common.WatchServicePathObservable
@@ -410,7 +411,15 @@ object SmbFileSystemProvider : FileSystemProvider(), PathObservableProvider, Sea
     @Throws(IOException::class)
     override fun observe(path: Path, intervalMillis: Long): PathObservable {
         requireProviderPath<SmbPath>(path)
-        return WatchServicePathObservable(path, intervalMillis)
+        return WatchServicePathObservable(
+            listOf(
+                // What this app changes shows even when the server's watch is off or gone.
+                PathWatchSource.inProcess(path),
+                // A server that cannot watch now may well later, after reconnecting.
+                PathWatchSource.of(path, retriesFirstRegistration = true)
+            ),
+            intervalMillis
+        )
     }
 
     @Throws(IOException::class)

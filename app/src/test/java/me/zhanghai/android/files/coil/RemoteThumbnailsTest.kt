@@ -33,6 +33,25 @@ class RemoteThumbnailsTest {
     }
 
     @Test
+    fun everySizeKeptOnDiskIsTriedLargestFirst() {
+        val sizes = RemoteThumbnails.cachedSizesLargestFirst
+        assertEquals(16, sizes.size)
+        assertEquals(16, sizes.toSet().size)
+        assertEquals(1024 to 1024, sizes.first())
+        assertEquals(256 to 256, sizes.last())
+        assertTrue(
+            sizes.zipWithNext().all { (a, b) -> a.first * a.second >= b.first * b.second }
+        )
+        // Each is a size a thumbnail can be rounded to, and so kept at.
+        assertTrue(
+            sizes.all { (width, height) ->
+                RemoteThumbnails.roundSize(width) == width &&
+                    RemoteThumbnails.roundSize(height) == height
+            }
+        )
+    }
+
+    @Test
     fun aFailureIsRememberedUntilItExpires() {
         var now = 0L
         val failures = RecentFailures(maxCount = 10, expiryMillis = 1000, clock = { now })

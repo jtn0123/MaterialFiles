@@ -20,14 +20,12 @@ import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.viewpager2.widget.ViewPager2
-import java.io.IOException
 import java8.nio.file.Path
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.WriteWith
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.databinding.ImageViewerFragmentBinding
 import me.zhanghai.android.files.file.fileProviderUri
-import me.zhanghai.android.files.provider.common.delete
 import me.zhanghai.android.files.ui.DepthPageTransformer
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableListParceler
@@ -39,12 +37,9 @@ import me.zhanghai.android.files.util.createSendImageIntent
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.finish
 import me.zhanghai.android.files.util.getState
-import me.zhanghai.android.files.util.logWarning
 import me.zhanghai.android.files.util.mediumAnimTime
 import me.zhanghai.android.files.util.putState
-import me.zhanghai.android.files.util.showActionSnackbar
 import me.zhanghai.android.files.util.startActivitySafe
-import me.zhanghai.android.files.util.toUserMessage
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.systemuihelper.SystemUiHelper
 
@@ -173,15 +168,10 @@ class ImageViewerFragment :
     }
 
     override fun delete(path: Path) {
-        try {
-            path.delete()
-        } catch (e: IOException) {
-            e.logWarning("ImageViewerFragment", "Delete $path")
-            binding.root.showActionSnackbar(e.toUserMessage(requireContext()), R.string.retry) {
-                delete(path)
-            }
-            return
-        }
+        deleteViewedFile(path, "ImageViewerFragment", { delete(path) }) { onDeleted(path) }
+    }
+
+    private fun onDeleted(path: Path) {
         deletedPaths.add(path)
         paths.removeAll(listOf(path))
         if (paths.isEmpty()) {

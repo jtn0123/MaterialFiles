@@ -34,8 +34,7 @@ internal fun FileJob.postNotification(
         setSubText(subText)
         setContentInfo(info)
         setProgress(max, progress, indeterminate)
-        // TODO
-        //setContentIntent()
+        setContentIntent(createContentPendingIntent())
         if (showCancel) {
             val intent = FileJobReceiver.createIntent(id)
             var pendingIntentFlags = PendingIntent.FLAG_UPDATE_CURRENT
@@ -111,7 +110,7 @@ internal fun FileJob.postTransferSizeNotification(
         return
     }
     val title: String
-    val text: String
+    val progressText: String
     val fileCount = transferInfo.fileCount
     val target = transferInfo.target!!
     val size = transferInfo.size
@@ -120,7 +119,7 @@ internal fun FileJob.postTransferSizeNotification(
         title = getString(titleOneRes, getFileName(currentSource), getFileName(target))
         val sizeString = size.asFileSize().formatHumanReadable(service)
         val transferredSizeString = transferredSize.asFileSize().formatHumanReadable(service)
-        text = getString(
+        progressText = getString(
             R.string.file_job_transfer_size_notification_text_one_format,
             transferredSizeString,
             sizeString
@@ -129,12 +128,13 @@ internal fun FileJob.postTransferSizeNotification(
         title = getQuantityString(titleMultipleRes, fileCount, fileCount, getFileName(target))
         val currentFileIndex = (transferInfo.transferredFileCount + 1)
             .coerceAtMost(fileCount)
-        text = getString(
+        progressText = getString(
             R.string.file_job_transfer_size_notification_text_multiple_format,
             currentFileIndex,
             fileCount
         )
     }
+    val text = joinTransferDetails(progressText, *getTransferRateTexts(transferInfo))
     val max: Int
     val progress: Int
     if (size <= Int.MAX_VALUE) {
@@ -199,6 +199,9 @@ internal class TransferInfo(scanInfo: ScanInfo, val target: Path?) {
         private set
     var transferredSize = 0L
         private set
+
+    /** How fast [transferredSize] grows, sampled each time the notification is posted. */
+    val rate = TransferRate()
 
     private var lastNotificationTimeMillis = 0L
 

@@ -46,6 +46,8 @@ e shell "echo 'Some notes for the screenshot run.' > '$DIR/notes.txt'"
 e shell "touch -m -t \$(date +%Y)01021030.00 '$DIR'/*"
 e shell "appops set $PKG MANAGE_EXTERNAL_STORAGE allow; pm grant $PKG android.permission.POST_NOTIFICATIONS" >/dev/null 2>&1
 e shell "settings put global window_animation_scale 0; settings put global transition_animation_scale 0; settings put global animator_duration_scale 0" >/dev/null
+# The one-time "Viewing full screen" notice takes the focus and the Back press that should leave the video.
+e shell "settings put secure immersive_mode_confirmations confirmed" >/dev/null
 
 rot 0; open; open; shot list
 u tap-desc "Open navigation drawer"; shot drawer; e shell input keyevent BACK; sleep 1

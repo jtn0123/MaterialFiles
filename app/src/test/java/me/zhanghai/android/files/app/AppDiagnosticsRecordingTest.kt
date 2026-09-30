@@ -12,6 +12,7 @@ import java.io.InputStream
 import me.zhanghai.android.files.util.DiagnosticLog
 import me.zhanghai.android.files.util.recordWarnings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -152,5 +153,41 @@ class AppDiagnosticsRecordingTest {
         }
         assertEquals("", trace)
         assertEquals("Read the trace of process 15309", warnings.single().operation)
+    }
+
+    @Test
+    fun theLogIsMovedOutOfTheBackedUpFiles() {
+        val legacy = temporaryFolder.newFolder("files", "diagnostics")
+        File(legacy, "diagnostics.log").writeText("old log")
+        File(legacy, "last_recorded_exit").writeText("1000")
+        val directory = File(temporaryFolder.root, "no_backup/diagnostics")
+        moveLegacyDiagnostics(legacy, directory)
+        assertFalse(legacy.exists())
+        assertEquals("old log", File(directory, "diagnostics.log").readText())
+        assertEquals("1000", File(directory, "last_recorded_exit").readText())
+    }
+
+    @Test
+    fun anOldFileIsDroppedRatherThanOverwritingANewerOne() {
+        val legacy = temporaryFolder.newFolder("files", "diagnostics")
+        File(legacy, "diagnostics.log").writeText("old log")
+        File(legacy, "diagnostics.1.log").writeText("older log")
+        val directory = temporaryFolder.newFolder("no_backup", "diagnostics")
+        File(directory, "diagnostics.log").writeText("new log")
+        moveLegacyDiagnostics(legacy, directory)
+        assertFalse(legacy.exists())
+        assertEquals("new log", File(directory, "diagnostics.log").readText())
+        assertEquals("older log", File(directory, "diagnostics.1.log").readText())
+    }
+
+    @Test
+    fun nothingHappensWithoutAnOldLog() {
+        val directory = File(temporaryFolder.root, "no_backup/diagnostics")
+        moveLegacyDiagnostics(File(temporaryFolder.root, "files/diagnostics"), directory)
+        assertFalse(directory.exists())
+        val emptyLegacy = temporaryFolder.newFolder("files", "diagnostics")
+        moveLegacyDiagnostics(emptyLegacy, directory)
+        assertFalse(emptyLegacy.exists())
+        assertFalse(directory.exists())
     }
 }

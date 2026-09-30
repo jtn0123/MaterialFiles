@@ -27,7 +27,8 @@ import java8.nio.file.attribute.FileAttribute
 import java8.nio.file.attribute.FileAttributeView
 import java8.nio.file.spi.FileSystemProvider
 import me.zhanghai.android.files.provider.common.ByteStringPath
-import me.zhanghai.android.files.provider.common.PathListDirectoryStream
+import me.zhanghai.android.files.provider.common.CloseableIterator
+import me.zhanghai.android.files.provider.common.PathIteratorDirectoryStream
 import me.zhanghai.android.files.provider.common.PathObservable
 import me.zhanghai.android.files.provider.common.PathObservableProvider
 import me.zhanghai.android.files.provider.common.PosixFileMode
@@ -180,13 +181,13 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         filter: DirectoryStream.Filter<in Path>
     ): DirectoryStream<Path> {
         requireProviderPath<SftpPath>(directory)
-        val paths = try {
+        val iterator = try {
             @Suppress("UNCHECKED_CAST")
-            client.scandir(directory) as List<Path>
+            client.openDirectoryIterator(directory) as CloseableIterator<Path>
         } catch (e: ClientException) {
             throw e.toFileSystemException(directory.toString())
         }
-        return PathListDirectoryStream(paths, filter)
+        return PathIteratorDirectoryStream(iterator, iterator, filter)
     }
 
     @Throws(IOException::class)

@@ -2,7 +2,9 @@ package me.zhanghai.android.files.provider.ftp.client
 
 import java.io.File
 import java.io.IOException
+import java.time.Duration
 import java.util.Calendar
+import me.zhanghai.android.files.provider.common.NetworkTimeouts
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPCmd
 import org.apache.commons.net.ftp.FTPFile
@@ -48,3 +50,16 @@ fun FTPClient.setModificationTimeCompat(pathname: String, timeval: String): Bool
     } else {
         throw IOException("Missing feature ${FTPCmd.MFMT.command}")
     }
+
+/**
+ * Makes a connection that died silently fail within [timeouts] instead of hanging: commons-net
+ * reads are not interrupted when a listing or a read is cancelled. Has to be called before
+ * `connect()`, which applies the default timeout to the control connection.
+ */
+internal fun FTPClient.applyTimeouts(timeouts: NetworkTimeouts) {
+    connectTimeout = timeouts.connectMillis
+    defaultTimeout = timeouts.readMillis
+    setDataTimeout(Duration.ofMillis(timeouts.readMillis.toLong()))
+    // NOOPs on the control connection while a long transfer keeps it silent.
+    setControlKeepAliveTimeout(Duration.ofSeconds(timeouts.keepAliveSeconds.toLong()))
+}
